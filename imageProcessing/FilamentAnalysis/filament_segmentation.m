@@ -1,4 +1,4 @@
-function movieData = filament_segmentation(movieData, varargin)
+function movieData = filament_segmentation(movieData, paramsIn, varargin)
 % Created 07 2012 by Liya Ding, Matlab R2011b
 
 % input movieData object, with the parameters
@@ -50,7 +50,13 @@ if indexFilamentSegmentationProcess==0
 end
 
 
-funParams=movieData.processes_{indexFilamentSegmentationProcess}.funParams_;
+% with no input funparam, use the one the process has on its own
+if nargin < 2
+    paramsIn = [];
+    funParams = movieData.processes_{indexFilamentSegmentationProcess}.funParams_;
+else
+    funParams = paramsIn;    
+end
 
 selected_channels = funParams.ChannelIndex;
 
@@ -77,7 +83,22 @@ Cell_Mask_ind = Cell_Mask_ind_movie;
 
 %% Output Directories
 
-FilamentSegmentationProcessOutputDir  = [movieData.packages_{indexFilamentPackage}.outputDirectory_, filesep 'FilamentSegmentation'];
+
+
+% default steerable filter process output dir
+FilamentSegmentationProcessOutputDir = [movieData.outputDirectory_, filesep 'FilamentSegmentation'];
+
+% if there is filamentanalysispackage
+if (indexFilamentPackage>0)
+    % and a directory is defined for this package
+    if (~isempty(movieData.packages_{indexFilamentPackage}.outputDirectory_))
+        % and this directory exists
+        if (exist(movieData.packages_{indexFilamentPackage}.outputDirectory_,'dir'))
+            FilamentSegmentationProcessOutputDir  = [movieData.packages_{indexFilamentPackage}.outputDirectory_, filesep 'FilamentSegmentation'];
+       end
+    end
+end
+
 if (~exist(FilamentSegmentationProcessOutputDir,'dir'))
     mkdir(FilamentSegmentationProcessOutputDir);
 end

@@ -51,7 +51,20 @@ Sub_Sample_Num  = funParams.Sub_Sample_Num;
 
 % Output Directories
 
-FilamentSegmentationProcessOutputDir  = [movieData.packages_{indexFilamentPackage}.outputDirectory_, filesep 'FilamentSegmentation'];
+% default steerable filter process output dir
+FilamentSegmentationProcessOutputDir = [movieData.outputDirectory_, filesep 'FilamentSegmentation'];
+
+% if there is filamentanalysispackage
+if (indexFilamentPackage>0)
+    % and a directory is defined for this package
+    if (~isempty(movieData.packages_{indexFilamentPackage}.outputDirectory_))
+        % and this directory exists
+        if (exist(movieData.packages_{indexFilamentPackage}.outputDirectory_,'dir'))
+            FilamentSegmentationProcessOutputDir  = [movieData.packages_{indexFilamentPackage}.outputDirectory_, filesep 'FilamentSegmentation'];
+       end
+    end
+end
+
 if (~exist(FilamentSegmentationProcessOutputDir,'dir'))
     mkdir(FilamentSegmentationProcessOutputDir);
 end

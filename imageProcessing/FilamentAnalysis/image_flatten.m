@@ -1,4 +1,4 @@
-function movieData = image_flatten(movieData, varargin)
+function movieData = image_flatten(movieData, paramsIn, varargin)
 
 % for most cases, don't do background removal here.
 background_removal_flag =0;
@@ -36,7 +36,13 @@ if indexFlattenProcess==0
     return;
 end
 
-funParams=movieData.processes_{indexFlattenProcess}.funParams_;
+% with no input funparam, use the one the process has on its own
+if nargin < 2
+    paramsIn = [];
+    funParams = movieData.processes_{indexFlattenProcess}.funParams_;
+else
+    funParams = paramsIn;    
+end
 
 selected_channels = funParams.ChannelIndex;
 flatten_method_ind = funParams.method_ind;
@@ -47,14 +53,23 @@ Sub_Sample_Num  = funParams.Sub_Sample_Num;
 
 nFrame = movieData.nFrames_;
 
+% default image flateen output dir
+ImageFlattenProcessOutputDir = [movieData.outputDirectory_, filesep 'ImageFlatten'];
 
-ImageFlattenProcessOutputDir  = [movieData.packages_{indexFilamentPackage}.outputDirectory_, filesep 'ImageFlatten'];
+% if there is filamentanalysispackage
+if (indexFilamentPackage>0)
+    % and a directory is defined for this package
+    if (~isempty(movieData.packages_{indexFilamentPackage}.outputDirectory_))
+        % and this directory exists
+        if (exist(movieData.packages_{indexFilamentPackage}.outputDirectory_,'dir'))
+            ImageFlattenProcessOutputDir  = [movieData.packages_{indexFilamentPackage}.outputDirectory_, filesep 'ImageFlatten'];
+        end
+    end
+end
+
 if (~exist(ImageFlattenProcessOutputDir,'dir'))
     mkdir(ImageFlattenProcessOutputDir);
 end
-
-delete([ImageFlattenProcessOutputDir,'*.*']);
-
 
 for iChannel = selected_channels
     ImageFlattenChannelOutputDir = [ImageFlattenProcessOutputDir,'/Channel',num2str(iChannel)];
@@ -139,7 +154,9 @@ for iChannel = selected_channels
         end
     end
     
-    delete img_pixel_pool;
+    if exist('img_pixel_pool','var')
+        delete img_pixel_pool;
+    end
     
     %    low_005_percentile=0;
     %    high_995_percentile= 2^8-1;

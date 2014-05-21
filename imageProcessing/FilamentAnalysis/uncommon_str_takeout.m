@@ -1,5 +1,11 @@
 function output_strs = uncommon_str_takeout(input_strs)
 
+if iscell(input_strs)==0
+    output_strs = input_strs;
+    return;
+end
+
+
 stop_num = common_str_stop(input_strs);
 cutback_num = common_str_cutback(input_strs);
 

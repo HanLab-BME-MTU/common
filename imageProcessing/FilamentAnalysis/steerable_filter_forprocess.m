@@ -1,4 +1,4 @@
-function movieData = steerable_filter_forprocess(movieData, varargin)
+function movieData = steerable_filter_forprocess(movieData, paramsIn, varargin)
 % Created 07 2012 by Liya Ding, Matlab R2011b
 
 % Find the package of Filament Analysis
@@ -32,7 +32,15 @@ if indexSteerabeleProcess==0
     msgbox('Please set parameters for steerable filtering.')
     return;
 end
-funParams=movieData.processes_{indexSteerabeleProcess}.funParams_;
+
+
+% with no input funparam, use the one the process has on its own
+if nargin < 2
+    paramsIn = [];
+    funParams = movieData.processes_{indexSteerabeleProcess}.funParams_;
+else
+    funParams = paramsIn;    
+end
 
 selected_channels = funParams.ChannelIndex;
 BaseSteerableFilterSigma = funParams.BaseSteerableFilterSigma;
@@ -42,10 +50,24 @@ Sub_Sample_Num = funParams.Sub_Sample_Num;
 
 %% Output Directories
 
-ImageSteerableFilterProcessOutputDir  = [movieData.packages_{indexFilamentPackage}.outputDirectory_, filesep 'SteerableFiltering'];
+% default steerable filter process output dir
+ImageSteerableFilterProcessOutputDir = [movieData.outputDirectory_, filesep 'SteerableFiltering'];
+
+% if there is filamentanalysispackage
+if (indexFilamentPackage>0)
+    % and a directory is defined for this package
+    if (~isempty(movieData.packages_{indexFilamentPackage}.outputDirectory_))
+        % and this directory exists
+        if (exist(movieData.packages_{indexFilamentPackage}.outputDirectory_,'dir'))
+            ImageSteerableFilterProcessOutputDir  = [movieData.packages_{indexFilamentPackage}.outputDirectory_, filesep 'SteerableFiltering'];
+        end
+    end
+end
+
 if (~exist(ImageSteerableFilterProcessOutputDir,'dir'))
     mkdir(ImageSteerableFilterProcessOutputDir);
 end
+
 
 for iChannel = selected_channels
     ImageSteerableFilterChannelOutputDir = [ImageSteerableFilterProcessOutputDir,'/Channel',num2str(iChannel)];
@@ -101,8 +123,10 @@ for iChannel = selected_channels
     
     display(['Start steerable filtering in Channel ',num2str(iChannel)]);
     
-     mkdir(ImageSteerableFilterChannelOutputDir,'NMS');
-       
+    if (~exist([ImageSteerableFilterChannelOutputDir,filesep,'NMS'],'dir'))
+        mkdir(ImageSteerableFilterChannelOutputDir,'NMS');
+    end
+    
     for iFrame_subsample = 1 : length(Frames_to_Seg)
         iFrame = Frames_to_Seg(iFrame_subsample);
         disp(['Frame: ',num2str(iFrame)]);

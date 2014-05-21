@@ -5,6 +5,11 @@ if length(input_strs)<=1
     return;
 end
 
+if iscell(input_strs)==0
+    stop_num =1;
+    return;
+end
+
 reached = 0;
 
 for stop_num = 1 : length(input_strs{1})    
