@@ -144,9 +144,12 @@ for i = 1:numel(p.ChannelIndex)
     detP = [];
     for l = 1:numel(p.PerChannelParams)
         if iscell(p.(p.PerChannelParams{l}))
-            detP.(p.PerChannelParams{l}) = p.(p.PerChannelParams{l}){i};
+            detP.(p.PerChannelParams{l}) = p.(p.PerChannelParams{l}){iChan};
         else
-            detP.(p.PerChannelParams{l}) = p.(p.PerChannelParams{l})(i);
+            detP.(p.PerChannelParams{l}) = p.(p.PerChannelParams{l})(iChan);
+            if isnan(p.(p.PerChannelParams{l})(iChan))
+                detP.(p.PerChannelParams{l}) = [];
+            end
         end        
     end
     
@@ -161,7 +164,7 @@ for i = 1:numel(p.ChannelIndex)
         end    
         
         % Call main detection function       
-        pstruct = pointSourceDetection(currImage,p.filterSigma(i),detP);
+        pstruct = pointSourceDetection(currImage,p.filterSigma(iChan),detP);
 
 
         % add xCoord, yCoord, amp fields for compatibilty  with tracker
