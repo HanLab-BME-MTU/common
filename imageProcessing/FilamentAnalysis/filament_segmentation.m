@@ -1,4 +1,4 @@
-function movieData = filament_segmentation(movieData, paramsIn, varargin)
+function movieData = filament_segmentation(movieData, paramsIn, wholemovie_input_filename, varargin)
 % Created 07 2012 by Liya Ding, Matlab R2011b
 
 % input movieData object, with the parameters
@@ -57,6 +57,7 @@ if nargin < 2
 else
     funParams = paramsIn;    
 end
+
 
 selected_channels = funParams.ChannelIndex;
 
@@ -159,16 +160,24 @@ if indexCellSegProcess == 0 && Cell_Mask_ind == 1
     return;
 end
 
-%% May 1st 2014, due to change in flattening precedure, this whole movie stat need rerun,
-% could change back after the old data are all rerun.
-% if(exist([FilamentSegmentationProcessOutputDir, filesep, 'whole_movie_stat.mat'],'file')>0)
-%     load([FilamentSegmentationProcessOutputDir, filesep, 'whole_movie_stat.mat'],'Whole_movie_stat_cell');
-% else
+% if user want to use an input whole movie stat result, use it
+if nargin >=3
+    load(wholemovie_input_filename);
+    funParams.Whole_movie_stat_cell = Whole_movie_stat_cell;    
+else
+    % or, calculate it
+    %% May 1st 2014, due to change in flattening precedure, this whole movie stat need rerun,
+    % could change back after the old data are all rerun.
+    % if(exist([FilamentSegmentationProcessOutputDir, filesep, 'whole_movie_stat.mat'],'file')>0)
+    %     load([FilamentSegmentationProcessOutputDir, filesep, 'whole_movie_stat.mat'],'Whole_movie_stat_cell');
+    % else
     Whole_movie_stat_cell = whole_movie_stat_function(movieData);
-    save([FilamentSegmentationProcessOutputDir, filesep, 'whole_movie_stat.mat'],'Whole_movie_stat_cell');    
-% end
-
-funParams.Whole_movie_stat_cell = Whole_movie_stat_cell;
+    save([FilamentSegmentationProcessOutputDir, filesep, 'whole_movie_stat.mat'],'Whole_movie_stat_cell');
+    % end
+    
+    funParams.Whole_movie_stat_cell = Whole_movie_stat_cell;
+    
+end
 
 %%
 nFrame = movieData.nFrames_;
@@ -209,7 +218,11 @@ for iChannel = selected_channels
         IntPace_Size = IntPace_Size_movie(iChannel);
         IntPatch_Size = IntPatch_Size_movie(iChannel);
         Intlowerbound =  int_lowerbound_localthresholding_movie(iChannel);
-        Combine_Way = Combine_Way_movie{iChannel};
+        if(~iscell(Combine_Way_movie))
+            Combine_Way = Combine_Way_movie;
+        else
+            Combine_Way = Combine_Way_movie{iChannel};
+        end
         Cell_Mask_ind = Cell_Mask_ind_movie(iChannel);
     else
         % in the original situation there is one common setting for all

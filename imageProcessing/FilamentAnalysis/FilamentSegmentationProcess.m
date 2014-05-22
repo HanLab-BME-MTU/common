@@ -323,7 +323,7 @@ classdef FilamentSegmentationProcess < ImageProcessingProcess
             % as in MD_ROI.tif in movieData folder, if 3, a combined
             % version of two channel, if 4 a direction sum of the two
             % channels, if 5 no limit
-            funParams.Cell_Mask_ind = 4;
+            funParams.Cell_Mask_ind = 1;
             
             % whole movie constrain index, 1 for completely, 2 for
             % half-half, 3 for none
