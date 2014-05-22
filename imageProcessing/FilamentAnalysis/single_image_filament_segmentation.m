@@ -47,6 +47,7 @@ ip.parse(filename,Parameter_MD,varargin{:});
 pick_channel = ip.Results.pick_channel;
 keep_steps = ip.Results.keep_steps;
 output_dir = ip.Results.output_dir;
+whole_movie_filename= ip.Results.whole_movie_filename;
 
 %% get the image dir and make a MD just for this image
 % first parse the input image path and output path
@@ -60,7 +61,7 @@ index_2 = find(file_image_full_name=='.');
 file_image_only_name = file_image_full_name(1:max(index_2)-1);
 
 % if there is user input for output_dir, use that as main working dir
-if(output_dir~=' ')
+if(min(output_dir==' ')==0)
     output_dir = GetFullPath(output_dir);
     ROOT_DIR = output_dir;
     if (~exist(ROOT_DIR,'dir'))
@@ -179,7 +180,7 @@ if(~isempty(Parameter_MD))
                             end
                             
                             % if user give the whole movie stat, use this
-                            if(whole_movie_filename~=' ')
+                            if( min(whole_movie_filename==' ')==0 )
                                 this_MD = filament_segmentation(this_MD,given_Params,whole_movie_filename);
                             else
                                 this_MD = filament_segmentation(this_MD,given_Params);
