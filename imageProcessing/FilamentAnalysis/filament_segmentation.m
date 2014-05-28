@@ -462,11 +462,13 @@ for iChannel = selected_channels
                   current_model=[];   
             
             case 'Canny_Method'
-               
-                [NMS_Segment,THRESH_LH] = edge(MAX_st_res,'canny');
-                level2 = THRESH_LH(1);
                 
-                current_seg = NMS_Segment;
+                tic
+                [lowThresh, highThresh, current_seg]...
+                    = proximityBasedNmsSeg(MAX_st_res,nms,orienation_map, iFrame,FilamentSegmentationChannelOutputDir,funParams,iChannel);
+                toc
+                
+                level2 = highThresh;                
                 Intensity_Segment = current_seg;
                 SteerabelRes_Segment = current_seg;
                 Min_area = 6;
