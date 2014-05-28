@@ -1,14 +1,15 @@
 function  [lowThresh, highThresh, current_seg]...
-    = proximityBasedNmsSeg(MAX_st_res,nms,orienation_map, iFrame,FilamentSegmentationChannelOutputDir,funParams,iChannel)
+    = proximityBasedNmsSeg(MAX_st_res,orienation_map,funParams)
 % proximityBasedNmsSeg segments filaments from input image(nms) based on the proximity only
 %                               of features of the curves/lines in the image
 % Input:
-%    ImageIn:                           the input image, typically the non maximum supress version of the steerable filtering output
-%    classifier_trained:                the trained or provided classifier of the curvee, if not provided, use empirical function
+%    MAX_st_res:                    the input ST image
+%    orienation_map:                the input ST orientation map
+%    funParams:                     process funParams
 % Output:
-%    T_otsu:                            the threshold defined by Otsu method for intensity of the input image, just as a format thing here.
-%    current_all_matching_bw:           the segmented results, this serves as the starting point of the graphic matching
-%
+%    lowThresh, highThresh:             the thresholds selected
+%    current_seg:                 the segmented results, this serves as the starting point of the graphic matching
+% 
 
 % Liya Ding
 % 2014.05

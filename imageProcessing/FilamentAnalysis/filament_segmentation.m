@@ -465,7 +465,7 @@ for iChannel = selected_channels
                 
                 tic
                 [lowThresh, highThresh, current_seg]...
-                    = proximityBasedNmsSeg(MAX_st_res,nms,orienation_map, iFrame,FilamentSegmentationChannelOutputDir,funParams,iChannel);
+                    = proximityBasedNmsSeg(MAX_st_res,orienation_map,funParams);
                 toc
                 
                 level2 = highThresh;                
