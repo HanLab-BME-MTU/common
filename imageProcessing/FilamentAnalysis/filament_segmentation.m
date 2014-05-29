@@ -59,6 +59,8 @@ else
 end
 
 
+
+
 selected_channels = funParams.ChannelIndex;
 
 StPace_Size_movie = funParams.StPace_Size;
@@ -72,6 +74,7 @@ Combine_Way_movie = funParams.Combine_Way;
 Cell_Mask_ind_movie = funParams.Cell_Mask_ind;
 VIF_Outgrowth_Flag_movie = funParams.VIF_Outgrowth_Flag;
 Sub_Sample_Num_movie  = funParams.Sub_Sample_Num;
+Whole_movie_ind_movie  = funParams.Whole_movie_ind;
 
 SaveFigures_movie = funParams.savestepfigures;
 ShowDetailMessages_movie = funParams.savestepfigures;
@@ -81,6 +84,36 @@ LengthThreshold_movie = funParams.LengthThreshold;
 IternationNumber_movie = funParams.IternationNumber;
 CurvatureThreshold_movie = funParams.CurvatureThreshold;
 Cell_Mask_ind = Cell_Mask_ind_movie;
+
+
+
+if(length(funParams.StPace_Size)==1 && numel(movieData.channels_)>1)
+    ones_array = ones(1,numel(movieData.channels_));
+    funParams.StPace_Size = funParams.StPace_Size*ones_array;
+    funParams.StPatch_Size = funParams.StPatch_Size*ones_array;
+    funParams.st_lowerbound_localthresholding = funParams.st_lowerbound_localthresholding*ones_array;
+    funParams.IntPace_Size = funParams.IntPace_Size*ones_array;
+    funParams.IntPatch_Size = funParams.IntPatch_Size*ones_array;
+    funParams.int_lowerbound_localthresholding = funParams.int_lowerbound_localthresholding*ones_array;
+    funParams.Cell_Mask_ind = funParams.Cell_Mask_ind*ones_array;
+    funParams.Whole_movie_ind = funParams.Whole_movie_ind*ones_array;
+    
+    Combine_Way = funParams.Combine_Way;
+    
+    funParams.Combine_Way=cell(1,1);
+    
+   for iC = 1 : numel(movieData.channels_)
+        funParams.Combine_Way{iC}= Combine_Way;
+    end
+    
+    funParams.Classifier_Type_ind = funParams.Classifier_Type_ind*ones_array;
+    funParams.LengthThreshold = funParams.LengthThreshold*ones_array;
+    funParams.CurvatureThreshold = funParams.CurvatureThreshold*ones_array;
+    funParams.IternationNumber = funParams.IternationNumber*ones_array;
+    funParams.CoefAlpha = funParams.CoefAlpha*ones_array;
+    funParams.training_sample_number = funParams.training_sample_number*ones_array;
+end
+
 
 %% Output Directories
 

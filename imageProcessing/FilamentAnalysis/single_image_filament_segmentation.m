@@ -39,7 +39,7 @@ ip = inputParser;
 ip.addRequired('filename',@ischar);
 ip.addRequired('Parameter_MD',@(x) isa(x,'MovieData') | isempty(x));
 ip.addOptional('pick_channel', 1,@isnumeric);
-ip.addOptional('keep_steps', 0,@islogic);
+ip.addOptional('keep_steps', 0,@isnumeric);
 ip.addOptional('output_dir', ' ', @ischar);
 ip.addOptional('whole_movie_filename', ' ', @ischar);
 
@@ -61,7 +61,7 @@ index_2 = find(file_image_full_name=='.');
 file_image_only_name = file_image_full_name(1:max(index_2)-1);
 
 % if there is user input for output_dir, use that as main working dir
-if(min(output_dir==' ')==0)
+if(~ismember('output_dir',ip.UsingDefaults))
     output_dir = GetFullPath(output_dir);
     ROOT_DIR = output_dir;
     if (~exist(ROOT_DIR,'dir'))
@@ -180,8 +180,8 @@ if(~isempty(Parameter_MD))
                             end
                             
                             % if user give the whole movie stat, use this
-                            if( min(whole_movie_filename==' ')==0 )
-                                this_MD = filament_segmentation(this_MD,given_Params,whole_movie_filename);
+                            if(~ismember('whole_movie_filename',ip.UsingDefaults))
+                               this_MD = filament_segmentation(this_MD,given_Params,whole_movie_filename);
                             else
                                 this_MD = filament_segmentation(this_MD,given_Params);
                             end
