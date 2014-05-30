@@ -67,7 +67,8 @@ for iQ = 1 : length(Y1)
                     && X2(sort_idx(1))==X2(sort_idx(2))
                 angle_map_1_2_B(sub2ind(img_size,Y1(iQ),X1(iQ))) = ...
                     VIF_OO(iQ) - MT_OO(sort_idx(2));
-                angle_map_II_1_2_B(sub2ind(img_size,Y1(iQ),X1(iQ))) = MT_II(sort_idx(2));
+                angle_map_II_1_2_B(sub2ind(img_size,Y1(iQ),X1(iQ))) = ...
+                    MT_II(sort_idx(2));
             end
         end
     end
@@ -153,7 +154,7 @@ for iQ = 1 : length(Y2)
             angle_map_2_1_A(sub2ind(img_size,Y2(iQ),X2(iQ))) = ...
                 MT_OO(iQ) - VIF_OO(sort_idx(1));
             angle_map_II_2_1_A(sub2ind(img_size,Y2(iQ),X2(iQ))) = ...
-                MT_II(sort_idx(1));
+                VIF_II(sort_idx(1));
             
         end
         
@@ -163,7 +164,7 @@ for iQ = 1 : length(Y2)
                 angle_map_2_1_B(sub2ind(img_size,Y2(iQ),X2(iQ))) = ...
                     MT_OO(iQ) - VIF_OO(sort_idx(2));
                 angle_map_II_2_1_B(sub2ind(img_size,Y2(iQ),X2(iQ))) = ...
-                    MT_II(sort_idx(2));
+                    VIF_II(sort_idx(2));
                 
             end
         end
