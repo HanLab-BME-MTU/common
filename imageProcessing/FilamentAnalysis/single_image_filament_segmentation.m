@@ -205,12 +205,12 @@ else
     % 1 threshold
     dafault_Params=[];
     dafault_Params.ChannelIndex=1;
-    dafault_Params.GaussFilterSigma=1;
+    dafault_Params.GaussFilterSigma=2;
     dafault_Params.ThresholdValue=[];
     dafault_Params.OutputDirectory = [this_MD.outputDirectory_,filesep,'thres'];
     dafault_Params.MethodIndx=3;
     dafault_Params.ProcessIndex=[];
-    dafault_Params.MaxJump=0;
+    dafault_Params.MaxJump=10;
     dafault_Params.BatchMode=0;    
     
     this_MD.addProcess(ThresholdProcess(this_MD,'funParams',dafault_Params));

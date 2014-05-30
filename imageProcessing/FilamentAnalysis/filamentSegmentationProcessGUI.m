@@ -144,6 +144,8 @@ end
 % visible or not, show the parameters for the geo based algorithm
 % when visible, set the numbers
 set(handles.popupmenu_classifier_type,'Value',funParams.Classifier_Type_ind(current_ch_ind));
+current_ch_ind
+funParams.LengthThreshold
 set(handles.edit_lengththreshold,'String',funParams.LengthThreshold(current_ch_ind));
 set(handles.edit_curvaturethreshold,'String',funParams.CurvatureThreshold(current_ch_ind));
 set(handles.edit_IternationNumber,'String',funParams.IternationNumber(current_ch_ind));

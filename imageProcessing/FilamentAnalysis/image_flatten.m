@@ -155,7 +155,7 @@ for iChannel = selected_channels
     end
     
     if exist('img_pixel_pool','var')
-        delete img_pixel_pool;
+        delete 'img_pixel_pool';
     end
     
     %    low_005_percentile=0;

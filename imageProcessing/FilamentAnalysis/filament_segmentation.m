@@ -418,22 +418,28 @@ for iChannel = selected_channels
             case 'int_st_both'
                 level0 = thresholdOtsu(MAX_st_res);
                 thresh_Segment = MAX_st_res > level0;
-                
-                [level1, SteerabelRes_Segment ] = thresholdLocalSeg(MAX_st_res,'Otsu',StPatch_Size,StPace_Size,Stlowerbound,0,Whole_movie_stat_cell{iChannel}.otsu_ST);
-                [level2, Intensity_Segment ] = thresholdLocalSeg(currentImg,'Otsu',IntPatch_Size,IntPace_Size,Intlowerbound,0,Whole_movie_stat_cell{iChannel}.otsu_INT);
+                % all the local seg was changed back to one without the
+                % last parameter; could be a version conflict
+%                 [level1, SteerabelRes_Segment ] = thresholdLocalSeg(MAX_st_res,'Otsu',StPatch_Size,StPace_Size,Stlowerbound,0,Whole_movie_stat_cell{iChannel}.otsu_ST);
+%                 [level2, Intensity_Segment ] = thresholdLocalSeg(currentImg,'Otsu',IntPatch_Size,IntPace_Size,Intlowerbound,0,Whole_movie_stat_cell{iChannel}.otsu_INT);
+                [level1, SteerabelRes_Segment ] = thresholdLocalSeg(MAX_st_res,'Otsu',StPatch_Size,StPace_Size,Stlowerbound,'showPlots',0);
+                [level2, Intensity_Segment ] = thresholdLocalSeg(currentImg,'Otsu',IntPatch_Size,IntPace_Size,Intlowerbound,'showPlots',0);
                 current_seg = and(Intensity_Segment,SteerabelRes_Segment);
                      current_model=[];
             
             case 'st_only'
-                [level1, SteerabelRes_Segment ] = thresholdLocalSeg(MAX_st_res,'Otsu',StPatch_Size,StPace_Size,Stlowerbound,0,Whole_movie_stat_cell{iChannel}.otsu_ST);
+%                 [level1, SteerabelRes_Segment ] = thresholdLocalSeg(MAX_st_res,'Otsu',StPatch_Size,StPace_Size,Stlowerbound,0,Whole_movie_stat_cell{iChannel}.otsu_ST);
+                 [level1, SteerabelRes_Segment ] = thresholdLocalSeg(MAX_st_res,'Otsu',StPatch_Size,StPace_Size,Stlowerbound,'showPlots',0);
                 current_seg = SteerabelRes_Segment;
                 Intensity_Segment = current_seg;
                 SteerabelRes_Segment = current_seg;
                     current_model=[];
              
             case 'st_nms_two'
-                [level1, SteerabelRes_Segment ] = thresholdLocalSeg(MAX_st_res,'Otsu',StPatch_Size,StPace_Size,Stlowerbound*0.7,0,Whole_movie_stat_cell{iChannel}.otsu_ST);
-                [level2, NMS_Segment ] = thresholdLocalSeg(nms,'Rosin',StPatch_Size,StPace_Size,Stlowerbound*1.3,0,Whole_movie_stat_cell{iChannel}.otsu_NMS);
+%                 [level1, SteerabelRes_Segment ] = thresholdLocalSeg(MAX_st_res,'Otsu',StPatch_Size,StPace_Size,Stlowerbound*0.7,0,Whole_movie_stat_cell{iChannel}.otsu_ST);
+%                 [level2, NMS_Segment ] = thresholdLocalSeg(nms,'Rosin',StPatch_Size,StPace_Size,Stlowerbound*1.3,0,Whole_movie_stat_cell{iChannel}.otsu_NMS);
+                [level1, SteerabelRes_Segment ] = thresholdLocalSeg(MAX_st_res,'Otsu',StPatch_Size,StPace_Size,Stlowerbound*0.7,'showPlots',0);
+                [level2, NMS_Segment ] = thresholdLocalSeg(nms,'Rosin',StPatch_Size,StPace_Size,Stlowerbound*1.3,showPlots,0);
                 current_seg = imdilateWithScale(NMS_Segment,scaleMap,BaseSteerableFilterSigma.*(2.^((1:Levelsofsteerablefilters)-1)))...
                     .*SteerabelRes_Segment;
                        
@@ -442,7 +448,8 @@ for iChannel = selected_channels
                    current_model=[];
       
             case 'st_nms_only'
-                [level2, NMS_Segment ] = thresholdLocalSeg(nms,'Rosin',StPatch_Size,StPace_Size,Stlowerbound,0,Whole_movie_stat_cell{iChannel}.otsu_NMS);
+%                 [level2, NMS_Segment ] = thresholdLocalSeg(nms,'Rosin',StPatch_Size,StPace_Size,Stlowerbound,0,Whole_movie_stat_cell{iChannel}.otsu_NMS);
+                [level2, NMS_Segment ] = thresholdLocalSeg(nms,'Rosin',StPatch_Size,StPace_Size,Stlowerbound,'showPlots',0);
                 current_seg = NMS_Segment;
                 Intensity_Segment = current_seg;
                  SteerabelRes_Segment = current_seg;
@@ -488,7 +495,8 @@ for iChannel = selected_channels
                 Min_area = 6;
                 
             case 'int_only'
-                [level2, Intensity_Segment ] = thresholdLocalSeg(currentImg,'Otsu',IntPatch_Size,IntPace_Size,Intlowerbound,0);
+%                 [level2, Intensity_Segment ] = thresholdLocalSeg(currentImg,'Otsu',IntPatch_Size,IntPace_Size,Intlowerbound,0);
+                 [level2, Intensity_Segment ] = thresholdLocalSeg(currentImg,'Otsu',IntPatch_Size,IntPace_Size,Intlowerbound,'showPlots',0);
                 
                 current_seg = Intensity_Segment;
                 SteerabelRes_Segment = current_seg;
@@ -509,9 +517,11 @@ for iChannel = selected_channels
                   
            otherwise
                 warning('Use the default of union');
-                [level1, SteerabelRes_Segment ] = thresholdLocalSeg(MAX_st_res,'Otsu',StPatch_Size,StPace_Size,Stlowerbound,0);
-                [level2, Intensity_Segment ] = thresholdLocalSeg(currentImg,'Otsu',IntPatch_Size,IntPace_Size,Intlowerbound,0);
-                % The segmentation is set as the union of two segmentation.
+%                    [level1, SteerabelRes_Segment ] = thresholdLocalSeg(MAX_st_res,'Otsu',StPatch_Size,StPace_Size,Stlowerbound,0,Whole_movie_stat_cell{iChannel}.otsu_ST);
+%                 [level2, Intensity_Segment ] = thresholdLocalSeg(currentImg,'Otsu',IntPatch_Size,IntPace_Size,Intlowerbound,0,Whole_movie_stat_cell{iChannel}.otsu_INT);
+                [level1, SteerabelRes_Segment ] = thresholdLocalSeg(MAX_st_res,'Otsu',StPatch_Size,StPace_Size,Stlowerbound,'showPlots',0);
+                [level2, Intensity_Segment ] = thresholdLocalSeg(currentImg,'Otsu',IntPatch_Size,IntPace_Size,Intlowerbound,'showPlots',0);
+                 % The segmentation is set as the union of two segmentation.
                 current_seg = or(Intensity_Segment,SteerabelRes_Segment);
                 current_model=[];
         end

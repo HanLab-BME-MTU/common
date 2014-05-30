@@ -59,5 +59,7 @@ if numel(jpg_list)>0
 end
 
 for iImage = 1 : img_count
+    
     single_image_filament_segmentation(GetFullPath([image_folder,img_list{iImage}]), Parameter_MD, varargin{:});
+    close all;
 end
