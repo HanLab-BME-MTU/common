@@ -27,7 +27,7 @@ classdef ScalarMapDisplay < MovieDataDisplay
             % Display the first slice along the first dimension
             imData= data(:,:,1);
             h = imagesc(obj.formatData(imData), varargin{:});
-            
+            hAxes = get(h,'Parent');
             % Remove all other images in the axes and stack it at the
             % bottom
             child = get(hAxes,'Children');
