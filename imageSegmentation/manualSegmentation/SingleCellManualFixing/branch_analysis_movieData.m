@@ -50,7 +50,7 @@ for iChannel = 1 : nChannel
         % check if this folder exist
         if(exist(truthPath,'dir'))
             % if it exist, try to do the branch analysis
-            BA_output = branch_analysis_marked_cell(MD, iChannel, iCell,half_size,figure_flag);
+            BA_output = branch_analysis_marked_cell(MD, iChannel, iCell,half_size,min_branch_size_Threshold,figure_flag);
             % for the output, ignore the channel number since
             % there is only one channel marked.
             if(~isempty(BA_output))
