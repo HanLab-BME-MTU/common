@@ -1,9 +1,22 @@
-function BA_output_cell = branch_analysis_movieData(MD,figure_flag)
+function BA_output_cell = branch_analysis_movieData(MD,half_size,min_branch_size_Threshold,figure_flag)
 % function to do branch analysis for a whole movieData
 % Liya Ding, March, 2014
 %
 % Input:
 %   ML:     The movieList object loaded before running this function
+
+
+if(nargin<2)
+    half_size=150;
+end
+
+if(nargin<3)
+    min_branch_size_Threshold=100;
+end
+
+if(nargin<4)
+    figure_flag=0;
+end
 
 BA_output_cell = cell(1,1);
 
@@ -37,7 +50,7 @@ for iChannel = 1 : nChannel
         % check if this folder exist
         if(exist(truthPath,'dir'))
             % if it exist, try to do the branch analysis
-            BA_output = branch_analysis_marked_cell(MD, iChannel, iCell,figure_flag);
+            BA_output = branch_analysis_marked_cell(MD, iChannel, iCell,half_size,figure_flag);
             % for the output, ignore the channel number since
             % there is only one channel marked.
             if(~isempty(BA_output))

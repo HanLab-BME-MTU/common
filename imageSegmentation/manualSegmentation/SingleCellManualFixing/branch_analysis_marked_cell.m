@@ -1,4 +1,4 @@
-function [BA_output, f_display] = branch_analysis_marked_cell(MD, iChannel, iCell, figure_flag)
+function [BA_output, f_display] = branch_analysis_marked_cell(MD, iChannel, iCell, half_size,min_branch_size_Threshold,figure_flag)
 % function to do branch analysis for marked cells
 % Liya Ding, Feb, 2014
 %
@@ -115,8 +115,10 @@ for iFrame = CompletedFrame
     Y = B{1}(:,1);
     X = B{1}(:,2);
     
-    H = fspecial('gaussian',121,15);
-    H = double(H(:,61));
+%  half_size = 150;
+    
+    H = fspecial('gaussian',2*half_size+1,half_size/4);
+    H = double(H(:,half_size+1));
     H = H./(sum(H));
     
     X = imfilter(X, H,'replicate','same');
@@ -210,7 +212,7 @@ for iCompleteFrame = 1 : nCompleteFrame
        
          if(sum(end_points_map(find(labelMask==iL)))==0 && ...
                 sum(boundary_map(find(Lia>0)))==0 && ...
-                length(this_branch_IDX)<100)
+                length(this_branch_IDX)<min_branch_size_Threshold)
             branch_leaf_flag(iL)=0;
             labelMask_without_inner(find(labelMask==iL))=0;
             region_branch_wo_inner_label(Lia>0)=0;

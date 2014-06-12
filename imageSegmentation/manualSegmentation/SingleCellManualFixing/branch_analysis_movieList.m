@@ -1,9 +1,22 @@
-function BA_output_ML_cell = branch_analysis_movieList(ML,figure_flag)
+function BA_output_ML_cell = branch_analysis_movieList(ML,half_size,min_branch_size_Threshold,figure_flag)
 % function to do branch analysis for a whole movielist
 % Liya Ding, March, 2014
 %
 % Input:
 %   ML:     The movieList object loaded before running this function
+
+
+if(nargin<2)
+    half_size=150;
+end
+
+if(nargin<3)
+    min_branch_size_Threshold=100;
+end
+
+if(nargin<4)
+    figure_flag=0;
+end
 
 % the number of movies
 movieNumber =  length(ML.movieDataFile_);
@@ -21,7 +34,7 @@ for iM  = 1 :movieNumber
     display('======================================================================');
     display(['iM:', num2str(iM)]);
                      
-    BA_output_ML_cell{1, iM} = branch_analysis_movieData(MD,figure_flag);  
+    BA_output_ML_cell{1, iM} = branch_analysis_movieData(MD,half_size,figure_flag,min_branch_size_Threshold);  
     
 end
 
