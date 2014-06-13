@@ -101,6 +101,8 @@ min_x = Inf;
 max_y = 1;
 max_x = 1;
 
+new_CompletedFrame = [];
+
 for iFrame = CompletedFrame
     display(['iChannel:', num2str(iChannel),', iCell:', num2str(iCell),', iFrame:',num2str(iFrame) ]);
            
@@ -142,11 +144,20 @@ for iFrame = CompletedFrame
     Y = imfilter(Y, H,'replicate','same');
     
     smoothed_current_mask = roipoly(current_mask,X,Y);
+    if(sum(sum(smoothed_current_mask))==0)
+        break;
+    end
+    
+    smoothed_current_mask = keep_largest_area(smoothed_current_mask);
     
     % make it logic to save memory
     smoothed_mask_cell{1,iCompleteFrame} = (smoothed_current_mask>0);
-    
+    new_CompletedFrame = [new_CompletedFrame iFrame];
 end
+
+CompletedFrame = new_CompletedFrame;
+nCompleteFrame = length(CompletedFrame);
+
 
 % for iCompleteFrame = 1 : nCompleteFrame
 %     imwrite(smoothed_mask_cell{1,iCompleteFrame}, [outputPath,'\smoothed_marked_mask_',num2str(iCompleteFrame),'.tif']);
