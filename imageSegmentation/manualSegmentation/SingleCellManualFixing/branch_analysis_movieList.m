@@ -24,7 +24,7 @@ BA_output_ML_cell= cell(1,1);
 
 for iM  = 1 :movieNumber
     
-    clearvars -except 'movieNumber' 'BA_output_cell' 'iM' 'ML' 'figure_flag'
+    clearvars -except 'movieNumber' 'BA_output_cell' 'iM' 'ML' 'figure_flag' 'half_size' 'min_branch_size_Threshold'
     
     close all;
     
@@ -34,7 +34,7 @@ for iM  = 1 :movieNumber
     display('======================================================================');
     display(['iM:', num2str(iM)]);
                      
-    BA_output_ML_cell{1, iM} = branch_analysis_movieData(MD,half_size,figure_flag,min_branch_size_Threshold);  
+    BA_output_ML_cell{1, iM} = branch_analysis_movieData(MD,half_size,min_branch_size_Threshold,figure_flag);  
     
 end
 
