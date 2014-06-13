@@ -22,6 +22,21 @@ function [BA_output, f_display] = branch_analysis_marked_cell(MD, iChannel, iCel
 %           protrusion_vif_mean_intensity: the average vim intensity in the protrusion(the red) region, among all frames.
 %           retraction_vif_mean_intensity: the average vim intensity in the retraction(the green) region, among all frames.
 
+
+if(nargin<4)
+    half_size=150;
+end
+
+if(nargin<5)
+    min_branch_size_Threshold=100;
+end
+
+if(nargin<6)
+    figure_flag=0;
+end
+
+
+
 display(['iChannel:', num2str(iChannel),', iCell:', num2str(iCell)]);
            
 package_process_ind_script;
