@@ -179,11 +179,15 @@ for iCompleteFrame = 1 : nCompleteFrame
     
     smoothed_current_mask = smoothed_mask_cell{1,iCompleteFrame};
     
+    try
     C_xy = regionprops(smoothed_current_mask,'Centroid');
     
     center_x(iCompleteFrame) = C_xy.Centroid(1);
     center_y(iCompleteFrame) = C_xy.Centroid(2);
     
+    catch
+        break;
+    end
     RG_framem1 = zeros(size(smoothed_current_mask,1),size(smoothed_current_mask,2),3)>0;
     RG_framem1(:,:,1) = (smoothed_current_mask);
     if iCompleteFrame>1
