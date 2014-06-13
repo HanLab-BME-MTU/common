@@ -41,10 +41,15 @@ display(['iChannel:', num2str(iChannel),', iCell:', num2str(iCell)]);
            
 package_process_ind_script;
 
+
 if(iChannel==1)
     VIF_channel = 2;
 else
     VIF_channel = 1;
+end
+
+if numel(MD.channels_) < VIF_channel    
+    VIF_channel = numel(MD.channels_);
 end
 
 ROOT_DIR = MD.outputDirectory_;
