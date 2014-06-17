@@ -34,8 +34,8 @@ ShowDetailMessages = funParams.savestepfigures;
 e = false(m,n);
 
 % Magic numbers
-PercentOfPixelsNotEdges = .7; % Used for selecting thresholds
-ThresholdRatio = .4;          % Low thresh is this fraction of the high.
+PercentOfPixelsNotEdges = .80; % Used for selecting thresholds
+ThresholdRatio = .80;          % Low thresh is this fraction of the high.
 thresh=[];
 
 %     % Calculate gradients using a derivative of Gaussian filter

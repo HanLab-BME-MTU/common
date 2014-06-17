@@ -90,6 +90,8 @@ mode_nms = bin(ind_mode(1));
 T_otsu = thresholdOtsu(imageNMS(find(imageNMS>mode_nms)));
 T_otsu_start =  max(0, (-abs(T_otsu - mode_nms)*0.05+mode_nms));
 
+MaskCell=MaskCell>0;
+
 
 imageNMS = imageNMS.*MaskCell;
 imageInt = imageInt.*MaskCell;

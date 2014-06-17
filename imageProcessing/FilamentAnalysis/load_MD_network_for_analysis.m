@@ -70,17 +70,22 @@ for iChannel = 1 :  length(MD.channels_)
  
         min_length = MD.processes_{indexFilamentSegmentationProcess}.funParams_.LengthThreshold;
 
-        
+        if(numel(min_length)>1)
+        min_length = min_length(iChannel);
+        end
         %% % do analysis
         im_name = MD.channels_(iChannel).getImageFileNames(iFrame);
         
-        
+        radius=20;
         output_feature = network_analysis(VIF_current_model,VIF_orientation, ...
-                        VIF_current_seg,outdir,iChannel,iFrame,ROI,min_length,im_name);
+                        VIF_current_seg,outdir,iChannel,iFrame,ROI,min_length,im_name,radius);
         
 %         close all;
+
+        Cell_Mask = ROI.*((MD.processes_{indexCellRefineProcess}.loadChannelOutput(iChannel,iFrame))>0);
+          
+        output_feature.Cell_Mask = Cell_Mask;
         network_feature{iChannel,iFrame} =output_feature;
         
-    end
-    
+    end    
 end

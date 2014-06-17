@@ -1,4 +1,4 @@
-function output_feature = network_analysis(VIF_current_model,VIF_orientation, VIF_current_seg,outdir,iChannel,iFrame,ROI, min_length,im_name)
+function output_feature = network_analysis(VIF_current_model,VIF_orientation, VIF_current_seg,outdir,iChannel,iFrame,ROI, min_length,im_name,radius)
 % function for calculation the property of network
 % Liya Ding 01.2014.
 
@@ -167,10 +167,18 @@ save([outdir,filesep,'network_orientationrose_ch_',num2str(iChannel),'_frame_',n
     'straightness_per_filament_pool','orientation_pixel_pool_display',...
     'length_per_filament_pool');
 
+
+density_H = double((fspecial('disk',radius))>0);
+density_H = density_H./(sum(sum(density_H)));
+
+density_filament = imfilter(VIF_current_seg,density_H, 'replicate','same');
+
+
 output_feature=[];
 
 output_feature.straightness_per_filament_pool=straightness_per_filament_pool;
 output_feature.orientation_pixel_pool_display=orientation_pixel_pool_display;
 output_feature.length_per_filament_pool=length_per_filament_pool;
 output_feature.pixel_number_per_filament_pool=pixel_number_per_filament_pool;
+output_feature.density_filament=density_filament;
 
