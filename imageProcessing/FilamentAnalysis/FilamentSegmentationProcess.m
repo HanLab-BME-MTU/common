@@ -166,14 +166,29 @@ classdef FilamentSegmentationProcess < ImageProcessingProcess
             % this line in commandation for shortest version of filename
             filename_shortshort_strs = all_uncommon_str_takeout(Channel_FilesNames{1});
             
-            try
+            Sub_Sample_Num = obj.funParams_.Sub_Sample_Num;
+             Frames_to_Seg = 1:Sub_Sample_Num:obj.owner_.nFrames_;
+             
+             Frames_results_correspondence = im2col(repmat(Frames_to_Seg, [Sub_Sample_Num,1]),[1 1]);
+             Frames_results_correspondence = Frames_results_correspondence(1:obj.owner_.nFrames_);
+             
+       
+             % these loads are for old version of the naming system
+             
+             try
                 out_data_all = load([obj.outFilePaths_{1,iChan},'/DataOutput/steerable_vote_',filename_short_strs{iFrame},'.mat'], ...
                     'current_seg','current_seg_orientation','tip_orientation','tip_int','tip_NMS','current_model','RGB_seg_orient_heat_map');
-                
             catch
+                try
                     out_data_all = load([obj.outFilePaths_{1,iChan},'/DataOutput/steerable_vote_',filename_shortshort_strs{iFrame},'.mat'], ...
                         'current_seg','current_seg_orientation','tip_orientation','tip_int','tip_NMS','current_model','RGB_seg_orient_heat_map');
-                
+                catch
+                    % when only on channel, one image, it will be last
+                    % character of the image, so 'f'
+                    out_data_all = load([obj.outFilePaths_{1,iChan},'/DataOutput/steerable_vote_','f','.mat'], ...
+                        'current_seg','current_seg_orientation','tip_orientation','tip_int','tip_NMS','current_model','RGB_seg_orient_heat_map');
+             
+                end
             end
             
             

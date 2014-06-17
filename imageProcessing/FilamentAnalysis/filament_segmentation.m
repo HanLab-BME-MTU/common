@@ -526,6 +526,7 @@ for iChannel = selected_channels
                 current_model=[];
         end
         
+        MaskCell=MaskCell>0;
         current_seg = current_seg.*MaskCell;
         
         
