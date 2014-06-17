@@ -100,12 +100,17 @@ raw_mask_cell = cell(1,nCompleteFrame);
 smoothed_mask_cell = cell(1,nCompleteFrame);
 current_seg_cell= cell(1,nCompleteFrame);
 orienation_map_filtered_cell= cell(1,nCompleteFrame);
+region_orientation_cell = cell(1,nCompleteFrame);
 
 min_y = Inf;
 min_x = Inf;
 max_y = 1;
 max_x = 1;
+Channel_FilesNames = MD.channels_(VIF_channel).getImageFileNames(1:MD.nFrames_);
 
+filename_short_strs = uncommon_str_takeout(Channel_FilesNames);
+   
+    
 new_CompletedFrame = [];
 
 for iFrame = CompletedFrame
@@ -124,10 +129,13 @@ for iFrame = CompletedFrame
     max_y = max(max_y,max(indy));
     max_x = max(max_x,max(indx));
     
-%     load([ROOT_DIR,'/FilamentAnalysisPackage/FilamentSegmentation/Channel2/DataOutput/steerable_vote_',...
-%         num2str(iFrame),'.mat'],'current_seg','orienation_map_filtered');
+    
+    
+    load( GetFullPath([ROOT_DIR,'/FilamentAnalysisPackage/FilamentSegmentation/Channel2/DataOutput/steerable_vote_',...
+        filename_short_strs{iFrame},'.mat']),'current_seg','orienation_map_filtered');
 %     
-     current_seg_cell{1,iCompleteFrame} = [];
+     current_seg_cell{1,iCompleteFrame} = current_seg;
+     orienation_map_filtered_cell{1,iCompleteFrame} = orienation_map_filtered;
 %     orienation_map_filtered_cell{1,iCompleteFrame} = orienation_map_filtered;
 %     
 %     %     imwrite(current_mask, ['nonboarder_mask_',num2str(iFrame),'.tif']);
@@ -224,10 +232,16 @@ for iCompleteFrame = 1 : nCompleteFrame
     [labelMask, nL] = bwlabel(skel_no_branching);
     
     % Get properties for each of curve
-    ob_prop = regionprops(labelMask,'Area','MajorAxisLength','Eccentricity','MinorAxisLength','Centroid');
+    ob_prop = regionprops(labelMask,'Area','MajorAxisLength','Eccentricity','MinorAxisLength','Centroid','Orientation');
+    
     
     % Redefine variable for easy of notation
     obAreas = [ob_prop.Area];
+    
+    
+     obOrientation = ([ob_prop.Orientation]).*pi/180;
+    
+    region_orientation = nan(size(labelMask));
     
     nLine = length(obAreas);
     
@@ -257,6 +271,8 @@ for iCompleteFrame = 1 : nCompleteFrame
             region_branch_wo_inner_label(Lia>0)=iL;              
          end
         
+         
+         region_orientation(Lia>0)=obOrientation(iL);
         region_branch_label_R(Lia>0)=(0.3+color_array(iL,1))/(1.3);
         region_branch_label_G(Lia>0)=(0.3+color_array(iL,2))/(1.3);
         region_branch_label_B(Lia>0)=(0.3+color_array(iL,3))/(1.3);
@@ -273,6 +289,8 @@ for iCompleteFrame = 1 : nCompleteFrame
     
     branch_leaf_flag_cell{iCompleteFrame} = branch_leaf_flag;
     branch_number_per_frame(iCompleteFrame)=sum(branch_leaf_flag);
+    
+    region_orientation_cell{iCompleteFrame} =region_orientation;
 end
 
 
@@ -294,6 +312,19 @@ BA_output.cell_marked_frame_number = ...
 center_x(iCompleteFrame) = C_xy.Centroid(1);
     center_y(iCompleteFrame) = C_xy.Centroid(2);
     
+    trajectory_smooth_size = round(half_size/5);
+     H = fspecial('gaussian',2*trajectory_smooth_size+1,trajectory_smooth_size/4);
+    H = double(H(:,trajectory_smooth_size+1));
+    H = H./(sum(H));
+    
+smooth_center_x =  imfilter(center_x,H','replicate','same');
+smooth_center_y =  imfilter(center_y,H','replicate','same');
+
+figure(11);plot(center_x,center_y,'r');
+hold on;
+plot(smooth_center_x,smooth_center_y);
+
+trajectory_angle = atan2(-(smooth_center_y(2:end)-smooth_center_y(1:end-1)),smooth_center_x(2:end)-smooth_center_x(1:end-1));
 
 for iCompleteFrame = 1 : nCompleteFrame
     
@@ -309,7 +340,9 @@ for iCompleteFrame = 1 : nCompleteFrame
     end
     
     % Get properties for each of curve
-    ob_prop = regionprops(labelMask,'Area','MajorAxisLength','Eccentricity','MinorAxisLength','Centroid');
+    ob_prop = regionprops(labelMask,'Area','MajorAxisLength','Eccentricity','MinorAxisLength','Centroid','Orientation');
+    
+    
     
     % Redefine variable for easy of notation
     obAreas = [ob_prop.Area];
@@ -319,13 +352,27 @@ for iCompleteFrame = 1 : nCompleteFrame
     obCentroid(:) = [ob_prop.Centroid];
     obCentroid = obCentroid';
     
+    obOrientation = ([ob_prop.Orientation]).*pi/180;
+    
+%     region_orientation = nan(size(labelMask));
+%     
+%     for iR = 1 : length(obAreas)
+%     
+%         region_orientation(labelMask==iR) = obOrientation(iR);
+%     
+%     end
+    
     movieInfo(iCompleteFrame).xCoord = [obCentroid(:,1) obCentroid(:,1)*0];
     
     movieInfo(iCompleteFrame).yCoord = [obCentroid(:,2) obCentroid(:,2)*0];
     
     movieInfo(iCompleteFrame).zCoord = [obAreas*0 obAreas*0];
+   
+%     movieInfo(iCompleteFrame).Orientation = obOrientation;
     
     movieInfo(iCompleteFrame).amp = [obAreas obAreas*0];
+       
+%     region_orientation_cell{1, iCompleteFrame} = region_orientation;
     
 end
 
@@ -415,8 +462,7 @@ for iT = 1 : length(tracksFinal)
         new_region =  new_region_branch_label_cell{iF};
         new_region(this_region==(track_ind(iF-track_start+1)))=iT;
         new_region_branch_label_cell{iF} = new_region;
-        
-    end
+   end
     BA_output.branch_duration_array(iT) = track_end - track_start+1;
 end
 BA_output.branch_duration_mean = mean(BA_output.branch_duration_array);
