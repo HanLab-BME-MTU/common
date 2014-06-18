@@ -1,4 +1,4 @@
-function BA_output_ML_cell = branch_analysis_movieList(ML,half_size,min_branch_size_Threshold,figure_flag)
+function BA_output_ML_cell = branch_analysis_movieList(ML,half_size,min_branch_size_Threshold,filament_stat_flag,figure_flag)
 % function to do branch analysis for a whole movielist
 % Liya Ding, March, 2014
 %
@@ -15,6 +15,10 @@ if(nargin<3)
 end
 
 if(nargin<4)
+    filament_stat_flag=0;
+end
+
+if(nargin<5)
     figure_flag=0;
 end
 
@@ -24,7 +28,7 @@ BA_output_ML_cell= cell(1,1);
 
 for iM  = 1 :movieNumber
     
-    clearvars -except 'movieNumber' 'BA_output_cell' 'iM' 'ML' 'figure_flag' 'half_size' 'min_branch_size_Threshold'
+    clearvars -except 'movieNumber' 'BA_output_cell' 'iM' 'ML' 'figure_flag' 'half_size' 'min_branch_size_Threshold' 'filament_stat_flag'
     
     close all;
     
@@ -34,11 +38,12 @@ for iM  = 1 :movieNumber
     display('======================================================================');
     display(['iM:', num2str(iM)]);
                      
-    BA_output_ML_cell{1, iM} = branch_analysis_movieData(MD,half_size,min_branch_size_Threshold,figure_flag);  
+    BA_output_ML_cell{1, iM} = branch_analysis_movieData(MD, half_size, min_branch_size_Threshold, filament_stat_flag, figure_flag);  
     
 end
 
  ML_ROOT_DIR = ML.outputDirectory_;
  save([ML_ROOT_DIR,'\movieList_BA_output.mat'],'BA_output_ML_cell');
 
+ branch_analysis_moiveList_results_gather(ML);
  

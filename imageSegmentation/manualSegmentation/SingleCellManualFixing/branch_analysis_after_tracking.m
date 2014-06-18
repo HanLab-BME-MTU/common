@@ -14,14 +14,9 @@ cell_vif_pool = [];
 
 cell_size_pool = [];
 cell_vimtotal_pool = [];
-
-
+% initialize empty pools
 fila_branch_orientation_pool=[];
-% fila_trajectory_orientation_pool=[];
-
-fila_trajectory_orientation_pool_1=[];
-fila_trajectory_orientation_pool_2=[];
-fila_trajectory_orientation_pool_3=[];
+fila_trajectory_orientation_pool=[];
 branch_trajectory_orientation_pool=[];
 
 for iCompleteFrame = 1 :nCompleteFrame
@@ -114,50 +109,42 @@ for iCompleteFrame = 1 :nCompleteFrame
     region_branch_label_RGB(:,:,2) = region_branch_label_G;
     region_branch_label_RGB(:,:,3) = region_branch_label_B;
      
-    current_seg = current_seg_cell{1,iCompleteFrame};
-    orienation_map_filtered = orienation_map_filtered_cell{1,iCompleteFrame};
-    
-    AA = (pi/2-orienation_map_filtered.*current_seg);
-    AA(AA<-pi/2)=AA(AA<-pi/2)+pi;
-    AA(AA<-pi/2)=AA(AA<-pi/2)+pi;
-    AA(AA<-pi/2)=AA(AA<-pi/2)+pi;
-    AA(AA>pi/2)=AA(AA>pi/2)-pi;
-    AA(AA>pi/2)=AA(AA>pi/2)-pi;
-    AA(AA>pi/2)=AA(AA>pi/2)-pi;
-    
     region_orientation = region_orientation_cell{iCompleteFrame};
     skel_seg = (new_label_skel_cell{iCompleteFrame})>0;
-    
-    filament_orientation = AA(current_seg>0);
-    branch_orienation = region_orientation(current_seg>0);
     branch_only_orienation = region_orientation(skel_seg>0);
     
-    
-%     fila_branch_orientation_pool = [fila_branch_orientation_pool;filament_orientation-branch_orienation];
-    try
-        
-%         if(iCompleteFrame<30)
-%         trajectory_angle_this_frame = trajectory_angle(iCompleteFrame);
-%         fila_trajectory_orientation_pool_1 = ...
-%             [fila_trajectory_orientation_pool_1;filament_orientation-trajectory_angle_this_frame];
-%         end
-%         
-%           if(iCompleteFrame>=30 && iCompleteFrame<60)
-%         trajectory_angle_this_frame = trajectory_angle(iCompleteFrame);
-%         fila_trajectory_orientation_pool_2 = ...
-%             [fila_trajectory_orientation_pool_2;filament_orientation-trajectory_angle_this_frame];
-%           end
-%         
-%           if(iCompleteFrame>=60 )
-%         trajectory_angle_this_frame = trajectory_angle(iCompleteFrame);
-%         fila_trajectory_orientation_pool_3 = ...
-%             [fila_trajectory_orientation_pool_3;filament_orientation-trajectory_angle_this_frame];
-%           end
-
+    if (iCompleteFrame<nCompleteFrame)
         trajectory_angle_this_frame = trajectory_angle(iCompleteFrame);
-%        
-          branch_trajectory_orientation_pool = ...
-              [branch_trajectory_orientation_pool;branch_only_orienation-trajectory_angle_this_frame];
+        branch_trajectory_orientation_pool = ...
+            [branch_trajectory_orientation_pool; ...
+            branch_only_orienation-trajectory_angle_this_frame];
+    end
+    
+    % if there is filament segmentation
+    if(isempty(current_seg_cell{1,iCompleteFrame}) && filament_stat_flag>0)        
+        current_seg = current_seg_cell{1,iCompleteFrame};
+        orienation_map_filtered = orienation_map_filtered_cell{1,iCompleteFrame};        
+        AA = (pi/2-orienation_map_filtered.*current_seg);
+        % wrap around in -pi/2 to pi/2
+        AA(AA<-pi/2)=AA(AA<-pi/2)+pi;
+        AA(AA<-pi/2)=AA(AA<-pi/2)+pi;
+        AA(AA<-pi/2)=AA(AA<-pi/2)+pi;
+        AA(AA>pi/2)=AA(AA>pi/2)-pi;
+        AA(AA>pi/2)=AA(AA>pi/2)-pi;
+        AA(AA>pi/2)=AA(AA>pi/2)-pi;
+        
+        filament_orientation = AA(current_seg>0);
+        branch_orienation = region_orientation(current_seg>0);
+        
+        fila_branch_orientation_pool = ...
+            [fila_branch_orientation_pool; ...
+            filament_orientation-branch_orienation];
+        
+        if (iCompleteFrame<nCompleteFrame)            
+            fila_trajectory_orientation_pool = ...
+                [fila_trajectory_orientation_pool; ...
+                filament_orientation-trajectory_angle_this_frame];
+        end        
     end
        
     if(figure_flag>0)
@@ -208,28 +195,57 @@ for iCompleteFrame = 1 :nCompleteFrame
     
 end
 
-% fila_branch_orientation_pool(fila_branch_orientation_pool>pi/2)=...
-%     fila_branch_orientation_pool(fila_branch_orientation_pool>pi/2)-1*pi;
-% fila_branch_orientation_pool(fila_branch_orientation_pool>pi/2)=...
-%     fila_branch_orientation_pool(fila_branch_orientation_pool>pi/2)-1*pi;
-% 
-% fila_branch_orientation_pool(fila_branch_orientation_pool<-pi/2)=...
-%     fila_branch_orientation_pool(fila_branch_orientation_pool<-pi/2)+1*pi;
-% fila_branch_orientation_pool(fila_branch_orientation_pool<-pi/2)=...
-%     fila_branch_orientation_pool(fila_branch_orientation_pool<-pi/2)+1*pi;
-% fila_trajectory_orientation_pool=[fila_trajectory_orientation_pool_1;fila_trajectory_orientation_pool_3];
-% fila_trajectory_orientation_pool(fila_trajectory_orientation_pool>pi/2)=...
-%     fila_trajectory_orientation_pool(fila_trajectory_orientation_pool>pi/2)-1*pi;
-% fila_trajectory_orientation_pool(fila_trajectory_orientation_pool>pi/2)=...
-%     fila_trajectory_orientation_pool(fila_trajectory_orientation_pool>pi/2)-1*pi;
-% 
-% fila_trajectory_orientation_pool(fila_trajectory_orientation_pool<-pi/2)=...
-%     fila_trajectory_orientation_pool(fila_trajectory_orientation_pool<-pi/2)+1*pi;
-% 
-% fila_trajectory_orientation_pool(fila_trajectory_orientation_pool<-pi/2)=...
-%     fila_trajectory_orientation_pool(fila_trajectory_orientation_pool<-pi/2)+1*pi;
+% if filament stat is requested and available
+if(isempty(current_seg_cell{1,nCompleteFrame}) && filament_stat_flag>0)
+    % wrap the angles in -pi/2 to pi/2
+    fila_branch_orientation_pool(fila_branch_orientation_pool>pi/2)=...
+        fila_branch_orientation_pool(fila_branch_orientation_pool>pi/2)-1*pi;
+    fila_branch_orientation_pool(fila_branch_orientation_pool>pi/2)=...
+        fila_branch_orientation_pool(fila_branch_orientation_pool>pi/2)-1*pi;
+    fila_branch_orientation_pool(fila_branch_orientation_pool<-pi/2)=...
+        fila_branch_orientation_pool(fila_branch_orientation_pool<-pi/2)+1*pi;
+    fila_branch_orientation_pool(fila_branch_orientation_pool<-pi/2)=...
+        fila_branch_orientation_pool(fila_branch_orientation_pool<-pi/2)+1*pi;
 
+    fila_trajectory_orientation_pool(fila_trajectory_orientation_pool>pi/2)=...
+        fila_trajectory_orientation_pool(fila_trajectory_orientation_pool>pi/2)-1*pi;
+    fila_trajectory_orientation_pool(fila_trajectory_orientation_pool>pi/2)=...
+        fila_trajectory_orientation_pool(fila_trajectory_orientation_pool>pi/2)-1*pi;
+    fila_trajectory_orientation_pool(fila_trajectory_orientation_pool<-pi/2)=...
+        fila_trajectory_orientation_pool(fila_trajectory_orientation_pool<-pi/2)+1*pi;
+    fila_trajectory_orientation_pool(fila_trajectory_orientation_pool<-pi/2)=...
+        fila_trajectory_orientation_pool(fila_trajectory_orientation_pool<-pi/2)+1*pi;
+    
+    if(figure_flag>0)
+        % filament vs cellmovement
+        [h,bin]= hist(fila_branch_orientation_pool,-pi/2+pi/36:pi/(18):pi/2-pi/36);
+        h = h./(sum(h))*100;
+        h12 = figure(12); hold off;
+        bar(bin, h);
+        axis([-pi/2 pi/2 0 max(h)+1]);
+        set(gca, 'xtick', -pi/2:pi/4:pi/2);
+        set(gca, 'xticklabel', {'-pi/2','-pi/4','0','pi/4','pi/2'});
+        title('Orientation difference between filament and branch');
+        xlabel('Orientation Difference (unit: rad)');
+        ylabel('Percentage(%)');
+        saveas(h12,[outputPath,'\fila_vs_branch_stat.tif']);
+ 
+        % filament vs cellmovement
+        [h,bin]= hist(fila_trajectory_orientation_pool,-pi/2+pi/36:pi/(18):pi/2-pi/36);
+        h = h./(sum(h))*100;        
+        h13 = figure(13); hold off;        
+        bar(bin, h);        
+        axis([-pi/2 pi/2 0 max(h)+1]);        
+        set(gca, 'xtick', -pi/2:pi/4:pi/2);
+        set(gca, 'xticklabel', {'-pi/2','-pi/4','0','pi/4','pi/2'});
+        title('Orientation difference between filament and cell movement');
+        xlabel('Orientation Difference (unit: rad)');
+        ylabel('Percentage(%)');
+        saveas(h13,[outputPath,'\fila_vs_cellmove_stat.tif']); 
+    end    
+end
 
+% wrap the angles in -pi/2 to pi/2  
 branch_trajectory_orientation_pool(branch_trajectory_orientation_pool>pi/2)=...
     branch_trajectory_orientation_pool(branch_trajectory_orientation_pool>pi/2)-1*pi;
 branch_trajectory_orientation_pool(branch_trajectory_orientation_pool>pi/2)=...
@@ -237,68 +253,23 @@ branch_trajectory_orientation_pool(branch_trajectory_orientation_pool>pi/2)=...
 
 branch_trajectory_orientation_pool(branch_trajectory_orientation_pool<-pi/2)=...
     branch_trajectory_orientation_pool(branch_trajectory_orientation_pool<-pi/2)+1*pi;
-
 branch_trajectory_orientation_pool(branch_trajectory_orientation_pool<-pi/2)=...
     branch_trajectory_orientation_pool(branch_trajectory_orientation_pool<-pi/2)+1*pi;
 
-%  [h,bin]= hist(fila_branch_orientation_pool,-pi/2+pi/36:pi/(18):pi/2-pi/36);
-%     h = h./(sum(h))*100;
-%      
-%     h12 = figure(12); hold off;
-%     
-%     bar(bin, h);
-%     
-%     axis([-pi/2 pi/2 0 max(h)+1]);
-%     
-%     set(gca, 'xtick', -pi/2:pi/4:pi/2);
-% set(gca, 'xticklabel', {'-pi/2','-pi/4','0','pi/4','pi/2'});
-% 
-%     real_axis=  axis;
-%     hold on;
-%     
-%     title('Orientation difference between filament and branch');
-%     xlabel('Orientation Difference (unit: rad)');
-%     ylabel('Percentage(%)');
-    
-%     [h,bin]= hist(fila_trajectory_orientation_pool,-pi/2+pi/36:pi/(18):pi/2-pi/36);
-%     h = h./(sum(h))*100;
-%      
-%     h13 = figure(13); hold off;
-%     
-%     bar(bin, h);
-%     
-%     axis([-pi/2 pi/2 0 max(h)+1]);
-%     
-%     set(gca, 'xtick', -pi/2:pi/4:pi/2);
-% set(gca, 'xticklabel', {'-pi/2','-pi/4','0','pi/4','pi/2'});
-% 
-%     real_axis=  axis;
-%     hold on;
-%     
-%     title('Orientation difference between filament and cell movement');
-%     xlabel('Orientation Difference (unit: rad)');
-%     ylabel('Percentage(%)');
-%     
-%     
-%     [h,bin]= hist(branch_trajectory_orientation_pool,-pi/2+pi/36:pi/(18):pi/2-pi/36);
-%     h = h./(sum(h))*100;
-%      
-%     h14 = figure(14); hold off;
-%     
-%     bar(bin, h);
-%     
-%     axis([-pi/2 pi/2 0 max(h)+1]);
-%     
-%     set(gca, 'xtick', -pi/2:pi/4:pi/2);
-% set(gca, 'xticklabel', {'-pi/2','-pi/4','0','pi/4','pi/2'});
-% 
-%     real_axis=  axis;
-%     hold on;
-%     
-%     title('Orientation difference between branch orientation and cell movement');
-%     xlabel('Orientation Difference (unit: rad)');
-%     ylabel('Percentage(%)');
-    
+if(figure_flag>0)
+    %plot branch vs cell movement distribution
+    [h,bin]= hist(branch_trajectory_orientation_pool,-pi/2+pi/36:pi/(18):pi/2-pi/36);
+    h = h./(sum(h))*100;
+    h14 = figure(14); hold off;
+    bar(bin, h);
+    axis([-pi/2 pi/2 0 max(h)+1]);
+    set(gca, 'xtick', -pi/2:pi/4:pi/2);
+    set(gca, 'xticklabel', {'-pi/2','-pi/4','0','pi/4','pi/2'});
+    title('Orientation difference between branch orientation and cell movement');
+    xlabel('Orientation Difference (unit: rad)');
+    ylabel('Percentage(%)');
+    saveas(h14,[outputPath,'\branch_vs_cellmove_stat.tif']);
+end
 
 BA_output.branch_vif_mean_intensity  = nanmean(vif_mean_matrix);
 
@@ -314,12 +285,13 @@ BA_output.whole_cell_vim_totalamount_mean  = mean(cell_vimtotal_pool);
 
 BA_output.whole_cell_size_mean  = mean(cell_size_pool);
 
-
+% if not calculated, these are empty
 BA_output.fila_branch_orientation_pool = fila_branch_orientation_pool;
 
+BA_output.fila_trajectory_orientation_pool = fila_trajectory_orientation_pool;
 
-% BA_output.fila_trajectory_orientation_pool = fila_trajectory_orientation_pool;
+BA_output.branch_trajectory_orientation_pool = branch_trajectory_orientation_pool;
 
-[s s0]= circ_std(branch_trajectory_orientation_pool);
+s = std(branch_trajectory_orientation_pool);
 
-BA_output.branch_cellmovement_std = s0;
+BA_output.branch_cellmovement_std = s;

@@ -1,4 +1,4 @@
-function [BA_output, f_display] = branch_analysis_marked_cell(MD, iChannel, iCell, half_size,min_branch_size_Threshold,figure_flag)
+function [BA_output, f_display] = branch_analysis_marked_cell(MD, iChannel, iCell, half_size,min_branch_size_Threshold,filament_stat_flag,figure_flag)
 % function to do branch analysis for marked cells
 % Liya Ding, Feb, 2014
 %
@@ -32,15 +32,18 @@ if(nargin<5)
 end
 
 if(nargin<6)
-    figure_flag=0;
+    filament_stat_flag=0;
 end
 
 
+if(nargin<7)
+    figure_flag=0;
+end
 
 display(['iChannel:', num2str(iChannel),', iCell:', num2str(iCell)]);
-           
-package_process_ind_script;
 
+display_msg_flag=0;      
+package_process_ind_script;
 
 if(iChannel==1)
     VIF_channel = 2;
@@ -67,7 +70,8 @@ end
 
 
 load([ROOT_DIR,'\',PackageName,'\completedFramesChannel',num2str(iChannel),'Cell',num2str(iCell),'\completedFrames.mat'],'isCompleted');
-truthPath = [ROOT_DIR,'\',PackageName,'\FixedChannel',num2str(iChannel),'Cell',num2str(iCell)];
+truthPath = [ROOT_DIR,'\',PackageName,'\OnlyFixedChannel',num2str(iChannel),'Cell',num2str(iCell)];
+old_truthPath = [ROOT_DIR,'\',PackageName,'\FixedChannel',num2str(iChannel),'Cell',num2str(iCell)];
 outputPath = [ROOT_DIR,'\BranchAnalysisChannel',num2str(iChannel),'Cell',num2str(iCell)];
 
 if(sum(isCompleted)==0)
@@ -75,11 +79,21 @@ if(sum(isCompleted)==0)
     return;
 end
 
+fileExistance = 0*isCompleted;
+
+for iFrame = 1 : MD.nFrames_
+    if(exist([old_truthPath,'/mask_',num2str(iFrame),'.tif'],'file') ...
+       || exist([truthPath,'/mask_',num2str(iFrame),'.tif'],'file'))
+        fileExistance(iFrame)=1;        
+    end
+end
+
+isCompleted = (isCompleted.*fileExistance)>0;
 
 % only use the longest continuously marked sequence
 isCompleted = keep_largest_area(isCompleted);
 
-if(sum(isCompleted)<5)
+if(sum(isCompleted)<10)
     BA_output=[];
     return;
 end
@@ -115,10 +129,33 @@ new_CompletedFrame = [];
 
 for iFrame = CompletedFrame
     display(['iChannel:', num2str(iChannel),', iCell:', num2str(iCell),', iFrame:',num2str(iFrame) ]);
-           
     iCompleteFrame = iFrame - FirstFrame +1;
     
-    current_mask = imread([truthPath,'/mask_',num2str(iFrame),'.tif']);
+    %% filament segmentation part
+    % default as empty in filament segmentation
+    current_seg=[];
+    orienation_map_filtered=[];
+
+    % if filament stat is available and requested 
+    if(exist(GetFullPath([ROOT_DIR,'/FilamentAnalysisPackage/FilamentSegmentation/Channel',num2str(VIF_channel),'/DataOutput/steerable_vote_',filename_short_strs{iFrame},'.mat']),'file') && filament_stat_flag>0)
+        load( GetFullPath([ROOT_DIR,'/FilamentAnalysisPackage/FilamentSegmentation/Channel',num2str(VIF_channel),'/DataOutput/steerable_vote_',...
+        filename_short_strs{iFrame},'.mat']),'current_seg','orienation_map_filtered');
+    end
+     
+     current_seg_cell{1,iCompleteFrame} = current_seg;
+     orienation_map_filtered_cell{1,iCompleteFrame} = orienation_map_filtered;
+
+     %% Load the mask and smooth the cell mask
+     if(exist([truthPath,'/mask_',num2str(iFrame),'.tif'],'file'))
+         current_mask = imread([truthPath,'/mask_',num2str(iFrame),'.tif']);
+     else
+         if(exist([old_truthPath,'/mask_',num2str(iFrame),'.tif'],'file'))
+             current_mask = imread([old_truthPath,'/mask_',num2str(iFrame),'.tif']);
+         else
+             disp('no mask found');
+             break;
+         end
+     end
     current_mask([ 1 end], :)=0;
     current_mask(:, [ 1 end])=0;
     current_mask = keep_largest_area(current_mask);
@@ -129,45 +166,41 @@ for iFrame = CompletedFrame
     max_y = max(max_y,max(indy));
     max_x = max(max_x,max(indx));
     
-    
-    
-    load( GetFullPath([ROOT_DIR,'/FilamentAnalysisPackage/FilamentSegmentation/Channel2/DataOutput/steerable_vote_',...
-        filename_short_strs{iFrame},'.mat']),'current_seg','orienation_map_filtered');
-%     
-     current_seg_cell{1,iCompleteFrame} = current_seg;
-     orienation_map_filtered_cell{1,iCompleteFrame} = orienation_map_filtered;
-%     orienation_map_filtered_cell{1,iCompleteFrame} = orienation_map_filtered;
-%     
-%     %     imwrite(current_mask, ['nonboarder_mask_',num2str(iFrame),'.tif']);
-%     
     B = bwboundaries(current_mask);
     
     Y = B{1}(:,1);
     X = B{1}(:,2);
     
-%  half_size = 150;
-    
     H = fspecial('gaussian',2*half_size+1,half_size/4);
     H = double(H(:,half_size+1));
     H = H./(sum(H));
     
-    X = imfilter(X, H,'replicate','same');
-    Y = imfilter(Y, H,'replicate','same');
-    X = imfilter(X, H,'replicate','same');
-    Y = imfilter(Y, H,'replicate','same');
+    % smooth in a circular fashion, since this is an enclosed curve
+    X = imfilter(X, H,'circular','same');
+    Y = imfilter(Y, H,'circular','same');
+    X = imfilter(X, H,'circular','same');
+    Y = imfilter(Y, H,'circular','same');
     
+    % then rebuild the mask
     smoothed_current_mask = roipoly(current_mask,X,Y);
+    
+    % if there is nothing in cell mask, break here
     if(sum(sum(smoothed_current_mask))==0)
+        disp('empty mask');
         break;
     end
     
+    % keep the smoothed mask in the cell-structure
     smoothed_current_mask = keep_largest_area(smoothed_current_mask);
     
     % make it logic to save memory
     smoothed_mask_cell{1,iCompleteFrame} = (smoothed_current_mask>0);
+    
+    % keep track if stopped before the loop ends
     new_CompletedFrame = [new_CompletedFrame iFrame];
 end
 
+% correcting the early stops
 CompletedFrame = new_CompletedFrame;
 nCompleteFrame = length(CompletedFrame);
 
@@ -193,14 +226,14 @@ for iCompleteFrame = 1 : nCompleteFrame
     smoothed_current_mask = smoothed_mask_cell{1,iCompleteFrame};
     
     try
-    C_xy = regionprops(smoothed_current_mask,'Centroid');
-    
-    center_x(iCompleteFrame) = C_xy.Centroid(1);
-    center_y(iCompleteFrame) = C_xy.Centroid(2);
-    
+        C_xy = regionprops(smoothed_current_mask,'Centroid');
+        center_x(iCompleteFrame) = C_xy.Centroid(1);
+        center_y(iCompleteFrame) = C_xy.Centroid(2);
     catch
+        disp('error in cell mask centroid');
         break;
     end
+    
     RG_framem1 = zeros(size(smoothed_current_mask,1),size(smoothed_current_mask,2),3)>0;
     RG_framem1(:,:,1) = (smoothed_current_mask);
     if iCompleteFrame>1
@@ -308,24 +341,27 @@ BA_output.cell_travel_speed = ...
 BA_output.cell_marked_frame_number = ...
     nCompleteFrame;
 
-
+%% get cell centroid trajectory direction
 center_x(iCompleteFrame) = C_xy.Centroid(1);
-    center_y(iCompleteFrame) = C_xy.Centroid(2);
-    
-    trajectory_smooth_size = round(half_size/5);
-     H = fspecial('gaussian',2*trajectory_smooth_size+1,trajectory_smooth_size/4);
-    H = double(H(:,trajectory_smooth_size+1));
-    H = H./(sum(H));
-    
+center_y(iCompleteFrame) = C_xy.Centroid(2);
+
+% take 1/5 of the smoothing size of the cell boundary
+trajectory_smooth_size = round(half_size/5);
+H = fspecial('gaussian',2*trajectory_smooth_size+1,trajectory_smooth_size/4);
+H = double(H(:,trajectory_smooth_size+1));
+H = H./(sum(H));
+
 smooth_center_x =  imfilter(center_x,H','replicate','same');
 smooth_center_y =  imfilter(center_y,H','replicate','same');
 
 figure(11);plot(center_x,center_y,'r');
 hold on;
 plot(smooth_center_x,smooth_center_y);
-
+% take the atan2, negative y due to the y axis is top small bottom big in
+% image matrix
 trajectory_angle = atan2(-(smooth_center_y(2:end)-smooth_center_y(1:end-1)),smooth_center_x(2:end)-smooth_center_x(1:end-1));
 
+%%
 for iCompleteFrame = 1 : nCompleteFrame
     
     labelMask = label_skel_cell{iCompleteFrame};
@@ -341,8 +377,6 @@ for iCompleteFrame = 1 : nCompleteFrame
     
     % Get properties for each of curve
     ob_prop = regionprops(labelMask,'Area','MajorAxisLength','Eccentricity','MinorAxisLength','Centroid','Orientation');
-    
-    
     
     % Redefine variable for easy of notation
     obAreas = [ob_prop.Area];
@@ -428,6 +462,7 @@ try
     movieInfo,costMatrices,gapCloseParam,kalmanFunctions,[],...
     [],[]);
 catch    
+    disp('Error in tracking');
     return;
 end
 
@@ -507,7 +542,6 @@ strings{4}=str_line;
 str_line = ['The branches tracked: ', num2str(BA_output.branch_number_tracked),'.'];
 fprintf(fid, [str_line,'\n  \r\n']);
 strings{5}=str_line;
-
 
 str_line = ['The maximum number branches among all frames: ', ...
     num2str(BA_output.branch_number_max),'.'];
