@@ -9,6 +9,8 @@ if(~exist('indexVIFChannel','var'))
     indexVIFChannel = min(2,length(MD.channels_));
 end
 
+% display_msg_flag = 0;
+
 % Find the package of Filament Analysis
 nFrame = MD.nFrames_;
 
@@ -36,8 +38,10 @@ for i = 1 : nPackage
 end
 
 if(indexFilamentPackage==0)
-    disp('Need to run filament analysis package first.')
-%     return;
+    if(display_msg_flag>0)
+        disp('No filament analysis package.')
+    end
+    %     return;
 end
 
 % Find the process of plusTiptracking.
@@ -80,8 +84,11 @@ for i = 1 : nProcesses
 end
 
 if indexSteerabeleProcess==0
-    disp('Please run steerable filtering first.')
-%     return;
+    if(display_msg_flag>0)
+        
+        disp('No steerable filtering process.');
+    end
+    %     return;
 end
 
 indexFilamentSegmentationProcess = 0;
@@ -93,8 +100,11 @@ for i = 1 : nProcesses
 end
 
 if indexFilamentSegmentationProcess==0
-    disp('Please set parameters for Filament Segmentation.')
-%     return;
+    if(display_msg_flag>0)
+        
+        disp('Filament Segmentation parameters not set.')
+    end
+    %     return;
 end
 
 indexFlattenProcess = 0;
@@ -105,9 +115,11 @@ for i = 1 : nProcesses
     end
 end
 
-if indexFlattenProcess==0 
-    display('The setting shows you want to use flattened image for steerable filtering. Please set parameters for Image Flatten and run.')
-%     return;
+if indexFlattenProcess==0
+    if(display_msg_flag>0)        
+        display('The setting shows you want to use flattened image for steerable filtering. Please set parameters for Image Flatten and run.')
+    end
+    %     return;
 end
 
 indexCellSegProcess = 0;
@@ -118,9 +130,11 @@ for i = 1 : nProcesses
     end
 end
 
-if indexCellSegProcess == 0 
-    disp('Please run segmentation and refinement first.')
-%     return;
+if indexCellSegProcess == 0
+    if(display_msg_flag>0)        
+        disp('Please run segmentation and refinement first.')
+    end
+    %     return;
 end
 
 indexCellRefineProcess = 0;
@@ -132,8 +146,10 @@ for i = 1 : nProcesses
 end
 
 if indexCellRefineProcess == 0
-    disp('Please run segmentation and refinement first.')
-%     return;
+    if(display_msg_flag>0)        
+        disp('Please run segmentation and refinement first.')
+    end
+    %     return;
 end
 
 % Get the sub sample rate on the VIF channel
@@ -154,11 +170,10 @@ if(isempty(MD.channels_(indexVIFChannel).getImageFileNames))
     tic
     for iFrame = 1 : nFrame
         filename_one = (MD.channels_(indexVIFChannel).getImageFileNames(iFrame));
-        channel_filename{1,iFrame} = filename_one{1};
-        
+        channel_filename{1,iFrame} = filename_one{1};        
     end
     toc
-    filename_short_strs = uncommon_str_takeout(channel_filename);    
+    filename_short_strs = uncommon_str_takeout(channel_filename);
 else
     filename_short_strs = uncommon_str_takeout(MD.channels_(indexVIFChannel).getImageFileNames);
 end
@@ -175,4 +190,3 @@ if indexFilamentPackage > 0 && indexFilamentSegmentationProcess > 0
     HeatEnhOutputDir = [HeatOutputDir,'/Enh'];
     DataOutputDir = [FilamentSegmentationChannelOutputDir,'/DataOutput'];
 end
-    
