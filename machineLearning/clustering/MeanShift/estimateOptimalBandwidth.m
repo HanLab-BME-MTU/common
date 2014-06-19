@@ -24,6 +24,7 @@ function [H,ppSig,ppMu,ljsAll,Htry] = estimateOptimalBandwidth(X,HRange,varargin
 
 ip = inputParser;
 ip.addParamValue('nH',20,@isposint);%Number of bandwidths to try within specified range
+ip.addParamValue('HTry',[],@(x)(all(x)>0 && all(diff(x))>0));%Optionally input a vector of bandwidths - this overrides the Hrange and nH inputs
 ip.addParamValue('w',3,@isposint);%Window size for calculating local jenson-shannon divergence. Higher values will decrease likelihood of spurious estimates, but may require a larger number of test bandwidths to obtain a reliable solution
 ip.addParamValue('NumParallel',6,@isposint);%Number of processors to use for parallel computing. Set to 1 to run serially.
 
@@ -38,8 +39,12 @@ nH = p.nH;%decreases annoyingness of code.
 
 %% ------------ Init ------------ %%
 
-Htry = logspace(log10(HRange(1)),log10(HRange(2)),p.nH);
-
+if isempty(p.HTry)
+    Htry = logspace(log10(HRange(1)),log10(HRange(2)),p.nH);
+else
+    Htry = p.HTry;
+    nH = numel(Htry);
+end
 
 %Setup parallel workers if requested
 if p.NumParallel > 1
