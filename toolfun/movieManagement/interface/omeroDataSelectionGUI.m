@@ -133,22 +133,28 @@ else
     set(handles.pushbutton_load_dataset, 'Enable', 'on');
 end
 
-% List projects
-projects = getProjects(session, [], false, 'owner', userId);
-projects = sortById(projects);
+% List projects and orphaned datasets
+p = omero.sys.ParametersI();
+p.exp(rlong(userId));
+p.orphan();
+proxy = session.getContainerService();
+objectList = proxy.loadContainerHierarchy('omero.model.ProjectI', [], p);
+orphanList = java.util.ArrayList();
+for i = objectList.size() - 1 : -1  : 0,
+    if ~isa(objectList.get(i), 'omero.model.ProjectI');
+        orphanList.add(objectList.get(i));
+        objectList.remove(i);
+    end
+end
+projects = sortById(toMatlabList(objectList));
+orphanedDatasets = sortById(toMatlabList(orphanList));
+
+
 projectNames = arrayfun(@(x) char(x.getName().getValue()), projects,...
     'UniformOutput', false);
 projectNames = [{'none'}; projectNames];
 set(handles.popupmenu_project, 'Value', 1, 'String', projectNames,...
     'UserData', projects);
-
-% List orphaned datasets
-d = arrayfun(@(x) toMatlabList(x.linkedDatasetList), projects, 'Unif', 0);
-datasetIds = arrayfun(@(x) x.getId().getValue(), [d{:}]);
-datasets = getDatasets(session, [], false, 'owner', userId);
-[~, isorphaned] = setdiff(arrayfun(@(x) x.getId().getValue(), datasets),...
-    datasetIds);
-orphanedDatasets  = sortById(datasets(isorphaned));
 
 % Save orphaned datasets
 userData = get(handles.figure1, 'UserData');
@@ -180,7 +186,7 @@ elseif  p_props{1} == 1 && d_props{1} == numel(d_props{2}) + 2;
     parameters.addLong('userID', u_props{2}(u_props{1}));
     images = session.getQueryService.findAllByQuery(orphanQuery, parameters);
     images = toMatlabList(images);
-
+    
 else
     datasetId = d_props{2}(d_props{1}-1).getId.getValue;
     images = getImages(session, 'dataset', datasetId);
