@@ -63,7 +63,7 @@ ip.parse(hObject,eventdata,handles,varargin{:})
 % Store inpu
 userData = get(handles.figure1, 'UserData');
 userData.mainFig=ip.Results.mainFig;
-set(hObject, 'UserData', userData);
+
 
 set(handles.text_copyright, 'String', getLCCBCopyright())
 global session
@@ -72,7 +72,8 @@ global session
 groupId = session.getAdminService().getEventContext().groupId;
 userId = session.getAdminService().getEventContext().userId;
 group = session.getAdminService().getGroup(groupId);
-if group.getDetails().getPermissions().isGroupAnnotate(),
+userData.groupPermissions = group.getDetails().getPermissions();
+if userData.groupPermissions.isGroupRead(),
     map = toMatlabList(group.copyGroupExperimenterMap());
     ids = arrayfun(@(x) x.getChild().getId().getValue(), map);
     names = arrayfun(@(x) [char(x.getChild().getFirstName().getValue())...
@@ -90,6 +91,8 @@ else
         'UserData', userId, 'Value', 1);
 end
 
+
+set(hObject, 'UserData', userData);
 refreshDataList(hObject, [], handles);
 
 % Choose default command line output for omeroDataSelectionGUI
@@ -119,6 +122,16 @@ function refreshDataList(hObject, eventdata, handles)
 global session
 props = get(handles.popupmenu_user, {'Value', 'UserData'});
 userId = props{2}(props{1});
+
+userData = get(handles.figure1, 'UserData');
+if userId ~= session.getAdminService.getEventContext().userId && ...
+        ~userData.groupPermissions.isGroupAnnotate(),
+    set(handles.pushbutton_load_images, 'Enable', 'off');
+    set(handles.pushbutton_load_dataset, 'Enable', 'off');
+else
+    set(handles.pushbutton_load_images, 'Enable', 'on');
+    set(handles.pushbutton_load_dataset, 'Enable', 'on');
+end
 
 % List projects
 projects = getProjects(session, [], false, 'owner', userId);
