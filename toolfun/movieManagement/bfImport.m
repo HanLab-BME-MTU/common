@@ -43,6 +43,7 @@ ip.addRequired('dataPath',@ischar);
 ip.addOptional('importMetadata',true,@islogical);
 ip.addParamValue('outputDirectory',[],@ischar);
 ip.addParamValue('reuseReader', false, @islogical);
+ip.addParamValue('askUser', false, @isscalar);
 ip.parse(dataPath,varargin{:});
 
 % Retrieve the absolute path of the image file
@@ -126,6 +127,16 @@ for i = 1 : nSeries
     MD(i).setSeries(iSeries);
     if ip.Results.reuseReader || iSeries == 0,
         MD(i).setReader(BioFormatsReader(r, iSeries));
+    end
+    
+    if ip.Results.askUser,
+        status = exist(MD(i).getFullPath(), 'file');
+        if status
+            msg = ['The output file %s already exist on disk. ' ...
+                'Do you want to overwrite?'];
+            answer = questdlg(sprintf(msg, MD(i).getFullPath()));
+            if ~strcmp(answer, 'Yes'), continue; end
+        end
     end
     % Close reader and check movie sanity
     MD(i).sanityCheck;
