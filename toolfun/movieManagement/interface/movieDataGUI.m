@@ -401,7 +401,8 @@ if isequal(file,0) || isequal(path,0), return; end
 loci.common.DebugTools.enableLogging('INFO');
 importMetadata = logical(get(handles.checkbox_importMetadata,'Value'));
 reuseReader = logical(get(handles.checkbox_reuseReader,'Value'));
-MD = MovieData([path file], importMetadata, 'reuseReader', reuseReader);
+MD = MovieData([path file], importMetadata, 'reuseReader', reuseReader,...
+    'askUser', true);
 
 % Update movie selector interface
 userData=get(handles.figure1,'UserData');
