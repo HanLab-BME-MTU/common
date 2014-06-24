@@ -3,8 +3,9 @@
  * (c) Francois Aguet, 2014 (last modified 02/25/2014)
  *
  * Compilation:
- * Mac/Linux: mex -I/usr/local/include -I../../common/mex/include -lgsl -lgslcblas fitGaussianMixture3D.c
+ * Mac/Linux: mex -I/usr/local/include -I../../mex/include -lgsl -lgslcblas fitGaussianMixture3D.c
  * Mac/Linux (static): mex -I/usr/local/include -I../../mex/include /usr/local/lib/libgsl.a /usr/local/lib/libgslcblas.a fitGaussianMixture3D.c
+ * Linux (ubuntu 12.04) mex -I/usr/local/include -I../../mex/include -lgsl -lgslcblas CFLAGS="\$CFLAGS -std=c99" fitGaussianMixture3D.c
  * Windows: mex COMPFLAGS="$COMPFLAGS /TP /MT" -I"..\..\..\extern\mex\include\gsl-1.15" -I"..\..\mex\include" "..\..\..\extern\mex\lib\gsl.lib" "..\..\..\extern\mex\lib\cblas.lib" -output fitGaussianMixture3D fitGaussianMixture3D.c
  */
 
