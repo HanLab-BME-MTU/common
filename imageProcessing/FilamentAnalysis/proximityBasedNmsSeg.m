@@ -1,5 +1,5 @@
 function  [lowThresh, highThresh, current_seg]...
-    = proximityBasedNmsSeg(MAX_st_res,orienation_map,funParams)
+    = proximityBasedNmsSeg(MAX_st_res,orienation_map,funParams,PercentOfPixelsNotEdges,ThresholdRatio)
 % proximityBasedNmsSeg segments filaments from input image(nms) based on the proximity only
 %                               of features of the curves/lines in the image
 % Input:
@@ -33,9 +33,15 @@ ShowDetailMessages = funParams.savestepfigures;
 % The output edge map:
 e = false(m,n);
 
+if(nargin<4)
 % Magic numbers
 PercentOfPixelsNotEdges = .80; % Used for selecting thresholds
-ThresholdRatio = .80;          % Low thresh is this fraction of the high.
+end
+
+if(nargin<5)
+    ThresholdRatio = .80;          % Low thresh is this fraction of the high.
+end
+
 thresh=[];
 
 %     % Calculate gradients using a derivative of Gaussian filter
