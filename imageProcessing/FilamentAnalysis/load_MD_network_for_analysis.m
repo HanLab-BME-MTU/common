@@ -1,4 +1,4 @@
-function network_feature = load_MD_network_for_analysis(MD,ROI)
+function network_feature = load_MD_network_for_analysis(MD,ROI,radius)
 % function to do network analysis with input MD
 
 % input:    MD:    the loaded movieData object.
@@ -76,7 +76,7 @@ for iChannel = 1 :  length(MD.channels_)
         %% % do analysis
         im_name = MD.channels_(iChannel).getImageFileNames(iFrame);
         
-        radius=20;
+        
         output_feature = network_analysis(VIF_current_model,VIF_orientation, ...
                         VIF_current_seg,outdir,iChannel,iFrame,ROI,min_length,im_name,radius);
         

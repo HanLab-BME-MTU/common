@@ -117,7 +117,7 @@ for iChannel = selected_channels
         
         img_pixel_pool = [img_pixel_pool smaller_currentImg(:)];
     end
-    [hist_all_frame, hist_bin] = hist(double(img_pixel_pool),45);
+    [hist_all_frame, hist_bin] = hist(double(img_pixel_pool),100);
     
     img_pixel_pool = double(img_pixel_pool(:));
     nonzero_img_pixel_pool= img_pixel_pool(img_pixel_pool>0);

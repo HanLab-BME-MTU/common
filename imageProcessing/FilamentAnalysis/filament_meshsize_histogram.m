@@ -84,89 +84,12 @@ for iChannel = 1 :  length(MD.channels_)
                 Cell_Mask = ROI;
             end
         end
-        
-        
-        %% % do mesh size statistics
-        %         tic
-        VIF_current_seg = imresize(VIF_current_seg, 1);
-        Cell_Mask = imresize(Cell_Mask, 1)>0;
-        
-        dist_map = bwdist(VIF_current_seg);
-        
-        %         toc
-        
-        meshsize_map = 2*dist_map;
-        
-        
-        [cent, varargout]=FastPeakFind(meshsize_map.*imdilate(Cell_Mask, ones(5,5)),2);
-        
-        
-        maximum_x= cent(1:2:end);
-        maximum_y= cent(2:2:end);
-        
-        ind_mask = find(Cell_Mask(sub2ind(size(meshsize_map),maximum_y,maximum_x))>0);
-        
-        maximum_x = maximum_x(ind_mask);
-        maximum_y = maximum_y(ind_mask);
-        
-        h3=figure(3);
-        imagesc(meshsize_map.*Cell_Mask);
-        axis image; axis off;
-        hold on; plot(maximum_x,maximum_y,'m.');
-        
-        title(['Distmap, Channel:',num2str(iChannel),', Frame:',num2str(iFrame)]);
-        
-       saveas(h3,[outdir, filesep, 'dist_map_ch',num2str(iChannel),'_frame_',num2str(iFrame),'.tif']);
-        
-        
-        meshsize_local_maximum_pool = meshsize_map(sub2ind(size(meshsize_map),cent(2:2:end),cent(1:2:end)));
-        
-                
-        [h,bin]= hist(meshsize_local_maximum_pool,0:pace:range);
-        h = h./(sum(h))*100;
-        
-        % find the mode
-        ind = find(h==max(h));
-        ind = ind(1);
-        mode_bin = bin(ind);
-        mode_h = h(ind);
-        
-        % find the mean
-        mean_bin = double(mean(meshsize_local_maximum_pool));
-        % plot these
-        h1 =  figure(1); hold off;
-        
-        bar(bin, h);
-        
-        axis([0 range+pace 0 max(h)+10]);
-        
-        real_axis=  axis;
-        hold on;
-        plot(mode_bin, mode_h, 'r*');
-        text(mode_bin-2, mode_h+1, ['Mode: ',num2str(mode_bin)]);
-        
-        plot([mean_bin mean_bin],[0 real_axis(4)],'m');
-        
-        text(mean_bin, real_axis(4)-1.5, ['Mean: ',num2str(mean_bin)]);
-        
-        title(['Meshsize Measurement, Channel:',num2str(iChannel),', Frame:',num2str(iFrame)]);
-        xlabel('distance to filament (unit: pixel)');
-        ylabel('Percentage(%)');
-        
-        saveas(h1,[outdir, filesep, 'dist_hist_ch',num2str(iChannel),'_frame_',num2str(iFrame),'.tif']);
-        
-        % save the results
-        output_feature = [];
-        output_feature.meshsize_local_maximum_pool = meshsize_local_maximum_pool;
-        output_feature.meshsize_map = meshsize_map;
-        output_feature.meshsize_map = meshsize_map;
-        output_feature.mode_meshsize = mode_bin;
-        output_feature.mean_meshsize = mean_bin;
+        output_feature = filament_bw_meshsize_histogram(VIF_current_seg, Cell_Mask, radius,pace,range);
         
         network_feature_channel_frame{iChannel,iFrame} = output_feature;
         
         % stack for the all the frames in this movie
-        channel_meshsize_local_maximum_pool = [channel_meshsize_local_maximum_pool; meshsize_local_maximum_pool];
+        channel_meshsize_local_maximum_pool = [channel_meshsize_local_maximum_pool;  output_feature.meshsize_local_maximum_pool];
     end
     
     
@@ -203,17 +126,16 @@ for iChannel = 1 :  length(MD.channels_)
     
     saveas(h4,[outdir, filesep, 'dist_hist_ch',num2str(iChannel),'_allframe.tif']);
     
-        % save the results
-        output_feature = [];
-        output_feature.channel_meshsize_local_maximum_pool = channel_meshsize_local_maximum_pool;
-        output_feature.mode_meshsize = mode_bin;
-        output_feature.mean_meshsize = mean_bin;
-        
-        network_feature_channel{iChannel,1} = output_feature;
-       
+    % save the results
+    output_feature = [];
+    output_feature.channel_meshsize_local_maximum_pool = channel_meshsize_local_maximum_pool;
+    output_feature.mode_meshsize = mode_bin;
+    output_feature.mean_meshsize = mean_bin;
+    
+    network_feature_channel{iChannel,1} = output_feature;
+    
     
 end
 
 
 save([outdir, filesep, 'dist_hist_output.mat'],'network_feature_channel_frame','network_feature_channel');
-    

@@ -125,7 +125,11 @@ for iChannel = selected_channels
     
     % Get frame number from the title of the image, this not neccesarily
     % the same as iFrame due to some shorting problem of the channel
-    filename_short_strs = uncommon_str_takeout(movieData.channels_(iChannel).fileNames_);
+    
+       Channel_FilesNames = movieData.channels_(iChannel).getImageFileNames(1:movieData.nFrames_);
+    
+    filename_short_strs = uncommon_str_takeout(Channel_FilesNames);
+
     
     % Make output directory for the steerable filtered images
     FilamentSegmentationChannelOutputDir = [FilamentSegmentationProcessOutputDir,'/Channel',num2str(iChannel)];
@@ -164,20 +168,29 @@ for iChannel = selected_channels
     H_close = H_close>0;
     
     
+    
+    % this line in commandation for shortest version of filename
+    filename_shortshort_strs = all_uncommon_str_takeout(Channel_FilesNames);
+    
+    
     for iFrame = 1 : nFrame
         disp(['Frame: ',num2str(iFrame)]);
         
+        currentImg = movieData.channels_(iChannel).loadImage(iFrame);
+        currentImgFlatten = currentImg;
         % Read in the intensity image, flattened or original
         if indexFlattenProcess > 0
-            currentImg = imread([movieData.processes_{indexFlattenProcess}.outFilePaths_{iChannel}, filesep, 'flatten_',filename_short_strs{iFrame},'.tif']);
-             else
-            currentImg = movieData.channels_(iChannel).loadImage(iFrame);
+            try
+            currentImgFlatten = imread([movieData.processes_{indexFlattenProcess}.outFilePaths_{iChannel}, filesep, 'flatten_',filename_short_strs{iFrame},'.tif']);
+            catch
+               try
+                   % this is for the old version
+                    currentImgFlatten = imread([movieData.processes_{indexFlattenProcess}.outFilePaths_{iChannel}, filesep, 'flatten_',filename_shortshort_strs{iFrame},'.tif']);           
+               end
+            end
         end
         
         
-        % this line in commandation for shortest version of filename
-        filename_shortshort_strs = all_uncommon_str_takeout(Channel_FilesNames{1});
-            
         try
             load([SteerableChannelOutputDir, filesep, 'steerable_',...
                 filename_short_strs{iFrame},'.mat']);            
@@ -199,10 +212,19 @@ for iChannel = selected_channels
             end
         end
         
-        load([DataOutputDir,'/steerable_vote_',...
-            filename_short_strs{iFrame},'.mat'],...
-            'orienation_map_filtered','OrientationVoted','orienation_map', ...
-            'MAX_st_res', 'current_seg','Intensity_Segment','SteerabelRes_Segment');
+        try
+            load([DataOutputDir,'/steerable_vote_',...
+                filename_short_strs{iFrame},'.mat'],...
+                'orienation_map_filtered','OrientationVoted','orienation_map', ...
+                'MAX_st_res', 'current_seg','Intensity_Segment','SteerabelRes_Segment');
+        catch
+            % in the case of only having the short-old version
+            load([DataOutputDir,'/steerable_vote_',...
+                filename_shortshort_strs{iFrame},'.mat'],...
+                'orienation_map_filtered','OrientationVoted','orienation_map', ...
+                'MAX_st_res', 'current_seg','Intensity_Segment','SteerabelRes_Segment');
+            
+        end        
         
         if iFrame==1
             % Read in the initial circle from the 'start_ROI.tif' file
@@ -339,24 +361,56 @@ for iChannel = selected_channels
     
     %% Simply use intensity as outgrowth calculation
     
+        org_int_mean_inside_array=zeros(1,nFrame);
+        org_int_sum_inside_array=zeros(1,nFrame);
+        flatten_int_mean_inside_array=zeros(1,nFrame);
+        flatten_int_sum_inside_array=zeros(1,nFrame);
+        
+        org_int_mean_outside_array=zeros(1,nFrame);
+        org_int_sum_outside_array=zeros(1,nFrame);
+        flatten_int_mean_outside_array=zeros(1,nFrame);
+        flatten_int_sum_outside_array=zeros(1,nFrame);
+
+    
     for iFrame = 1 : nFrame
         disp(['Frame: ',num2str(iFrame)]);
-        
-        % Read in the intensity image, flattened or original
+      
+        % Read in the intensity image, flattened or original        
+        currentImg = movieData.channels_(iChannel).loadImage(iFrame);
+        currentImgFlatten = currentImg;
         if indexFlattenProcess > 0
-            currentImg = imread([movieData.processes_{indexFlattenProcess}.outFilePaths_{iChannel}, filesep, 'flatten_',filename_short_strs{iFrame},'.tif']);
-        else
-            currentImg = double(movieData.channels_(iChannel).loadImage(iFrame));
+            currentImgFlatten = imread([movieData.processes_{indexFlattenProcess}.outFilePaths_{iChannel}, filesep, 'flatten_',filename_short_strs{iFrame},'.tif']);
         end
         
-        level1 = thresholdOtsu(currentImg);
-        currentImg = uint8(currentImg>level1).*currentImg;
+       
+        
+        currentImg_inside = currentImg(find(MaskFirstFrame>0));
+        currentImg_outside = currentImg(find(MaskFirstFrame==0));
+        currentImgFlatten_inside = currentImgFlatten(find(MaskFirstFrame>0));
+        currentImgFlatten_outside = currentImgFlatten(find(MaskFirstFrame==0));
         
         if iFrame==1
             % Get the first segmented results for the base of comparison
             current_img_firstframe = currentImg;
             int_sum_inside_firstframe = sum(sum(current_img_firstframe));
+           org_int_mean_inside_firstframe = sum(currentImg_inside);
+           org_int_sum_inside_firstframe = mean(currentImg_inside);
+           flatten_int_mean_inside_firstframe = sum(currentImgFlatten_inside);
+           flatten_int_sum_inside_firstframe = mean(currentImgFlatten_inside);
         end
+        
+        org_int_mean_inside_array(1,iFrame) = sum(currentImg_inside);
+        org_int_sum_inside_array(1,iFrame)= mean(currentImg_inside);
+        flatten_int_mean_inside_array(1,iFrame) = sum(currentImgFlatten_inside);
+        flatten_int_sum_inside_array(1,iFrame)= mean(currentImgFlatten_inside);
+        
+        org_int_mean_outside_array(1,iFrame) = sum(currentImg_outside);
+        org_int_sum_outside_array(1,iFrame)= mean(currentImg_outside);
+        flatten_int_mean_outside_array(1,iFrame) = sum(currentImgFlatten_outside);
+        flatten_int_sum_outside_array(1,iFrame)= mean(currentImgFlatten_outside);
+      
+        level1 = thresholdOtsu(currentImg);
+        currentImg = double(currentImg>level1).*double(currentImg);
         
         current_img_outside = double(currentImg).*(double(1-MaskFirstFrame));
         
@@ -385,11 +439,35 @@ for iChannel = selected_channels
         'seg_outside_current','seg_sum_inside_firstframe','ratio_outside_firstframeinside',...
         'ratio_int_outside_firstframeinside');
     
+   
     xlswrite([FilamentSegmentationProcessOutputDir,'/channel_',num2str(iChannel),'_seg_growth.xls'], ...
-        [repmat(seg_sum_inside_firstframe(iChannel),1,nFrame); ...
-        seg_outside_current(iChannel,:); ratio_outside_firstframeinside(iChannel,:);...
-        ratio_int_outside_firstframeinside(iChannel,:)]');
+        {'Frame';'First Frame Filament Amount in ROI';...
+        'Each Frame Filament Amount outside ROI';...
+        'Outgrowth Ratio(with Filament Segmentation)';...
+        'Outgrowth Ratio(with Intensity Segmentation)'; ...
+        'Intensity Sum in ROI';'Intensity Sum out ROI';...
+        'Intensity Mean in ROI';'Intensity Mean out ROI';...
+        'Intensity Sum in ROI(Flattened Image)';'Intensity Sum out ROI(Flattened Image)';...
+        'Intensity Mean in ROI(Flattened Image)';'Intensity Mean out ROI(Flattened Image)';}, 1,'A1');
     
+    xlswrite([FilamentSegmentationProcessOutputDir,'/channel_',num2str(iChannel),'_seg_growth.xls'], ...
+       (1:nFrame), 1,'B1');
+    
+   xlswrite([FilamentSegmentationProcessOutputDir,'/channel_',num2str(iChannel),'_seg_growth.xls'], ...
+       [repmat(seg_sum_inside_firstframe(iChannel),1,nFrame); ...
+       seg_outside_current(iChannel,:); ...
+       ratio_outside_firstframeinside(iChannel,:);...
+       ratio_int_outside_firstframeinside(iChannel,:);...
+       org_int_mean_inside_array;...
+       org_int_mean_outside_array;...
+       org_int_sum_inside_array; ...
+       org_int_sum_outside_array;...
+       flatten_int_mean_inside_array; ...
+       flatten_int_mean_outside_array;...
+       flatten_int_sum_inside_array;...
+       flatten_int_sum_outside_array], 1,'B2');
+   
+        
     % Display the curve
     h2 = figure(2);hold off;    
 %     [AX,H1,H2] =  plotyy(1:nFrame,[repmat(seg_sum_inside_firstframe(iChannel),1,nFrame); ...
