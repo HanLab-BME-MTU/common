@@ -11,7 +11,8 @@ function [H,ppSig,ppMu,ljsAll,Htry] = estimateOptimalBandwidth(X,HRange,varargin
 %   clustering.
 %
 %   NOTE: This has currently only been developed for and tested with 2D
-%   data!!!
+%   data!!! Also, this only estimates the diagonal elements of the
+%   bandwidth matrix (as in the paper).
 %
 % References:
 % [1] D. Comaniciu, "An Algorithm for Data-Driven Bandwidth Selection", IEEE
@@ -35,6 +36,10 @@ p = ip.Results;
 nH = p.nH;%decreases annoyingness of code.
 
 [n,d] = size(X);
+
+if nH == 1
+    warning('ESTIMATEOPTIMALBANDWIDTH:numBandwidths','Only one bandwidth will be tested, JS stability criteria cannot be applied!');
+end
 
 
 %% ------------ Init ------------ %%
@@ -124,6 +129,8 @@ end
 %This is done by finding the bandwidths at which the estimated mu and sigma
 %were most stable.
 
+
+
 ljsAll = nan(n,nH);
 H = nan(d,d,n);
 He = nan(n,1);
@@ -135,9 +142,13 @@ for j = 1:n
     for i = 1:d
         currSig(i,i,:) = ppSig(j,:,i);
     end
-    ljsAll(j,:) = localJensenShannon(squeeze(ppMu(j,:,:)),currSig,p.w);%Calculates difference between estimated distributions at neighboring bandwidths
-    [minJS(j),iMinJS(j)] = min(ljsAll(j,:));
-    %H(:,:,j) = diag(squeeze(ppSig(j,iMinJS(j),:)));%The optimal bandwidth is that which minizes this local difference, and is therefore most stable.
+    if nH > 1
+        ljsAll(j,:) = localJensenShannon(squeeze(ppMu(j,:,:)),currSig,p.w);%Calculates difference between estimated distributions at neighboring bandwidths
+        [minJS(j),iMinJS(j)] = min(ljsAll(j,:));
+        %H(:,:,j) = diag(squeeze(ppSig(j,iMinJS(j),:)));%The optimal bandwidth is that which minizes this local difference, and is therefore most stable.
+    else
+        iMinJS(j) = 1;%To still allow least-squares estimation without stability criteria in special cases
+    end
     H(:,:,j) = currSig(:,:,iMinJS(j));%The optimal bandwidth is that which minizes this local difference, and is therefore most stable.
     He(j) = Htry(iMinJS(j));%And the bandwidth at which this was estimated.
     
