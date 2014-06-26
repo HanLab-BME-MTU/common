@@ -78,7 +78,7 @@ ptInd = nan(n,nH);
 
 parfor ih = 1:nH
     
-    [clInf,ptInd(:,ih),ptTraj] = MeanShiftClustering(X,Htry(ih),'method','standard','minClusterDistance',Htry(ih));
+    [clInf,ptInd(:,ih),ptTraj] = MeanShiftClustering(X,Htry(ih),'method','standard','minClusterDistance',Htry(ih),'flagUseKDTree',2);
     
     nC(ih) = numel(clInf);
     
