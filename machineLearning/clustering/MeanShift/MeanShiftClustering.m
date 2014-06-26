@@ -373,9 +373,8 @@ end
 
 
 function [ptNewMean] = update_mean_gaussian_kernel( ptOldMean, ptNearest, bandwidth )
-
-    numNeighPoints = size( ptNearest, 1 );
-    sqdistances = sum( (ptNearest - repmat(ptOldMean, numNeighPoints, 1) ).^2, 2 );
+    
+    sqdistances = sum( bsxfun(@minus,ptNearest,ptOldMean) .^2, 2 );
     weights = exp( -0.5 * sqdistances / bandwidth^2 );    
     ptNewMean = (weights' * ptNearest) / sum(weights);
     
