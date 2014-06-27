@@ -39,10 +39,10 @@ if isempty(ip.Results.packageList)
     % List available packages and additional files required for running them
     buildPackageList = {
         'BiosensorsPackage';...
-        'IntegratorPackage'
-        'QFSMPackage'
-        'SegmentationPackage'
-        'TrackingPackage'
+        'IntegratorPackage';...
+        'QFSMPackage';...
+        'SegmentationPackage';...
+        'TrackingPackage';...
         'WindowingPackage'};
     validPackage = cellfun(isClass, buildPackageList);
     buildPackageList = buildPackageList(validPackage);
@@ -69,8 +69,12 @@ else
     outDir = ip.Results.outDir;
 end
 
+% Add legacy code to the package list for dependency search
+legacyFunctions = getLegacyCode(packageList);
+
 %Get all the function dependencies and display toolboxes
-[packageFuns, toolboxesUsed] = getFunDependencies(packageList, ip.Results.exclude);
+[packageFuns, toolboxesUsed] = getFunDependencies(...
+    vertcat(packageList, legacyFunctions), ip.Results.exclude);
 disp('The package uses the following toolboxes:')
 disp(toolboxesUsed)
 
@@ -174,18 +178,6 @@ for i = 1 : nMexFiles
     copyfile(packageMexFuns{i},[mexDir filesep packageMexFuns{i}(iLFS+1:end)]);
 end
 
-%% Legacy code
-legacyFunctions = getLegacyCode(packageList);
-if ~isempty(legacyFunctions);
-    
-    nLegacyFunctions = numel(legacyFunctions);
-    disp(['Copying all ' num2str(nLegacyFunctions) ' legacy functions ...'])
-    for i = 1 : nLegacyFunctions
-        iLFS = max(regexp(legacyFunctions{i}, filesep));
-        copyfile(legacyFunctions{i}, [outDir filesep legacyFunctions{i}(iLFS+1:end)]);
-    end
-end
-
 %% External libraries
 
 % Bio-Formats
@@ -202,9 +194,10 @@ function legacyFunctions = getLegacyCode(packageList)
 
 legacyFunctions = {};
 if any(strcmp('TrackingPackage', packageList))
-    legacyFunctions = {'scriptDetectGeneral.m', 'scriptTrackGeneral.m',...
-        'overlayFeaturesMovie.m', 'overlayTracksMovieNew.m',...
+    legacyFunctions = {...
+        'scriptDetectGeneral.m';
+        'scriptTrackGeneral.m';...
+        'overlayFeaturesMovie.m';...
+        'overlayTracksMovieNew.m';...
         'plotTracks2D.m'};
 end
-
-legacyFunctions = cellfun(@which, legacyFunctions,'UniformOutput', false);
