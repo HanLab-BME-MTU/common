@@ -10,6 +10,7 @@ function [muCC,muCI,lags,xCorr] = getAverageCorrelation(TS1,varargin)
 %       TS1         - matrix of time series (# of variables,# of Observations) 
 %                     format based on the output of the windowing package        
 %                     The number of variables is the number of windows   
+%                     IMPORTANT: This is the reference signal      
 %
 %       TS2         - same formart as TS1. Use to estimate the cross-correlation between each row of TS1 and TS2(default:[])
 %       nBoot       - number of bootstrap samples(default:1e3)
