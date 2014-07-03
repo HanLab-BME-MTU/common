@@ -177,7 +177,9 @@ if min(prm(:)) < 0
     plot([xAll(1)-border xAll(end)+border], [0 0], 'k-');
 end
 
-if ng>1
+XTickLabel = ip.Results.XTickLabel;
+
+if numel(XTickLabel)==ng
     XTick = arrayfun(@(k) (xa{k}(1) + xa{k}(end))/2, 1:ng);
 else
     XTick = [xa{:}];
@@ -186,7 +188,6 @@ end
 % position of the bars
 xa = [xa{:}];
 
-XTickLabel = ip.Results.XTickLabel;
 if isempty(XTickLabel)
     if ng>1
         XTickLabel = 1:ng;
