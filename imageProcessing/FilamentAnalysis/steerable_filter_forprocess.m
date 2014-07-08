@@ -75,6 +75,17 @@ for iChannel = selected_channels
         mkdir(ImageSteerableFilterChannelOutputDir);
     end
     
+    
+    output_dir_content = dir(fullfile([ImageSteerableFilterChannelOutputDir,filesep,'*.*']));
+    
+    %if there are files in this dir, clear them
+    if(length(output_dir_content)>2)
+        delete([ImageSteerableFilterChannelOutputDir,filesep,'*.*']);
+        if(exist([ImageSteerableFilterChannelOutputDir,filesep,'NMS'],'dir'))
+            rmdir([ImageSteerableFilterChannelOutputDir,filesep,'NMS'], 's');
+        end
+    end
+    
     movieData.processes_{indexSteerabeleProcess}.setOutImagePath(iChannel,ImageSteerableFilterChannelOutputDir);
 end
 

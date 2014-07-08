@@ -61,9 +61,10 @@ if (indexFilamentPackage>0)
     % and a directory is defined for this package
     if (~isempty(movieData.packages_{indexFilamentPackage}.outputDirectory_))
         % and this directory exists
-        if (exist(movieData.packages_{indexFilamentPackage}.outputDirectory_,'dir'))
-            ImageFlattenProcessOutputDir  = [movieData.packages_{indexFilamentPackage}.outputDirectory_, filesep 'ImageFlatten'];
+        if (~exist(movieData.packages_{indexFilamentPackage}.outputDirectory_,'dir'))
+            mkdir(movieData.packages_{indexFilamentPackage}.outputDirectory_);
         end
+        ImageFlattenProcessOutputDir  = [movieData.packages_{indexFilamentPackage}.outputDirectory_, filesep 'ImageFlatten'];        
     end
 end
 
@@ -83,6 +84,7 @@ for iChannel = selected_channels
     if(length(output_dir_content)>2)
          delete([ImageFlattenChannelOutputDir,filesep,'*.*']);
     end
+    
     movieData.processes_{indexFlattenProcess}.setOutImagePath(iChannel,ImageFlattenChannelOutputDir);
 end
 

@@ -342,10 +342,15 @@ classdef FilamentSegmentationProcess < ImageProcessingProcess
             
             % whole movie constrain index, 1 for completely, 2 for
             % half-half, 3 for none
+            
             funParams.Whole_movie_ind = 2;
             
             funParams.Whole_movie_stat_cell = cell(1,max(funParams.ChannelIndex));
-                         
+            
+            % if existing, don't re run whole movie analysis, if set to 1,
+            % rerun any way
+            funParams.Rerun_WholeMovie = 0;
+            
             % Flag to do VIF_outgrowth or not. This is an option made for
             % Gelfand lab
             funParams.VIF_Outgrowth_Flag = 0;

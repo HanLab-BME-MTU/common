@@ -39,11 +39,8 @@ end
 funParams=movieData.processes_{indexFilamentSegmentationProcess}.funParams_;
 
 selected_channels = funParams.ChannelIndex;
-Pace_Size = funParams.Pace_Size;
-Patch_Size = funParams.Patch_Size;
 Combine_Way = funParams.Combine_Way;
 Cell_Mask_ind = funParams.Cell_Mask_ind;
-lowerbound =  funParams.lowerbound_localthresholding;
 VIF_Outgrowth_Flag = funParams.VIF_Outgrowth_Flag;
 
 indexSteerabeleProcess = 0;
@@ -190,6 +187,8 @@ for iChannel = selected_channels
             end
         end
         
+        currentImg = currentImgFlatten;
+        
         
         try
             load([SteerableChannelOutputDir, filesep, 'steerable_',...
@@ -215,14 +214,14 @@ for iChannel = selected_channels
         try
             load([DataOutputDir,'/steerable_vote_',...
                 filename_short_strs{iFrame},'.mat'],...
-                'orienation_map_filtered','OrientationVoted','orienation_map', ...
-                'MAX_st_res', 'current_seg','Intensity_Segment','SteerabelRes_Segment');
+                'orienation_map_filtered', ...
+                'MAX_st_res', 'current_seg','SteerabelRes_Segment');
         catch
             % in the case of only having the short-old version
             load([DataOutputDir,'/steerable_vote_',...
                 filename_shortshort_strs{iFrame},'.mat'],...
-                'orienation_map_filtered','OrientationVoted','orienation_map', ...
-                'MAX_st_res', 'current_seg','Intensity_Segment','SteerabelRes_Segment');
+                'orienation_map_filtered', ...
+                'MAX_st_res', 'current_seg','SteerabelRes_Segment');
             
         end        
         

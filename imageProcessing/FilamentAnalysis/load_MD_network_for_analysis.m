@@ -20,17 +20,36 @@ network_feature=cell(length(MD.channels_),nFrame);
 for iChannel = 1 :  length(MD.channels_)
     
     outdir = [MD.processes_{indexFilamentSegmentationProcess}.outFilePaths_{iChannel},filesep,'analysis_results'];
+     
+    SteerableChannelOutputDir = MD.processes_{indexSteerabeleProcess}.outFilePaths_{iChannel};
     
     % make out put directory if not existing
     if(~exist(outdir,'dir'))
         mkdir(outdir);
     end
-   
+    Channel_FilesNames = MD.channels_(iChannel).getImageFileNames(1:MD.nFrames_);
+    
+    filename_short_strs = uncommon_str_takeout(Channel_FilesNames);
+    
     % for each frame
     for iFrame = 1 : nFrame
         display(['iChannel: ', num2str(iChannel),', iFrame:', num2str(iFrame)]);
         %% % Load the data
-        % load the filament segmentation results
+       
+        % load scale map
+         % this line in commandation for shortest version of filename
+        filename_shortshort_strs = all_uncommon_str_takeout(Channel_FilesNames{1});
+            
+        try
+            load([SteerableChannelOutputDir, filesep, 'steerable_',...
+                filename_short_strs{iFrame},'.mat']);            
+        catch
+            % in the case of only having the short-old version
+            load([SteerableChannelOutputDir, filesep, 'steerable_',...
+                filename_shortshort_strs{iFrame},'.mat']);            
+        end
+        
+        % load the filament segmentation results       
         VIF_tip_orientation = MD.processes_{indexFilamentSegmentationProcess}.loadChannelOutput(iChannel,iFrame+0,'output','tip_orientation');
         VIF_RGB_seg_orient_heat_map = MD.processes_{indexFilamentSegmentationProcess}.loadChannelOutput(iChannel,iFrame+0,'output','RGB_seg_orient_heat_map');
         
@@ -75,10 +94,12 @@ for iChannel = 1 :  length(MD.channels_)
         end
         %% % do analysis
         im_name = MD.channels_(iChannel).getImageFileNames(iFrame);
+        current_img =  MD.channels_(iChannel).loadImage(iFrame);
         
         
         output_feature = network_analysis(VIF_current_model,VIF_orientation, ...
-                        VIF_current_seg,outdir,iChannel,iFrame,ROI,min_length,im_name,radius);
+                        VIF_current_seg,outdir,iChannel,iFrame,ROI,min_length,...
+                        im_name,radius,scaleMap,current_img);
         
 %         close all;
 

@@ -1,4 +1,6 @@
-function output_feature = network_analysis(VIF_current_model,VIF_orientation, VIF_current_seg,outdir,iChannel,iFrame,ROI, min_length,im_name,radius)
+function output_feature = network_analysis(VIF_current_model,...
+    VIF_orientation, VIF_current_seg,outdir,iChannel,iFrame,...
+    ROI, min_length,im_name,radius,scale_map,current_img)
 % function for calculation the property of network
 % Liya Ding 01.2014.
 
@@ -9,6 +11,10 @@ img_size = size(VIF_current_seg);
 if(iscell(im_name))
     im_name = im_name{1};
 end
+
+% current_img = imread(im_name);
+
+
 im_name(im_name=='_')='-';
 im_name_title{1} = im_name;
 
@@ -65,6 +71,17 @@ for iF = 1 : length(VIF_ROI_model)
     x = VIF_ROI_model{iF}(:,1);
     y = VIF_ROI_model{iF}(:,2);
     
+    filament_bw = zeros(img_size);
+    filament_bw(sub2ind(img_size,round(y),round(x)))=1;
+    fat_filament_bw = imdilate(filament_bw,ones(3,3));
+    
+    filament_intensity = current_img(sub2ind(img_size,round(y),round(x)));
+    
+    fat_filament_intensity = current_img(fat_filament_bw>0);
+    
+    scale_per_filament = scale_map(fat_filament_bw>0);
+    
+    
     filament_detailed_length = sum(sqrt((x(1:end-1)-x(2:end)).^2 + (y(1:end-1)-y(2:end)).^2));
     filament_start_end_distance = sqrt((x(1)-x(end)).^2 + (y(1)-y(end)).^2);
     
@@ -72,6 +89,11 @@ for iF = 1 : length(VIF_ROI_model)
     pixel_number_per_filament_pool(iF) = length(x);
     length_per_filament_pool(iF) = filament_detailed_length;
     straightness_per_filament_pool(iF) = filament_start_end_distance/filament_detailed_length;
+    intensity_per_filament_pool(iF) = sum(filament_intensity);
+    mean_intensity_per_filament_pool(iF) = mean(filament_intensity);
+    intensity_per_fat_filament_pool(iF) = sum(fat_filament_intensity);
+    mean_intensity_per_fat_filament_pool(iF) = mean(fat_filament_intensity);
+    scale_per_filament_pool(iF) = mean(scale_per_filament);
     end
 end
 
@@ -176,11 +198,6 @@ saveas(h5, [outdir,filesep,'network_box_straight_ch_',num2str(iChannel),'_frame_
 saveas(h5, [outdir,filesep,'network_box_straight_ch_',num2str(iChannel),'_frame_',num2str(iFrame),'.tif']);
 end
 
-save([outdir,filesep,'network_orientationrose_ch_',num2str(iChannel),'_frame_',num2str(iFrame),'network_analysis.mat'], ...
-    'straightness_per_filament_pool','orientation_pixel_pool_display',...
-    'length_per_filament_pool');
-
-
 density_H = double((fspecial('disk',radius))>0);
 density_H = density_H./(sum(sum(density_H)));
 
@@ -199,5 +216,17 @@ output_feature.length_per_filament_pool=length_per_filament_pool;
 output_feature.pixel_number_per_filament_pool=pixel_number_per_filament_pool;
 output_feature.density_filament=density_filament;
 output_feature.scrabled_density_filament=scrable_output_feature.density_filament;
+
+ output_feature.intensity_per_filament_pool = intensity_per_filament_pool;
+ output_feature.mean_intensity_per_filament_pool = mean_intensity_per_filament_pool;
+ output_feature.intensity_per_fat_filament_pool = intensity_per_fat_filament_pool;
+ output_feature.mean_intensity_per_fat_filament_pool = mean_intensity_per_fat_filament_pool;
+ output_feature.scale_per_filament_pool = scale_per_filament_pool;
+  
+   
+   
+save([outdir,filesep,'network_orientationrose_ch_',num2str(iChannel),'_frame_',num2str(iFrame),'network_analysis.mat'], ...
+    'straightness_per_filament_pool','orientation_pixel_pool_display',...
+    'length_per_filament_pool','output_feature');
 
 

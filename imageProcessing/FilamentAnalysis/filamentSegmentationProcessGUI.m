@@ -22,7 +22,7 @@ function varargout = filamentSegmentationProcessGUI(varargin)
 
 % Edit the above text to modify the response to help filamentSegmentationProcessGUI
 
-% Last Modified by GUIDE v2.5 25-Apr-2014 17:23:59
+% Last Modified by GUIDE v2.5 07-Jul-2014 12:42:25
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -81,6 +81,7 @@ else
 end
 set(handles.edit_subsample_number,'String',funParams.Sub_Sample_Num);
 set(handles.checkbox_outgrowth,'value',funParams.VIF_Outgrowth_Flag);
+set(handles.checkbox_rerunwholemovie,'value',funParams.Rerun_WholeMovie);
 
 set(handles.checkbox_nofiguredisruption,'value',funParams.nofiguredisruption);
 set(handles.checkbox_savefigures,'value',funParams.savestepfigures);
@@ -380,6 +381,9 @@ for this_channel_index = currentChannelIndex(:)'
         funParams.IternationNumber(this_channel_index)=IternationNumber;
     end
 end
+
+Rerun_WholeMovie = get(handles.checkbox_rerunwholemovie,'value');
+funParams.Rerun_WholeMovie = Rerun_WholeMovie;
 
 
 VIF_Outgrowth_Flag = get(handles.checkbox_outgrowth,'value');
@@ -1300,6 +1304,8 @@ for this_channel_index = currentChannelIndex(:)
     msgbox(['Setting assigned to channel', num2str(this_channel_index)]);
 end
 
+Rerun_WholeMovie = get(handles.checkbox_rerunwholemovie,'value');
+funParams.Rerun_WholeMovie = Rerun_WholeMovie;
 
 VIF_Outgrowth_Flag = get(handles.checkbox_outgrowth,'value');
 funParams.VIF_Outgrowth_Flag = VIF_Outgrowth_Flag;
@@ -1454,6 +1460,9 @@ for this_channel_index = currentChannelIndex(:)'
     end
 end
 
+Rerun_WholeMovie = get(handles.checkbox_rerunwholemovie,'value');
+funParams.Rerun_WholeMovie = Rerun_WholeMovie;
+
 
 VIF_Outgrowth_Flag = get(handles.checkbox_outgrowth,'value');
 funParams.VIF_Outgrowth_Flag = VIF_Outgrowth_Flag;
@@ -1524,6 +1533,7 @@ currentChannelIndex = channelIndex(blued_channel(1));
 
 set(handles.edit_subsample_number,'String',funParams.Sub_Sample_Num);
 set(handles.checkbox_outgrowth,'value',funParams.VIF_Outgrowth_Flag);
+set(handles.checkbox_rerunwholemovie,'value',funParams.Rerun_WholeMovie);
 
 set(handles.checkbox_nofiguredisruption,'value',funParams.nofiguredisruption);
 set(handles.checkbox_savefigures,'value',funParams.savestepfigures);
@@ -1666,3 +1676,12 @@ end
 
 % % since this is for display not input, no need for update
 %  processGUI_ApplyFcn_without_close_figure(hObject, eventdata, handles,funParams);
+
+
+% --- Executes on button press in checkbox_rerunwholemovie.
+function checkbox_rerunwholemovie_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox_rerunwholemovie (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of checkbox_rerunwholemovie

@@ -75,6 +75,7 @@ Cell_Mask_ind_movie = funParams.Cell_Mask_ind;
 VIF_Outgrowth_Flag_movie = funParams.VIF_Outgrowth_Flag;
 Sub_Sample_Num_movie  = funParams.Sub_Sample_Num;
 Whole_movie_ind_movie  = funParams.Whole_movie_ind;
+Rerun_WholeMovie =  funParams.Rerun_WholeMovie;
 
 SaveFigures_movie = funParams.savestepfigures;
 ShowDetailMessages_movie = funParams.savestepfigures;
@@ -200,13 +201,15 @@ if nargin >=3
 else
     % or, calculate it
     %% May 1st 2014, due to change in flattening precedure, this whole movie stat need rerun,
-    % could change back after the old data are all rerun.
-    % if(exist([FilamentSegmentationProcessOutputDir, filesep, 'whole_movie_stat.mat'],'file')>0)
-    %     load([FilamentSegmentationProcessOutputDir, filesep, 'whole_movie_stat.mat'],'Whole_movie_stat_cell');
-    % else
-    Whole_movie_stat_cell = whole_movie_stat_function(movieData);
-    save([FilamentSegmentationProcessOutputDir, filesep, 'whole_movie_stat.mat'],'Whole_movie_stat_cell');
-    % end
+    % if there is already whole movie file and the user didn't ask for
+    % rerun the whole movie
+    if(exist([FilamentSegmentationProcessOutputDir, filesep, 'whole_movie_stat.mat'],'file')>0 ...
+            && Rerun_WholeMovie==0)
+        load([FilamentSegmentationProcessOutputDir, filesep, 'whole_movie_stat.mat'],'Whole_movie_stat_cell');
+    else
+        Whole_movie_stat_cell = whole_movie_stat_function(movieData);
+        save([FilamentSegmentationProcessOutputDir, filesep, 'whole_movie_stat.mat'],'Whole_movie_stat_cell');
+    end
     
     funParams.Whole_movie_stat_cell = Whole_movie_stat_cell;
     
@@ -220,24 +223,25 @@ if(exist([movieData.outputDirectory_,filesep,'MD_ROI.tif'],'file'))
     user_input_mask = imread([movieData.outputDirectory_,filesep,'MD_ROI.tif']);
 end
 
-%% Prepare the cone masks
-cone_size = 15;
-cone_angle = 25;
-cone_mask = cell(180,1);
-cone_zero = zeros(2*cone_size+1,2*cone_size+1);
-for ci = 1 : 2*cone_size+1
-    for cj = 1 : 2*cone_size+1
-        cone_zero(ci,cj) = mod(atan2(ci-cone_size-1,cj-cone_size-1),pi);
-    end
-end
-cone_zero_mask = cone_zero<cone_angle/180*pi | cone_zero>pi - cone_angle/180*pi;
-
-cone_zero_mask(cone_size-3:cone_size+3,:)=1;
-
-
-for cone_i = 1 :180
-    cone_mask{cone_i} = imrotate(cone_zero_mask, cone_i, 'nearest','crop');
-end
+%% cones related is not in use
+% %% Prepare the cone masks
+% cone_size = 15;
+% cone_angle = 25;
+% cone_mask = cell(180,1);
+% cone_zero = zeros(2*cone_size+1,2*cone_size+1);
+% for ci = 1 : 2*cone_size+1
+%     for cj = 1 : 2*cone_size+1
+%         cone_zero(ci,cj) = mod(atan2(ci-cone_size-1,cj-cone_size-1),pi);
+%     end
+% end
+% cone_zero_mask = cone_zero<cone_angle/180*pi | cone_zero>pi - cone_angle/180*pi;
+% 
+% cone_zero_mask(cone_size-3:cone_size+3,:)=1;
+% 
+% 
+% for cone_i = 1 :180
+%     cone_mask{cone_i} = imrotate(cone_zero_mask, cone_i, 'nearest','crop');
+% end
 
 %%
 for iChannel = selected_channels
@@ -399,6 +403,8 @@ for iChannel = selected_channels
                         
                         % Make the mask bigger in order to include all
                         MaskCell = imdilate(TightMask, ones(15,15),'same');
+                        
+                        clearvars MaskVIFCell MaskMTCell TightMask H_close_cell;
                     end
                 end
             end
@@ -506,7 +512,7 @@ for iChannel = selected_channels
                 
                 tic
                 [lowThresh, highThresh, current_seg]...
-                    = proximityBasedNmsSeg(MAX_st_res,orienation_map,funParams);
+                    = proximityBasedNmsSeg(MAX_st_res,orienation_map,funParams,0.95,0.95);
                 toc
                 
                 level2 = highThresh;                
@@ -535,9 +541,10 @@ for iChannel = selected_channels
         orienation_map_filtered = OrientationSmooth(orienation_map, SteerabelRes_Segment);
         
         %%
-        % Voting of the orientation field for the non-steerable filter
-        % segmented places.
+        % % Voting of the orientation field for the non-steerable filter
+        % % segmented places.
         
+        % % the voting is not in use
         % OrientationVoted = OrientationVote(orienation_map,SteerabelRes_Segment,3,45);
         OrientationVoted= orienation_map_filtered;
         
