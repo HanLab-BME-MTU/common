@@ -24,6 +24,9 @@ function varargout = SingleCellSegmentationManualFixGUI(varargin)
 
 % Last Modified by GUIDE v2.5 14-Jan-2014 15:19:50
 
+% this code was made by Hunter, adopted by Liya for single cell
+% segmentation for sequences,2013
+
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
@@ -244,7 +247,11 @@ if handles.segThisCell > 1
         
         goodMask = imDir([truthPath]);
         for iMask = find(aux.isCompleted)'
+            try
             masks(:,:,iMask) = imread([truthPath filesep goodMask(iMask).name]);
+            catch
+                masks(:,:,iMask) = 0;
+            end
         end
             
     end

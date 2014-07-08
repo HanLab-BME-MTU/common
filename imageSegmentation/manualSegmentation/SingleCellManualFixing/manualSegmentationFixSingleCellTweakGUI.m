@@ -49,6 +49,9 @@ function [m,boxall,isDone]  = manualSegmentationFixSingleCellTweakGUI(im,m,sup_m
 
 %Hunter Elliott, 10/2012
 
+% this code was made by Hunter, adopted by Liya for single cell
+% segmentation for sequences,2013
+
 %%
 
 if nargin < 5
