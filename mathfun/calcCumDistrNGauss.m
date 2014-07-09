@@ -1,5 +1,5 @@
 function cumDistrNGauss = calcCumDistrNGauss(param,abscissa,variableMean,...
-    variableStd)
+    variableStd,logData)
 %CALCCUMDISTRNGAUSS calculates the cumulative distribution of N Gaussians
 %
 %SYNOPSIS cumDistrNGauss = calcCumDistrNGauss(param,abscissa,variableMean,...
@@ -32,6 +32,11 @@ function cumDistrNGauss = calcCumDistrNGauss(param,abscissa,variableMean,...
 %                       Gaussians. 2 if assuming the relationship (std of
 %                       nth Gaussian) = sqrt(n) * (std of 1st Gaussian).
 %                       Optional. Default: 1.
+%       logData       : 1 for log normal data, where the log(data) is being
+%                       fitted to a normal distribution, 0 otherwise. Note
+%                       that data are passed to this function already after
+%                       taking the log.
+%                       Optional. Default: 0.
 %
 %OUTPUT cumDistrNGauss: Values of the resulting cumulative distribution
 %                       given the input abscissa values.
@@ -51,7 +56,6 @@ cumDistrNGauss = [];
 %check whether correct number of input arguments was used
 if nargin < 2
     disp('--calcCumDistrNGauss: Incorrect number of input arguments!');
-    errFlag  = 1;
     return
 end
 
@@ -61,6 +65,14 @@ end
 
 if nargin < 4 || isempty(variableStd)
     variableStd = 1;
+end
+
+if nargin < 5 || isempty(logData)
+    logData = 0;
+end
+if logData && (variableMean==1&&variableStd~=1 || variableStd==1&&variableMean~=1)
+    disp('--calcCumDistrNGauss: For log-normal fit,  mean and std must be either both variable or both constrained. Exiting.')
+    return
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -74,22 +86,31 @@ switch variableMean
     case 0 %if mean is not variable
 
         switch variableStd
-
+            
             case 0 %if variance is constrained to all variances are equal
-
+                
                 %get number of Gaussians
                 numGauss = length(param)-2;
-
+                
                 %get their means, variances and amplitudes
-                gaussMean = [1:numGauss]'*param(1);
-                gaussStd  = repmat(param(2),numGauss,1);
+                if ~logData
+                    gaussMean = (1:numGauss)'*param(1);
+                    gaussStd  = repmat(param(2),numGauss,1);
+                else
+                    dataMean1 = exp(param(1)+param(2)^2/2);
+                    dataVar1 = exp(param(2)^2+2*param(1))*(exp(param(2)^2)-1);
+                    dataMeanN = (1:numGauss)'*dataMean1;
+                    dataVarN = repmat(dataVar1,numGauss,1);
+                    gaussMean = log(dataMeanN.^2./sqrt(dataVarN+dataMeanN.^2));
+                    gaussStd = sqrt(log(dataVarN./dataMeanN.^2+1));
+                end
                 gaussAmp  = param(3:end);
-
+                
             case 1 %if variance is variable
 
                 %get number of Gaussians
                 numGauss = floor(length(param)/2);
-
+                
                 %get their means, variances and amplitudes
                 gaussMean = [1:numGauss]'*param(1);
                 gaussStd  = param(2:numGauss+1);
@@ -101,8 +122,17 @@ switch variableMean
                 numGauss = length(param)-2;
                 
                 %get their means, variances and amplitudes
-                gaussMean = (1:numGauss)'*param(1);
-                gaussStd  = sqrt(1:numGauss)'*param(2);
+                if ~logData
+                    gaussMean = (1:numGauss)'*param(1);
+                    gaussStd  = sqrt(1:numGauss)'*param(2);
+                else
+                    dataMean1 = exp(param(1)+param(2)^2/2);
+                    dataVar1 = exp(param(2)^2+2*param(1))*(exp(param(2)^2)-1);
+                    dataMeanN = (1:numGauss)'*dataMean1;
+                    dataVarN = (1:numGauss)'*dataVar1;
+                    gaussMean = log(dataMeanN.^2./sqrt(dataVarN+dataMeanN.^2));
+                    gaussStd = sqrt(log(dataVarN./dataMeanN.^2+1));
+                end
                 gaussAmp  = param(3:end);
 
         end %(switch variableStd)

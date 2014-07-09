@@ -1,7 +1,7 @@
 function [intensityHist,numPeaks,allGaussMean,allGaussStd,ratioPeak2toPeak1,...
     ratioPeak3toPeak2,numFeatures,errFlag] = singleFluoroAnalysis(movieInfo,...
     movieName,startFrame,endFrame,alpha,variableMean,variableStd,maxNumGauss,...
-    plotResults)
+    plotResults,logData)
 %SINGLEFLUOROANALYSIS looks for peaks in the intensity histogram in each frame and plots their characteristics.
 %
 %SYNOPSIS [intensityHist,numPeaks,allGaussMean,allGaussStd,ratioPeak2toPeak1,...
@@ -53,15 +53,26 @@ function [intensityHist,numPeaks,allGaussMean,allGaussStd,ratioPeak2toPeak1,...
 %                      Default: 10.
 %       plotResults  : 1 if results are to be plotted, 0 otherwise.
 %                      Default: 1.
+%       logData      : 1 to fit intensity distributions with log-normal, 0
+%                      to fit with normal.
+%                      Default: 0.
 %
 %OUTPUT intensityHist    : Array of structures with field gaussParam as outputed by
 %                          fitHistWithGaussians for each analyzed frame.
+%                          When logData = 1, these are the log-normal
+%                          parameters M and S (i.e. not the mean and std).
 %       numPeaks         : Number of intensity peaks detected in each
 %                          analyzed frame.
 %       allGaussMean     : Means of fitted Gaussians in each analyzed
-%                          frame.
+%                          frame. When logData = 1, this will be the mean
+%                          of the lognormal distribution, not the
+%                          distribution parameter M. See Remarks for
+%                          formula.
 %       allGaussStd      : Standard deviations of fitted Gaussians in
-%                          each analyzed frame.
+%                          each analyzed frame. When logData = 1, this will
+%                          be the stanrd deviation of the lognormal
+%                          distribution, not the distribution parameter S.
+%                          See Remarks for formula.
 %       ratioPeak2toPeak1: Ratio of amplitude of second peak to first peak
 %                          per analyzed frame. NaN indicates that a frame 
 %                          does not have a second peak.
@@ -71,6 +82,14 @@ function [intensityHist,numPeaks,allGaussMean,allGaussStd,ratioPeak2toPeak1,...
 %       numFeatures      : Number of detected features in each analyzed
 %                          frame. NaN indicates frame hasn't been analyszed.
 %       errFlag          : 0 if function executes normally, 1 otherwise;
+%
+%REMARKS Interconversion between log-normal parameters M and S, and mean and
+%and standard deviation of distribution mu and sigma:
+%
+% mu = exp(M+S^2/2) & standard deviation: sigma^2 = exp(S^2+2M)*(exp(S^2)-1)
+%
+% Inverse: 
+% M = ln(mu^2/sqrt(sigma^2+mu^2)) & S^2 = ln(sigma^2/mu^2+1)
 %
 %Khuloud Jaqaman, April 2007
 
@@ -102,6 +121,7 @@ variableMean_def = 0;
 variableStd_def = 0;
 maxNumGauss_def = 10;
 plotResults_def = 1;
+logData_def = 0;
 
 %check movieName
 if nargin < 2 || isempty(movieName)
@@ -179,6 +199,20 @@ else
     end
 end
 
+%check logData
+if nargin < 10 || isempty(logData)
+    logData = logData_def;
+else
+    if ~any(logData == [0,1])
+        disp('--singleFluoroAnalysis: "logData" should be 0 or 1!');
+        errFlag = 1;
+    end
+end
+if logData && (variableMean==1&&variableStd~=1 || variableStd==1&&variableMean~=1)
+    disp('--fitHistWithGaussians: For log-normal fit,  mean and std must be either both variable or both constrained. Exiting.')
+    return
+end
+
 %exit if there are problem in input variables
 if errFlag
     disp('--singleFluoroAnalysis: Please fix input data!');
@@ -206,7 +240,7 @@ for i = startFrame : endFrame
     if numFeatures(i) >= 10
         [numObsPerBin,binCenter,gaussParam,errFlag] = ...
             fitHistWithGaussians(movieInfo(i).amp(:,1),alpha,variableMean,...
-            variableStd,0,maxNumGauss,2);
+            variableStd,0,maxNumGauss,2,[],logData);
         intensityHist(i).gaussParam = gaussParam;
     end
 end
@@ -228,6 +262,12 @@ for i = startFrame : endFrame
         allGaussMean(1:numPeaks(i),i) = intensityHist(i).gaussParam(:,1);
         allGaussStd(1:numPeaks(i),i) = intensityHist(i).gaussParam(:,2);
     end
+end
+if logData
+    actualMean = exp(allGaussMean+allGaussStd.^2/2);
+    actualStd = sqrt(exp(allGaussStd.^2+2*allGaussMean).*(exp(allGaussStd.^2)-1));
+    allGaussMean = actualMean;
+    allGaussStd = actualStd;
 end
 
 %get ratio of amplitude of 2nd peak to 1st peak, and 3rd peak to 2nd peak

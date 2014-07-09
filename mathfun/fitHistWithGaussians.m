@@ -1,11 +1,11 @@
 function [numObsPerBinP,binCenterP,gaussParam,errFlag] = fitHistWithGaussians(...
     observations,alpha,variableMean,variableStd,showPlot,maxNumGauss,...
-    binStrategy,plotName)
+    binStrategy,plotName,logData)
 %FITHISTWITHGAUSSIANS determines the number of Gaussians + their characteristics to fit a histogram
 %
 %SYNOPSIS [numObsPerBinP,binCenterP,gaussParam,errFlag] = fitHistWithGaussians(...
 %    observations,alpha,variableMean,variableStd,showPlot,maxNumGauss,...
-%    binStrategy,plotName)
+%    binStrategy,plotName,logData)
 %
 % or [numObsPerBin,binCenter,gaussParam,errFlag] = fitHistWithGaussians(...
 %    observations,'R',showPlot,maxNumGauss)
@@ -44,6 +44,9 @@ function [numObsPerBinP,binCenterP,gaussParam,errFlag] = fitHistWithGaussians(..
 %                     Optional. Default: 2.
 %       plotName    : The title of the plotted figure.
 %                     Optional. Default: 'Figure'.
+%       logData     : 1 for log normal data, where the log(observations) is
+%                     fitted, 0 otherwise.
+%                     Optional. Default: 0.
 %
 %OUTPUT numObsPerBin: Number of observations that fall in each bin.
 %       binCenter   : Center of each bin.
@@ -106,9 +109,6 @@ else
     % make sure observations is a col-vector
     observations = observations(:);
 end
-%get rid of outliers in the observations vector
-[outlierIdx,inlierIdx] = detectOutliers(observations,4);
-observations = observations(inlierIdx);
 
 % Check whether to use the matlab routine or R
 switch isnumeric(alpha)
@@ -179,6 +179,14 @@ switch isnumeric(alpha)
             plotName = 'Figure';
         end
 
+        if nargin < 9 || isempty(logData)
+            logData = 0;
+        end
+        if logData && (variableMean==1&&variableStd~=1 || variableStd==1&&variableMean~=1)
+            disp('--fitHistWithGaussians: For log-normal fit,  mean and std must be either both variable or both constrained. Exiting.')
+            return
+        end
+        
     case 0 % alpha is not numeric
         
         plotName = []; %this is to avoid a code crash
@@ -245,6 +253,20 @@ end % switch
 if errFlag
     return
 end
+
+%convert data to log if log-normal distribution is fitted
+if logData
+    if (any(observations<=0))
+        disp('WARNING: Some observations are not positive. Will ignore them to fit log-normal distribution.');
+        observations = observations(observations>0);
+    end
+    observations0 = observations;
+    observations = log(observations);
+end
+
+% %get rid of outliers in the observations vector
+% [~,inlierIdx] = detectOutliers(observations,4);
+% observations = observations(inlierIdx);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Histogram calculation and fitting
@@ -330,12 +352,11 @@ switch isR
             numGaussT = numGauss + 1;
             
             %assign the parameter initial guesses
-            meanInitialGuess = prctile(observations,(1:numGaussT)'*100/(numGaussT+1));
+            tmp = linspace(min(observations),max(observations),numGaussT+2);
+            meanInitialGuess = tmp(2:end-1)';
             stdInitialGuess = nanstd(observations)/sqrt(numGaussT)*ones(numGaussT,1);
             ampInitialGuess = numObservations/numGaussT*ones(numGaussT,1);
             gaussParamT = [meanInitialGuess stdInitialGuess ampInitialGuess];
-            %             gaussParamT = [gaussParam; [binCenter(floor(end/2)) ...
-            %                 10*(binCenter(end)-binCenter(end-1)) numObservations/2]];
             
             switch variableMean
                 
@@ -365,12 +386,23 @@ switch isR
 
                             %estimate unknown parameters
                             [param,resnorm,residualsT] = lsqcurvefit(@calcCumDistrNGauss,x0,...
-                                binCenter,cumHist,lb,ub,options,variableMean,variableStd);
+                                binCenter,cumHist,lb,ub,options,variableMean,variableStd,logData);
+                            residualsT = -residualsT;
 
                             %get output from parameters vector
-                            gaussParamT(:,1) = (1:numGaussT)'*param(1);
-                            gaussParamT(:,2) = repmat(param(2),numGaussT,1);
+                            if ~logData
+                                gaussParamT(:,1) = (1:numGaussT)'*param(1);
+                                gaussParamT(:,2) = repmat(param(2),numGaussT,1);
+                            else
+                                dataMean1 = exp(param(1)+param(2)^2/2);
+                                dataVar1 = exp(param(2)^2+2*param(1))*(exp(param(2)^2)-1);
+                                dataMeanN = (1:numGaussT)'*dataMean1;
+                                dataVarN = repmat(dataVar1,numGaussT,1);
+                                gaussParamT(:,1) = log(dataMeanN.^2./sqrt(dataVarN+dataMeanN.^2));
+                                gaussParamT(:,2) = sqrt(log(dataVarN./dataMeanN.^2+1));
+                            end
                             gaussParamT(:,3) = param(3:end);
+
 
                         case 1 %if variance is variable
 
@@ -394,7 +426,8 @@ switch isR
 
                             %estimate unknown parameters
                             [param,resnorm,residualsT] = lsqcurvefit(@calcCumDistrNGauss,x0,...
-                                binCenter,cumHist,lb,ub,options,variableMean,variableStd);
+                                binCenter,cumHist,lb,ub,options,variableMean,variableStd,logData);
+                            residualsT = -residualsT;
 
                             %get output from parameters vector
                             gaussParamT(:,1) = (1:numGaussT)'*param(1);
@@ -410,8 +443,11 @@ switch isR
                             x0 = [gaussParamT(1,1:2)'; gaussParamT(:,3)];
 
                             %assign lower bounds
+                            %                             lb = [binCenter(1)*ones(numGaussT,1) ...
+                            %                                 (binCenter(end)-binCenter(end-1))*ones(numGaussT,1) ...
+                            %                                 zeros(numGaussT,1)];
                             lb = [binCenter(1)*ones(numGaussT,1) ...
-                                (binCenter(end)-binCenter(end-1))*ones(numGaussT,1) ...
+                                zeros(numGaussT,1) ...
                                 zeros(numGaussT,1)];
                             lb = [lb(1,1:2)'; lb(:,3)];
 
@@ -423,11 +459,21 @@ switch isR
 
                             %estimate unknown parameters
                             [param,resnorm,residualsT] = lsqcurvefit(@calcCumDistrNGauss,x0,...
-                                binCenter,cumHist,lb,ub,options,variableMean,variableStd);
+                                binCenter,cumHist,lb,ub,options,variableMean,variableStd,logData);
+                            residualsT = -residualsT;
 
                             %get output from parameters vector
-                            gaussParamT(:,1) = (1:numGaussT)'*param(1);
-                            gaussParamT(:,2) = sqrt((1:numGaussT))'*param(2);
+                            if ~logData
+                                gaussParamT(:,1) = (1:numGaussT)'*param(1);
+                                gaussParamT(:,2) = sqrt((1:numGaussT))'*param(2);
+                            else
+                                dataMean1 = exp(param(1)+param(2)^2/2);
+                                dataVar1 = exp(param(2)^2+2*param(1))*(exp(param(2)^2)-1);
+                                dataMeanN = (1:numGaussT)'*dataMean1;
+                                dataVarN = (1:numGaussT)'*dataVar1;
+                                gaussParamT(:,1) = log(dataMeanN.^2./sqrt(dataVarN+dataMeanN.^2));
+                                gaussParamT(:,2) = sqrt(log(dataVarN./dataMeanN.^2+1));
+                            end
                             gaussParamT(:,3) = param(3:end);
 
                     end %(switch variableStd)
@@ -458,7 +504,8 @@ switch isR
 
                             %estimate unknown parameters
                             [param,resnorm,residualsT] = lsqcurvefit(@calcCumDistrNGauss,x0,...
-                                binCenter,cumHist,lb,ub,options,variableMean,variableStd);
+                                binCenter,cumHist,lb,ub,options,variableMean,variableStd,logData);
+                            residualsT = -residualsT;
 
                             %get output from parameters vector
                             gaussParamT(:,1) = param(1:numGaussT);
@@ -487,7 +534,8 @@ switch isR
 
                             %estimate unknown parameters
                             [param,resnorm,residualsT] = lsqcurvefit(@calcCumDistrNGauss,x0,...
-                                binCenter,cumHist,lb,ub,options,variableMean,variableStd);
+                                binCenter,cumHist,lb,ub,options,variableMean,variableStd,logData);
+                            residualsT = -residualsT;
 
                             %get output from parameters vector
                             gaussParamT = reshape(param,numGaussT,3);
@@ -626,12 +674,21 @@ end
 %% Plotting
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%revert back to actual data in case of log-normal
+if logData
+    observations = observations0;
+end
+
 % make a histogram for plotting and output. Choose how to calculate bins
 if showPlot == 2
     [numObsPerBinP,binCenterP] = histogram(observations,'smooth');
     numObsPerBinP = numObsPerBinP*(binCenterP(2)-binCenterP(1));
 elseif showPlot ~= 0
     [numObsPerBinP,binCenterP] = histogram(observations);
+    if length(binCenterP)<20
+        [numObsPerBinP,binCenterP] = hist(observations,20);
+        numObsPerBinP = numObsPerBinP/(binCenterP(2)-binCenterP(1));
+    end
     numObsPerBinP = numObsPerBinP*(binCenterP(2)-binCenterP(1));
 end
 
@@ -643,10 +700,13 @@ if showPlot
     distrIndGauss = zeros(numGauss,length(binCenterP));
     for i=1:numGauss
         % no longer multiply by the bin width - histograms is normed now
-        distrIndGauss(i,:) = gaussParam(i,3)*normpdf(binCenterP,...
-            gaussParam(i,1),gaussParam(i,2))*(binCenterP(2)-binCenterP(1));
-        %         distrNGauss = distrNGauss + gaussParam(i,3)*normpdf(binCenterP,...
-        %             gaussParam(i,1),gaussParam(i,2))*(binCenterP(2)-binCenterP(1));
+        if ~logData
+            distrIndGauss(i,:) = gaussParam(i,3)*normpdf(binCenterP,...
+                gaussParam(i,1),gaussParam(i,2))*(binCenterP(2)-binCenterP(1));
+        else
+            distrIndGauss(i,:) = gaussParam(i,3)*lognpdf(binCenterP,...
+                gaussParam(i,1),gaussParam(i,2))*(binCenterP(2)-binCenterP(1));
+        end
     end
     distrNGauss = sum(distrIndGauss,1);
     
@@ -655,14 +715,19 @@ if showPlot
         binCenter = (binCenter(1:end-1)+binCenter(2:end))/2;
         cumHist = cumHist(2:end-1) * numObservations;
     end
-
+    
     %get the cumulative distribution from the optimized parameters
     cumDistrNGauss = zeros(size(binCenter));
     for i=1:numGauss
+        %         if ~logData
         cumDistrNGauss = cumDistrNGauss + gaussParam(i,3)*normcdf(binCenter,...
             gaussParam(i,1),gaussParam(i,2));
+        %         else
+        %             cumDistrNGauss = cumDistrNGauss + gaussParam(i,3)*logncdf(binCenter,...
+        %                 gaussParam(i,1),gaussParam(i,2));
+        %         end
     end
-
+    
     %make new figure
     if isempty(plotName)
         figure
@@ -687,11 +752,19 @@ if showPlot
     %plot the cumulative histogram and the fitted Gaussians in the right
     %half of the figure
     subplot(1,2,2);
-    plot(binCenter,cumHist,'k.')
-    hold on
-    plot(binCenter,cumDistrNGauss,'r','LineWidth',2.5)
-    xlabel('Observation values')
-    ylabel('Cumulative counts')
+    if ~logData
+        plot(binCenter,cumHist,'k.')
+        hold on
+        plot(binCenter,cumDistrNGauss,'r','LineWidth',2.5)
+        xlabel('Observation values')
+        ylabel('Cumulative counts')
+    else
+        plot(exp(binCenter),cumHist,'k.')
+        hold on
+        plot(exp(binCenter),cumDistrNGauss,'r','LineWidth',2.5)
+        xlabel('Observation values')
+        ylabel('Cumulative counts')
+    end
 
 end %(if showPlot)
 
