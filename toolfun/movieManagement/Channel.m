@@ -239,6 +239,28 @@ classdef Channel < hgsetget
             I = obj.getReader().loadImage(obj.getChannelIndex(), iFrame, iZ);
         end
         
+        function I = loadStack(obj,iFrame,iZ)            
+            %LOADSTACK Retreive entire z-stack or sub-stack:
+            %
+            % I = loadStack(obj,iFrame)            
+            % I = loadStack(obj,iFrame,iZ)            
+            %
+            % iZ - if empty, load whole z-stack, or may be vector to specify sub-stack
+            
+            if nargin < 3 || isempty(iZ)
+                iZ = 1:obj.owner_.zSize_;
+            end
+            %Get one plane to let reader determine variable class
+            i = obj.loadImage(iFrame,iZ(1));
+            imClass = class(i);
+            I = zeros([obj.owner_.imSize_ numel(iZ)],imClass);
+            I(:,:,1) = i;
+            for j = 2:numel(iZ)
+               I(:,:,j) =  obj.loadImage(iFrame,iZ(j));
+            end            
+                        
+        end
+        
         %% Bio-formats/OMERO functions
         function status = isOmero(obj)
             % Check if the Channel is linked to an OMERO object
