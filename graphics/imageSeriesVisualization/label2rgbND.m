@@ -1,5 +1,7 @@
 function [imLabelRGB, varargout] = label2rgbND( imLabel, labelColorMap )
 
+    imLabel = double(imLabel);
+    
     if ~exist( 'labelColorMap', 'var' )
 
         % assign colors randomly

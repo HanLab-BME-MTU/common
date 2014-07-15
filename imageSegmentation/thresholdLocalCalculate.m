@@ -133,9 +133,12 @@ for img_x = level_local_radius + 1 : pace : size(level_img,1) - level_local_radi
             level = [];
         end
         
+        if isnan(level)
+            level = [];
+        end 
         
         % level could be empty if input patch is all background zeros
-        if(isempty(level))
+        if isempty(level)
             level_img(img_x-half_pace:img_x+half_pace,img_y-half_pace:img_y+half_pace) = level_whole;
             % For the boundary
             if img_x == x_grid(1)
