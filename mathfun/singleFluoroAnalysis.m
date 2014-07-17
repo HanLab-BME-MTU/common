@@ -1,13 +1,13 @@
-function [intensityHist,numPeaks,allGaussMean,allGaussStd,ratioPeak2toPeak1,...
-    ratioPeak3toPeak2,numFeatures,errFlag] = singleFluoroAnalysis(movieInfo,...
-    movieName,startFrame,endFrame,alpha,variableMean,variableStd,maxNumGauss,...
-    plotResults,logData)
+function [intensityHist,numModes,allModeMean,allModeStd,allModeFrac,...
+    numFeatures,errFlag] = singleFluoroAnalysis(movieInfo,movieName,...
+    startFrame,endFrame,alpha,variableMean,variableStd,numModeMinMax,...
+    plotResults,logData,modeParamIn)
 %SINGLEFLUOROANALYSIS looks for peaks in the intensity histogram in each frame and plots their characteristics.
 %
-%SYNOPSIS [intensityHist,numPeaks,allGaussMean,allGaussStd,ratioPeak2toPeak1,...
-%    ratioPeak3toPeak2,numFeatures,errFlag] = singleFluoroAnalysis(movieInfo,...
-%    movieName,startFrame,endFrame,alpha,variableMean,variableStd,maxNumGauss,...
-%    plotResults)
+%SYNOPSIS [intensityHist,numModes,allModeMean,allModeStd,allModeFrac,...
+%    numFeatures,errFlag] = singleFluoroAnalysis(movieInfo,movieName,...
+%    startFrame,endFrame,alpha,variableMean,variableStd,numModeMinMax,...
+%    plotResults,logData,modeParamIn)
 %
 %INPUT  
 %   Mandatory
@@ -49,36 +49,44 @@ function [intensityHist,numPeaks,allGaussMean,allGaussStd,ratioPeak2toPeak1,...
 %                      (std of nth Gaussian) = sqrt(n) * (std of 1st Gaussian). 
 %                      variableStd can equal 2 only if variableMean is 0.
 %                      Default: 0.
-%       maxNumGauss  : upper limit to the number of fitted Gaussians.
-%                      Default: 10.
+%       numModeMinMax: Vector with minimum and maximum number of modes
+%                      (Gaussian or log-normal) to fit. 
+%                      Default: [1 9].
+%                      If only one value is input, it will be taken as the
+%                      maximum.
 %       plotResults  : 1 if results are to be plotted, 0 otherwise.
 %                      Default: 1.
 %       logData      : 1 to fit intensity distributions with log-normal, 0
 %                      to fit with normal.
 %                      Default: 0.
+%       modeParamIn :  Matrix with number of rows equal to number of
+%                      modes and two columns indicating the mean/M
+%                      (Gaussian/lognormal) and standard deviation/S
+%                      (Gaussian/lognormal) of each mode. If input, the
+%                      specified mode parameters are used, and only the mode
+%                      amplitudes are determined by data fitting. In this
+%                      case, the input alpha, variableMean, variableStd
+%                      and numModeMinMax are not used.
+%                      Optional. Default: [].
 %
-%OUTPUT intensityHist    : Array of structures with field gaussParam as outputed by
+%OUTPUT intensityHist    : Array of structures with field modeParam as outputed by
 %                          fitHistWithGaussians for each analyzed frame.
 %                          When logData = 1, these are the log-normal
 %                          parameters M and S (i.e. not the mean and std).
-%       numPeaks         : Number of intensity peaks detected in each
+%       numModes         : Number of intensity modes detected in each
 %                          analyzed frame.
-%       allGaussMean     : Means of fitted Gaussians in each analyzed
+%       allModeMean      : Means of fitted Gaussians in each analyzed
 %                          frame. When logData = 1, this will be the mean
 %                          of the lognormal distribution, not the
 %                          distribution parameter M. See Remarks for
 %                          formula.
-%       allGaussStd      : Standard deviations of fitted Gaussians in
+%       allModeStd       : Standard deviations of fitted Gaussians in
 %                          each analyzed frame. When logData = 1, this will
 %                          be the stanrd deviation of the lognormal
 %                          distribution, not the distribution parameter S.
 %                          See Remarks for formula.
-%       ratioPeak2toPeak1: Ratio of amplitude of second peak to first peak
-%                          per analyzed frame. NaN indicates that a frame 
-%                          does not have a second peak.
-%       ratioPeak3toPeak2: Ratio of amplitude of third peak to second peak
-%                          per analyzed frame. NaN indicates that a frame 
-%                          does not have a second peak.
+%       allModeFrac      : Fraction of each mode among the data in each
+%                          analyzed frame.
 %       numFeatures      : Number of detected features in each analyzed
 %                          frame. NaN indicates frame hasn't been analyszed.
 %       errFlag          : 0 if function executes normally, 1 otherwise;
@@ -119,7 +127,7 @@ endFrame_def = numFrames;
 alpha_def = 0.05;
 variableMean_def = 0;
 variableStd_def = 0;
-maxNumGauss_def = 10;
+numModeMinMax_def = [1 9];
 plotResults_def = 1;
 logData_def = 0;
 
@@ -179,12 +187,12 @@ else
     end
 end
 
-%check maxNumGauss
-if nargin < 8 || isempty(maxNumGauss)
-    maxNumGauss = maxNumGauss_def;
+%check numModeMinMax
+if nargin < 8 || isempty(numModeMinMax)
+    numModeMinMax = numModeMinMax_def;
 else
-    if maxNumGauss < 1
-        disp('--singleFluoroAnalysis: "maxNumGauss" should be at least 1!');
+    if any(numModeMinMax < 1)
+        disp('--singleFluoroAnalysis: "numModeMinMax" should be at least 1!');
         errFlag = 1;
     end
 end
@@ -213,6 +221,13 @@ if logData && (variableMean==1&&variableStd~=1 || variableStd==1&&variableMean~=
     return
 end
 
+%check input modes
+if nargin < 11 || isempty(modeParamIn)
+    modeParamIn = [];
+else
+    numModeMinMax = size(modeParamIn,1)*[1 1];
+end
+
 %exit if there are problem in input variables
 if errFlag
     disp('--singleFluoroAnalysis: Please fix input data!');
@@ -233,62 +248,43 @@ for i = startFrame : endFrame
     end
 end
 
-%fit the amplitude distribution in each frame with Gaussians
+%fit the amplitude distribution in each frame with Gaussians or log-normal
 %don't consider frame if it has less than 10 features
-intensityHist(1:numFrames) = struct('gaussParam',[]);
+intensityHist(1:numFrames) = struct('modeParam',[]);
 for i = startFrame : endFrame
     if numFeatures(i) >= 10
-        [numObsPerBin,binCenter,gaussParam,errFlag] = ...
+        [~,~,modeParam,errFlag] = ...
             fitHistWithGaussians(movieInfo(i).amp(:,1),alpha,variableMean,...
-            variableStd,0,maxNumGauss,2,[],logData);
-        intensityHist(i).gaussParam = gaussParam;
+            variableStd,0,numModeMinMax,2,[],logData,modeParamIn);
+        intensityHist(i).modeParam = modeParam;
     end
 end
 
-%get number of peaks found in each frame
-numPeaks = NaN*ones(1,numFrames);
+%get number of modes found in each frame
+numModes = NaN*ones(1,numFrames);
 for i = startFrame : endFrame
-    if ~isempty(intensityHist(i).gaussParam)
-        numPeaks(i) = size(intensityHist(i).gaussParam,1);
+    if ~isempty(intensityHist(i).modeParam)
+        numModes(i) = size(intensityHist(i).modeParam,1);
     end
 end
-maxNumPeaks = max(numPeaks);
+maxnumModes = max(numModes);
 
-%get mean and std of the Gaussians in each frame
-allGaussMean = NaN*ones(maxNumPeaks,numFrames);
-allGaussStd = NaN*ones(maxNumPeaks,numFrames);
+%get mean, std and fraction of the modes in each frame
+allModeMean = NaN*ones(maxnumModes,numFrames);
+allModeStd = NaN*ones(maxnumModes,numFrames);
+allModeFrac = NaN*ones(maxnumModes,numFrames);
 for i = startFrame : endFrame
-    if ~isempty(intensityHist(i).gaussParam)
-        allGaussMean(1:numPeaks(i),i) = intensityHist(i).gaussParam(:,1);
-        allGaussStd(1:numPeaks(i),i) = intensityHist(i).gaussParam(:,2);
+    if ~isempty(intensityHist(i).modeParam)
+        allModeMean(1:numModes(i),i) = intensityHist(i).modeParam(:,1);
+        allModeStd(1:numModes(i),i) = intensityHist(i).modeParam(:,2);
+        allModeFrac(1:numModes(i),i) = intensityHist(i).modeParam(:,4)/sum(intensityHist(i).modeParam(:,4));
     end
 end
 if logData
-    actualMean = exp(allGaussMean+allGaussStd.^2/2);
-    actualStd = sqrt(exp(allGaussStd.^2+2*allGaussMean).*(exp(allGaussStd.^2)-1));
-    allGaussMean = actualMean;
-    allGaussStd = actualStd;
-end
-
-%get ratio of amplitude of 2nd peak to 1st peak, and 3rd peak to 2nd peak
-ratioPeak2toPeak1 = NaN*ones(1,numFrames);
-ratioPeak3toPeak2 = NaN*ones(1,numFrames);
-for i = startFrame : endFrame
-    if ~isempty(intensityHist(i).gaussParam)
-        switch numPeaks(i)
-            case 2 %if there are two peaks
-                ratioPeak2toPeak1(i) = ...
-                    (intensityHist(i).gaussParam(2,3)/intensityHist(i).gaussParam(2,2))/...
-                    (intensityHist(i).gaussParam(1,3)/intensityHist(i).gaussParam(1,2));
-            case 3 %if there are three peaks
-                ratioPeak2toPeak1(i) = ...
-                    (intensityHist(i).gaussParam(2,3)/intensityHist(i).gaussParam(2,2))/...
-                    (intensityHist(i).gaussParam(1,3)/intensityHist(i).gaussParam(1,2));
-                ratioPeak3toPeak2(i) = ...
-                    (intensityHist(i).gaussParam(3,3)/intensityHist(i).gaussParam(3,2))/...
-                    (intensityHist(i).gaussParam(2,3)/intensityHist(i).gaussParam(2,2));
-        end
-    end
+    actualMean = exp(allModeMean+allModeStd.^2/2);
+    actualStd = sqrt(exp(allModeStd.^2+2*allModeMean).*(exp(allModeStd.^2)-1));
+    allModeMean = actualMean;
+    allModeStd = actualStd;
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -308,38 +304,45 @@ if plotResults
         plot(numFeatures,'k');
         axis([0 numFrames 0 1.1*max(numFeatures)]);
     end
-    title(['number of features for ' movieName]);
+    title(['Number of objects for ' movieName]);
 
-    %plot number of peaks per frame in 2nd sub-plot
+    %plot number of modes per frame in 2nd sub-plot
     subplot(4,1,2)
     hold on;
-    if any(~isnan(numPeaks))
-        plot(numPeaks,'k')
-        axis([0 numFrames 0 max(numPeaks)+1]);
+    if any(~isnan(numModes))
+        plot(numModes,'k')
+        axis([0 numFrames 0 max(numModes)+1]);
     end
-    title('number of peaks');
+    title('Number of modes');
     
     %plot mean and std of first fitted Gaussian in 3rd sub-plot
     subplot(4,1,3)
     hold on
-    if any(~isnan(allGaussMean(:)))
-        plot(allGaussMean(1,:),'k')
-        plot(allGaussStd(1,:),'r')
-        axis([0 numFrames 0 1.1*max([allGaussMean(1,:) allGaussStd(1,:)])]);
+    if any(~isnan(allModeMean(:)))
+        plot(allModeMean(1,:),'k')
+        plot(allModeStd(1,:),'r')
+        axis([0 numFrames 0 1.1*max([allModeMean(1,:) allModeStd(1,:)])]);
     end
-    title('mean (black) and std (red) of 1st peak');
+    title('Mean (black) and std (red) of 1st mode');
     
-    %plot ratio of amplitudes of 2nd peak to 1st peak and 3rd peak to 2nd
-    %peak
+    %plot fraction of each mode in 4th sub-plot
     subplot(4,1,4)
     hold on
-    if any(~isnan(ratioPeak2toPeak1))
-        plot(ratioPeak2toPeak1,'k','marker','.')
-        plot(ratioPeak3toPeak2,'r','marker','.')
-        axis([0 numFrames 0 1.1*max([ratioPeak2toPeak1 ratioPeak3toPeak2])]);
+    if any(~isnan(allModeFrac(:)))
+        plot(allModeFrac(1,:),'k')
+        if maxnumModes > 1
+            plot(allModeFrac(2,:),'r')
+            if maxnumModes > 2
+                plot(allModeFrac(3,:),'g')
+                if maxnumModes > 3
+                    plot(allModeFrac(4,:),'b')
+                end
+            end
+        end
+        axis([0 numFrames 0 1.1*max(allModeFrac(:))]);
     end
-    title('ratio of amplitudes of 2nd to 1st peak (black) and 3rd to 2nd peak (red)');
-    xlabel('frame number');
+    title('Mode fraction (1 black, 2 red, 3 green, 4 blue)');
+    xlabel('Frame number');
     
 end %(if plotRes)
 

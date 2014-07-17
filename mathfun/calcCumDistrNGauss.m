@@ -1,5 +1,5 @@
 function cumDistrNGauss = calcCumDistrNGauss(param,abscissa,variableMean,...
-    variableStd,logData)
+    variableStd,logData,gaussParamIn)
 %CALCCUMDISTRNGAUSS calculates the cumulative distribution of N Gaussians
 %
 %SYNOPSIS cumDistrNGauss = calcCumDistrNGauss(param,abscissa,variableMean,...
@@ -37,6 +37,14 @@ function cumDistrNGauss = calcCumDistrNGauss(param,abscissa,variableMean,...
 %                       that data are passed to this function already after
 %                       taking the log.
 %                       Optional. Default: 0.
+%       gaussParamIn  : Matrix with number of rows equal to number of
+%                       modes and two columns indicating the mean and
+%                       standard deviation of each mode. If input, the
+%                       specified mode parameters are used, and only the
+%                       mode amplitudes are determined by data fitting. In
+%                       this case, the input variableMean and variableStd
+%                       are not used.
+%                     Optional. Default: [].
 %
 %OUTPUT cumDistrNGauss: Values of the resulting cumulative distribution
 %                       given the input abscissa values.
@@ -75,6 +83,13 @@ if logData && (variableMean==1&&variableStd~=1 || variableStd==1&&variableMean~=
     return
 end
 
+if nargin < 6 || isempty(modeParamIn)
+    gaussParamIn = [];
+else
+    variableMean = -1;
+    variableStd = -1;
+end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Calculating the cumulative distribution
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -82,7 +97,23 @@ end
 %get the means, variances and amplitudes of the Gaussians from the input
 %parameter vector
 switch variableMean
-
+    
+    case -1 %if mean is given
+        
+        switch variableStd
+            
+            case -1 %if variance is given
+                
+                %get number of Gaussians
+                numGauss = length(param);
+                
+                %get their means, variances and amplitudes
+                gaussMean = gaussParamIn(:,1);
+                gaussStd  = gaussParamIn(:,2);
+                gaussAmp  = param;
+                
+        end
+        
     case 0 %if mean is not variable
 
         switch variableStd
