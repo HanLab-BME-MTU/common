@@ -98,7 +98,7 @@ iProc = movieData.getProcessIndex('ThresholdProcess3D',1,0);
 %If the process doesn't exist, create it
 if isempty(iProc)
     iProc = numel(movieData.processes_)+1;
-    movieData.addProcess(ThresholdProcess(movieData,movieData.outputDirectory_));                                                                                                 
+    movieData.addProcess(ThresholdProcess3D(movieData,movieData.outputDirectory_));                                                                                                 
 end
 
 thresProc= movieData.processes_{iProc};
@@ -248,6 +248,17 @@ for iChan = 1:nChanThresh
         
         %Apply the threshold to create the mask
         imageMask = currImage > currThresh;
+        
+        if isfield(paramsIn,'PostProcess')
+            %TEMPORARY! don't have time to write separate class def...
+            CC = bwconncomp(imageMask);
+            nPer = cellfun(@numel,CC.PixelIdxList);
+            iKeep = find(nPer > paramsIn.PostProcess.MinVoxels);
+            imageMask = false(size(imageMask));
+            for j = 1:numel(iKeep)
+                imageMask(CC.PixelIdxList{iKeep(j)}) = true;
+            end            
+        end        
         
         %write the mask to file
         stackWrite(imageMask,[maskDirs{iChan} filesep pString imageFileNames{iChan}{iImage}],'ccitt')        
