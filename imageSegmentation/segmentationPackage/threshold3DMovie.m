@@ -70,7 +70,7 @@ function movieData = threshold3DMovie(movieData,paramsIn)
 %   will be stored as binary, bit-packed, .tif files. 
 %
 %
-% Hunter Elliott, 11/2009
+% Hunter Elliott, 11/2009, Joy Xu
 % Revamped 5/2010
 %
 %% ----- Parameters ----- %%
@@ -192,24 +192,21 @@ for iChan = 1:nChanThresh
         
 
         %Load the current image
-        if isempty(p.ProcessIndex)
-            currImage = zeros(movieData.imSize_(1), movieData.imSize_(2), nZ);
-            for iZ = 1: nZ;
-            currImage(:,:,iZ) = movieData.channels_(p.ChannelIndex(iChan)).loadImage(iImage,iZ);
-            end
+        if isempty(p.ProcessIndex)                        
+            currImage = movieData.channels_(p.ChannelIndex(iChan)).loadStack(iImage);            
         else
             currImage = movieData.processes_{p.ProcessIndex}.loadOutImage(p.ChannelIndex(iChan),iImage); % need 3D modification
         end
 
         %KJ: filter image before thesholding if requested
         if p.GaussFilterSigma > 0
-            currImage = filterGauss2D(double(currImage),p.GaussFilterSigma);
+            currImage = filterGauss3D(single(currImage),p.GaussFilterSigma);
         end
 
         
         if isempty(p.ThresholdValue)
             try
-                currThresh = threshMethod(currImage);             
+                currThresh = threshMethod(currImage(:));             
             catch %#ok<CTCH>
                 %If auto-threshold selection fails, and jump-correction is
                 %enabled, force use of previous threshold
@@ -253,9 +250,7 @@ for iChan = 1:nChanThresh
         imageMask = currImage > currThresh;
         
         %write the mask to file
-        for iZ=1: nZ
-            imwrite(imageMask(:, :, iZ), [maskDirs{iChan} filesep pString imageFileNames{iChan}{iImage}], 'WriteMode', 'append','Compression','none');
-        end
+        stackWrite(imageMask,[maskDirs{iChan} filesep pString imageFileNames{iChan}{iImage}],'ccitt')        
         
         if ishandle(wtBar) && mod(iImage,5)
             %Update the waitbar occasionally to minimize slowdown
