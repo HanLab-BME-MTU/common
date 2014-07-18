@@ -257,7 +257,11 @@ for iChan = 1:nChanThresh
             imageMask = false(size(imageMask));
             for j = 1:numel(iKeep)
                 imageMask(CC.PixelIdxList{iKeep(j)}) = true;
-            end            
+            end  
+            if paramsIn.PostProcess.DilateRadius > 0
+               imageMask = imdilate(imageMask,binarySphere(paramsIn.PostProcess.DilateRadius));                
+            end
+            
         end        
         
         %write the mask to file
