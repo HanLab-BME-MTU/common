@@ -141,17 +141,7 @@ for i = 1:numel(p.ChannelIndex)
     disp(outFilePaths{1,iChan});
     
     %Set up parameter structure for detection on this channel
-    detP = [];
-    for l = 1:numel(p.PerChannelParams)
-        if iscell(p.(p.PerChannelParams{l}))
-            detP.(p.PerChannelParams{l}) = p.(p.PerChannelParams{l}){iChan};
-        else
-            detP.(p.PerChannelParams{l}) = p.(p.PerChannelParams{l})(iChan);
-            if isnan(p.(p.PerChannelParams{l})(iChan))
-                detP.(p.PerChannelParams{l}) = [];
-            end
-        end        
-    end
+    detP = splitPerChannelParams(p, iChan);
     
     for j= 1:nFrames
 
