@@ -96,9 +96,12 @@ classdef MaskProcess < Process
             ip.parse(obj,iChan,iFrame,varargin{:})
             maskNames = obj.getOutMaskFileNames(iChan);
             if obj.getOwner().is3D()
-                iZ = ip.Results.iZ;
-                % Data loading
-                mask =imread([obj.outFilePaths_{iChan} filesep maskNames{1}{iFrame}], iZ);
+                %iZ = ip.Results.iZ;
+                if ~exist('iZ', 'var')
+                    mask = tif3Dread([obj.outFilePaths_{iChan} filesep maskNames{1}{iFrame}]);
+                else 
+                    mask =imread([obj.outFilePaths_{iChan} filesep maskNames{1}{iFrame}], iZ);
+                end
             else
                 mask =imread([obj.outFilePaths_{iChan} filesep maskNames{1}{iFrame}]);
             end
