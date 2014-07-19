@@ -83,7 +83,7 @@ if logData && (variableMean==1&&variableStd~=1 || variableStd==1&&variableMean~=
     return
 end
 
-if nargin < 6 || isempty(modeParamIn)
+if nargin < 6 || isempty(gaussParamIn)
     gaussParamIn = [];
 else
     variableMean = -1;
