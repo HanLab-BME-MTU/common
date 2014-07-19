@@ -1,13 +1,13 @@
 function [intensityHist,numModes,allModeMean,allModeStd,allModeFrac,...
     numFeatures,errFlag] = singleFluoroAnalysis(movieInfo,movieName,...
     startFrame,endFrame,alpha,variableMean,variableStd,numModeMinMax,...
-    plotResults,logData,modeParamIn)
+    plotResults,logData,modeParamIn,ampOrInt)
 %SINGLEFLUOROANALYSIS looks for peaks in the intensity histogram in each frame and plots their characteristics.
 %
 %SYNOPSIS [intensityHist,numModes,allModeMean,allModeStd,allModeFrac,...
 %    numFeatures,errFlag] = singleFluoroAnalysis(movieInfo,movieName,...
 %    startFrame,endFrame,alpha,variableMean,variableStd,numModeMinMax,...
-%    plotResults,logData,modeParamIn)
+%    plotResults,logData,modeParamIn,ampOrInt)
 %
 %INPUT  
 %   Mandatory
@@ -27,6 +27,9 @@ function [intensityHist,numModes,allModeMean,allModeStd,allModeFrac,...
 %             .amp         : Amplitudes of PSFs fitting detected features. 
 %                            1st column for values and 2nd column 
 %                            for standard deviations.
+%                      Can also have the fields:
+%             .intRaw and .intRawMinusBg: as produced by the function
+%                            rawIntFromMovieInfo.
 %   Optional
 %       movieName    : Name of movie. Needed to put as title of plot if plotting.
 %                      Default: 'movie1'.
@@ -59,7 +62,7 @@ function [intensityHist,numModes,allModeMean,allModeStd,allModeFrac,...
 %       logData      : 1 to fit intensity distributions with log-normal, 0
 %                      to fit with normal.
 %                      Default: 0.
-%       modeParamIn :  Matrix with number of rows equal to number of
+%       modeParamIn  : Matrix with number of rows equal to number of
 %                      modes and two columns indicating the mean/M
 %                      (Gaussian/lognormal) and standard deviation/S
 %                      (Gaussian/lognormal) of each mode. If input, the
@@ -67,7 +70,11 @@ function [intensityHist,numModes,allModeMean,allModeStd,allModeFrac,...
 %                      amplitudes are determined by data fitting. In this
 %                      case, the input alpha, variableMean, variableStd
 %                      and numModeMinMax are not used.
-%                      Optional. Default: [].
+%                      Default: [].
+%       ampOrInt     : 1 to analyze Gaussian amplitudes, 2 to analyze raw
+%                      intensities. If 2, the field intRawMinusBg must be
+%                      present.
+%                      Default: 1.
 %
 %OUTPUT intensityHist    : Array of structures with field modeParam as outputed by
 %                          fitHistWithGaussians for each analyzed frame.
@@ -130,6 +137,8 @@ variableStd_def = 0;
 numModeMinMax_def = [1 9];
 plotResults_def = 1;
 logData_def = 0;
+modeParamIn_def = [];
+ampOrInt_def = 1;
 
 %check movieName
 if nargin < 2 || isempty(movieName)
@@ -217,19 +226,35 @@ else
     end
 end
 if logData && (variableMean==1&&variableStd~=1 || variableStd==1&&variableMean~=1)
-    disp('--fitHistWithGaussians: For log-normal fit,  mean and std must be either both variable or both constrained. Exiting.')
-    return
+    disp('--singleFluoroAnalysis: For log-normal fit,  mean and std must be either both variable or both constrained.')
+    errFlag = 1;
 end
 
 %check input modes
 if nargin < 11 || isempty(modeParamIn)
-    modeParamIn = [];
+    modeParamIn = modeParamIn_def;
 else
     numModeMinMax = size(modeParamIn,1)*[1 1];
 end
 
+%check what to analyze - amplitudes or intensities
+if nargin < 12 || isempty(ampOrInt)
+    ampOrInt = ampOrInt_def;
+else
+    if ampOrInt == 2 && ~isfield(movieInfo,'intRawMinusBg')
+        disp('--singleFluoroAnalysis: Raw intensities not supplied for analysis')
+        errFlag = 1;
+    end
+end
+
 %exit if there are problem in input variables
 if errFlag
+    intensityHist = [];
+    numModes = [];
+    allModeMean = [];
+    allModeStd = [];
+    allModeFrac = [];
+    numFeatures = [];
     disp('--singleFluoroAnalysis: Please fix input data!');
     return
 end
@@ -241,11 +266,7 @@ end
 %get number of features in each frame
 numFeatures = NaN*ones(1,numFrames);
 for i = startFrame : endFrame
-    if ~isempty(movieInfo(i).amp)
-        numFeatures(i) = length(movieInfo(i).amp(:,1));
-    else
-        numFeatures(i) = 0;
-    end
+    numFeatures(i) = size(movieInfo(i).amp,1);
 end
 
 %fit the amplitude distribution in each frame with Gaussians or log-normal
@@ -253,10 +274,18 @@ end
 intensityHist(1:numFrames) = struct('modeParam',[]);
 for i = startFrame : endFrame
     if numFeatures(i) >= 10
+        %         switch ampOrInt
+        %             case 1
         [~,~,modeParam,errFlag] = ...
             fitHistWithGaussians(movieInfo(i).amp(:,1),alpha,variableMean,...
             variableStd,0,numModeMinMax,2,[],logData,modeParamIn);
         intensityHist(i).modeParam = modeParam;
+        %             case 2
+        %                 [~,~,modeParam,errFlag] = ...
+        %                     fitHistWithGaussians(movieInfo(i).intRawMinusBg(:,1),alpha,variableMean,...
+        %                     variableStd,0,numModeMinMax,2,[],logData,modeParamIn);
+        %                 intensityHist(i).modeParam = modeParam;
+        %         end
     end
 end
 

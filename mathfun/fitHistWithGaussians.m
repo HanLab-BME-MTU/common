@@ -163,7 +163,8 @@ switch isnumeric(alpha)
         end
 
         if nargin < 6 || isempty(numModeMinMax)
-            numModeMinMax = [1 9];
+            minNumGauss = 1;
+            maxNumGauss = 9;
         else
             if any(numModeMinMax < 1)
                 disp('--fitHistWithGaussians: Variable "numModeMinMax" should be at least 1!');
@@ -403,12 +404,12 @@ switch isR
                             %assign lower bounds
                             lb = zeros(numGaussT,1);
 
-                            %assign upper bounds
-                            ub = numObservations*ones(numGaussT,1);
+                            %                             %assign upper bounds
+                            %                             ub = 10*numObservations*ones(numGaussT,1);
 
                             %estimate unknown parameters
-                            [param,resnorm,residualsT] = lsqcurvefit(@calcCumDistrNGauss,x0,...
-                                binCenter,cumHist,lb,ub,options,variableMean,variableStd,logData,modeParamIn);
+                            [param,~,residualsT] = lsqcurvefit(@calcCumDistrNGauss,x0,...
+                                binCenter,cumHist,lb,[],options,variableMean,variableStd,logData,modeParamIn);
                             residualsT = -residualsT;
 
                             %get output from parameters vector
@@ -429,20 +430,18 @@ switch isR
                             x0 = [modeParamT(1,1:2)'; modeParamT(:,3)];
 
                             %assign lower bounds
-                            lb = [binCenter(1)*ones(numGaussT,1) ...
-                                (binCenter(end)-binCenter(end-1))*ones(numGaussT,1) ...
-                                zeros(numGaussT,1)];
+                            lb = [min(observations)*ones(numGaussT,1) -Inf(numGaussT,1) zeros(numGaussT,1)];
                             lb = [lb(1,1:2)'; lb(:,3)];
 
-                            %assign upper bounds
-                            ub = [binCenter(end)*ones(numGaussT,1) ...
-                                (binCenter(end)-binCenter(1))*ones(numGaussT,1) ...
-                                numObservations*ones(numGaussT,1)];
-                            ub = [ub(1,1:2)'; ub(:,3)];
+                            %                             %assign upper bounds
+                            %                             ub = [Inf(numGaussT,1) ...
+                            %                                 Inf(numGaussT,1) ...
+                            %                                 10*numObservations*ones(numGaussT,1)];
+                            %                             ub = [ub(1,1:2)'; ub(:,3)];
 
                             %estimate unknown parameters
-                            [param,resnorm,residualsT] = lsqcurvefit(@calcCumDistrNGauss,x0,...
-                                binCenter,cumHist,lb,ub,options,variableMean,variableStd,logData);
+                            [param,~,residualsT] = lsqcurvefit(@calcCumDistrNGauss,x0,...
+                                binCenter,cumHist,lb,[],options,variableMean,variableStd,logData);
                             residualsT = -residualsT;
 
                             %get output from parameters vector
@@ -469,20 +468,18 @@ switch isR
                             x0 = [modeParamT(1,1); modeParamT(:,2); modeParamT(:,3)];
 
                             %assign lower bounds
-                            lb = [binCenter(1)*ones(numGaussT,1) ...
-                                (binCenter(end)-binCenter(end-1))*ones(numGaussT,1) ...
-                                zeros(numGaussT,1)];
+                            lb = [min(observations)*ones(numGaussT,1) -Inf(numGaussT,1) zeros(numGaussT,1)];
                             lb = [lb(1,1); lb(:,2); lb(:,3)];
 
-                            %assign upper bounds
-                            ub = [binCenter(end)*ones(numGaussT,1) ...
-                                (binCenter(end)-binCenter(1))*ones(numGaussT,1) ...
-                                numObservations*ones(numGaussT,1)];
-                            ub = [ub(1,1); ub(:,2); ub(:,3)];
+                            %                             %assign upper bounds
+                            %                             ub = [Inf(numGaussT,1) ...
+                            %                                 Inf(numGaussT,1) ...
+                            %                                 Inf(numGaussT,1)];
+                            %                             ub = [ub(1,1); ub(:,2); ub(:,3)];
 
                             %estimate unknown parameters
-                            [param,resnorm,residualsT] = lsqcurvefit(@calcCumDistrNGauss,x0,...
-                                binCenter,cumHist,lb,ub,options,variableMean,variableStd,logData);
+                            [param,~,residualsT] = lsqcurvefit(@calcCumDistrNGauss,x0,...
+                                binCenter,cumHist,lb,[],options,variableMean,variableStd,logData);
                             residualsT = -residualsT;
 
                             %get output from parameters vector
@@ -499,23 +496,18 @@ switch isR
                             x0 = [modeParamT(1,1:2)'; modeParamT(:,3)];
 
                             %assign lower bounds
-                            %                             lb = [binCenter(1)*ones(numGaussT,1) ...
-                            %                                 (binCenter(end)-binCenter(end-1))*ones(numGaussT,1) ...
-                            %                                 zeros(numGaussT,1)];
-                            lb = [binCenter(1)*ones(numGaussT,1) ...
-                                zeros(numGaussT,1) ...
-                                zeros(numGaussT,1)];
+                            lb = [min(observations)*ones(numGaussT,1) -Inf(numGaussT,1) zeros(numGaussT,1)];
                             lb = [lb(1,1:2)'; lb(:,3)];
 
-                            %assign upper bounds
-                            ub = [binCenter(end)*ones(numGaussT,1) ...
-                                (binCenter(end)-binCenter(1))*ones(numGaussT,1) ...
-                                numObservations*ones(numGaussT,1)];
-                            ub = [ub(1,1:2)'; ub(:,3)];
+                            %                             %assign upper bounds
+                            %                             ub = [binCenter(end)*ones(numGaussT,1) ...
+                            %                                 (binCenter(end)-binCenter(1))*ones(numGaussT,1) ...
+                            %                                 numObservations*ones(numGaussT,1)];
+                            %                             ub = [ub(1,1:2)'; ub(:,3)];
 
                             %estimate unknown parameters
-                            [param,resnorm,residualsT] = lsqcurvefit(@calcCumDistrNGauss,x0,...
-                                binCenter,cumHist,lb,ub,options,variableMean,variableStd,logData);
+                            [param,~,residualsT] = lsqcurvefit(@calcCumDistrNGauss,x0,...
+                                binCenter,cumHist,lb,[],options,variableMean,variableStd,logData);
                             residualsT = -residualsT;
 
                             %get output from parameters vector
@@ -547,20 +539,18 @@ switch isR
                             x0 = [modeParamT(:,1); modeParamT(1,2); modeParamT(:,3)];
 
                             %assign lower bounds
-                            lb = [binCenter(1)*ones(numGaussT,1) ...
-                                (binCenter(end)-binCenter(end-1))*ones(numGaussT,1) ...
-                                zeros(numGaussT,1)];
+                            lb = [min(observations)*ones(numGaussT,1) -Inf(numGaussT,1) zeros(numGaussT,1)];
                             lb = [lb(:,1); lb(1,2); lb(:,3)];
 
-                            %assign upper bounds
-                            ub = [binCenter(end)*ones(numGaussT,1) ...
-                                (binCenter(end)-binCenter(1))*ones(numGaussT,1) ...
-                                numObservations*ones(numGaussT,1)];
-                            ub = [ub(:,1); ub(1,2); ub(:,3)];
+                            %                             %assign upper bounds
+                            %                             ub = [binCenter(end)*ones(numGaussT,1) ...
+                            %                                 (binCenter(end)-binCenter(1))*ones(numGaussT,1) ...
+                            %                                 numObservations*ones(numGaussT,1)];
+                            %                             ub = [ub(:,1); ub(1,2); ub(:,3)];
 
                             %estimate unknown parameters
-                            [param,resnorm,residualsT] = lsqcurvefit(@calcCumDistrNGauss,x0,...
-                                binCenter,cumHist,lb,ub,options,variableMean,variableStd,logData);
+                            [param,~,residualsT] = lsqcurvefit(@calcCumDistrNGauss,x0,...
+                                binCenter,cumHist,lb,[],options,variableMean,variableStd,logData);
                             residualsT = -residualsT;
 
                             %get output from parameters vector
@@ -577,20 +567,18 @@ switch isR
                             x0 = modeParamT(:);
 
                             %assign lower bounds
-                            lb = [binCenter(1)*ones(numGaussT,1) ...
-                                (binCenter(end)-binCenter(end-1))*ones(numGaussT,1) ...
-                                zeros(numGaussT,1)];
+                            lb = [min(observations)*ones(numGaussT,1) -Inf(numGaussT,1) zeros(numGaussT,1)];
                             lb = lb(:);
 
-                            %assign upper bounds
-                            ub = [binCenter(end)*ones(numGaussT,1) ...
-                                (binCenter(end)-binCenter(1))*ones(numGaussT,1) ...
-                                numObservations*ones(numGaussT,1)];
-                            ub = ub(:);
+                            %                             %assign upper bounds
+                            %                             ub = [binCenter(end)*ones(numGaussT,1) ...
+                            %                                 (binCenter(end)-binCenter(1))*ones(numGaussT,1) ...
+                            %                                 numObservations*ones(numGaussT,1)];
+                            %                             ub = ub(:);
 
                             %estimate unknown parameters
-                            [param,resnorm,residualsT] = lsqcurvefit(@calcCumDistrNGauss,x0,...
-                                binCenter,cumHist,lb,ub,options,variableMean,variableStd,logData);
+                            [param,~,residualsT] = lsqcurvefit(@calcCumDistrNGauss,x0,...
+                                binCenter,cumHist,lb,[],options,variableMean,variableStd,logData);
                             residualsT = -residualsT;
 
                             %get output from parameters vector
@@ -599,7 +587,7 @@ switch isR
                         case 2 %if variance is constrained to variance_n = n*variance_1
 
                             %inform user that this option is not valid
-                            disp('--fitHistWithGaussians: variableStd can equal 2 only if variableMean = 0! Exiting.');
+                            disp('--fitHistWithGaussians: variableStd can equal 2 only if variableMean = 0. Exiting.');
                             return
 
                     end %(switch variableStd)
