@@ -111,6 +111,7 @@ imageDilatedNorm = zeros(size(imageDilated));
 imageDilatedNorm(nzInd) = (imageDilated(nzInd) - minSignal) / (maxSignal - minSignal);
 
 %estimate the intensity level to use for thresholding the image
+threshSuccess = 1;
 switch thresholdMethod
     case 'otsu'
         try
@@ -118,8 +119,8 @@ switch thresholdMethod
         catch %#ok<CTCH>
             disp(['Method failed to determine a threshold (otsu, noise ' ...
                 num2str(filterNoise) ', background ' ...
-                num2str(filterBackground) '). Exiting code.'])
-            return
+                num2str(filterBackground) ').'])
+            threshSuccess = 0;
         end
     case 'rosin'
         try
@@ -127,8 +128,8 @@ switch thresholdMethod
         catch %#ok<CTCH>
             disp(['Method failed to determine a threshold (rosin, noise ' ...
                 num2str(filterNoise) ', background ' ...
-                num2str(filterBackground) '). Exiting code.'])
-            return
+                num2str(filterBackground) ').'])
+            threshSuccess = 0;
         end
     case 'minmax'
         try
@@ -136,39 +137,38 @@ switch thresholdMethod
         catch %#ok<CTCH>
             disp(['Method failed to determine a threshold (minmax, noise ' ...
                 num2str(filterNoise) ', background ' ...
-                num2str(filterBackground) '). Exiting code.'])
-            return
+                num2str(filterBackground) ').'])
+            threshSuccess = 0;
         end
 end
 
-%threshold the image
-imageThresholded = im2bw(imageDilatedNorm,level);
-
-%fill holes in thresholded image to make continuous blobs
-imageThresholdedFilled = imfill(imageThresholded,'holes');
-
-% go over blobs and remove those with a size smaller that minSize
-labels = bwlabel(imageThresholdedFilled);
-stats = regionprops(labels, 'Area'); %#ok<MRPBW>
-idx = find([stats.Area] > minSize);
-
-%output final blob mask
-maskBlobs = ismember(labels, idx);
+if threshSuccess
+    
+    %threshold the image
+    imageThresholded = im2bw(imageDilatedNorm,level);
+    
+    %fill holes in thresholded image to make continuous blobs
+    imageThresholdedFilled = imfill(imageThresholded,'holes');
+    
+    % go over blobs and remove those with a size smaller that minSize
+    labels = bwlabel(imageThresholdedFilled);
+    stats = regionprops(labels, 'Area'); %#ok<MRPBW>
+    idx = find([stats.Area] > minSize);
+    
+    %output final blob mask
+    maskBlobs = ismember(labels, idx);
+    
+end
 
 %% Plotting
 
 if plotRes
     
-    
     imageScaled = (image - prctile(image(:),1)) / (prctile(image(:),99) - prctile(image(:),1));
     imageScaled(imageScaled<0) = 0;
     imageScaled(imageScaled>1) = 1;
     
-    % plot 1: original image
-    % subplot(1,3,1)
-    % imshow(imageScaled,[])
-    
-    %plot 2: bandpass-filtered image
+    %plot 1: bandpass-filtered image
     f(1) = figure('Name',[plotName '_filteredimage_' ...
     thresholdMethod '_noise' num2str(filterNoise) ...
     '_background' num2str(filterBackground)]);
@@ -179,7 +179,7 @@ if plotRes
     imageScaled2(imageScaled2>1) = 1;
     imshow(imageScaled2,[])
     
-    %plot3: mask edges
+    %plot 2: mask edges
     f(2) = figure('Name',[plotName '_segmentation_' ...
         thresholdMethod '_noise' num2str(filterNoise) ...
         '_background' num2str(filterBackground)]);
@@ -194,22 +194,24 @@ if plotRes
     %construct a 3-layered image to show blob edges on top of
     %original image
     image3Color = repmat(imageScaled,[1 1 3]);
-    image3Color(:,:,1) = image3Color(:,:,1) + edgesBlobs;
+    if threshSuccess
+        image3Color(:,:,1) = image3Color(:,:,1) + edgesBlobs;
+    end
     
     %plot mask edges
     imshow(image3Color,[]);
-    
 
-    %also plot intensity histogram and threshold
+    %plot 3: intensity histogram and threshold
     f(3) = figure('Name',[plotName '_histogram_' ...
         thresholdMethod '_noise' num2str(filterNoise) ...
         '_background' num2str(filterBackground)]);
     
     n = histogram(imageDilatedNorm(nzInd),[],0);
     histogram(imageDilatedNorm(nzInd),[],0);
-    hold on
-    plot(level*[1 1],[0 max(n)],'r','LineWidth',2)
-    
+    if threshSuccess
+        hold on
+        plot(level*[1 1],[0 max(n)],'r','LineWidth',2)
+    end
 
 end
 

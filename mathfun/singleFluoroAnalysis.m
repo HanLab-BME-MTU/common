@@ -40,18 +40,27 @@ function [intensityHist,numModes,allModeMean,allModeStd,allModeFrac,...
 %       alpha        : Alpha-value for the statistical test that compares the
 %                      fit of n+1 Gaussians to the fit of n Gaussians.
 %                      Default: 0.05.
-%       variableMean : 0 if assuming the fixed relationship
+%       variableMean : Flag with multiple values:
+%                      - 0 if assuming the fixed relationship
 %                      (mean of nth Gaussian) = n * (mean of 1st Gaussian).
-%                      1 if there is no relationship between the means of
+%                      - 1 if there is no relationship between the means of
 %                      different Gaussians.
-%                      Default: 0.
-%       variableStd  : 0 if assuming that all Gaussians have the same
-%                      standard deviation. 1 if there is no relationship 
+%                      - m > 1 if assuming the same fixed relationship as 0
+%                      but that the first detected Gaussian is actually the
+%                      mth Gaussian in the relationship.
+%                      Optional. Default: 0.
+%       variableStd  : Flag with multiple values:
+%                      - 0 if assuming that all Gaussians have the same
+%                      standard deviation. 
+%                      - 1 if there is no relationship
 %                      between the standard deviations of different
-%                      Gaussians, 2 if assuming the relationship 
-%                      (std of nth Gaussian) = sqrt(n) * (std of 1st Gaussian). 
-%                      variableStd can equal 2 only if variableMean is 0.
-%                      Default: 0.
+%                      Gaussians.
+%                      - 2 if assuming the relationship
+%                      (std of nth Gaussian) = sqrt(n) * (std of 1st Gaussian).
+%                      This relationship is generalized if variableMean > 1.
+%                      variableStd can equal 2 only if variableMean is not
+%                      1.
+%                      Optional. Default: 0.
 %       numModeMinMax: Vector with minimum and maximum number of modes
 %                      (Gaussian or log-normal) to fit. 
 %                      Default: [1 9].
@@ -179,11 +188,11 @@ end
 %check variableMean
 if nargin < 6 || isempty(variableMean)
     variableMean = variableMean_def;
-else
-    if ~any(variableMean == [0,1])
-        disp('--singleFluoroAnalysis: "variableMean" should be 0 or 1!');
-        errFlag = 1;
-    end
+    % else
+    %     if ~any(variableMean == [0,1])
+    %         disp('--singleFluoroAnalysis: "variableMean" should be 0 or 1!');
+    %         errFlag = 1;
+    %     end
 end
 
 %check variableStd

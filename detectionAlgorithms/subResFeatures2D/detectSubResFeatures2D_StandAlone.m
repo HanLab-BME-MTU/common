@@ -64,6 +64,8 @@ function [movieInfo,exceptions,localMaxima,background,psfSigma] = ...
 %                           calculated and the significance of local maxima
 %                           is assessed based on local background only.
 %                           Omit field or assign as [] to use default.
+%           .maskLoc      : Name (including full path) of mask file
+%                           specifying ROI for detection.
 %       saveResults   : 0 if no saving is requested.
 %                       If saving is requested, structure with fields:
 %           .dir          : Directory where results should be saved.
@@ -368,7 +370,7 @@ for iWindow = 1 : numIntegWindow
             end
         end
         %apply mask
-        imageRaw = imageRaw .* repmat(maskImage,1+2*integWindow(iWindow));
+        imageRaw = imageRaw .* repmat(maskImage,[1 1 1+2*integWindow(iWindow)]);
         
         %replace zeros with NaNs
         %zeros result from cropping that leads to curved boundaries

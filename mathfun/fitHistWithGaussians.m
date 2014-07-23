@@ -20,17 +20,26 @@ function [numObsPerBinP,binCenterP,modeParam,errFlag] = fitHistWithGaussians(...
 %                     R. For this, you will need the toolbox matlab2R,
 %                     a local installation of R with a COM interface, and
 %                     Windows as OS. 'R' OPTION DISABLED AT THE MOMENT.
-%       variableMean: 0 if assuming the fixed relationship
+%       variableMean: Flag with multiple values:
+%                     - 0 if assuming the fixed relationship
 %                     (mean of nth Gaussian) = n * (mean of 1st Gaussian).
-%                     1 if there is no relationship between the means of
+%                     - 1 if there is no relationship between the means of
 %                     different Gaussians.
+%                     - m > 1 if assuming the same fixed relationship as 0
+%                     but that the first detected Gaussian is actually the
+%                     mth Gaussian in the relationship.
 %                     Optional. Default: 0.
-%       variableStd : 0 if assuming that all Gaussians have the same
-%                     standard deviation. 1 if there is no relationship
+%       variableStd : Flag with multiple values:
+%                     - 0 if assuming that all Gaussians have the same
+%                     standard deviation. 
+%                     - 1 if there is no relationship
 %                     between the standard deviations of different
-%                     Gaussians, 2 if assuming the relationship
+%                     Gaussians.
+%                     - 2 if assuming the relationship
 %                     (std of nth Gaussian) = sqrt(n) * (std of 1st Gaussian).
-%                     WvariableStd can equal 2 only if variableMean is 0.
+%                     This relationship is generalized if variableMean > 1.
+%                     variableStd can equal 2 only if variableMean is not
+%                     1.
 %                     Optional. Default: 0.
 %       showPlot    : 0 to not plot anything
 %                     1 to plot the histogram and fitted Gaussians
@@ -94,11 +103,6 @@ function [numObsPerBinP,binCenterP,modeParam,errFlag] = fitHistWithGaussians(...
 %        100,000            1e-6 (90%), 1e-8 (95%)
 %        200,000            1e-7 (90%), 1e-10 (95%)
 %
-%
-%        The function does not yet allow to set maxPoints! (WHO WROTE
-%        THIS? -KJ)
-%
-%
 %Khuloud Jaqaman, August 2006
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -137,11 +141,11 @@ switch isnumeric(alpha)
 
         if nargin < 3 || isempty(variableMean)
             variableMean = 0;
-        else
-            if ~any(variableMean == [0,1])
-                disp('--fitHistWithGaussians: Variable "variableMean" should be 0 or 1!');
-                errFlag = 1;
-            end
+            %         else
+            %             if ~any(variableMean == [0,1])
+            %                 disp('--fitHistWithGaussians: Variable "variableMean" should be 0 or 1!');
+            %                 errFlag = 1;
+            %             end
         end
 
         if nargin < 4 || isempty(variableStd)
@@ -301,32 +305,32 @@ end
 % ---------- SWITCH BETWEEN MATLAB AND R ---------------
 
 switch isR
-
+    
     case 0 % run Matlab
-
+        
         switch binStrategy
-
+            
             case 1 %use "histogram"
-
+                
                 %get the number of observations
                 numObservations = length(find(~isnan(observations)));
-
+                
                 %calculate the histogram
                 [numObsPerBin,binCenter] = histogram(observations);
                 numObsPerBin = numObsPerBin'*(binCenter(2)-binCenter(1));
                 binCenter = binCenter';
-
+                
                 %determine the number of bins used
                 numBins = length(binCenter);
-
+                
                 %calculate the cumulative histogram
                 cumHist = zeros(numBins,1);
                 for iBin = 1 : numBins
                     cumHist(iBin) = sum(numObsPerBin(1:iBin));
                 end
-
+                
             case 2
-
+                
                 % for the optimization: don't bin the cumulative histogram. However, don't
                 % use duplicate values - therefore, use cdfcalc. It also returns the number
                 % of non-NaN observations, and an error message, if any.
@@ -341,13 +345,13 @@ switch isR
                 % cdfcalc returns n+1 values for cumHist. 1:end-1 is the bottom of the
                 % step, 2:end the top. Take the middle for best results.
                 % cumHist = (cumHist(2:end)+cumHist(1:end-1))/2;
-
+                
                 % make cumHist with binCenters in middle of top of step
                 binCenter = (binCenter(1:end-1)+binCenter(2:end))/2;
                 cumHist = cumHist(2:end-1);
                 numBins = numBins - 1;
-
-
+                
+                
                 % downsample to about 1000 points if necessary
                 if numBins > 1000
                     dsIdx = unique(round(linspace(1,numBins,1000)))';
@@ -355,22 +359,22 @@ switch isR
                     binCenter = binCenter(dsIdx);
                     numBins = length(dsIdx);
                 end
-
+                
                 % make cumHist go from 1:numObservations
                 cumHist = cumHist * numObservations;
-
+                
         end
-
+        
         %initialize variables indicating number of fitted Gaussians and their parameters
         numGauss = minNumGauss-1;
         modeParam = [];
-
+        
         %logical variable indicating whether to attempt to fit
         fit = 1;
-
+        
         %set some optimization options
         options = optimset('MaxFunEvals',100000,'MaxIter',10000,'TolFun',1e-3,'Display','off');
-
+        
         %fit the cumulative histogram with as many Gaussians as necessary
         while fit
             
@@ -397,213 +401,224 @@ switch isR
                             
                             %calculate number of degrees of freedom
                             numDegFreeT = numBins - numGaussT;
-
+                            
                             %assign parameter initial values
                             x0 = modeParamT(:,3);
                             
                             %assign lower bounds
                             lb = zeros(numGaussT,1);
-
+                            
                             %                             %assign upper bounds
                             %                             ub = 10*numObservations*ones(numGaussT,1);
-
+                            
                             %estimate unknown parameters
                             [param,~,residualsT] = lsqcurvefit(@calcCumDistrNGauss,x0,...
                                 binCenter,cumHist,lb,[],options,variableMean,variableStd,logData,modeParamIn);
                             residualsT = -residualsT;
-
+                            
                             %get output from parameters vector
                             modeParamT(:,3) = param;
                             
                     end
                     
-                case 0 %if mean is constrained
+                case 1 %if mean is variable
                     
                     switch variableStd
                         
                         case 0 %if variance is constrained to all variances are equal
-
-                            %calculate number of degrees of freedom
-                            numDegFreeT = numBins - numGaussT - 2;
-
-                            %assign parameter initial values
-                            x0 = [modeParamT(1,1:2)'; modeParamT(:,3)];
-
-                            %assign lower bounds
-                            lb = [min(observations)*ones(numGaussT,1) -Inf(numGaussT,1) zeros(numGaussT,1)];
-                            lb = [lb(1,1:2)'; lb(:,3)];
-
-                            %                             %assign upper bounds
-                            %                             ub = [Inf(numGaussT,1) ...
-                            %                                 Inf(numGaussT,1) ...
-                            %                                 10*numObservations*ones(numGaussT,1)];
-                            %                             ub = [ub(1,1:2)'; ub(:,3)];
-
-                            %estimate unknown parameters
-                            [param,~,residualsT] = lsqcurvefit(@calcCumDistrNGauss,x0,...
-                                binCenter,cumHist,lb,[],options,variableMean,variableStd,logData);
-                            residualsT = -residualsT;
-
-                            %get output from parameters vector
-                            if ~logData
-                                modeParamT(:,1) = (1:numGaussT)'*param(1);
-                                modeParamT(:,2) = repmat(param(2),numGaussT,1);
-                            else
-                                dataMean1 = exp(param(1)+param(2)^2/2);
-                                dataVar1 = exp(param(2)^2+2*param(1))*(exp(param(2)^2)-1);
-                                dataMeanN = (1:numGaussT)'*dataMean1;
-                                dataVarN = repmat(dataVar1,numGaussT,1);
-                                modeParamT(:,1) = log(dataMeanN.^2./sqrt(dataVarN+dataMeanN.^2));
-                                modeParamT(:,2) = sqrt(log(dataVarN./dataMeanN.^2+1));
-                            end
-                            modeParamT(:,3) = param(3:end);
-
-
-                        case 1 %if variance is variable
-
+                            
                             %calculate number of degrees of freedom
                             numDegFreeT = numBins - 2*numGaussT - 1;
-
-                            %assign parameter initial values
-                            x0 = [modeParamT(1,1); modeParamT(:,2); modeParamT(:,3)];
-
-                            %assign lower bounds
-                            lb = [min(observations)*ones(numGaussT,1) -Inf(numGaussT,1) zeros(numGaussT,1)];
-                            lb = [lb(1,1); lb(:,2); lb(:,3)];
-
-                            %                             %assign upper bounds
-                            %                             ub = [Inf(numGaussT,1) ...
-                            %                                 Inf(numGaussT,1) ...
-                            %                                 Inf(numGaussT,1)];
-                            %                             ub = [ub(1,1); ub(:,2); ub(:,3)];
-
-                            %estimate unknown parameters
-                            [param,~,residualsT] = lsqcurvefit(@calcCumDistrNGauss,x0,...
-                                binCenter,cumHist,lb,[],options,variableMean,variableStd,logData);
-                            residualsT = -residualsT;
-
-                            %get output from parameters vector
-                            modeParamT(:,1) = (1:numGaussT)'*param(1);
-                            modeParamT(:,2) = param(2:numGaussT+1);
-                            modeParamT(:,3) = param(numGaussT+2:end);
-
-                        case 2 %if variance is constrained to variance_n = n*variance_1
-
-                            %calculate number of degrees of freedom
-                            numDegFreeT = numBins - numGaussT - 2;
-
-                            %assign parameter initial values
-                            x0 = [modeParamT(1,1:2)'; modeParamT(:,3)];
-
-                            %assign lower bounds
-                            lb = [min(observations)*ones(numGaussT,1) -Inf(numGaussT,1) zeros(numGaussT,1)];
-                            lb = [lb(1,1:2)'; lb(:,3)];
-
-                            %                             %assign upper bounds
-                            %                             ub = [binCenter(end)*ones(numGaussT,1) ...
-                            %                                 (binCenter(end)-binCenter(1))*ones(numGaussT,1) ...
-                            %                                 numObservations*ones(numGaussT,1)];
-                            %                             ub = [ub(1,1:2)'; ub(:,3)];
-
-                            %estimate unknown parameters
-                            [param,~,residualsT] = lsqcurvefit(@calcCumDistrNGauss,x0,...
-                                binCenter,cumHist,lb,[],options,variableMean,variableStd,logData);
-                            residualsT = -residualsT;
-
-                            %get output from parameters vector
-                            if ~logData
-                                modeParamT(:,1) = (1:numGaussT)'*param(1);
-                                modeParamT(:,2) = sqrt((1:numGaussT))'*param(2);
-                            else
-                                dataMean1 = exp(param(1)+param(2)^2/2);
-                                dataVar1 = exp(param(2)^2+2*param(1))*(exp(param(2)^2)-1);
-                                dataMeanN = (1:numGaussT)'*dataMean1;
-                                dataVarN = (1:numGaussT)'*dataVar1;
-                                modeParamT(:,1) = log(dataMeanN.^2./sqrt(dataVarN+dataMeanN.^2));
-                                modeParamT(:,2) = sqrt(log(dataVarN./dataMeanN.^2+1));
-                            end
-                            modeParamT(:,3) = param(3:end);
-
-                    end %(switch variableStd)
-
-                case 1 %if mean is variable
-
-                    switch variableStd
-
-                        case 0 %if variance is constrained to all variances are equal
-
-                            %calculate number of degrees of freedom
-                            numDegFreeT = numBins - 2*numGaussT - 1;
-
+                            
                             %assign parameter initial values
                             x0 = [modeParamT(:,1); modeParamT(1,2); modeParamT(:,3)];
-
+                            
                             %assign lower bounds
                             lb = [min(observations)*ones(numGaussT,1) -Inf(numGaussT,1) zeros(numGaussT,1)];
                             lb = [lb(:,1); lb(1,2); lb(:,3)];
-
+                            
                             %                             %assign upper bounds
                             %                             ub = [binCenter(end)*ones(numGaussT,1) ...
                             %                                 (binCenter(end)-binCenter(1))*ones(numGaussT,1) ...
                             %                                 numObservations*ones(numGaussT,1)];
                             %                             ub = [ub(:,1); ub(1,2); ub(:,3)];
-
+                            
                             %estimate unknown parameters
                             [param,~,residualsT] = lsqcurvefit(@calcCumDistrNGauss,x0,...
                                 binCenter,cumHist,lb,[],options,variableMean,variableStd,logData);
                             residualsT = -residualsT;
-
+                            
                             %get output from parameters vector
                             modeParamT(:,1) = param(1:numGaussT);
                             modeParamT(:,2) = repmat(param(numGaussT+1),numGaussT,1);
                             modeParamT(:,3) = param(numGaussT+2:end);
-
+                            
                         case 1 %if variance is variable
-
+                            
                             %calculate number of degrees of freedom
                             numDegFreeT = numBins - 3*numGaussT;
-
+                            
                             %assign parameter initial values
                             x0 = modeParamT(:);
-
+                            
                             %assign lower bounds
                             lb = [min(observations)*ones(numGaussT,1) -Inf(numGaussT,1) zeros(numGaussT,1)];
                             lb = lb(:);
-
+                            
                             %                             %assign upper bounds
                             %                             ub = [binCenter(end)*ones(numGaussT,1) ...
                             %                                 (binCenter(end)-binCenter(1))*ones(numGaussT,1) ...
                             %                                 numObservations*ones(numGaussT,1)];
                             %                             ub = ub(:);
-
+                            
                             %estimate unknown parameters
                             [param,~,residualsT] = lsqcurvefit(@calcCumDistrNGauss,x0,...
                                 binCenter,cumHist,lb,[],options,variableMean,variableStd,logData);
                             residualsT = -residualsT;
-
+                            
                             %get output from parameters vector
                             modeParamT = reshape(param,numGaussT,3);
-
+                            
                         case 2 %if variance is constrained to variance_n = n*variance_1
-
+                            
                             %inform user that this option is not valid
                             disp('--fitHistWithGaussians: variableStd can equal 2 only if variableMean = 0. Exiting.');
                             return
-
+                            
                     end %(switch variableStd)
-
+                    
+                otherwise %if mean is constrained
+                    
+                    %get relationship of first fitted mode to real first
+                    %mode in series
+                    firstMode = max(variableMean,1);
+                    
+                    switch variableStd
+                        
+                        case 0 %if variance is constrained to all variances are equal
+                            
+                            %calculate number of degrees of freedom
+                            numDegFreeT = numBins - numGaussT - 2;
+                            
+                            %assign parameter initial values
+                            x0 = [modeParamT(1,1:2)'; modeParamT(:,3)];
+                            
+                            %assign lower bounds
+                            lb = [min(observations)*ones(numGaussT,1) -Inf(numGaussT,1) zeros(numGaussT,1)];
+                            lb = [lb(1,1:2)'; lb(:,3)];
+                            
+                            %                             %assign upper bounds
+                            %                             ub = [Inf(numGaussT,1) ...
+                            %                                 Inf(numGaussT,1) ...
+                            %                                 10*numObservations*ones(numGaussT,1)];
+                            %                             ub = [ub(1,1:2)'; ub(:,3)];
+                            
+                            %estimate unknown parameters
+                            [param,~,residualsT] = lsqcurvefit(@calcCumDistrNGauss,x0,...
+                                binCenter,cumHist,lb,[],options,variableMean,variableStd,logData);
+                            residualsT = -residualsT;
+                            
+                            %get output from parameters vector
+                            if ~logData
+                                tmpMean = param(1) / firstMode;
+                                modeParamT(:,1) = (firstMode:numGaussT+firstMode-1)' * tmpMean;
+                                modeParamT(:,2) = repmat(param(2),numGaussT,1);
+                            else
+                                dataMean1 = exp(param(1)+param(2)^2/2);
+                                dataMean1 = dataMean1 / firstMode;
+                                dataVar1 = exp(param(2)^2+2*param(1))*(exp(param(2)^2)-1);
+                                dataMeanN = (firstMode:numGaussT+firstMode-1)'*dataMean1;
+                                dataVarN = repmat(dataVar1,numGaussT,1);
+                                modeParamT(:,1) = log(dataMeanN.^2./sqrt(dataVarN+dataMeanN.^2));
+                                modeParamT(:,2) = sqrt(log(dataVarN./dataMeanN.^2+1));
+                            end
+                            modeParamT(:,3) = param(3:end);
+                            
+                            
+                        case 1 %if variance is variable
+                            
+                            %calculate number of degrees of freedom
+                            numDegFreeT = numBins - 2*numGaussT - 1;
+                            
+                            %assign parameter initial values
+                            x0 = [modeParamT(1,1); modeParamT(:,2); modeParamT(:,3)];
+                            
+                            %assign lower bounds
+                            lb = [min(observations)*ones(numGaussT,1) -Inf(numGaussT,1) zeros(numGaussT,1)];
+                            lb = [lb(1,1); lb(:,2); lb(:,3)];
+                            
+                            %                             %assign upper bounds
+                            %                             ub = [Inf(numGaussT,1) ...
+                            %                                 Inf(numGaussT,1) ...
+                            %                                 Inf(numGaussT,1)];
+                            %                             ub = [ub(1,1); ub(:,2); ub(:,3)];
+                            
+                            %estimate unknown parameters
+                            [param,~,residualsT] = lsqcurvefit(@calcCumDistrNGauss,x0,...
+                                binCenter,cumHist,lb,[],options,variableMean,variableStd,logData);
+                            residualsT = -residualsT;
+                            
+                            %get output from parameters vector
+                            tmpMean = param(1) / firstMode;
+                            modeParamT(:,1) = (firstMode:numGaussT+firstMode-1)' * tmpMean;
+                            modeParamT(:,2) = param(2:numGaussT+1);
+                            modeParamT(:,3) = param(numGaussT+2:end);
+                            
+                        case 2 %if variance is constrained to variance_n = n*variance_1
+                            
+                            %calculate number of degrees of freedom
+                            numDegFreeT = numBins - numGaussT - 2;
+                            
+                            %assign parameter initial values
+                            x0 = [modeParamT(1,1:2)'; modeParamT(:,3)];
+                            
+                            %assign lower bounds
+                            %                             lb = [-Inf(numGaussT,1) -Inf(numGaussT,1) zeros(numGaussT,1)];
+                            lb = [min(observations)*ones(numGaussT,1) -Inf(numGaussT,1) zeros(numGaussT,1)];
+                            lb = [lb(1,1:2)'; lb(:,3)];
+                            
+                            %                             %assign upper bounds
+                            %                             ub = [binCenter(end)*ones(numGaussT,1) ...
+                            %                                 (binCenter(end)-binCenter(1))*ones(numGaussT,1) ...
+                            %                                 numObservations*ones(numGaussT,1)];
+                            %                             ub = [ub(1,1:2)'; ub(:,3)];
+                            
+                            %estimate unknown parameters
+                            [param,~,residualsT] = lsqcurvefit(@calcCumDistrNGauss,x0,...
+                                binCenter,cumHist,lb,[],options,variableMean,variableStd,logData);
+                            residualsT = -residualsT;
+                            
+                            %get output from parameters vector
+                            if ~logData
+                                tmpMean = param(1) / firstMode;
+                                modeParamT(:,1) = (firstMode:numGaussT+firstMode-1)' * tmpMean;
+                                modeParamT(:,2) = sqrt((1:numGaussT))'*param(2);
+                            else
+                                dataMean1 = exp(param(1)+param(2)^2/2);
+                                dataMean1 = dataMean1 / firstMode;
+                                dataVar1 = exp(param(2)^2+2*param(1))*(exp(param(2)^2)-1);
+                                dataVar1 = dataVar1 / firstMode;
+                                dataMeanN = (firstMode:numGaussT+firstMode-1)' * dataMean1;
+                                dataVarN = (firstMode:numGaussT+firstMode-1)' * dataVar1;
+                                modeParamT(:,1) = log(dataMeanN.^2./sqrt(dataVarN+dataMeanN.^2));
+                                modeParamT(:,2) = sqrt(log(dataVarN./dataMeanN.^2+1));
+                            end
+                            modeParamT(:,3) = param(3:end);
+                            
+                    end %(switch variableStd)
+                    
             end %(switch variableMean)
-
+            
             %check whether addition of 1 Gaussian has significantly improved the fit
             if numGaussT > minNumGauss %if this is not the first fit
-
+                
                 %get test statistic, which is F-distributed
                 testStat = (sum(residualsT.^2)/numDegFreeT)/...
                     (sum(residuals.^2)/numDegFree);
-
+                
                 %get p-value of test statistic
                 pValue = fcdf(testStat,numDegFree,numDegFreeT);
-
+                
                 %compare p-value to alpha
                 %1-sided F-test: H0: F=1, H1: F<1
                 if pValue <= alpha && numGaussT <= maxNumGauss %if p-value is smaller and the limit of Gaussians isn't reached
@@ -611,7 +626,7 @@ switch isR
                 else %if p-value is larger
                     fit = 0; %do not accept this fit and exit
                 end
-
+                
             end %(if numGaussT > 1)
             
             %if this fit is accepted, update some variables
@@ -622,12 +637,12 @@ switch isR
                 numDegFree = numDegFreeT;
             end
             
-            if ~isempty(modeParamIn)
+            if ~isempty(modeParamIn) || minNumGauss == maxNumGauss
                 fit = 0;
             end
-
+            
         end %(while fit)
-
+        
         % ----- R ------
     case 1
         %         % check if downsampling necessary - cap at 1000 observations
@@ -704,7 +719,7 @@ switch isR
         %         if ~leaveRopen
         %             closeR
         %         end
-
+        
 end
 
 %order the Gaussians in ascending value of the mean

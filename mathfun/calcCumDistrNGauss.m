@@ -7,6 +7,7 @@ function cumDistrNGauss = calcCumDistrNGauss(param,abscissa,variableMean,...
 %
 %INPUT  param         : Vector of parameters indicating the means,
 %                       variances and amplitudes of the N Gaussians.
+%                       *** DESCRIPTION NEEDS UPDATING ***
 %                       -If variableMean=1 & variableStd=1, param has 3N 
 %                        entries: N means, N standard deviations and N amplitudes.
 %                       -If variableMean=1 & variableStd=0, param has 2N+1
@@ -17,20 +18,30 @@ function cumDistrNGauss = calcCumDistrNGauss(param,abscissa,variableMean,...
 %                        entries: 1 mean, N standard deviations and N amplitudes.
 %                       -If variableMean=0 & variableStd=0, param has N+2
 %                        entries: 1 mean, 1 standard deviation and N amplitudes.
-%                       See below the definitions of variableMean and
+%                       See below for definitions of variableMean and
 %                       variableStd.
 %       abscissa      : Abscissa values at which the cumulative
 %                       distribution is calculated.
-%       variableMean  : 0 if assuming the fixed relationship
+%       variableMean  : Flag with multiple values:
+%                       - 0 if assuming the fixed relationship
 %                       (mean of nth Gaussian) = n * (mean of 1st Gaussian).
-%                       1 if there is no relationship between the means of 
-%                       different Gaussians. 
+%                       - 1 if there is no relationship between the means of
+%                       different Gaussians.
+%                       - m > 1 if assuming the same fixed relationship as 0
+%                       but that the first detected Gaussian is actually the
+%                       mth Gaussian in the relationship.
 %                       Optional. Default: 1.
-%       variableStd   : 0 if assuming that all Gaussians have the same
-%                       standard deviation. 1 if there is no relationship
+%       variableStd   : Flag with multiple values:
+%                       - 0 if assuming that all Gaussians have the same
+%                       standard deviation. 
+%                       - 1 if there is no relationship
 %                       between the standard deviations of different
-%                       Gaussians. 2 if assuming the relationship (std of
-%                       nth Gaussian) = sqrt(n) * (std of 1st Gaussian).
+%                       Gaussians.
+%                       - 2 if assuming the relationship
+%                       (std of nth Gaussian) = sqrt(n) * (std of 1st Gaussian).
+%                       This relationship is generalized if variableMean > 1.
+%                       variableStd can equal 2 only if variableMean is not
+%                       1.
 %                       Optional. Default: 1.
 %       logData       : 1 for log normal data, where the log(data) is being
 %                       fitted to a normal distribution, 0 otherwise. Note
@@ -114,60 +125,6 @@ switch variableMean
                 
         end
         
-    case 0 %if mean is not variable
-
-        switch variableStd
-            
-            case 0 %if variance is constrained to all variances are equal
-                
-                %get number of Gaussians
-                numGauss = length(param)-2;
-                
-                %get their means, variances and amplitudes
-                if ~logData
-                    gaussMean = (1:numGauss)'*param(1);
-                    gaussStd  = repmat(param(2),numGauss,1);
-                else
-                    dataMean1 = exp(param(1)+param(2)^2/2);
-                    dataVar1 = exp(param(2)^2+2*param(1))*(exp(param(2)^2)-1);
-                    dataMeanN = (1:numGauss)'*dataMean1;
-                    dataVarN = repmat(dataVar1,numGauss,1);
-                    gaussMean = log(dataMeanN.^2./sqrt(dataVarN+dataMeanN.^2));
-                    gaussStd = sqrt(log(dataVarN./dataMeanN.^2+1));
-                end
-                gaussAmp  = param(3:end);
-                
-            case 1 %if variance is variable
-
-                %get number of Gaussians
-                numGauss = floor(length(param)/2);
-                
-                %get their means, variances and amplitudes
-                gaussMean = [1:numGauss]'*param(1);
-                gaussStd  = param(2:numGauss+1);
-                gaussAmp  = param(numGauss+2:end);
-                
-            case 2 %if variance is constrained to variance_n = n*variance_1
-                
-                %get number of Gaussians
-                numGauss = length(param)-2;
-                
-                %get their means, variances and amplitudes
-                if ~logData
-                    gaussMean = (1:numGauss)'*param(1);
-                    gaussStd  = sqrt(1:numGauss)'*param(2);
-                else
-                    dataMean1 = exp(param(1)+param(2)^2/2);
-                    dataVar1 = exp(param(2)^2+2*param(1))*(exp(param(2)^2)-1);
-                    dataMeanN = (1:numGauss)'*dataMean1;
-                    dataVarN = (1:numGauss)'*dataVar1;
-                    gaussMean = log(dataMeanN.^2./sqrt(dataVarN+dataMeanN.^2));
-                    gaussStd = sqrt(log(dataVarN./dataMeanN.^2+1));
-                end
-                gaussAmp  = param(3:end);
-
-        end %(switch variableStd)
-
     case 1 %if mean is variable
 
         switch variableStd
@@ -191,6 +148,71 @@ switch variableMean
                 gaussMean = param(1:numGauss);
                 gaussStd  = param(numGauss+1:2*numGauss);
                 gaussAmp  = param(2*numGauss+1:end);
+
+        end %(switch variableStd)
+
+    otherwise %if mean is not variable
+        
+        %get relationship of first fitted Gaussian to real first
+        %Gaussian in series
+        firstGauss = max(variableMean,1);
+
+        switch variableStd
+            
+            case 0 %if variance is constrained to all variances are equal
+                
+                %get number of Gaussians
+                numGauss = length(param)-2;
+                
+                %get their means, variances and amplitudes
+                if ~logData
+                    tmpMean = param(1)/firstGauss;
+                    gaussMean = (firstGauss:numGauss+firstGauss-1)' * tmpMean;
+                    gaussStd  = repmat(param(2),numGauss,1);
+                else
+                    dataMean1 = exp(param(1)+param(2)^2/2);
+                    dataMean1 = dataMean1 / firstGauss;
+                    dataVar1 = exp(param(2)^2+2*param(1))*(exp(param(2)^2)-1);
+                    dataMeanN = (firstGauss:numGauss+firstGauss-1)'*dataMean1;
+                    dataVarN = repmat(dataVar1,numGauss,1);
+                    gaussMean = log(dataMeanN.^2./sqrt(dataVarN+dataMeanN.^2));
+                    gaussStd = sqrt(log(dataVarN./dataMeanN.^2+1));
+                end
+                gaussAmp  = param(3:end);
+                
+            case 1 %if variance is variable
+
+                %get number of Gaussians
+                numGauss = floor(length(param)/2);
+                
+                %get their means, variances and amplitudes
+                tmpMean = param(1)/firstGauss;
+                gaussMean = (firstGauss:numGauss+firstGauss-1)' * tmpMean;
+                gaussStd  = param(2:numGauss+1);
+                gaussAmp  = param(numGauss+2:end);
+                
+            case 2 %if variance is constrained to variance_n = n*variance_1
+                
+                %get number of Gaussians
+                numGauss = length(param)-2;
+                
+                %get their means, variances and amplitudes
+                if ~logData
+                    tmpMean = param(1)/firstGauss;
+                    gaussMean = (firstGauss:numGauss+firstGauss-1)' * tmpMean;
+                    tmpStd = param(2) / sqrt(firstGauss);
+                    gaussStd  = sqrt(firstGauss:numGauss+firstGauss-1)' * tmpStd;
+                else
+                    dataMean1 = exp(param(1)+param(2)^2/2);
+                    dataMean1 = dataMean1 / firstGauss;
+                    dataVar1 = exp(param(2)^2+2*param(1))*(exp(param(2)^2)-1);
+                    dataVar1 = dataVar1 / firstGauss;
+                    dataMeanN = (firstGauss:numGauss+firstGauss-1)' * dataMean1;
+                    dataVarN = (firstGauss:numGauss+firstGauss-1)' * dataVar1;
+                    gaussMean = log(dataMeanN.^2./sqrt(dataVarN+dataMeanN.^2));
+                    gaussStd = sqrt(log(dataVarN./dataMeanN.^2+1));
+                end
+                gaussAmp  = param(3:end);
 
         end %(switch variableStd)
 
