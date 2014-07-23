@@ -191,6 +191,9 @@ for d = 1:ns
             dy = y-y0;
             y0 = y;
         
+            if length(y)>1 && y(1)==y(2)
+                y = y(1);
+            end
             cx = b3(y)*C;
             x = getSol(cx);
             if isempty(x)
