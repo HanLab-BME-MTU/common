@@ -70,22 +70,22 @@ if nargin < 2 || isempty(returnAll)
     returnAll = false;
 end
 
-fileNames = [];
+fileNames = cell(length(fExt), 1);
 formatNum = 0;
 
 % ---- Get the file names by checking each extension.  ---- %
 for i = 1:length(fExt)
     
-    tempfileNames = dir([imDirectory filesep '*.' fExt{i}]);
-    if ~isempty(tempfileNames)
+    fileNames{i} = dir([imDirectory filesep '*.' fExt{i}]);
+    if ~isempty(fileNames{i})
         formatNum = formatNum +1;
     end
     
-    fileNames = vertcat(fileNames, tempfileNames);
-    if ~returnAll && ~isempty(fileNames);
+    if ~returnAll && ~isempty(fileNames{i});
         break
     end
 end
+fileNames = vertcat(fileNames{:});
 
 %  ---- Fix the order of the files if they are numbered.  ---- %
 
