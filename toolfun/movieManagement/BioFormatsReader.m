@@ -16,27 +16,28 @@ classdef  BioFormatsReader < Reader
             ip.addRequired('id', @ischar);
             ip.addOptional('series', 0, @(x) isscalar(x) && isnumeric(x));
             ip.addParamValue('reader', [], @(x) isa(x, 'loci.formats.IFormatReader'));
-            ip.addParamValue('debug', 'INFO', @ischar);
             ip.parse(varargin{:});
             
             % Initialize Bio-Formats
             bfCheckJavaPath();
-            loci.common.DebugTools.enableLogging(ip.Results.debug);
             
+            obj.id = ip.Results.id;
             if ~isempty(ip.Results.reader),
                 obj.formatReader = ip.Results.reader;
             else
-                obj.formatReader = bfGetReader(ip.Results.id, false);
+                obj.formatReader = bfGetReader(obj.id, false);
             end
             obj.series = ip.Results.series;
         end
         
         function metadataStore = getMetadataStore(obj)
-            metadataStore = obj.formatReader.getMetadataStore();
+            metadataStore = obj.getReader().getMetadataStore();
         end
         
         function r = getReader(obj)
             r = obj.formatReader;
+            loci.common.DebugTools.enableLogging('WARN');
+            r.setId(obj.id);
             r.setSeries(obj.getSeries());
         end
         
