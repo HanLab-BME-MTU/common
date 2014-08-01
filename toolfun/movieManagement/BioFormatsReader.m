@@ -1,10 +1,11 @@
 classdef  BioFormatsReader < Reader
-    % Concrete implementation of MovieObject for a single movie
+    % BioFormatsReader is a Reader subclass which reads metadata/pixels
+    % from image files using the Bio-Formats library
     
     properties (Transient =true)
         id
         formatReader
-        series = 0;
+        series
     end
     
     methods

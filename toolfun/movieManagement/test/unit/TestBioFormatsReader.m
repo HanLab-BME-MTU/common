@@ -19,7 +19,8 @@ classdef TestBioFormatsReader < TestCase
                 'loci.formats.IFormatReader'));
         end
         
-        function testConstructorSeries(self)
+        function testConstructorMultiSeries(self)
+            self.id = 'test&series=2.fake';
             self.reader = BioFormatsReader(self.id, 1);
             assertEqual(self.reader.id, self.id);
             assertEqual(self.reader.series, 1);
@@ -33,6 +34,62 @@ classdef TestBioFormatsReader < TestCase
             assertEqual(self.reader.id, self.id);
             assertEqual(self.reader.series, 0);
             assertEqual(self.reader.formatReader, r);
+        end
+        
+        function testConstructorMultiSeriesReader(self)
+            self.id = 'test&series=2.fake';
+            r = bfGetReader(self.id);
+            self.reader = BioFormatsReader(self.id, 0, 'reader', r);
+            self.reader(2) = BioFormatsReader(self.id, 1, 'reader', r);
+            assertEqual(self.reader(1).id, self.id);
+            assertEqual(self.reader(2).id, self.id);
+            assertEqual(self.reader(1).series, 0);
+            assertEqual(self.reader(2).series, 1);
+            assertEqual(self.reader(1).formatReader, r);
+            assertEqual(self.reader(2).formatReader, r);
+        end
+        
+        %% Test getReader
+        function testGetReader(self)
+            self.reader = BioFormatsReader(self.id);
+            assertTrue(isa(self.reader.getReader(),...
+                'loci.formats.IFormatReader'));
+        end
+        
+        function testGetReaderInit(self)
+            r = bfGetReader(self.id);
+            self.reader = BioFormatsReader(self.id, 'reader', r);
+            assertEqual(self.reader.getReader(), r);
+        end
+        
+        function testGetReaderMultiSeries(self)
+            self.id = 'test&series=2.fake';
+            self.reader = BioFormatsReader(self.id, 0);
+            self.reader(2) = BioFormatsReader(self.id, 1);
+            assertEqual(self.reader(1).formatReader.getSeries(), 0);
+            assertEqual(self.reader(2).formatReader.getSeries(), 0);
+            assertEqual(self.reader(1).getReader().getSeries(), 0);
+            assertEqual(self.reader(2).getReader().getSeries(), 1);
+        end
+        
+        function testGetReaderMultiSeriesReader(self)
+            self.id = 'test&series=2.fake';
+            r = bfGetReader(self.id);
+            self.reader = BioFormatsReader(self.id, 0, 'reader', r);
+            self.reader(2) = BioFormatsReader(self.id, 1, 'reader', r);
+            assertEqual(self.reader(1).formatReader.getSeries(), 0);
+            assertEqual(self.reader(2).formatReader.getSeries(), 0);
+            assertEqual(self.reader(1).getReader().getSeries(), 0);
+            assertEqual(self.reader(2).getReader().getSeries(), 1);
+        end
+        
+        function testGetReaderClose(self)
+            self.reader = BioFormatsReader(self.id);
+            assertTrue(isa(self.reader.getReader(),...
+                'loci.formats.IFormatReader'));
+            self.reader.formatReader.close()
+            assertTrue(isa(self.reader.getReader(),...
+                'loci.formats.IFormatReader'));
         end
     end
 end
