@@ -126,7 +126,7 @@ for i = 1 : nSeries
     MD(i).setFilename(movieFileName);
     MD(i).setSeries(iSeries);
     if ip.Results.reuseReader || iSeries == 0,
-        MD(i).setReader(BioFormatsReader(r, iSeries));
+        MD(i).setReader(BioFormatsReader(dataPath, iSeries, 'reader', r));
     end
     
     if ip.Results.askUser,

@@ -15,7 +15,7 @@ classdef  BioFormatsReader < Reader
             ip = inputParser();
             ip.addRequired('id', @ischar);
             ip.addOptional('series', 0, @(x) isscalar(x) && isnumeric(x));
-            ip.addParamValue('reader', [], @(x) isa(x, 'loci.formats.IFormatReader');
+            ip.addParamValue('reader', [], @(x) isa(x, 'loci.formats.IFormatReader'));
             ip.addParamValue('debug', 'INFO', @ischar);
             ip.parse(varargin{:});
             
@@ -23,7 +23,7 @@ classdef  BioFormatsReader < Reader
             bfCheckJavaPath();
             loci.common.DebugTools.enableLogging(ip.Results.debug);
             
-            if isempty(ip.Results.reader),
+            if ~isempty(ip.Results.reader),
                 obj.formatReader = ip.Results.reader;
             else
                 obj.formatReader = bfGetReader(ip.Results.id, false);
