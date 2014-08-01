@@ -36,7 +36,6 @@ ip=inputParser;
 ip.addRequired('dataPath',@ischar);
 ip.addOptional('importMetadata',true,@islogical);
 ip.addParamValue('outputDirectory',[],@ischar);
-ip.addParamValue('reuseReader', false, @islogical);
 ip.addParamValue('askUser', false, @isscalar);
 ip.parse(dataPath,varargin{:});
 
