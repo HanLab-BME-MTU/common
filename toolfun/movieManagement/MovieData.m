@@ -538,7 +538,7 @@ classdef  MovieData < MovieObject
         function r = getReader(obj)
             % Retrieve the Reader for accessing the raw data
             
-            if ~isempty(obj.reader),
+            if ~isempty(obj.reader) && obj.reader.isvalid,
                 % Return the cached reader
                 r = obj.reader;
             else
