@@ -2,6 +2,7 @@ classdef  BioFormatsReader < Reader
     % Concrete implementation of MovieObject for a single movie
     
     properties (Transient =true)
+        id
         formatReader
         series = 0;
     end
@@ -9,19 +10,25 @@ classdef  BioFormatsReader < Reader
     methods
         %% Constructor
         function obj = BioFormatsReader(varargin)
-            % Check loci-tools.jar is in the Java path
+            
+            % Input check
+            ip = inputParser();
+            ip.addRequired('id', @ischar);
+            ip.addOptional('series', 0, @(x) isscalar(x) && isnumeric(x));
+            ip.addParamValue('reader', [], @(x) isa(x, 'loci.formats.IFormatReader');
+            ip.addParamValue('debug', 'INFO', @ischar);
+            ip.parse(varargin{:});
+            
+            % Initialize Bio-Formats
             bfCheckJavaPath();
-            if isa(varargin{1}, 'loci.formats.IFormatReader'),
-                obj.formatReader = varargin{1};
-                obj.series = obj.formatReader.getSeries();
+            loci.common.DebugTools.enableLogging(ip.Results.debug);
+            
+            if isempty(ip.Results.reader),
+                obj.formatReader = ip.Results.reader;
             else
-                loci.common.DebugTools.enableLogging('OFF');
-                obj.formatReader = bfGetReader(varargin{1}, false);
+                obj.formatReader = bfGetReader(ip.Results.id, false);
             end
-            if nargin>1,
-                obj.series = varargin{2};
-                obj.formatReader.setSeries(obj.series);
-            end
+            obj.series = ip.Results.series;
         end
         
         function metadataStore = getMetadataStore(obj)
