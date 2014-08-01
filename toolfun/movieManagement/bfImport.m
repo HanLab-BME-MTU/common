@@ -24,12 +24,6 @@ function MD = bfImport(dataPath,varargin)
 %       multi-series images, this string gives the basename of the output
 %       folder and will be exanded as basename_sxxx for each movie
 %
-%       reuseReader - A flag allowing to re-use the Bio-Formats reader for
-%       multi-image files. This should speed up initialization of the
-%       MovieData objects. However, all readers are then shared by
-%       reference and closing the reader of any MovieData will affect all
-%       MovieData objects created from the multi-image file. Default: false
-%
 % Output:
 %
 %   MD - A single MovieData object or an array of MovieData objects
@@ -125,9 +119,7 @@ for i = 1 : nSeries
     MD(i).setPath(outputDir);
     MD(i).setFilename(movieFileName);
     MD(i).setSeries(iSeries);
-    if ip.Results.reuseReader || iSeries == 0,
-        MD(i).setReader(BioFormatsReader(dataPath, iSeries, 'reader', r));
-    end
+    MD(i).setReader(BioFormatsReader(dataPath, iSeries, 'reader', r));
     
     if ip.Results.askUser,
         status = exist(MD(i).getFullPath(), 'file');
