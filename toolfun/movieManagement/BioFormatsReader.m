@@ -2,7 +2,7 @@ classdef  BioFormatsReader < Reader
     % BioFormatsReader is a Reader subclass which reads metadata/pixels
     % from image files using the Bio-Formats library
     
-    properties (Transient =true)
+    properties (SetAccess=protected, Transient=true)
         id
         formatReader
         series
