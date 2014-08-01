@@ -84,8 +84,12 @@ classdef TestBFMovieData < TestMovieData & TestCase
             filename = self.createFakeFile();
             movies = MovieData(filename);
             assertEqual(numel(movies), 2);
+            assertEqual(movies(1).getReader().id, filename);
+            assertEqual(movies(2).getReader().id, filename);
             assertEqual(movies(1).getReader().formatReader,...
                 movies(2).getReader().formatReader);
+            assertEqual(movies(1).getReader().series, 0);
+            assertEqual(movies(2).getReader().series, 1);
         end
         
         %% Typecasting tests
@@ -236,19 +240,17 @@ classdef TestBFMovieData < TestMovieData & TestCase
         end
         
         %%
-        function testMultiSeriesGetSeries(self)
+        function testMultiSeriesSwitch(self)
             self.fakename = 'test&series=2.fake';
             filename = self.createFakeFile();
             movies = MovieData(filename);
-            assertEqual(movies(1).getReader().formatReader.getSeries(), 0);
-            assertEqual(movies(2).getReader().formatReader.getSeries(), 0);
-            movies(2).getChannel(1).loadImage(1, 1);
-            assertEqual(movies(1).getReader().formatReader.getSeries(), 1);
-            assertEqual(movies(2).getReader().formatReader.getSeries(), 1);
+            r = movies(1).getReader().formatReader;
+            assertEqual(movies(2).getReader().formatReader, r);
+            assertEqual(r.getSeries(), 1);
             movies(1).getChannel(1).loadImage(1, 1);
-            assertEqual(movies(1).getReader().formatReader.getSeries(), 0);
-            assertEqual(movies(2).getReader().formatReader.getSeries(), 0);
+            assertEqual(r.getSeries(), 0);
+            movies(2).getChannel(1).loadImage(1, 1);
+            assertEqual(r.getSeries(), 1);
         end
- 
     end
 end
