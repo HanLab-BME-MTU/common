@@ -56,7 +56,7 @@ function [fileNames, formatNum, sNums] = imDir(imDirectory,returnAll)
 %The list of supported file extensions. Feel free to add! (just update the
 %help also!)
 fExt = {'tif', 'stk', 'bmp', 'jpg','jp2','jpx'};
-if ~ispc
+if ~ispc && ~(ismac && ~verLessThan('matlab', '8.3'))
     % Add case-sensitivity under unix based platforms
     fExt =  reshape(vertcat(fExt,upper(fExt)),1,2*numel(fExt));
 end
@@ -70,22 +70,22 @@ if nargin < 2 || isempty(returnAll)
     returnAll = false;
 end
 
-fileNames = [];
+fileNames = cell(length(fExt), 1);
 formatNum = 0;
 
 % ---- Get the file names by checking each extension.  ---- %
 for i = 1:length(fExt)
     
-    tempfileNames = dir([imDirectory filesep '*.' fExt{i}]);
-    if ~isempty(tempfileNames)
+    fileNames{i} = dir([imDirectory filesep '*.' fExt{i}]);
+    if ~isempty(fileNames{i})
         formatNum = formatNum +1;
     end
     
-    fileNames = vertcat(fileNames, tempfileNames);
-    if ~returnAll && ~isempty(fileNames);
+    if ~returnAll && ~isempty(fileNames{i});
         break
     end
 end
+fileNames = vertcat(fileNames{:});
 
 %  ---- Fix the order of the files if they are numbered.  ---- %
 
