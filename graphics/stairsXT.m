@@ -39,4 +39,6 @@ else
     color = ip.Results.EdgeColor;
 end
 
-h = plot(ip.Results.Parent, xb, yb, '-', 'Color', color, 'LineWidth', ip.Results.LineWidth);
+if ~strcmpi(color, 'none')
+    h = plot(ip.Results.Parent, xb, yb, '-', 'Color', color, 'LineWidth', ip.Results.LineWidth);
+end

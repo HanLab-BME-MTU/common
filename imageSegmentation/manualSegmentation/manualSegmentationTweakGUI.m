@@ -10,7 +10,7 @@ function [m,isDone]  = manualSegmentationTweakGUI(im,m,displayrange,isDone,ptsSh
 %
 % Instructions:
 %
-%    -Go to the frame you want to edit or create mask for (you can use mouse
+%   -Go to the frame you want to edit or create mask for (you can use mouse
 %    scroll wheel to change frames).
 %   -Select one of the options: 
 %
@@ -136,12 +136,12 @@ hMainFigure = fsFigure(.75);
     
     %Go button
     data_get_fgnd_bgnd_seeds_3d_points.ui_go = uicontrol('Style','pushbutton','String','Go',...
-                                 'Units' , 'normalized' ,'Position',[0.71 0.8 0.2 0.1],'parent',hMainFigure,'Callback',{@pushGo_Callback});                
+        'Units' , 'normalized' ,'Position',[0.71 0.8 0.2 0.1],'parent',hMainFigure,'Callback',{@pushGo_Callback});
     
     %check box
-    data_get_fgnd_bgnd_seeds_3d_points.ui_cb = uicontrol('Style','checkbox','String','Completed',...        
-                             'Units' , 'normalized' ,'Position',[0.10 0.1 0.05 0.05],'parent',hMainFigure,'Callback',{@chkBox_Callback});         
-                         
+    data_get_fgnd_bgnd_seeds_3d_points.ui_cb = uicontrol('Style','checkbox','String','Completed',...
+        'Units' , 'normalized' ,'Position',[0.10 0.1 0.075 0.05],'parent',hMainFigure,'Callback',{@chkBox_Callback});
+    
     set(data_get_fgnd_bgnd_seeds_3d_points.ui_cb,'Value',0)
                          
     %[0.20 0.1 0.05 0.05]
@@ -480,9 +480,9 @@ switch eventdata_get_fgnd_bgnd_seeds_3d_points.Key
         data_get_fgnd_bgnd_seeds_3d_points.displayrange = data_get_fgnd_bgnd_seeds_3d_points.displayrange + [0 100];                
         
     case '0'
-        
-        data_get_fgnd_bgnd_seeds_3d_points.displayrange = data_get_fgnd_bgnd_seeds_3d_points.displayrange - [100 0];
-        
+        if ~isempty(eventdata_get_fgnd_bgnd_seeds_3d_points.Character)
+            data_get_fgnd_bgnd_seeds_3d_points.displayrange = data_get_fgnd_bgnd_seeds_3d_points.displayrange - [100 0];
+        end
     case '9'
         
         data_get_fgnd_bgnd_seeds_3d_points.displayrange = data_get_fgnd_bgnd_seeds_3d_points.displayrange + [100 0];                
