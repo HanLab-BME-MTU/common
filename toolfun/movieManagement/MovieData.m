@@ -22,6 +22,7 @@ classdef  MovieData < MovieObject
         timeInterval_           % Time interval (s)
         numAperture_            % Lens numerical aperture
         camBitdepth_            % Camera Bit-depth
+        acquisitionDate_        % Camera Bit-depth
         
         
         % ---- Un-used params ----
@@ -125,6 +126,11 @@ classdef  MovieData < MovieObject
         function set.binning_ (obj, value)
             obj.checkPropertyValue('binning_',value);
             obj.binning_=value;
+        end
+        
+        function set.acquisitionDate_(obj, value)
+            obj.checkPropertyValue('acquisitionDate_', value);
+            obj.acquisitionDate_ = value;
         end
         
         function dimensions = getDimensions(obj, dimensionOrder)
@@ -666,6 +672,8 @@ classdef  MovieData < MovieObject
                     validator=@(x) all(isnumeric(x)) && all(x>0);
                 case {'camBitdepth_'}
                     validator=@(x) isscalar(x) && x>0 && ~mod(x, 2);
+                case {'acquisitionDate_'}
+                    validator=@(x) isnumeric(x) && length(x) == 6;
                 otherwise
                     validator=[];
             end
