@@ -7,6 +7,7 @@ classdef TestMovieDataProperties < TestCase & TestLibrary
         camBitdepth = 14
         pixelSize = 67
         pixelSizeZ = 100
+        acquisitionDate = [2014 8 7 12 0 0]
     end
     
     methods
@@ -83,10 +84,21 @@ classdef TestMovieDataProperties < TestCase & TestLibrary
             assertExceptionThrown(f,'lccb:set:invalid');
         end
         
+        function testSetValidAcquisitionDate(self)
+            self.movie.acquisitionDate_ = self.acquisitionDate;
+            assertEqual(self.movie.acquisitionDate_, self.acquisitionDate);
+        end
+        
+        function testSetInvalidAcquisitionDate(self)
+            f= @() set(self.movie, 'acquisitionDate_', [2014 8 7]);
+            assertExceptionThrown(f,'lccb:set:invalid');
+        end
+        
         %% Multi        
         function values = getValues(self)
             values = {self.timeInterval, self.numAperture, self.pixelSize,...
-                self.magnification, self.camBitdepth, self.pixelSize};
+                self.magnification, self.camBitdepth, self.pixelSize,...
+                self.acquisitionDate};
         end
         
         function testSetMultipleProperties(self)
@@ -109,7 +121,8 @@ classdef TestMovieDataProperties < TestCase & TestLibrary
     methods (Static)
         function properties = getProperties()
             properties = {'timeInterval_', 'numAperture_', 'pixelSize_',...
-                'magnification_', 'camBitdepth_', 'pixelSizeZ_'};
+                'magnification_', 'camBitdepth_', 'pixelSizeZ_',...
+                'acquisitionDate_'};
         end
         
     end
