@@ -8,7 +8,9 @@ classdef  MovieData < MovieObject
         zSize_                   % Number of Z-sections
         rois_ =  MovieData.empty(1,0);   % Region(s) of interest
         parent_ =  MovieData.empty(1,0); % Parent movie(s)
-    end
+        bfSeries_               % Series of the image file
+   end
+    
     
     properties
         roiMaskPath_            % The path where the roi mask is stored
@@ -21,13 +23,13 @@ classdef  MovieData < MovieObject
         numAperture_            % Lens numerical aperture
         camBitdepth_            % Camera Bit-depth
         
+        
         % ---- Un-used params ----
         
         eventTimes_             % Time of movie events
         magnification_          % Magnification
         binning_                % Camera binning
         
-        bfSeries_               % Series of the image file
         
         % For mockMovieData
         mockMD_
