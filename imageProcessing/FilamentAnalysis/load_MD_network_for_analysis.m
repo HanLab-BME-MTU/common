@@ -9,7 +9,8 @@ function network_feature = load_MD_network_for_analysis(MD,ROI,radius)
 %           'straightness_per_filament_pool','orientation_pixel_pool_display',...
 %           'length_per_filament_pool'. 
             
-% 
+% Liya Ding 2013
+
 movie_Dir = MD.outputDirectory_;
 
 % find all the index of different processes
@@ -45,8 +46,13 @@ for iChannel = 1 :  length(MD.channels_)
                 filename_short_strs{iFrame},'.mat']);            
         catch
             % in the case of only having the short-old version
+            if nFrame>1
             load([SteerableChannelOutputDir, filesep, 'steerable_',...
                 filename_shortshort_strs{iFrame},'.mat']);            
+            else
+            load([SteerableChannelOutputDir, filesep, 'steerable_',...
+                filename_shortshort_strs,'.mat']);            
+            end
         end
         
         % load the filament segmentation results       
@@ -95,18 +101,31 @@ for iChannel = 1 :  length(MD.channels_)
         %% % do analysis
         im_name = MD.channels_(iChannel).getImageFileNames(iFrame);
         current_img =  MD.channels_(iChannel).loadImage(iFrame);
-        
-        
+                
         output_feature = network_analysis(VIF_current_model,VIF_orientation, ...
-                        VIF_current_seg,outdir,iChannel,iFrame,ROI,min_length,...
-                        im_name,radius,scaleMap,current_img);
+            VIF_current_seg,outdir,iChannel,iFrame,ROI,min_length,...
+            im_name,radius);
         
+        output_feature_Filaments = perfilament_analysis(VIF_current_model,VIF_orientation, ...
+            VIF_current_seg,outdir,iChannel,iFrame,ROI,min_length,...
+            im_name,radius,scaleMap,current_img,MAX_st_res);
+        
+        output_feature=  catstruct(output_feature,output_feature_Filaments);
+                    
 %         close all;
 
         Cell_Mask = ROI.*((MD.processes_{indexCellRefineProcess}.loadChannelOutput(iChannel,iFrame))>0);
           
         output_feature.Cell_Mask = Cell_Mask;
+            save([outdir,filesep,'network_orientationrose_ch_',num2str(iChannel),'_frame_',num2str(iFrame),'.mat'],...
+            'output_feature');
+     
         network_feature{iChannel,iFrame} =output_feature;
         
-    end    
+    end
+    save([outdir,filesep,'network_orientationrose_ch_',num2str(iChannel),'_allframe.mat'],...
+            'network_feature');
 end
+
+ 
+        

@@ -272,6 +272,19 @@ for iChannel = selected_channels
     Whole_movie_stat.otsu_ST = thresholdOtsu(ST_pool);
     Whole_movie_stat.otsu_mode_ST = thresholdOtsu(ST_pool(find(ST_pool>mode_ST)));
     
+    try
+        Whole_movie_stat.rosin_ST = thresholdRosin(ST_pool);
+    catch
+        Whole_movie_stat.rosin_ST = Whole_movie_stat.otsu_ST;
+    end
+    
+    try
+        Whole_movie_stat.rosin_mode_ST = thresholdRosin(ST_pool(find(ST_pool>mode_ST)));
+    catch
+        Whole_movie_stat.rosin_mode_ST = Whole_movie_stat.otsu_mode_ST;
+    end
+    
+    
     ST_pool = [];
     
     NMS_pool = [];
@@ -297,10 +310,12 @@ for iChannel = selected_channels
         mode_nms = bin(ind_mode(1));
         % And find the Otsu threshold for the intensity
         T_otsu = thresholdOtsu(nms(find(nms>mode_nms)));
-        T_otsu_start =  max(0, (-abs(T_otsu - mode_nms)*0.05+mode_nms));
-        
+        T_otsu_start =  max(mode_nms/3, (-abs(T_otsu - mode_nms)*0.1+mode_nms));
+        if(isempty(T_otsu_start))
+           T_otsu_start = mode_nms;
+        end
         % first, get almost all the curves/lines, by using a low threshold
-        imageMask = imageNMS > T_otsu_start/5;
+        imageMask = imageNMS > T_otsu_start;
         
         % further thin it, since the nms version of steerable filtering is not real skeleton
         bw_out = bwmorph(imageMask,'thin','inf');
@@ -346,6 +361,17 @@ for iChannel = selected_channels
     Whole_movie_stat.otsu_NMS = thresholdOtsu(NMS_pool);
     Whole_movie_stat.otsu_mode_NMS = thresholdOtsu(NMS_pool(find(NMS_pool>mode_NMS)));
     
+    try
+      Whole_movie_stat.rosin_NMS = thresholdRosin(NMS_pool);
+    catch
+        Whole_movie_stat.rosin_NMS = Whole_movie_stat.otsu_NMS;
+    end
+    
+    try
+    Whole_movie_stat.rosin_mode_NMS = thresholdRosin(NMS_pool(find(NMS_pool>mode_NMS)));
+    catch
+        Whole_movie_stat.rosin_mode_NMS = Whole_movie_stat.otsu_mode_NMS;
+    end
     
     Length_pool = Length_pool(Length_pool>1);
     

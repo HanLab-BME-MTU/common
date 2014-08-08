@@ -1,12 +1,28 @@
-function [similarity_scoremap, similarity_scoremap_1to2, similarity_scoremap_2to1,distance_map_1_2, distance_map_2_1, angle_map_1_2, angle_map_2_1] = network_similarity_scoremap(VIF_current_model,MT_current_model,img_size, radius,outdir,iFrame,save_everything_flag)
-% function for calculation the similarity of two networks
+function [similarity_scoremap, difference_map] = network_similarity_scoremap(VIF_current_model,MT_current_model,img_size, radius)
+% core unction for calculation the similarity of two networks
 % Liya Ding 06.2013.
 
-% don't save every figure generated, unless debugging
-% save_everything_flag = 1;
+% Input: VIF_current_model,MT_current_model: the input networks
+%        img_size:          size of the image
+%        radius:            search radius as to consider
 
-VIF_current_seg = filament_model_to_seg_bwim(VIF_current_model,img_size,[]);
-MT_current_seg = filament_model_to_seg_bwim(MT_current_model,img_size,[]);
+% Output:  
+%         similarity_scoremap: the final similarity score
+%         difference_map is a struct consisting all these matrices
+%           'distance_map_1_2', 'distance_map_2_1',
+%           'angle_map_1_2', 'angle_map_2_1', ...
+%           'orient_map_1_2','orient_map_2_1',...
+%           'score_maps_distance_2_1','score_maps_distance_1_2',...
+%           'score_maps_angle_2_1','score_maps_angle_1_2',...
+%           'similarity_scoremap','similarity_scoremap_1to2','similarity_scoremap_2to1');
+%
+%    the format 1_2 means we use the skeleton network of channel 1, get the distance
+%    from their pixels to the channel 2, or orientation to this closest
+%    pixel in channel 2.
+%    Score_maps are the exp of negative of certain type of combination of differences.
+%    The similarity score is a smoothed out version of the score maps.
+
+% Initialization of the empty matrices
 
 distance_map_1_2 = nan(img_size);
 distance_map_2_1 = nan(img_size);
@@ -16,21 +32,32 @@ angle_map_1_2_A = nan(img_size);
 angle_map_2_1_A = nan(img_size);
 angle_map_1_2_B = nan(img_size);
 angle_map_2_1_B = nan(img_size);
+
 angle_map_II_1_2_A= nan(img_size);
 angle_map_II_1_2_B= nan(img_size);
 angle_map_II_2_1_A= nan(img_size);
 angle_map_II_2_1_B= nan(img_size);
 
+orient_map_1_2_A = nan(img_size);
+orient_map_1_2_B = nan(img_size);
+orient_map_2_1_A = nan(img_size);
+orient_map_2_1_B = nan(img_size);
+orient_map_1_2 = nan(img_size);
+orient_map_2_1 = nan(img_size);
 
-  [MT_digital_model,MT_orientation_model,MT_XX,MT_YY,MT_OO, MT_II] ...
-        = filament_model_to_digital_with_orientation(MT_current_model);
-  [VIF_digital_model,VIF_orientation_model,VIF_XX,VIF_YY,VIF_OO, VIF_II] ...
-        = filament_model_to_digital_with_orientation(VIF_current_model);
+% convert the networks into bw images
 
-[Y1, X1] = find(VIF_current_seg>0);
-[Y2, X2] = find(MT_current_seg>0);
+VIF_current_seg = filament_model_to_seg_bwim(VIF_current_model,img_size,[]);
+MT_current_seg = filament_model_to_seg_bwim(MT_current_model,img_size,[]);
 
+% convert the networks into digital matrices, with the orientaions, indices
 
+[MT_digital_model,MT_orientation_model,MT_XX,MT_YY,MT_OO, MT_II] ...
+    = filament_model_to_digital_with_orientation(MT_current_model);
+[VIF_digital_model,VIF_orientation_model,VIF_XX,VIF_YY,VIF_OO, VIF_II] ...
+    = filament_model_to_digital_with_orientation(VIF_current_model);
+
+% VIF as channel 1, MT as channel 2, use 1 and 2 for shortness
 X1=VIF_XX;
 Y1=VIF_YY;
 
@@ -55,8 +82,13 @@ for iQ = 1 : length(Y1)
         sort_idx = idx_this(sort_IX);
         
         distance_map_1_2(sub2ind(img_size,Y1(iQ),X1(iQ)))=sort_dist(1);
+        
+        %  angle is the direction difference
         angle_map_1_2_A(sub2ind(img_size,Y1(iQ),X1(iQ))) = ...
             VIF_OO(iQ) - MT_OO(sort_idx(1));
+        
+        % orient is the direction 
+        orient_map_1_2_A(sub2ind(img_size,Y1(iQ),X1(iQ))) = MT_OO(sort_idx(1));
         
         angle_map_II_1_2_A(sub2ind(img_size,Y1(iQ),X1(iQ))) = ...
             MT_II(sort_idx(1));
@@ -69,6 +101,9 @@ for iQ = 1 : length(Y1)
                     VIF_OO(iQ) - MT_OO(sort_idx(2));
                 angle_map_II_1_2_B(sub2ind(img_size,Y1(iQ),X1(iQ))) = ...
                     MT_II(sort_idx(2));
+                orient_map_1_2_B(sub2ind(img_size,Y1(iQ),X1(iQ))) = ...
+                    MT_OO(sort_idx(2));
+        
             end
         end
     end
@@ -90,6 +125,7 @@ angle_map_1_2_B(angle_map_1_2_B<-pi/2) = angle_map_1_2_B(angle_map_1_2_B<-pi/2) 
 angle_map_1_2 = nan(size(angle_map_1_2_A,1),size(angle_map_1_2_A,2));
 map_II_1_2 = nan(size(angle_map_1_2_A,1),size(angle_map_1_2_A,2));
  
+
 for i = 1 : size(angle_map_1_2_A, 1)
     for j = 1 : size(angle_map_1_2_A, 2)
         % if there is data
@@ -98,15 +134,21 @@ for i = 1 : size(angle_map_1_2_A, 1)
             if(isnan(angle_map_1_2_B(i,j)))
                 map_II_1_2(i,j)=angle_map_II_1_2_A(i,j);
                 angle_map_1_2(i,j)= abs(angle_map_1_2_A(i,j));
+                
+                orient_map_1_2(i,j) = orient_map_1_2_A(i,j);
             else
                 % if it is closest to a crossing(2 points), pick the one
                 % with smaller abs value
                 if(abs(angle_map_1_2_A(i,j))>abs(angle_map_1_2_B(i,j)))
                     map_II_1_2(i,j)=angle_map_II_1_2_B(i,j);
-                    angle_map_1_2(i,j)= abs(angle_map_1_2_B(i,j));                    
+                    angle_map_1_2(i,j)= abs(angle_map_1_2_B(i,j));  
+                    orient_map_1_2(i,j) = orient_map_1_2_B(i,j);
+
                 else
                     map_II_1_2(i,j)=angle_map_II_1_2_A(i,j);
-                    angle_map_1_2(i,j)= abs(angle_map_1_2_A(i,j));                    
+                    angle_map_1_2(i,j)= abs(angle_map_1_2_A(i,j));   
+                    orient_map_1_2(i,j) = orient_map_1_2_A(i,j);
+
                 end % end picking
             end % end if only one point
         end % end if there is data
@@ -155,7 +197,8 @@ for iQ = 1 : length(Y2)
                 MT_OO(iQ) - VIF_OO(sort_idx(1));
             angle_map_II_2_1_A(sub2ind(img_size,Y2(iQ),X2(iQ))) = ...
                 VIF_II(sort_idx(1));
-            
+            orient_map_2_1_A(i,j) = VIF_OO(sort_idx(1));
+
         end
         
         if(length(sort_dist)>=2 && length(sort_idx)>=2)
@@ -165,7 +208,8 @@ for iQ = 1 : length(Y2)
                     MT_OO(iQ) - VIF_OO(sort_idx(2));
                 angle_map_II_2_1_B(sub2ind(img_size,Y2(iQ),X2(iQ))) = ...
                     VIF_II(sort_idx(2));
-                
+                orient_map_2_1_B(i,j) = VIF_OO(sort_idx(2));
+
             end
         end
     end
@@ -197,15 +241,20 @@ for i = 1 : size(angle_map_2_1_A, 1)
             if(isnan(angle_map_2_1_B(i,j)))
                 map_II_2_1(i,j)=angle_map_II_2_1_A(i,j);
                 angle_map_2_1(i,j)= abs(angle_map_2_1_A(i,j));
+                  orient_map_2_1(i,j) = orient_map_2_1_A(i,j);
+
             else
                 % if it is closest to a crossing(2 points), pick the one
                 % with smaller abs value
                 if(abs(angle_map_2_1_A(i,j))>abs(angle_map_2_1_B(i,j)))
                     map_II_2_1(i,j)=angle_map_II_2_1_B(i,j);
-                    angle_map_2_1(i,j)= abs(angle_map_2_1_B(i,j));                    
+                    angle_map_2_1(i,j)= abs(angle_map_2_1_B(i,j));  
+                    orient_map_2_1(i,j) = orient_map_2_1_B(i,j);
                 else
                     map_II_2_1(i,j)=angle_map_II_2_1_A(i,j);
-                    angle_map_2_1(i,j)= abs(angle_map_2_1_A(i,j));                    
+                    angle_map_2_1(i,j)= abs(angle_map_2_1_A(i,j)); 
+                    orient_map_2_1(i,j) = orient_map_2_1_A(i,j);
+
                 end % end picking
             end % end if only one point
         end % end if there is data
@@ -253,63 +302,6 @@ end % end i
 % imwrite(angle_map_2_1,[outdir,filesep,'Ang21_frame_',num2str(iFrame),'.tif']);  end;
 % imwrite(angle_map_1_2,[outdir,filesep,'Ang12_frame_',num2str(iFrame),'.tif']);  end;
 % 
-
-h3=figure(3);
-imagesc_nan_neg(distance_map_1_2,radius*1);axis equal;axis off;
-flip_colormap;
-title('Distance Measure 1->2');
-if(save_everything_flag==1) 
-    saveas(h3,[outdir,filesep,'Dis12_frame_',num2str(iFrame),'.tif']);  
-    saveas(h3,[outdir,filesep,'Dis12_frame_',num2str(iFrame),'.fig']);  
-end;
-
-h3=figure(3);
-imagesc_nan_neg(distance_map_2_1,radius*1);axis equal;axis off;
-flip_colormap;
-title('Distance Measure 2->1');
-if(save_everything_flag==1) 
-    saveas(h3,[outdir,filesep,'Dis21_frame_',num2str(iFrame),'.tif']);  
-    saveas(h3,[outdir,filesep,'Dis21_frame_',num2str(iFrame),'.fig']);  
-end;
-
-h3=figure(3);
-imagesc_nan_neg(angle_map_2_1,-pi/(3));axis equal;axis off;
-flip_colormap;
-title('Orientaion Measure 1->2');
-if(save_everything_flag==1)
-    saveas(h3,[outdir,filesep,'Ang12_frame_',num2str(iFrame),'.tif']); 
-    saveas(h3,[outdir,filesep,'Ang12_frame_',num2str(iFrame),'.fig']); 
-end;
-
-h3=figure(3);
-imagesc_nan_neg(angle_map_1_2,-pi/(3));axis equal;axis off;
-flip_colormap;
-title('Orientaion Measure 2->1');
-if(save_everything_flag==1) 
-    saveas(h3,[outdir,filesep,'Ang21_frame_',num2str(iFrame),'.tif']);
-    saveas(h3,[outdir,filesep,'Ang21_frame_',num2str(iFrame),'.fig']);
-end;
-
-
-h3=figure(3);
-
-show_angle12 = angle_map_1_2;
-show_angle12(isnan(show_angle12)) = 30;
-show_angle21 = angle_map_2_1;
-show_angle21(isnan(show_angle21)) = 30;
-show_dis12 = distance_map_1_2;
-show_dis12(isnan(show_dis12)) = radius*1;
-show_dis21 = distance_map_2_1;
-show_dis21(isnan(show_dis21)) = radius*1;
-
-imagesc(show_angle12+show_angle21+show_dis12+show_dis21);axis equal;axis off;
-flip_colormap;
-title('Sum of all Measures');
-if(save_everything_flag==1)    
-    saveas(h3,[outdir,filesep,'AngDisSum_frame_',num2str(iFrame),'.tif']);
-    saveas(h3,[outdir,filesep,'AngDisSum_frame_',num2str(iFrame),'.fig']);
-end
-
 whole_ROI = imdilate(VIF_current_seg,ones(radius,radius)) + imdilate(MT_current_seg,ones(radius,radius))>0;
 % 
 % % disgard the boundary ones
@@ -386,61 +378,7 @@ score_maps_distance_1_2(isnan(score_maps_distance_1_2))=radius;
 score_maps_angle_2_1(isnan(score_maps_angle_2_1))=pi/2;
 score_maps_angle_1_2(isnan(score_maps_angle_1_2))=pi/2;
 
-% display the local supported distance and angle different matrix
-h3=figure(3);
-imagesc_nan_neg(score_maps_distance_1_2,0);axis equal;axis off;
-flip_colormap;
-title('Distance Measure 1->2 with Local Support');
-if(save_everything_flag==1) 
-    saveas(h3,[outdir,filesep,'LVDis12_frame_',num2str(iFrame),'.tif']); 
-    saveas(h3,[outdir,filesep,'LVDis12_frame_',num2str(iFrame),'.fig']); 
-end;
 
-h3=figure(3);
-imagesc_nan_neg(score_maps_distance_2_1,0);axis equal;axis off;
-title('Distance Measure 2->1 with Local Support');
-flip_colormap;
-if(save_everything_flag==1) 
-    saveas(h3,[outdir,filesep,'LVDis21_frame_',num2str(iFrame),'.tif']);
-    saveas(h3,[outdir,filesep,'LVDis21_frame_',num2str(iFrame),'.fig']);
-end;
-
-h3=figure(3);
-imagesc_nan_neg(score_maps_angle_1_2,0);axis equal;axis off;
-flip_colormap;
-title('Orientation Measure 1->2 with Local Support');
-if(save_everything_flag==1)
-    saveas(h3,[outdir,filesep,'LVAng12_frame_',num2str(iFrame),'.tif']); 
-    saveas(h3,[outdir,filesep,'LVAng12_frame_',num2str(iFrame),'.fig']); 
-end;
-
-h3=figure(3);
-imagesc_nan_neg(score_maps_angle_2_1,0);axis equal;axis off;
-flip_colormap;
-title('Orientation Measure 2->1 with Local Support');
-if(save_everything_flag==1)
-    saveas(h3,[outdir,filesep,'LVAng21_frame_',num2str(iFrame),'.tif']); 
-    saveas(h3,[outdir,filesep,'LVAng21_frame_',num2str(iFrame),'.fig']); 
-end;
-
-
-
-h4=figure(4); imagesc_nan_neg(score_maps_distance_2_1+score_maps_distance_1_2,0);axis equal;axis off;
-flip_colormap;
-title('Distance Measure 1->2 + 2->1 with Local Support');
-if(save_everything_flag==1) 
-    saveas(h4,[outdir,filesep,'VIFMT_dis_frame_',num2str(iFrame),'.tif']);
-    saveas(h4,[outdir,filesep,'VIFMT_dis_frame_',num2str(iFrame),'.fig']);
-end;
-
-
-h5=figure(5); imagesc_nan_neg(abs(score_maps_angle_2_1/2)+abs(score_maps_angle_1_2/2),0);axis equal;axis off;
-flip_colormap;
-title('Orientation Measure 1->2 + 2->1 with Local Support');
-if(save_everything_flag==1) 
-    saveas(h5,[outdir,filesep,'VIFMT_ang_frame_',num2str(iFrame),'.tif']);
-    saveas(h5,[outdir,filesep,'VIFMT_ang_frame_',num2str(iFrame),'.fig']);
-end;
 
 % calculation of similarity score.
 similarity_scoremap = exp(-(score_maps_distance_2_1+score_maps_distance_1_2).^2/(((radius*1.5)/2*sqrt(2))^2))...
@@ -455,29 +393,18 @@ similarity_scoremap_2to1 = exp(-(score_maps_distance_2_1*2+0).^2/(((radius*1.5)/
     .*exp(-(abs(score_maps_angle_2_1/2*2)+abs(0/2)).^2/(1.5*(pi/3)^2));
 
 
-save([outdir,filesep,'VIFMT_sm_maps_frame_',num2str(iFrame),'.mat'], ...
-    'distance_map_1_2', 'distance_map_2_1', 'angle_map_1_2', 'angle_map_2_1', ...
-    'score_maps_distance_2_1','score_maps_distance_1_2',...
-    'score_maps_angle_2_1','score_maps_angle_1_2',...
-    'similarity_scoremap','similarity_scoremap_1to2','similarity_scoremap_2to1');
-
-% similarity_scoremap(similarity_scoremap<0.2)=0.2;
-h6=figure(6); imagesc_nan_neg(similarity_scoremap,0);axis equal;axis off;
-title(['Similarity Score for frame ',num2str(iFrame)]);
-saveas(h6,[outdir,filesep,'VIFMT_sm_score_frame_',num2str(iFrame),'.tif']);
-saveas(h6,[outdir,filesep,'VIFMT_sm_score_frame_',num2str(iFrame),'.fig']);
-
-% similarity_scoremap(similarity_scoremap<0.2)=0.2;
-h6=figure(7); imagesc_nan_neg(similarity_scoremap_1to2,0);axis equal;axis off;
-title(['Similarity Score 1to2 for frame ',num2str(iFrame)]);
-saveas(h6,[outdir,filesep,'VIFMT_1to2_sm_score_frame_',num2str(iFrame),'.tif']);
-saveas(h6,[outdir,filesep,'VIFMT_1to2_sm_score_frame_',num2str(iFrame),'.fig']);
-
-% similarity_scoremap(similarity_scoremap<0.2)=0.2;
-h6=figure(8); imagesc_nan_neg(similarity_scoremap_2to1,0);axis equal;axis off;
-title(['Similarity Score 2to1 for frame ',num2str(iFrame)]);
-saveas(h6,[outdir,filesep,'VIFMT_2to1_sm_score_frame_',num2str(iFrame),'.tif']);
-saveas(h6,[outdir,filesep,'VIFMT_2to1_sm_score_frame_',num2str(iFrame),'.fig']);
-
-
+difference_map.similarity_scoremap_1to2 = similarity_scoremap_1to2;
+difference_map.similarity_scoremap_2to1 = similarity_scoremap_2to1;
+difference_map.distance_map_1_2 = distance_map_1_2;
+difference_map.distance_map_2_1 = distance_map_2_1;
+difference_map.angle_map_1_2 = angle_map_1_2;
+difference_map.angle_map_2_1 = angle_map_2_1;
+difference_map.orient_map_1_2 = orient_map_1_2;
+difference_map.orient_map_2_1 = orient_map_2_1;
+difference_map.orient_map_1_2 = orient_map_1_2;
+difference_map.orient_map_2_1 = orient_map_2_1;
+difference_map.score_maps_distance_1_2 = score_maps_distance_1_2;
+difference_map.score_maps_distance_2_1 = score_maps_distance_2_1;
+difference_map.score_maps_angle_1_2 = score_maps_angle_1_2;
+difference_map.score_maps_angle_2_1 = score_maps_angle_2_1;
 

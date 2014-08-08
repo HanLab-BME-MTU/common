@@ -240,9 +240,89 @@ set(gca,'XTickLabel',{num2str(MN2,'%.0f'),...
     num2str(MN2+(MX2-MN2)/20*16,'%.0f'),...
     num2str(MN2+(MX2-MN2)/20*20,'%.0f')});
 
-
 ylabel('Percent(%)')
 title('MD2 Channel2 Fat Filament Int');
+
+
+%% mean steerable filtering responce
+
+mean_steerable_per_filament_pool_all1 = [...
+    feature_pool_1{1}.mean_steerable_per_filament_pool_all;...
+    feature_pool_2{1}.mean_steerable_per_filament_pool_all;];
+ 
+   mean_steerable_per_filament_pool_all2 = [...
+       feature_pool_1{2}.mean_steerable_per_filament_pool_all;...
+       feature_pool_2{2}.mean_steerable_per_filament_pool_all;];
+
+MN1 = min(mean_steerable_per_filament_pool_all1);
+MX1 = max(mean_steerable_per_filament_pool_all1);
+
+MN2 = min(mean_steerable_per_filament_pool_all2);
+MX2 = max(mean_steerable_per_filament_pool_all2);
+
+[hist11,b11] = hist(feature_pool_1{1}.mean_steerable_per_filament_pool_all,MN1:(MX1-MN1)/20:MX1);
+hist11 = hist11./(sum(hist11))*100;
+[hist21,b21] = hist(feature_pool_2{1}.mean_steerable_per_filament_pool_all,MN1:(MX1-MN1)/20:MX1);
+hist21 = hist21./(sum(hist21))*100;
+
+[hist12,b12] = hist(feature_pool_1{2}.mean_steerable_per_filament_pool_all,MN2:(MX2-MN2)/20:MX2);
+hist12 = hist12./(sum(hist12))*100;
+[hist22,b22] = hist(feature_pool_2{2}.mean_steerable_per_filament_pool_all,MN2:(MX2-MN2)/20:MX2);
+hist22 = hist22./(sum(hist22))*100;
+
+h4 = figure(4);
+subplot(221);bar(hist11);
+axis([0.5 21.5 0 max([max(hist11),max(hist21)]) ]);
+set(gca,'XTick',1:4:21);
+set(gca,'XTickLabel',{num2str(MN1,'%.0f'),...
+    num2str(MN1+(MX1-MN1)/20*4,'%.0f'),...
+    num2str(MN1+(MX1-MN1)/20*8,'%.0f'),...
+    num2str(MN1+(MX1-MN1)/20*12,'%.0f'),...
+    num2str(MN1+(MX1-MN1)/20*16,'%.0f'),...
+    num2str(MN1+(MX1-MN1)/20*20,'%.0f')});
+
+ylabel('Percent(%)')
+title('MD1 Channel1 Filament Steerable Fitering Responce');
+
+subplot(222);bar(hist12);
+axis([0.5 21.5 0 max([max(hist12),max(hist22)]) ]);
+set(gca,'XTick',1:4:21);
+set(gca,'XTickLabel',{num2str(MN2,'%.0f'),...
+    num2str(MN2+(MX2-MN2)/20*4,'%.0f'),...
+    num2str(MN2+(MX2-MN2)/20*8,'%.0f'),...
+    num2str(MN2+(MX2-MN2)/20*12,'%.0f'),...
+    num2str(MN2+(MX2-MN2)/20*16,'%.0f'),...
+    num2str(MN2+(MX2-MN2)/20*20,'%.0f')});
+
+ylabel('Percent(%)')
+title('MD1 Channel2 Filament Steerable Fitering Responce');
+
+subplot(223);bar(hist21);
+axis([0.5 21.5 0 max([max(hist11),max(hist21)]) ]);
+set(gca,'XTick',1:4:21);
+set(gca,'XTickLabel',{num2str(MN1,'%.0f'),...
+    num2str(MN1+(MX1-MN1)/20*4,'%.0f'),...
+    num2str(MN1+(MX1-MN1)/20*8,'%.0f'),...
+    num2str(MN1+(MX1-MN1)/20*12,'%.0f'),...
+    num2str(MN1+(MX1-MN1)/20*16,'%.0f'),...
+    num2str(MN1+(MX1-MN1)/20*20,'%.0f')});
+ylabel('Percent(%)')
+title('MD2 Channel1 Filament Steerable Fitering Responce');
+
+subplot(224);bar(hist22);
+axis([0.5 21.5 0 max([max(hist12),max(hist22)]) ]);
+set(gca,'XTick',1:4:21);
+set(gca,'XTickLabel',{num2str(MN2,'%.0f'),...
+    num2str(MN2+(MX2-MN2)/20*4,'%.0f'),...
+    num2str(MN2+(MX2-MN2)/20*8,'%.0f'),...
+    num2str(MN2+(MX2-MN2)/20*12,'%.0f'),...
+    num2str(MN2+(MX2-MN2)/20*16,'%.0f'),...
+    num2str(MN2+(MX2-MN2)/20*20,'%.0f')});
+
+
+ylabel('Percent(%)')
+title('MD2 Channel2 Filament Steerable Fitering Responce');
+
 
 % 
 % AA = [min([C_mt.output_feature.mean_intensity_per_fat_filament_pool P_mt.output_feature.mean_intensity_per_fat_filament_pool])...

@@ -85,6 +85,7 @@ for iM  = 1 :movieNumber
     title(['Movie-',num2str(iM),', MT and VIF densities Cross-correlation:', ...
         num2str(corr(MT_density_pool,VIF_density_pool)),'(radius: ',num2str(radius),')']);
     saveas(h11, [ML_ROOT_DIR,filesep,'density_correlation_movie',num2str(iM),'(radius',num2str(radius),').tif']);
+    saveas(h11, [ML_ROOT_DIR,filesep,'density_correlation_movie',num2str(iM),'(radius',num2str(radius),').fig']);
     corr_array(iM) = corr(MT_density_pool,VIF_density_pool);
     
         

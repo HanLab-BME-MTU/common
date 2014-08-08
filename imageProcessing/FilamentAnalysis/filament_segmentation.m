@@ -371,6 +371,8 @@ for iChannel = selected_channels
                 filename_shortshort_strs{iFrame},'.mat']);            
         end
         
+                
+        %%
         
         
         MaskCell = ones(size(currentImg));
@@ -410,6 +412,29 @@ for iChannel = selected_channels
             end
         end
                 
+        
+        
+        %% 
+        % Correcting the nms ending semicircle due to the aritifact of
+        % simulation perfect Gaussian ends
+        
+        
+        median_nms = median(nms(:));
+        quarter_nms = median(nms(find(nms>median_nms)));
+        
+        nms(find(nms<quarter_nms))=0;
+        
+        binary_nms = nms>0;
+                
+        erode_nms = imerode(binary_nms, ones(2,2));
+        open_nms = imdilate(erode_nms, ones(2,2));
+        
+        eroded_nms = nms-nms.*open_nms;
+        
+        stophere=1;
+        
+        
+        %%
         
         
         NMS_Segment=[];
@@ -479,6 +504,33 @@ for iChannel = selected_channels
                 Min_area = 6;
                 
             case 'geo_based_GM'
+                
+                
+                
+                
+                 % Liya: temp for the running of the comparison
+                current_seg_canny_cell=cell(1,1);                
+               display('Canny Test:');
+                tic
+%                 for PercentOfPixelsNotEdges = 0.8: 0.1: 0.95
+%                     for ThresholdRatio = 0.8 : 0.1: 0.95    
+                for iP = 1 : 5
+                     for iT = 1 : 5
+                        
+                        PercentOfPixelsNotEdges = iP/20+0.70;
+                        ThresholdRatio = iT/20+0.70;
+                         
+                        [lowThresh, highThresh, current_seg]...
+                            = proximityBasedNmsSeg(MAX_st_res,...
+                            orienation_map,funParams,...
+                            PercentOfPixelsNotEdges,ThresholdRatio);
+                        current_seg_canny_cell{iP,iT} = current_seg;
+                        
+                        
+                    end
+                end
+              toc  
+                
                 % Assume no training is done for the classifier, so use the
                 % linear plane classifier with the input parameters.
                 

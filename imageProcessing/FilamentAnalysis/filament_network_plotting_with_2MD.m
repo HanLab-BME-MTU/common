@@ -8,7 +8,7 @@ function filament_network_plotting_with_2MD(MD1, MD2, varargin)
 %                   both channels no 1, red_green_whitebackground. Default, 1
 %   preset:        the string way to lookup for preset,
 %
-%   'index_channels': the channels to be plotted in two MDs, default [1 1]
+%   'index_channels': the channels to be plotted in two MD1s, default [1 1]
 %   'network_color_cells': cell for the color vectors for each channels, in the form of three values for RGB
 %   'background_color': the background color vector
 %   'frames_index': array for frame index, default, all frames
@@ -26,26 +26,26 @@ function filament_network_plotting_with_2MD(MD1, MD2, varargin)
 
 %  Test try examples:
 %
-%  filament_network_plotting_with_nMD(MD1, MD2)
+%  filament_network_plotting_with_nMD1(MD11, MD12)
 %           to get default plotting of two channel 1 white background and red
 %           and green lines 
 
-%  filament_network_plotting_with_nMD(MD1, MD2,'pixel_based',1,'pixel_dilate_size',2,'image_background_ch',1,'image_inversion',1)
+%  filament_network_plotting_with_nMD1(MD11, MD12,'pixel_based',1,'pixel_dilate_size',2,'image_background_ch',1,'image_inversion',1)
 %           to plot pixel based version, with dilation of 2, with
 %           background of image channel 1 
 %
-%  filament_network_plotting_with_nMD(MD1, MD2,'marker_type',{'d','.'},'line_widths',[20 10])
+%  filament_network_plotting_with_nMD1(MD11, MD12,'marker_type',{'d','.'},'line_widths',[20 10])
 %           to plot with default plotting with different marker and size
 %
-%  filament_network_plotting_with_nMD(MD1, MD2,'pixel_based',1,'pixel_dilate_size',3,'overlay,1,'background_type','image')
+%  filament_network_plotting_with_nMD1(MD11, MD12,'pixel_based',1,'pixel_dilate_size',3,'overlay,1,'background_type','image')
 %           to plot the original RGB tiff image, and overlay with filaments
 %
-%  filament_network_plotting_with_nMD(MD1, MD2,'index_channels',[2 1],'network_color_cells',{[1 0 0],[ 0 1 0]},'overlay',1,'background_type','image','image_inversion',1,'image_background_ch',1)
+%  filament_network_plotting_with_nMD1(MD11, MD12,'index_channels',[2 1],'network_color_cells',{[1 0 0],[ 0 1 0]},'overlay',1,'background_type','image','image_inversion',1,'image_background_ch',1)
 %           to plot the channel 1 image in grey and overlay with filament network, with user defined colors
 %
 %
 ip = inputParser;
-ip.addRequired('MD',@(x)(isa(x,'MovieData')));
+ip.addRequired('MD1',@(x)(isa(x,'MovieData')));
 ip.addOptional('preset_index', 1, @isnumeric)
 preset_pool = {'red_green_blackbackground', 'red_green_whitebackground'};
 ip.addOptional('preset_name', 'red_green_whitebackground', @(x) ismember(x, preset_pool));
@@ -75,7 +75,7 @@ all_options = {'preset_index','preset_name','index_channels',...
     'pixel_based','pixel_dilate_size','image_background_ch',...
     'axis_limit'};
 
-ip.parse(MD, varargin{:});
+ip.parse(MD1, varargin{:});
 
 input_setting =ip.Results;
 
@@ -85,7 +85,7 @@ input_setting =ip.Results;
 %
 % network_color_cells
 
-nFrames = MD.nFrames_;
+nFrames = MD1.nFrames_;
 
 % Set all the default parameter set, just as in preset #1 and "red_green_whitebackground"
 param =[];
@@ -103,7 +103,7 @@ param.marker_type = {'.','.'};
 param.pixel_based = 0;
 param.pixel_dilate_size = 1;
 param.image_background_ch = 0;
-param.axis_limit = [1 MD.imSize_(2) 1  MD.imSize_(1)];
+param.axis_limit = [1 MD1.imSize_(2) 1  MD1.imSize_(1)];
 
 user_assigned_flag = ones(1,20);
 
@@ -211,15 +211,15 @@ if(param.int_max<0)
     return;
 end
 
-if(param.axis_limit(1)<0 || param.axis_limit(2)> MD.imSize_(2) ...
-        || param.axis_limit(3)<0 || param.axis_limit(4)> MD.imSize_(1))
+if(param.axis_limit(1)<0 || param.axis_limit(2)> MD1.imSize_(2) ...
+        || param.axis_limit(3)<0 || param.axis_limit(4)> MD1.imSize_(1))
     msgbox('Please enter valid axis limit.');
     return;
 end
 
 % start plotting
 
-movie_Dir = MD.outputDirectory_;
+movie_Dir = MD1.outputDirectory_;
 
 outdir = [movie_Dir,filesep,'network_plots'];
 if(~exist(outdir,'dir'))
@@ -234,14 +234,14 @@ for iFrame = param.frames_index
     % if pixel based plot is asked for
     if(param.pixel_based>0)
         
-        RGB_channels_seg = zeros(MD.imSize_(1),MD.imSize_(2),3);
+        RGB_channels_seg = zeros(MD1.imSize_(1),MD1.imSize_(2),3);
         
-        RGB_channels_img = zeros(MD.imSize_(1),MD.imSize_(2),3);
+        RGB_channels_img = zeros(MD1.imSize_(1),MD1.imSize_(2),3);
         RGB_channels_img(:,:,1) = param.background_color(1);
         RGB_channels_img(:,:,2) = param.background_color(2);
         RGB_channels_img(:,:,3) = param.background_color(3);
         
-        RGB_channels_user_color = zeros(MD.imSize_(1),MD.imSize_(2),3);
+        RGB_channels_user_color = zeros(MD1.imSize_(1),MD1.imSize_(2),3);
         R_channels_user_color = RGB_channels_user_color(:,:,1);
         G_channels_user_color = RGB_channels_user_color(:,:,2);
         B_channels_user_color = RGB_channels_user_color(:,:,3);
@@ -254,14 +254,14 @@ for iFrame = param.frames_index
             
             VIF_current_seg = (isnan(VIF_orientation)==0);
             
-            VIF_current_seg = imdilate(VIF_current_seg, ...
+            VIF_current_seg = iMD1ilate(VIF_current_seg, ...
                 ones(param.pixel_dilate_size,param.pixel_dilate_size));
             
             % if flattened use flatten, otherwise use original
             if indexFlattenProcess~=0
-                VIF_img =  MD.processes_{indexFlattenProcess}.loadChannelOutput(iChannel,iFrame);
+                VIF_img =  MD1.processes_{indexFlattenProcess}.loadChannelOutput(iChannel,iFrame);
             else
-                VIF_img =  MD.channels_(iChannel).loadImage(iFrame);
+                VIF_img =  MD1.channels_(iChannel).loadImage(iFrame);
             end
             
             if(param.image_inversion==1)
@@ -358,11 +358,11 @@ for iFrame = param.frames_index
     else
         
         % figure 3 is for direct plot with the filament network model obtained
-        background_RGB = zeros(MD.imSize_(1),MD.imSize_(2),3);
+        background_RGB = zeros(MD1.imSize_(1),MD1.imSize_(2),3);
         
         % first if solid color back ground is choosen
         if(strcmp(param.background_type,'solid_color'))
-            background_RGB = zeros(MD.imSize_(1),MD.imSize_(2),3);
+            background_RGB = zeros(MD1.imSize_(1),MD1.imSize_(2),3);
             background_RGB(:,:,1) = param.background_color(1)*255;
             background_RGB(:,:,2) = param.background_color(2)*255;
             background_RGB(:,:,3) = param.background_color(3)*255;
@@ -374,9 +374,9 @@ for iFrame = param.frames_index
                 
                 % if flattened use flatten, otherwise use original
                 if indexFlattenProcess~=0
-                    VIF_img =  MD.processes_{indexFlattenProcess}.loadChannelOutput(iChannel,iFrame);
+                    VIF_img =  MD1.processes_{indexFlattenProcess}.loadChannelOutput(iChannel,iFrame);
                 else
-                    VIF_img =  MD.channels_{iChannel}.loadImage(iFrame);
+                    VIF_img =  MD1.channels_{iChannel}.loadImage(iFrame);
                 end
                 
                 % if user ask for inversion
@@ -429,9 +429,9 @@ for iFrame = param.frames_index
             for iChInd = 1: nChannels
                 iChannel = param.index_channels(iChInd);
                 
-                VIF_orientation = MD.processes_{indexFilamentSegmentationProcess}.loadChannelOutput(iChannel,iFrame+0,'output','current_seg_orientation');
-                VIF_current_model = MD.processes_{indexFilamentSegmentationProcess}.loadChannelOutput(iChannel,iFrame+0,'output','current_model');
-                VIF_heat_output = MD.processes_{indexFilamentSegmentationProcess}.loadChannelOutput(iChannel,iFrame+0,'output','RGB_seg_orient_heat_map');
+                VIF_orientation = MD1.processes_{indexFilamentSegmentationProcess}.loadChannelOutput(iChannel,iFrame+0,'output','current_seg_orientation');
+                VIF_current_model = MD1.processes_{indexFilamentSegmentationProcess}.loadChannelOutput(iChannel,iFrame+0,'output','current_model');
+                VIF_heat_output = MD1.processes_{indexFilamentSegmentationProcess}.loadChannelOutput(iChannel,iFrame+0,'output','RGB_seg_orient_heat_map');
                 
                 
                 [Vif_digital_model,Vif_orientation_model,VIF_XX,VIF_YY,VIF_OO] ...
@@ -485,17 +485,17 @@ for iFrame = param.frames_index
             iptsetpref('ImshowBorder','tight');
             
             % set(gcf, 'PaperUnits','centimeter');
-            % set(gcf, 'PaperSize', [MD.imSize_(2)/20 MD.imSize_(1)/20]);
+            % set(gcf, 'PaperSize', [MD1.imSize_(2)/20 MD1.imSize_(1)/20]);
             % set(gcf, 'PaperPositionMode', 'manual');
-            % set(gcf, 'PaperPosition',[0 0  MD.imSize_(2)/20 MD.imSize_(1)/20]);
-            % set(gcf, 'Position',[100 50  MD.imSize_(2) MD.imSize_(1)]);
+            % set(gcf, 'PaperPosition',[0 0  MD1.imSize_(2)/20 MD1.imSize_(1)/20]);
+            % set(gcf, 'Position',[100 50  MD1.imSize_(2) MD1.imSize_(1)]);
             %
             % set(gca,'DataAspectRatioMode','auto');
             % set(gca,'PlotBoxAspectRatioMode','auto');
             % set(gca,'CameraViewAngleMode','auto');
             %
             % set(gca,'Units','pixels');
-            % set(gca, 'Position',[0 0  MD.imSize_(2) MD.imSize_(1)]);
+            % set(gca, 'Position',[0 0  MD1.imSize_(2) MD1.imSize_(1)]);
             
             saveas(h4,[outdir,filesep,'filament_overlay_',num2str(iFrame),'.tif']);
             saveas(h4,[outdir,filesep,'filament_overlay_',num2str(iFrame),'.fig']);

@@ -88,7 +88,7 @@ ind_mode = find(hist_n==max(hist_n));
 mode_nms = bin(ind_mode(1));
 % And find the Otsu threshold for the intensity
 T_otsu = thresholdOtsu(imageNMS(find(imageNMS>mode_nms)));
-T_otsu_start =  max(0, (-abs(T_otsu - mode_nms)*0.05+mode_nms));
+T_otsu_start =  max(mode_nms/2, (-abs(T_otsu - mode_nms)*0.1+mode_nms));
 
 MaskCell=MaskCell>0;
 
@@ -98,7 +98,7 @@ imageInt = imageInt.*MaskCell;
 
 
 % first, get almost all the curves/lines, by using a low threshold
-imageMask = imageNMS > T_otsu_start/5;
+imageMask = imageNMS > T_otsu_start;
 
 % further thin it, since the nms version of steerable filtering is not real skeleton
 bw_out = bwmorph(imageMask,'thin','inf');
@@ -224,11 +224,17 @@ if(isempty(classifier_trained))
     ind_mode = find(hist_n==max(hist_n));
     mode_nms = bin(ind_mode(1));
     % And find the Otsu threshold for the intensity
-    hotsu = thresholdOtsu(feature_MeanNMS(find(feature_MeanNMS>mode_nms)));
+    try
+        hRosin = thresholdRosin(feature_MeanNMS(find(feature_MeanNMS>mode_nms)));
+        hRosin_or_otsu = hRosin;
+    catch
+        hotsu = thresholdOtsu(feature_MeanNMS(find(feature_MeanNMS>mode_nms)));
+        hRosin_or_otsu = hotsu;
+    end
     
     % Set the slanted classification line cutoff as twice of the Otsu with
     % respect to the mode
-    T_xie_int_this =  abs(hotsu - mode_nms)*CoefAlpha+ mode_nms;
+    T_xie_int_this =  abs(hRosin_or_otsu - mode_nms)*CoefAlpha+ mode_nms;
     
     whole_movie_otsu =  funParams.Whole_movie_stat_cell{iChannel}.otsu_mode_NMS;
     whole_movie_mode =  funParams.Whole_movie_stat_cell{iChannel}.mode_NMS;
@@ -275,6 +281,7 @@ if(ShowDetailMessages==1)
     display(['Length and NMS only: Number of good ones: ',num2str(length(Good_ind)),', number of bad ones: ',num2str(length(Bad_ind))]);
 end
 
+
 % get the mean intensity of the curves
 for i_area = Good_ind'
     [all_y_i, all_x_i] = find(labelMask == i_area);
@@ -293,6 +300,7 @@ for i_area = Good_ind'
         [line_i_x, line_i_y] = line_following_with_limit(labelMask == i_area, 1000, x_i(1),y_i(1));
     end
     
+    
     ordered_points{i_area} = [line_i_x, line_i_y];
     
     line_smooth_H = fspecial('gaussian',5,1.5);
@@ -305,19 +313,42 @@ for i_area = Good_ind'
     Lines=[(1:size(Vertices,1)-1)' (2:size(Vertices,1))'];
     k=LineCurvature2D(Vertices,Lines);
     
-    feature_Curvature(i_area) = mean(k);
+    feature_Curvature(i_area) = mean(abs(k));
+    
 end
+        
+
+
 
 feature_all = [];
+
+
 
 feature_all.feature_MeanNMS = feature_MeanNMS;
 feature_all.feature_Length = feature_Length;
 feature_all.feature_MeanInt = feature_MeanInt;
 feature_all.feature_Curvature = feature_Curvature;
 
+IntThreshold = thresholdRosin(feature_all.feature_MeanInt);
 
 Good_ind = find(F_classifer(feature_MeanNMS, feature_Length,feature_Curvature,feature_MeanInt)>0 & feature_Curvature<CurvatureThreshold & feature_Length>=LengthThreshold);
 Bad_ind = find(F_classifer(feature_MeanNMS, feature_Length,feature_Curvature,feature_MeanInt)==0 | feature_Curvature>=CurvatureThreshold | feature_Length<LengthThreshold);
+
+CurvatureThreshold=0.2;
+changed_ind_good_K = find(F_classifer(feature_MeanNMS, feature_Length,feature_Curvature,feature_MeanInt)>0 ...
+    & feature_Curvature >= CurvatureThreshold & feature_Length>LengthThreshold);
+
+changed_ind_good_I = find(F_classifer(feature_MeanNMS, feature_Length,feature_Curvature,feature_MeanInt)>0 ...
+    & feature_MeanInt <= IntThreshold*5/5 & feature_Length>LengthThreshold);
+
+if(SaveFigures==1)
+
+    plot_feature_space_for_paper;
+
+end
+
+
+
 
 Original_set_Good_ind = Good_ind;
 Original_set_Bad_ind = Bad_ind;
@@ -343,12 +374,7 @@ if(ShowDetailMessages==1)
     display(['Length,NMSand Curvature: Number of good ones: ',num2str(length(Good_ind)),', number of bad ones: ',num2str(length(Bad_ind))]);
 end
 
-%
-%     h12 =  figure(12);hold off;
-%     plot(feature_Length(Good_ind),feature_MeanNMS(Good_ind),'b.'); hold on;
-%     plot(feature_Length(Bad_ind),feature_MeanNMS(Bad_ind),'r.');
-%     title('Classifier Plane with matched data round 0');
-%     saveas(h12,['./GEO_frame_',num2str(iFrame),'_round0_trained_plane.tif']);
+
 
 % plot the output image with these good ones
 current_all_seg_bw = zeros(size(labelMask));

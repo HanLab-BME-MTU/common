@@ -12,7 +12,7 @@ function folder_image_partition(image_folder, row_partition_number, col_partitio
 %             output_dir:               where you want the images to be
 %                                       saved.
 
-% Output:     None
+% Output:     None, all images are save to disk
 
 % Created 07 2014 by Liya Ding, Matlab R2012b
 
