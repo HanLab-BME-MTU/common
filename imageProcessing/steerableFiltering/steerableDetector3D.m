@@ -5,6 +5,7 @@
 %           M : filter type
 %               1: curve detector
 %               2: surface detector
+%               3: volume/edge detector (gradient magnitude)
 %       sigma : standard deviation of the Gaussian kernel on which the filters are based
 %   {zxRatio} : correction factor for z anisotropy (default: 1).
 %               Example: if the z sampling step is 5x larger than xy-sampling, set this value to 5.

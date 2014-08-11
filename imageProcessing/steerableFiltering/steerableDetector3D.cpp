@@ -501,19 +501,19 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     }
     
     // check order
-    if (!mxIsDouble(prhs[1]) || mxGetNumberOfElements(prhs[1]) != 1 || *mxGetPr(prhs[1])<1 || *mxGetPr(prhs[1])>3)
-        mexErrMsgTxt("The filter type 'M' must be 1 (curve detector) or 2 (surface detector).");
+    if (!mxIsDouble(prhs[1]) || mxGetNumberOfElements(prhs[1]) != 1 || *mxGetPr(prhs[1])!=(int)*mxGetPr(prhs[1]) || *mxGetPr(prhs[1])<1 || *mxGetPr(prhs[1])>3)
+        mexErrMsgTxt("The filter type 'M' must be 1 (curve detector), 2 (surface detector) or 3 (volume/edge detector).");
     int M = (int) *mxGetPr(prhs[1]);
     
     // check sigma
     if (!mxIsDouble(prhs[2]) || mxGetNumberOfElements(prhs[2]) != 1 || *mxGetPr(prhs[2]) <= 0.0)
-        mexErrMsgTxt("Sigma must be a strictly positive scalar value.");
+        mexErrMsgTxt("Sigma must be a positive scalar value.");
     double sigma = *mxGetPr(prhs[2]);
     
     double zfactor = 1.0;
     if (nrhs==4) {
         if (!mxIsDouble(prhs[3]) || mxGetNumberOfElements(prhs[3]) != 1 || *mxGetPr(prhs[3]) <= 0.0)
-            mexErrMsgTxt("z-anisotropy factor must be strictly positive.");
+            mexErrMsgTxt("The z-anisotropy factor must be positive.");
         zfactor = *mxGetPr(prhs[3]);
     }
     
