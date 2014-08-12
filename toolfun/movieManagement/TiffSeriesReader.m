@@ -75,11 +75,15 @@ classdef  TiffSeriesReader < Reader
                 if length(fileNames)>1
                     obj.sizeT(iChan) = length(fileNames);
                 else % if single file, assume stack and check for # of files
-                    info = imfinfo([obj.paths{iChan} fileNames{1}]);
+                    info = imfinfo(fullfile(obj.paths{iChan}, fileNames{1}));
                     obj.sizeT(iChan) = numel(info);
                 end
             end
             sizeT = obj.sizeT(iChan);
+        end
+       
+        function status = isMultiPageTiff(obj, iChan)
+            status = obj.sizeT(iChan)>1 && numel(obj.filenames{iChan})==1;
         end
         
         function bitDepth = getBitDepth(obj, iChan)
@@ -103,7 +107,7 @@ classdef  TiffSeriesReader < Reader
                 obj.filenames{iChan} = arrayfun(@(x) x.name, files, 'unif', 0);
             end
             % if index has been supplied & frames are not stored in single stack
-            if nargin>2 && ~(obj.sizeT(iChan)>1 && numel(obj.filenames(iChan))==1)
+            if nargin>2 && ~obj.isMultiPageTiff(iChan)
                 filenames = obj.filenames{iChan}(iFrame);
             else
                 filenames = obj.filenames{iChan};
@@ -125,7 +129,7 @@ classdef  TiffSeriesReader < Reader
             
             % Read individual files
             fileNames = obj.getImageFileNames(iChan, iFrame);
-            if ~(obj.sizeT(iChan)>1 && numel(obj.filenames{iChan})==1)
+            if ~obj.isMultiPageTiff(iChan)
                 for i=1:numel(iFrame)
                     I(:,:,i) = imread([obj.paths{iChan} filesep fileNames{i}]);
                 end
@@ -138,7 +142,7 @@ classdef  TiffSeriesReader < Reader
         
         function I = loadStack(obj, iChan, iFrame, iZ)
 
-            if ~(obj.sizeT(iChan)>1 && numel(obj.filenames{iChan})==1)
+            if ~obj.isMultiPageTiff(iChan)
                 sizeX = obj.getSizeX(iChan);
                 sizeY = obj.getSizeY(iChan);
                 
