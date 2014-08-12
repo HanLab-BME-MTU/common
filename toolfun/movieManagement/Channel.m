@@ -61,7 +61,7 @@ classdef Channel < hgsetget
                             [hcsPlatestack] = HCSplatestack(channelPath);
                         end
                         if isempty(hcsPlatestack)
-                            h = errordlg('No HCS data detected, please uncheck HCS data box');
+                            errordlg('No HCS data detected, please uncheck HCS data box');
                             return;
                         end
                         for ich = 1:size(hcsPlatestack, 2)
@@ -240,25 +240,30 @@ classdef Channel < hgsetget
         end
         
         function I = loadStack(obj,iFrame,iZ)            
-            %LOADSTACK Retreive entire z-stack or sub-stack:
+            %LOADSTACK Retrieve entire z-stack or sub-stack:
             %
             % I = loadStack(obj,iFrame)            
             % I = loadStack(obj,iFrame,iZ)            
             %
             % iZ - if empty, load whole z-stack, or may be vector to specify sub-stack
             
-            if nargin < 3 || isempty(iZ)
-                iZ = 1:obj.owner_.zSize_;
+            % if stack is a single frame, not a single multi-page TIFF of all frames
+            iChan = getChannelIndex(obj);
+            if ~(obj.owner_.reader.sizeT(iChan)>1 && numel(obj.owner_.reader.filenames{iChan})==1)
+                if nargin < 3 || isempty(iZ)
+                    iZ = 1:obj.owner_.zSize_;
+                end
+                %Get one plane to let reader determine variable class
+                i = obj.loadImage(iFrame,iZ(1));
+                imClass = class(i);
+                I = zeros([obj.owner_.imSize_ numel(iZ)],imClass);
+                I(:,:,1) = i;
+                for j = 2:numel(iZ)
+                    I(:,:,j) = obj.loadImage(iFrame,iZ(j));
+                end
+            else % all frames are stored in the same multi-page TIFF
+                I = readtiff([obj.owner_.reader.paths{iChan} obj.owner_.reader.filenames{iChan}{1}]);
             end
-            %Get one plane to let reader determine variable class
-            i = obj.loadImage(iFrame,iZ(1));
-            imClass = class(i);
-            I = zeros([obj.owner_.imSize_ numel(iZ)],imClass);
-            I(:,:,1) = i;
-            for j = 2:numel(iZ)
-               I(:,:,j) =  obj.loadImage(iFrame,iZ(j));
-            end            
-                        
         end
         
         %% Bio-formats/OMERO functions
@@ -369,7 +374,7 @@ classdef Channel < hgsetget
                 case 'imageType_'
                     validator = @(x) ischar(x) && ismember(x,Channel.getImagingModes);
                 case {'fluorophore_'}
-                    validator= @(x) ischar(x) && ismember(x,Channel.getFluorophores);
+                    validator = @(x) ischar(x) && ismember(lower(x),Channel.getFluorophores);
                 otherwise
                     validator=[];
             end

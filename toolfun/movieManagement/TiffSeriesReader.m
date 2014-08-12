@@ -7,7 +7,8 @@ classdef  TiffSeriesReader < Reader
     end
     
     methods
-        %% Constructor
+        
+        % Constructor
         function obj = TiffSeriesReader(channelPaths)
             obj.paths = channelPaths;
             nChan = numel(channelPaths);
@@ -19,7 +20,6 @@ classdef  TiffSeriesReader < Reader
             obj.bitDepth = - ones(nChan, 1);
             obj.filenames = cell(obj.sizeC, 1);
         end
-        
         
         function checkPath(obj, iChan)
             % Check channel path existence
@@ -41,7 +41,7 @@ classdef  TiffSeriesReader < Reader
             assert(isscalar(bitDepth),...
                 ['Bit depth is inconsistent in: \n\n%s\n\n'...
                 'Please make sure all the images have the same bit depth.'],obj.paths{iChan});
-
+            
             obj.sizeX(iChan) = sizeX;
             obj.sizeY(iChan) = sizeY;
             obj.bitDepth(iChan) = bitDepth;
@@ -72,7 +72,12 @@ classdef  TiffSeriesReader < Reader
         function sizeT = getSizeT(obj, iChan)
             if obj.sizeT(iChan) == -1,
                 fileNames = obj.getImageFileNames(iChan);
-                obj.sizeT(iChan) = length(fileNames);
+                if length(fileNames)>1
+                    obj.sizeT(iChan) = length(fileNames);
+                else % if single file, assume stack and check for # of files
+                    info = imfinfo([obj.paths{iChan} fileNames{1}]);
+                    obj.sizeT(iChan) = numel(info);
+                end
             end
             sizeT = obj.sizeT(iChan);
         end
@@ -81,7 +86,7 @@ classdef  TiffSeriesReader < Reader
             if obj.bitDepth(iChan) == -1,
                 obj.getXYDimensions(iChan);
             end
-                
+            
             bitDepth = obj.bitDepth(iChan);
         end
         
@@ -89,16 +94,16 @@ classdef  TiffSeriesReader < Reader
             % Channel path is a directory of image files
             if isempty(obj.filenames{iChan})
                 obj.checkPath(iChan);
-                [files nofExt] = imDir(obj.paths{iChan}, true);
+                [files, nofExt] = imDir(obj.paths{iChan}, true);
                 assert(nofExt~=0,['No proper image files are detected in:'...
                     '\n\n%s\n\nValid image file extension: tif, TIF, STK, bmp, BMP, jpg, JPG.'],obj.paths{iChan});
                 assert(nofExt==1,['More than one type of image files are found in:'...
                     '\n\n%s\n\nPlease make sure all images are of same type.'],obj.paths{iChan});
                 
-                obj.filenames{iChan} = arrayfun(@(x) x.name, files,...
-                    'UniformOutput',false);
+                obj.filenames{iChan} = arrayfun(@(x) x.name, files, 'unif', 0);
             end
-            if nargin>2,
+            % if index has been supplied & frames are not stored in single stack
+            if nargin>2 && ~(obj.sizeT(iChan)>1 && numel(obj.filenames(iChan))==1)
                 filenames = obj.filenames{iChan}(iFrame);
             else
                 filenames = obj.filenames{iChan};
@@ -120,8 +125,14 @@ classdef  TiffSeriesReader < Reader
             
             % Read individual files
             fileNames = obj.getImageFileNames(iChan, iFrame);
-            for i=1:numel(iFrame)
-                I(:,:,i)  = imread([obj.paths{iChan} filesep fileNames{i}]);
+            if ~(obj.sizeT(iChan)>1 && numel(obj.filenames{iChan})==1)
+                for i=1:numel(iFrame)
+                    I(:,:,i) = imread([obj.paths{iChan} filesep fileNames{i}]);
+                end
+            else % if the channel is stored as a multi-page TIFF
+                for i=1:numel(iFrame)
+                    I(:,:,i) = imread([obj.paths{iChan} filesep fileNames{1}], iFrame(i));
+                end
             end
         end
     end
