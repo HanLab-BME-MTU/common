@@ -91,6 +91,19 @@ classdef  OmeroReader < Reader
                 obj.getPixels())';
         end
         
+        function I = loadStack(obj, c, t, varargin)
+            
+            ip = inputParser;
+            ip.addRequired('c', @(x) isscalar(x) && ismember(x, 1 : obj.getSizeC()));
+            ip.addRequired('t', @(x) isscalar(x) && ismember(x, 1 : obj.getSizeT()));
+            ip.addOptional('z', 1 : obj.getSizeZ(), @(x) isscalar(x) && ismember(x, 1 : obj.getSizeZ()));
+            ip.parse(c, t, varargin{:});
+            
+            % Test session integrity
+            store = obj.getRawPixelsStore();
+            I = toMatrix(store.getStack(c - 1, t - 1), obj.getPixels())';
+        end
+        
         function delete(obj)
             if ~isempty(obj.rawPixelsStore),
                 obj.rawPixelsStore.close()

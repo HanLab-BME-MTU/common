@@ -135,5 +135,27 @@ classdef  TiffSeriesReader < Reader
                 end
             end
         end
+        
+        function I = loadStack(obj, iChan, iFrame, iZ)
+
+            if ~(obj.sizeT(iChan)>1 && numel(obj.filenames{iChan})==1)
+                sizeX = obj.getSizeX(iChan);
+                sizeY = obj.getSizeY(iChan);
+                
+                if nargin < 3 || isempty(iZ)
+                    iZ = 1 : obj.obj.getSizeZ(iChan);
+                end
+                %Get one plane to let reader determine variable class
+                i = obj.loadImage(iFrame,iZ(1));
+                imClass = class(i);
+                I = zeros([sizeY sizeX numel(iZ)],imClass);
+                I(:,:,1) = i;
+                for j = 2:numel(iZ)
+                    I(:,:,j) = obj.loadImage(iFrame,iZ(j));
+                end
+            else % all frames are stored in the same multi-page TIFF
+                I = readtiff([obj.paths{iChan} obj.filenames{iChan}{1}]);
+            end
+        end
     end
 end

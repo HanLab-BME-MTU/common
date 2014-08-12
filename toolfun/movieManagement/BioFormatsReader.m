@@ -102,6 +102,20 @@ classdef  BioFormatsReader < Reader
             I = bfGetPlane(obj.getReader(), javaIndex + 1);
         end
         
+        function I = loadStack(obj, c, t, varargin)
+            
+            ip = inputParser;
+            ip.addRequired('c', @(x) isscalar(x) && ismember(x, 1 : obj.getSizeC()));
+            ip.addRequired('t', @(x) isscalar(x) && ismember(x, 1 : obj.getSizeT()));
+            ip.addOptional('z', 1 : obj.getSizeZ(), @(x) all(ismember(x, 1 : obj.getSizeZ())));
+            ip.parse(c, t, varargin{:});
+            
+            %Get one plane to let reader determine variable class
+            for iz = 1 : numel(ip.Results.z)
+                I(:, :, iz) = obj.loadImage(c, t, ip.Results.z(iz));
+            end
+        end
+        
         function delete(obj)
             obj.formatReader.close()
         end
