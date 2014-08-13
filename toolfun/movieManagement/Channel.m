@@ -247,6 +247,11 @@ classdef Channel < hgsetget
             %
             % iZ - if empty, load whole z-stack, or may be vector to specify sub-stack
             
+            % if channel is stored as single stack, enable loading w/o input argument
+            if nargin < 2 || isempty(iFrame)
+                iFrame = 1;
+            end
+            
             % if stack is a single frame, not a single multi-page TIFF of all frames
             if nargin < 3 || isempty(iZ)
                 iZ = 1:obj.owner_.zSize_;

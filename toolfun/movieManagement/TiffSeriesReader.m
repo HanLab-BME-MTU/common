@@ -150,7 +150,7 @@ classdef  TiffSeriesReader < Reader
                     iZ = 1 : obj.obj.getSizeZ(iChan);
                 end
                 %Get one plane to let reader determine variable class
-                i = obj.loadImage(iFrame,iZ(1));
+                i = obj.loadImage(iChan,iFrame,iZ(1));
                 imClass = class(i);
                 I = zeros([sizeY sizeX numel(iZ)],imClass);
                 I(:,:,1) = i;
