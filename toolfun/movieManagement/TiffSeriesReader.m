@@ -119,7 +119,7 @@ classdef  TiffSeriesReader < Reader
             chanNames = obj.paths(iChan);
         end
         
-        function I = loadImage(obj, iChan, iFrame, varargin)
+        function I = loadImage(obj, iChan, iFrame, iZ, varargin)
             % Initialize array
             sizeX = obj.getSizeX(iChan);
             sizeY = obj.getSizeY(iChan);
@@ -129,8 +129,6 @@ classdef  TiffSeriesReader < Reader
             
             if nargin<4
                 iZ = 1;
-            else
-                iZ = varargin{1};
             end
             
             % Read individual files
