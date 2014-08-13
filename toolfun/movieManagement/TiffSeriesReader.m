@@ -16,7 +16,7 @@ classdef  TiffSeriesReader < Reader
             obj.sizeY = - ones(nChan, 1);
             obj.sizeT = - ones(nChan, 1);
             obj.sizeC = numel(channelPaths);
-            obj.sizeZ = 1;
+            obj.sizeZ = - ones(nChan, 1);
             obj.bitDepth = - ones(nChan, 1);
             obj.filenames = cell(obj.sizeC, 1);
         end
@@ -27,14 +27,20 @@ classdef  TiffSeriesReader < Reader
                 'Channel path specified is not a valid directory! Please double check the channel path!');
         end
         
-        function getXYDimensions(obj, iChan)
+        function getDimensions(obj, iChan)
             fileNames = obj.getImageFileNames(iChan);
             imInfo = cellfun(@(x) imfinfo([obj.paths{iChan} filesep x]),...
-                fileNames, 'UniformOutput', false);
+                fileNames, 'unif', 0);
             sizeX = unique(cellfun(@(x)(x.Width), imInfo));
             sizeY = unique(cellfun(@(x)(x.Height), imInfo));
+            if ~obj.isSingleMultiPageTiff(iChan)
+                sizeZ = unique(cellfun(@numel, imInfo));
+            else
+                sizeZ = 1;
+            end
+            
             bitDepth = unique(cellfun(@(x)(x.BitDepth), imInfo));
-            assert(isscalar(sizeX) && isscalar(sizeY),...
+            assert(isscalar(sizeX) && isscalar(sizeY) && isscalar(sizeZ),...
                 ['Image sizes are inconsistent in: \n\n%s\n\n'...
                 'Please make sure all the images have the same size.'],obj.paths{iChan});
             
@@ -44,25 +50,29 @@ classdef  TiffSeriesReader < Reader
             
             obj.sizeX(iChan) = sizeX;
             obj.sizeY(iChan) = sizeY;
+            obj.sizeZ(iChan) = sizeZ;
             obj.bitDepth(iChan) = bitDepth;
         end
         
         function sizeX = getSizeX(obj, iChan)
             if obj.sizeX(iChan) == -1,
-                obj.getXYDimensions(iChan);
+                obj.getDimensions(iChan);
             end
             sizeX = obj.sizeX(iChan);
         end
         
         function sizeY = getSizeY(obj, iChan)
-            if  obj.sizeY(iChan) == -1,
-                obj.getXYDimensions(iChan);
+            if obj.sizeY(iChan) == -1,
+                obj.getDimensions(iChan);
             end
             sizeY = obj.sizeY(iChan);
         end
         
-        function sizeZ = getSizeZ(obj, varargin)
-            sizeZ = obj.sizeZ;
+        function sizeZ = getSizeZ(obj, iChan)
+            if obj.sizeZ(iChan) == -1
+                obj.getDimensions(iChan);
+            end
+            sizeZ = obj.sizeZ(iChan);
         end
         
         function sizeC = getSizeC(obj, varargin)
@@ -82,13 +92,13 @@ classdef  TiffSeriesReader < Reader
             sizeT = obj.sizeT(iChan);
         end
        
-        function status = isMultiPageTiff(obj, iChan)
-            status = obj.sizeT(iChan)>1 && numel(obj.filenames{iChan})==1;
+        function status = isSingleMultiPageTiff(obj, iChan)
+            status = obj.getSizeT(iChan)>1 && numel(obj.filenames{iChan})==1;
         end
         
         function bitDepth = getBitDepth(obj, iChan)
             if obj.bitDepth(iChan) == -1,
-                obj.getXYDimensions(iChan);
+                obj.getDimensions(iChan);
             end
             
             bitDepth = obj.bitDepth(iChan);
@@ -107,7 +117,7 @@ classdef  TiffSeriesReader < Reader
                 obj.filenames{iChan} = arrayfun(@(x) x.name, files, 'unif', 0);
             end
             % if index has been supplied & frames are not stored in single stack
-            if nargin>2 && ~obj.isMultiPageTiff(iChan)
+            if nargin>2 && ~obj.isSingleMultiPageTiff(iChan)
                 filenames = obj.filenames{iChan}(iFrame);
             else
                 filenames = obj.filenames{iChan};
@@ -133,7 +143,7 @@ classdef  TiffSeriesReader < Reader
             
             % Read individual files
             fileNames = obj.getImageFileNames(iChan, iFrame);
-            if ~obj.isMultiPageTiff(iChan)
+            if ~obj.isSingleMultiPageTiff(iChan)
                 for i=1:numel(iFrame)
                     I(:,:,i) = imread([obj.paths{iChan} filesep fileNames{i}], iZ);
                 end
@@ -146,7 +156,7 @@ classdef  TiffSeriesReader < Reader
         
         function I = loadStack(obj, iChan, iFrame, iZ)
 
-            if ~obj.isMultiPageTiff(iChan)
+            if ~obj.isSingleMultiPageTiff(iChan)
                 sizeX = obj.getSizeX(iChan);
                 sizeY = obj.getSizeY(iChan);
                 
