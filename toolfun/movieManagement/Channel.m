@@ -61,7 +61,7 @@ classdef Channel < hgsetget
                             [hcsPlatestack] = HCSplatestack(channelPath);
                         end
                         if isempty(hcsPlatestack)
-                            h = errordlg('No HCS data detected, please uncheck HCS data box');
+                            errordlg('No HCS data detected, please uncheck HCS data box');
                             return;
                         end
                         for ich = 1:size(hcsPlatestack, 2)
@@ -240,25 +240,24 @@ classdef Channel < hgsetget
         end
         
         function I = loadStack(obj,iFrame,iZ)            
-            %LOADSTACK Retreive entire z-stack or sub-stack:
+            %LOADSTACK Retrieve entire z-stack or sub-stack:
             %
             % I = loadStack(obj,iFrame)            
             % I = loadStack(obj,iFrame,iZ)            
             %
             % iZ - if empty, load whole z-stack, or may be vector to specify sub-stack
             
+            % if channel is stored as single stack, enable loading w/o input argument
+            if nargin < 2 || isempty(iFrame)
+                iFrame = 1;
+            end
+            
+            % if stack is a single frame, not a single multi-page TIFF of all frames
             if nargin < 3 || isempty(iZ)
                 iZ = 1:obj.owner_.zSize_;
             end
-            %Get one plane to let reader determine variable class
-            i = obj.loadImage(iFrame,iZ(1));
-            imClass = class(i);
-            I = zeros([obj.owner_.imSize_ numel(iZ)],imClass);
-            I(:,:,1) = i;
-            for j = 2:numel(iZ)
-               I(:,:,j) =  obj.loadImage(iFrame,iZ(j));
-            end            
-                        
+            I = obj.getReader().loadStack(obj.getChannelIndex(), iFrame, iZ);
+
         end
         
         %% Bio-formats/OMERO functions
@@ -369,7 +368,7 @@ classdef Channel < hgsetget
                 case 'imageType_'
                     validator = @(x) ischar(x) && ismember(x,Channel.getImagingModes);
                 case {'fluorophore_'}
-                    validator= @(x) ischar(x) && ismember(x,Channel.getFluorophores);
+                    validator = @(x) ischar(x) && ismember(lower(x),Channel.getFluorophores);
                 otherwise
                     validator=[];
             end

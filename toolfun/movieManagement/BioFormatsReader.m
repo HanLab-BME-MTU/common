@@ -90,6 +90,7 @@ classdef  BioFormatsReader < Reader
         end
         
         function I = loadImage(obj, c, t, varargin)
+            % Retrieve single plane specified by its (c, t, z) coordinates
             
             ip = inputParser;
             ip.addRequired('c', @(x) isscalar(x) && ismember(x, 1 : obj.getSizeC()));
@@ -100,6 +101,34 @@ classdef  BioFormatsReader < Reader
             % Using bioformat tools, get the reader and retrieve dimension order
             javaIndex =  obj.getIndex(ip.Results.z - 1, c - 1, t - 1);
             I = bfGetPlane(obj.getReader(), javaIndex + 1);
+        end
+        
+        function I = loadStack(obj, c, t, varargin)
+            % Retrieve entire z-stack or sub-stack
+            
+            % Input check
+            ip = inputParser;
+            ip.addRequired('c', @(x) isscalar(x) && ismember(x, 1 : obj.getSizeC()));
+            ip.addRequired('t', @(x) isscalar(x) && ismember(x, 1 : obj.getSizeT()));
+            ip.addOptional('z', 1 : obj.getSizeZ(), @(x) all(ismember(x, 1 : obj.getSizeZ())));
+            ip.parse(c, t, varargin{:});
+            
+            % Determine image class from pixel type
+            r = obj.getReader();
+            pixelType = r.getPixelType();
+            pixelTypeString = loci.formats.FormatTools.getPixelTypeString(pixelType);
+            if strcmp(char(pixelTypeString), 'float'),
+                % Handle float/single conversion
+                imClass = 'single';
+            else
+                imClass = char(pixelTypeString);
+            end
+            % Load image stack by looping over bfGetPlane
+            I = zeros(obj.getSizeY(), obj.getSizeX(),numel(ip.Results.z), imClass);
+            for iz = 1 : numel(ip.Results.z)
+                javaIndex =  obj.getIndex(ip.Results.z(iz) - 1, c - 1, t - 1);
+                I(:, :, iz) = bfGetPlane(obj.getReader(), javaIndex + 1);
+            end
         end
         
         function delete(obj)

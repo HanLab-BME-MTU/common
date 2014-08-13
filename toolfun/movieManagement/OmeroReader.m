@@ -91,6 +91,22 @@ classdef  OmeroReader < Reader
                 obj.getPixels())';
         end
         
+        function I = loadStack(obj, c, t, varargin)
+            
+            ip = inputParser;
+            ip.addRequired('c', @(x) isscalar(x) && ismember(x, 1 : obj.getSizeC()));
+            ip.addRequired('t', @(x) isscalar(x) && ismember(x, 1 : obj.getSizeT()));
+            ip.addOptional('z', 1 : obj.getSizeZ(), @(x) all(ismember(x, 1 : obj.getSizeZ())));
+            ip.parse(c, t, varargin{:});
+            
+            % First retrieve the entire Z-stack and permute it to be
+            % compatible with MATLAB format then extract the Z-range
+            store = obj.getRawPixelsStore();
+            I = toMatrix(store.getStack(c - 1, t - 1), obj.getPixels());
+            I = permute(I, [2 1 3]);
+            I = I(:, :, ip.Results.z);
+        end
+        
         function delete(obj)
             if ~isempty(obj.rawPixelsStore),
                 obj.rawPixelsStore.close()
