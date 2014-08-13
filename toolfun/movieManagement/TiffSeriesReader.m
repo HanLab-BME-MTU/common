@@ -155,13 +155,19 @@ classdef  TiffSeriesReader < Reader
         end
         
         function I = loadStack(obj, iChan, iFrame, iZ)
+            assert(isscalar(iChan) && iChan <= obj.getSizeC());
+            assert(isscalar(iFrame) && iFrame <= obj.getSizeT(iChan));
 
             if ~obj.isSingleMultiPageTiff(iChan)
                 sizeX = obj.getSizeX(iChan);
                 sizeY = obj.getSizeY(iChan);
                 
-                if nargin < 3 || isempty(iZ)
-                    iZ = 1 : obj.obj.getSizeZ(iChan);
+                
+                
+                if nargin < 4 || isempty(iZ)
+                    iZ = 1 : obj.getSizeZ(iChan);
+                else
+                    assert( all(ismember(iZ, 1 : obj.getSizeZ(iChan) ) ) );
                 end
                 %Get one plane to let reader determine variable class
                 i = obj.loadImage(iChan,iFrame,iZ(1));
