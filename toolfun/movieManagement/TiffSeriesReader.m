@@ -127,11 +127,17 @@ classdef  TiffSeriesReader < Reader
             class = ['uint' num2str(bitDepth)];
             I = zeros([sizeY, sizeX, numel(iFrame)], class);
             
+            if nargin<4
+                iZ = 1;
+            else
+                iZ = varargin{1};
+            end
+            
             % Read individual files
             fileNames = obj.getImageFileNames(iChan, iFrame);
             if ~obj.isMultiPageTiff(iChan)
                 for i=1:numel(iFrame)
-                    I(:,:,i) = imread([obj.paths{iChan} filesep fileNames{i}]);
+                    I(:,:,i) = imread([obj.paths{iChan} filesep fileNames{i}], iZ);
                 end
             else % if the channel is stored as a multi-page TIFF
                 for i=1:numel(iFrame)
