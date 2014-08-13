@@ -155,7 +155,7 @@ classdef  TiffSeriesReader < Reader
                 I = zeros([sizeY sizeX numel(iZ)],imClass);
                 I(:,:,1) = i;
                 for j = 2:numel(iZ)
-                    I(:,:,j) = obj.loadImage(iFrame,iZ(j));
+                    I(:,:,j) = obj.loadImage(iChan,iFrame,iZ(j));
                 end
             else % all frames are stored in the same multi-page TIFF
                 I = readtiff([obj.paths{iChan} obj.filenames{iChan}{1}]);
