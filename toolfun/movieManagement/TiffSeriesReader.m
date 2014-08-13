@@ -172,7 +172,7 @@ classdef  TiffSeriesReader < Reader
                     I(:,:,j) = obj.loadImage(iChan,iFrame,iZ(j));
                 end
             else % all frames are stored in the same multi-page TIFF
-                I = readtiff([obj.paths{iChan} obj.filenames{iChan}{1}]);
+                I = readtiff(fullfile(obj.paths{iChan}, obj.filenames{iChan}{1}));
             end
         end
     end
