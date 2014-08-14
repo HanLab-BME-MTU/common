@@ -8,6 +8,7 @@ classdef TestTiffSeriesReader <  TestCase
         sizeC = 1
         sizeT = 1
         sizeZ = 1
+        imClass = 'uint8'
     end
     
     methods
@@ -41,36 +42,49 @@ classdef TestTiffSeriesReader <  TestCase
                 assertEqual(self.reader.getSizeT(1), self.sizeT);
             end
         end
-            
+        
+        function checkLoadImage(self)
+            for c = 1 : self.sizeC
+                for t = 1 : self.sizeT
+                    for z = 1 : self.sizeZ
+                        assertEqual(self.reader.loadImage(c, t, z),...
+                            self.getPlane(c, t, z));
+                    end
+                end
+            end
+        end
+        
+        function I = getPlane(self, c, t, z)
+            index = sub2ind([self.sizeC self.sizeT self.sizeZ], c, t, z);
+            I = index * ones(self.sizeY, self.sizeX, self.imClass);
+        end
+        
         %% Test data formats
         function testIndividualTiffFiles(self)
             self.sizeT = 5;
-            I = ones(self.sizeY, self.sizeX, 'uint8');
             for t = 1 : self.sizeT
-                imwrite(t * I, fullfile(self.path, ['test' num2str(t) '.tif']));
+                imwrite(self.getPlane(1, t, 1),...
+                    fullfile(self.path, ['test' num2str(t) '.tif']));
             end
             self.reader = TiffSeriesReader({self.path});
             
             self.checkDimensions();
-            for t = 1 : self.sizeT
-                assertEqual(self.reader.loadImage(1, t, 1), t * I);
-            end
+            self.checkLoadImage();
+            assertFalse(self.reader.isSingleMultiPageTiff(1));
         end
         
         function testSingleMultiPageTiff(self)
             self.sizeT = 5;
-            I = ones(self.sizeY, self.sizeX, 'uint8');
             imPath = fullfile(self.path, 'test.tif');
-            imwrite(I, imPath);
-            for i = 2 : self.sizeT
-                imwrite(i * I, imPath, 'write', 'append');
+            imwrite(self.getPlane(1, 1, 1), imPath);
+            for t = 2 : self.sizeT
+                imwrite(self.getPlane(1, t, 1), imPath, 'write', 'append');
             end
             self.reader = TiffSeriesReader({self.path});
             
             self.checkDimensions();
-            for t = 1 : self.sizeT
-                assertEqual(self.reader.loadImage(1, t, 1), t * I);
-            end
+            self.checkLoadImage();
+            assertTrue(self.reader.isSingleMultiPageTiff(1));
         end
         
         function testMultipleMultiPageTiff(self)
@@ -78,18 +92,17 @@ classdef TestTiffSeriesReader <  TestCase
             self.sizeZ = 3;
             for t = 1 : self.sizeT
                 imPath = fullfile(self.path, ['test' num2str(t) '.tif']);
-                I = ones(self.sizeY, self.sizeX, 'uint8');
-                imwrite(t * I, imPath);
+                imwrite(self.getPlane(1, t, 1), imPath);
                 for z = 2 : self.sizeZ
-                    imwrite(t * I, imPath, 'write', 'append');
+                    imwrite(self.getPlane(1, t, z),...
+                        imPath, 'write', 'append');
                 end
             end
             self.reader = TiffSeriesReader({self.path});
             
             self.checkDimensions();
-            for t = 1 : self.sizeT
-                assertEqual(self.reader.loadImage(1, t, 1), t * I);
-            end
+            self.checkLoadImage();
+            assertFalse(self.reader.isSingleMultiPageTiff(1));
         end
         
         %% Test pixel types
