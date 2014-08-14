@@ -279,10 +279,10 @@ for i = startFrame : endFrame
 end
 
 %fit the amplitude distribution in each frame with Gaussians or log-normal
-%don't consider frame if it has less than 10 features
+%don't consider frame if it has less than 25 features
 intensityHist(1:numFrames) = struct('modeParam',[]);
 for i = startFrame : endFrame
-    if numFeatures(i) >= 10
+    if numFeatures(i) >= 25
         %         switch ampOrInt
         %             case 1
         [~,~,modeParam,errFlag] = ...
