@@ -1,18 +1,18 @@
 function detectMoviePointSources(movieData,varargin)
 % detectMoviePointSource detect diffraction-limited objects in a movie
 %
-% detectMoviePointSources 
+% detectMoviePointSources
 %
 % SYNOPSIS detectMoviePointSources(movieData,paramsIn)
 %
-% INPUT   
+% INPUT
 %   movieData - A MovieData object describing the movie to be processed
 %
 %   paramsIn - Structure with inputs for optional parameters. The
 %   parameters should be stored as fields in the structure, with the field
 %   names and possible values as described below
 %
-% OUTPUT   
+% OUTPUT
 
 % Sebastien Besson, Sep 2011 (last modified Mar 2013)
 
@@ -27,14 +27,14 @@ ip.addParamValue('UseIntersection',true,@islogical);
 ip.parse(movieData,varargin{:});
 paramsIn=ip.Results.paramsIn;
 
-%Get the indices of any previous speckle detection processes                                                                     
+%Get the indices of any previous speckle detection processes
 iProc = movieData.getProcessIndex('PointSourceDetectionProcess',1,0);
 
 %If the process doesn't exist, create it
 if isempty(iProc)
     iProc = numel(movieData.processes_)+1;
     movieData.addProcess(PointSourceDetectionProcess(movieData,...
-        movieData.outputDirectory_));                                                                                                 
+        movieData.outputDirectory_));
 end
 pointSourceDetProc = movieData.processes_{iProc};
 %Parse input, store in parameter structure
@@ -50,12 +50,11 @@ end
 % Reading various constants
 imDirs  = movieData.getChannelPaths;
 nFrames = movieData.nFrames_;
-imSize = movieData.imSize_;
 
 %Find the  the segmentation process.
 if isempty(p.MaskProcessIndex) && ~isempty(p.MaskChannelIndex);
     p.MaskProcessIndex =movieData.getProcessIndex('MaskProcess',1,1);
-end    
+end
 
 if ~isempty(p.MaskChannelIndex) && numel(p.MaskChannelIndex) ~= numel(p.ChannelIndex)
     error('If masks are applied you must specify one mask channel per detection channel!')
@@ -88,8 +87,8 @@ if ~isempty(p.MaskProcessIndex) && ~isempty(p.MaskChannelIndex)
         
         %Then use this mask process
         maskProc = maskIntProc;
-            
-    end 
+        
+    end
     
     % Get mask directory and names
     maskDir = maskProc.outFilePaths_(p.MaskChannelIndex);
@@ -105,10 +104,10 @@ for j = 1:numel(p.ChannelIndex)
     end
 end
 pointSourceDetProc.setInFilePaths(inFilePaths);
-    
+
 % Set up the output directories
 outFilePaths = cell(1,numel(movieData.channels_));
-for i = p.ChannelIndex;    
+for i = p.ChannelIndex;
     %Create string for current directory
     outFilePaths{1,i} = [p.OutputDirectory filesep 'channel_' num2str(i) '.mat'];
 end
@@ -118,7 +117,7 @@ pointSourceDetProc.setOutFilePaths(outFilePaths);
 %Get ROI mask if any.
 roiMask = movieData.getROIMask;
 
-%% --------------- Point source detection ---------------%%% 
+%% --------------- Point source detection ---------------%%%
 
 disp('Starting detecting diffraction-limited objects');
 
@@ -127,6 +126,7 @@ timeMsg = @(t) ['\nEstimated time remaining: ' num2str(round(t)) 's'];
 tic;
 nChan = length(p.ChannelIndex);
 nTot = nChan*nFrames;
+
 for i = 1:numel(p.ChannelIndex)
     
     iChan = p.ChannelIndex(i);
@@ -135,7 +135,7 @@ for i = 1:numel(p.ChannelIndex)
     disp(logMsg(iChan))
     disp(imDirs{1,iChan});
     if ~isempty(p.MaskProcessIndex) && ~isempty(p.MaskChannelIndex)
-        disp(sprintf('Using mask from: %s', maskDir{i}));
+        fprintf(1, 'Using mask from: %s', maskDir{i});
     end
     disp('Results will be saved under:')
     disp(outFilePaths{1,iChan});
@@ -143,39 +143,43 @@ for i = 1:numel(p.ChannelIndex)
     %Set up parameter structure for detection on this channel
     detP = splitPerChannelParams(p, iChan);
     
+    % Initialize a movieInfo structure with the minimum amount of fields
+    clear movieInfo
+    movieInfo(1 : nFrames)= struct('xCoord', [], 'yCoord', [],...
+        'amp', [], 'sigmaX', [], 'sigmaY', [], 'bkg', []);
+    
     for j= 1:nFrames
-
-        currImage = double(movieData.channels_(iChan).loadImage(j)); 
+        
+        currImage = double(movieData.channels_(iChan).loadImage(j));
         if ~isempty(p.MaskProcessIndex) && ~isempty(p.MaskChannelIndex)
             currMask = maskProc.loadChannelOutput(p.MaskChannelIndex(i),j) & roiMask(:,:,j);
-            detP.Mask =  currMask;            
+            detP.Mask =  currMask;
         else
             detP.Mask = roiMask(:,:,j);
-        end    
+        end
         
-        % Call main detection function       
+        % Call main detection function
         pstruct = pointSourceDetection(currImage,p.filterSigma(iChan),detP);
-
-
+        
+        if ~isempty(pstruct) &&...
+                ~isequal(fieldnames(pstruct), fieldnames(movieInfo(j)))
+            allFields = fieldnames(pstruct);
+            for iField = 1:numel(allFields)
+                movieInfo(j).(allFields{iField}) = pstruct.(allFields{iField}); %#ok<AGROW>
+            end
+            movieInfo = orderfields(movieInfo);
+        end
         % add xCoord, yCoord, amp fields for compatibilty  with tracker
         if ~isempty(pstruct)
+            
             pstruct.xCoord = [pstruct.x' pstruct.x_pstd'];
             pstruct.yCoord = [pstruct.y' pstruct.y_pstd'];
-            pstruct.amp = [pstruct.A' pstruct.A_pstd'];        
+            pstruct.amp = [pstruct.A' pstruct.A_pstd'];
             pstruct.sigmaX = [pstruct.s' pstruct.s_pstd'];
             pstruct.sigmaY = [pstruct.s' pstruct.s_pstd'];
             pstruct.bkg = [pstruct.c' pstruct.c_pstd'];
-        end
-        
-        if j == 1            
-            %Initialize the strucutre
-            allFields = fieldnames(pstruct);
-            allFields = vertcat(allFields', arrayfun(@(x)([]),1:numel(allFields),'Unif',false));
-            movieInfo(1:nFrames)= struct(allFields{:});            
-        end
-        
-        if ~isempty(pstruct)
-            movieInfo(j) = pstruct; %#ok<AGROW>
+            
+            movieInfo(j) = orderfields(pstruct); %#ok<AGROW>
         end
         
         if mod(j,5)==1 && ishandle(wtBar)
@@ -184,7 +188,7 @@ for i = 1:numel(p.ChannelIndex)
             waitbar(nj/nTot,wtBar,sprintf([logMsg(iChan) timeMsg(tj*nTot/nj-tj)]));
         end
     end
-    save(outFilePaths{1,iChan}, 'movieInfo'); 
+    save(outFilePaths{1,iChan}, 'movieInfo');
 end
 
 % Close waitbar
