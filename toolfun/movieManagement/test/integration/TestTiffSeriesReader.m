@@ -44,12 +44,15 @@ classdef TestTiffSeriesReader <  TestCase
         end
         
         function checkLoadImage(self)
+            I = zeros(self.sizeY, self.sizeX, self.sizeT, self.imClass);
             for c = 1 : self.sizeC
-                for t = 1 : self.sizeT
-                    for z = 1 : self.sizeZ
-                        assertEqual(self.reader.loadImage(c, t, z),...
-                            self.getPlane(c, t, z));
+                for z = 1 : self.sizeZ
+                    for t = 1 : self.sizeT
+                        I(:,:,t) = self.getPlane(c, t, z);
+                        assertEqual(self.reader.loadImage(c, t, z), I(:,:,t));
                     end
+                    assertEqual(self.reader.loadImage(c, 1 : self.sizeT, z),...
+                        cat(3, I));
                 end
             end
         end
