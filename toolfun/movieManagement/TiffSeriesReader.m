@@ -130,27 +130,25 @@ classdef  TiffSeriesReader < Reader
         end
         
         function I = loadImage(obj, iChan, iFrame, iZ, varargin)
-            % Initialize array
-            sizeX = obj.getSizeX(iChan);
-            sizeY = obj.getSizeY(iChan);
-            bitDepth = obj.getBitDepth(iChan);
-            class = ['uint' num2str(bitDepth)];
-            I = zeros([sizeY, sizeX, numel(iFrame)], class);
-            
             if nargin<4
                 iZ = 1;
             end
             
-            % Read individual files
-            fileNames = obj.getImageFileNames(iChan, iFrame);
             if ~obj.isSingleMultiPageTiff(iChan)
+                % Read individual files
+                fileNames = obj.getImageFileNames(iChan, iFrame);
+                
+                % Initialize array
+                sizeX = obj.getSizeX(iChan);
+                sizeY = obj.getSizeY(iChan);
+                bitDepth = obj.getBitDepth(iChan);
+                I = zeros([sizeY, sizeX, numel(iFrame)], ['uint' num2str(bitDepth)]);
+                
                 for i=1:numel(iFrame)
                     I(:,:,i) = imread([obj.paths{iChan} filesep fileNames{i}], iZ);
                 end
             else % if the channel is stored as a multi-page TIFF
-                for i=1:numel(iFrame)
-                    I(:,:,i) = imread([obj.paths{iChan} filesep fileNames{1}], iFrame(i));
-                end
+                I = readtiff(fullfile(obj.paths{iChan}, obj.filenames{iChan}{1}), iFrame);
             end
         end
         
@@ -161,8 +159,6 @@ classdef  TiffSeriesReader < Reader
             if ~obj.isSingleMultiPageTiff(iChan)
                 sizeX = obj.getSizeX(iChan);
                 sizeY = obj.getSizeY(iChan);
-                
-                
                 
                 if nargin < 4 || isempty(iZ)
                     iZ = 1 : obj.getSizeZ(iChan);
