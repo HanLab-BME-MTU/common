@@ -12,7 +12,7 @@ function pThis = splitPerChannelParams(pAll,iChan)
 %6/2014
 
 
-pThis = [];
+pThis = pAll;
 for l = 1:numel(pAll.PerChannelParams)
     if isfield(pAll,pAll.PerChannelParams{l})%Check, some params may use defaults
         if iscell(pAll.(pAll.PerChannelParams{l}))
