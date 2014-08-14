@@ -85,5 +85,45 @@ classdef TestTiffSeriesReader <  TestCase
                 assertEqual(self.reader.loadImage(1, t, 1), t * I);
             end
         end
+        
+        %% Test pixel types
+        function testMultiChannel(self)
+            I = ones(10, 10, 'uint8');
+            chPath = cell(2, 1);
+            for c = 1 : 2
+                chPath{c} = fullfile(self.path, ['ch' num2str(c)]);
+                mkdir(chPath{c});
+                imwrite(c * I, fullfile(chPath{c}, 'test.tif'));
+            end
+            self.reader = TiffSeriesReader(chPath);
+            
+            assertEqual(self.reader.getSizeX(1), 10);
+            assertEqual(self.reader.getSizeY(1), 10);
+            assertEqual(self.reader.getSizeZ(1), 1);
+            assertEqual(self.reader.getSizeC(1), 2);
+            assertEqual(self.reader.getSizeT(1), 1);
+            
+            for c = 1 : 2
+                assertEqual(self.reader.loadImage(c, 1, 1), c * I);
+            end
+        end
+        %% Test pixel types
+        function testUINT8(self)
+            I = ones(10, 10, 'uint8');
+            imwrite(I, fullfile(self.path, 'test.tif'));
+            self.reader = TiffSeriesReader({self.path});
+            
+            assertEqual(self.reader.getBitDepth(1), 8);
+            assertEqual(self.reader.loadImage(1, 1, 1), I);
+        end
+        
+        function testUINT16(self)
+            I = ones(10, 10, 'uint16');
+            imwrite(I, fullfile(self.path, 'test.tif'));
+            self.reader = TiffSeriesReader({self.path});
+            
+            assertEqual(self.reader.getBitDepth(1), 16);
+            assertEqual(self.reader.loadImage(1, 1, 1), I);
+        end
     end
 end
