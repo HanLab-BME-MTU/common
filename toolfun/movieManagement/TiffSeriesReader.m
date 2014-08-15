@@ -155,26 +155,17 @@ classdef  TiffSeriesReader < Reader
         function I = loadStack(obj, iChan, iFrame, iZ)
             assert(isscalar(iChan) && iChan <= obj.getSizeC());
             assert(isscalar(iFrame) && iFrame <= obj.getSizeT(iChan));
-
-            if ~obj.isSingleMultiPageTiff(iChan)
-                sizeX = obj.getSizeX(iChan);
-                sizeY = obj.getSizeY(iChan);
-                
-                if nargin < 4 || isempty(iZ)
-                    iZ = 1 : obj.getSizeZ(iChan);
-                else
-                    assert( all(ismember(iZ, 1 : obj.getSizeZ(iChan) ) ) );
-                end
-                %Get one plane to let reader determine variable class
-                i = obj.loadImage(iChan,iFrame,iZ(1));
-                imClass = class(i);
-                I = zeros([sizeY sizeX numel(iZ)],imClass);
-                I(:,:,1) = i;
-                for j = 2:numel(iZ)
-                    I(:,:,j) = obj.loadImage(iChan,iFrame,iZ(j));
-                end
-            else % all frames are stored in the same multi-page TIFF
-                I = readtiff(fullfile(obj.paths{iChan}, obj.filenames{iChan}{1}));
+            if nargin < 4 || isempty(iZ)
+                iZ = 1 : obj.getSizeZ(iChan);
+            else
+                assert( all(ismember(iZ, 1 : obj.getSizeZ(iChan) ) ) );
+            end
+            
+            if obj.getSizeZ(iChan) > 1
+                I = readtiff(fullfile(obj.paths{iChan}, obj.filenames{iChan}{iFrame}),...
+                    iZ);
+            else
+                I = obj.loadImage(iChan, iFrame, 1);
             end
         end
     end
