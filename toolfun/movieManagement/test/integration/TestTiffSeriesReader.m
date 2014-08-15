@@ -34,12 +34,12 @@ classdef TestTiffSeriesReader <  TestCase
         end
         
         function checkDimensions(self)
+            assertEqual(self.reader.getSizeC, self.sizeC);
             for c = 1 : self.sizeC
-                assertEqual(self.reader.getSizeX(1), self.sizeX);
-                assertEqual(self.reader.getSizeY(1), self.sizeY);
-                assertEqual(self.reader.getSizeZ(1), self.sizeZ);
-                assertEqual(self.reader.getSizeC(1), self.sizeC);
-                assertEqual(self.reader.getSizeT(1), self.sizeT);
+                assertEqual(self.reader.getSizeX(c), self.sizeX( min(c,length(self.sizeX)) ));
+                assertEqual(self.reader.getSizeY(c), self.sizeY( min(c,length(self.sizeY)) ));
+                assertEqual(self.reader.getSizeZ(c), self.sizeZ( min(c,length(self.sizeZ)) ));
+                assertEqual(self.reader.getSizeT(c), self.sizeT( min(c,length(self.sizeT)) ));
             end
         end
         
