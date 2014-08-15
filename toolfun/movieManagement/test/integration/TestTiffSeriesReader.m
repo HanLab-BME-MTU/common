@@ -49,10 +49,28 @@ classdef TestTiffSeriesReader <  TestCase
                 for z = 1 : self.sizeZ
                     for t = 1 : self.sizeT
                         I(:,:,t) = self.getPlane(c, t, z);
-                        assertEqual(self.reader.loadImage(c, t, z), I(:,:,t));
                     end
-                    assertEqual(self.reader.loadImage(c, 1 : self.sizeT, z),...
-                        cat(3, I));
+                    assertEqual(self.reader.loadImage(c, t, z), I(:,:,t));
+                    for t = 1 : self.sizeT
+                        assertEqual(self.reader.loadImage(c, 1 : t, z),...
+                            cat(3, I(:, :, 1:t)));
+                    end
+                end
+            end
+        end
+        
+        function checkLoadStack(self)
+            I = zeros(self.sizeY, self.sizeX, self.sizeZ, self.imClass);
+            for c = 1 : self.sizeC
+                for t = 1 : self.sizeT
+                    for z = 1 : self.sizeZ
+                        I(:,:,z) = self.getPlane(c, t, z);
+                    end
+                    assertEqual(self.reader.loadStack(c, t), cat(3, I));
+                    for z = 1 : self.sizeZ
+                        assertEqual(self.reader.loadStack(c, t, 1:z),...
+                            cat(3, I(:, :, 1:z)));
+                    end
                 end
             end
         end
@@ -73,6 +91,7 @@ classdef TestTiffSeriesReader <  TestCase
             
             self.checkDimensions();
             self.checkLoadImage();
+            self.checkLoadStack();
             assertFalse(self.reader.isSingleMultiPageTiff(1));
         end
         
@@ -87,6 +106,7 @@ classdef TestTiffSeriesReader <  TestCase
             
             self.checkDimensions();
             self.checkLoadImage();
+            self.checkLoadStack();
             assertTrue(self.reader.isSingleMultiPageTiff(1));
         end
         
@@ -105,6 +125,8 @@ classdef TestTiffSeriesReader <  TestCase
             
             self.checkDimensions();
             self.checkLoadImage();
+            self.checkLoadStack();
+            
             assertFalse(self.reader.isSingleMultiPageTiff(1));
         end
         

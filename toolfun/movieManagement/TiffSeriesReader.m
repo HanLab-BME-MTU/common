@@ -29,8 +29,7 @@ classdef  TiffSeriesReader < Reader
         
         function getDimensions(obj, iChan)
             fileNames = obj.getImageFileNames(iChan);
-            imInfo = cellfun(@(x) imfinfo([obj.paths{iChan} filesep x]),...
-                fileNames, 'unif', 0);
+            imInfo = cellfun(@(x) imfinfo([obj.paths{iChan} filesep x]), fileNames, 'unif', 0);
             sizeX = unique(cellfun(@(x)(x.Width), imInfo));
             sizeY = unique(cellfun(@(x)(x.Height), imInfo));
             if ~obj.isSingleMultiPageTiff(iChan)
@@ -91,7 +90,7 @@ classdef  TiffSeriesReader < Reader
             end
             sizeT = obj.sizeT(iChan);
         end
-       
+        
         function status = isSingleMultiPageTiff(obj, iChan)
             status = obj.getSizeT(iChan)>1 && numel(obj.filenames{iChan})==1;
         end
@@ -100,7 +99,6 @@ classdef  TiffSeriesReader < Reader
             if obj.bitDepth(iChan) == -1,
                 obj.getDimensions(iChan);
             end
-            
             bitDepth = obj.bitDepth(iChan);
         end
         
@@ -122,57 +120,48 @@ classdef  TiffSeriesReader < Reader
             else
                 filenames = obj.filenames{iChan};
             end
-            
         end
         
         function chanNames = getChannelNames(obj, iChan)
             chanNames = obj.paths(iChan);
         end
         
-        function I = loadImage(obj, iChan, iFrame, iZ, varargin)
-            % Initialize array
-            sizeX = obj.getSizeX(iChan);
-            sizeY = obj.getSizeY(iChan);
-            bitDepth = obj.getBitDepth(iChan);
-            class = ['uint' num2str(bitDepth)];
-            I = zeros([sizeY, sizeX, numel(iFrame)], class);
-            
-            if nargin<4
+        function I = loadImage(obj, iChan, iFrame, iZ)
+            if nargin<4 || isempty(iZ)
                 iZ = 1;
             end
             
-            % Read individual files
-            fileNames = obj.getImageFileNames(iChan, iFrame);
             if ~obj.isSingleMultiPageTiff(iChan)
+                % Read individual files
+                fileNames = obj.getImageFileNames(iChan, iFrame);
+                
+                % Initialize array
+                sizeX = obj.getSizeX(iChan);
+                sizeY = obj.getSizeY(iChan);
+                bitDepth = obj.getBitDepth(iChan);
+                I = zeros([sizeY, sizeX, numel(iFrame)], ['uint' num2str(bitDepth)]);
+                
                 for i=1:numel(iFrame)
                     I(:,:,i) = imread([obj.paths{iChan} filesep fileNames{i}], iZ);
                 end
             else % if the channel is stored as a multi-page TIFF
-                for i=1:numel(iFrame)
-                    I(:,:,i) = imread([obj.paths{iChan} filesep fileNames{1}], iFrame(i));
-                end
+                I = readtiff(fullfile(obj.paths{iChan}, obj.filenames{iChan}{1}), iFrame);
             end
         end
         
         function I = loadStack(obj, iChan, iFrame, iZ)
-
-            if ~obj.isSingleMultiPageTiff(iChan)
-                sizeX = obj.getSizeX(iChan);
-                sizeY = obj.getSizeY(iChan);
-                
-                if nargin < 3 || isempty(iZ)
-                    iZ = 1 : obj.obj.getSizeZ(iChan);
-                end
-                %Get one plane to let reader determine variable class
-                i = obj.loadImage(iChan,iFrame,iZ(1));
-                imClass = class(i);
-                I = zeros([sizeY sizeX numel(iZ)],imClass);
-                I(:,:,1) = i;
-                for j = 2:numel(iZ)
-                    I(:,:,j) = obj.loadImage(iChan,iFrame,iZ(j));
-                end
-            else % all frames are stored in the same multi-page TIFF
-                I = readtiff(fullfile(obj.paths{iChan}, obj.filenames{iChan}{1}));
+            assert(isscalar(iChan) && iChan <= obj.getSizeC());
+            assert(isscalar(iFrame) && iFrame <= obj.getSizeT(iChan));
+            if nargin < 4 || isempty(iZ)
+                iZ = 1 : obj.getSizeZ(iChan);
+            else
+                assert(all(ismember(iZ, 1:obj.getSizeZ(iChan))));
+            end
+            
+            if obj.getSizeZ(iChan) > 1
+                I = readtiff(fullfile(obj.paths{iChan}, obj.filenames{iChan}{iFrame}), iZ);
+            else
+                I = obj.loadImage(iChan, iFrame, 1);
             end
         end
     end
