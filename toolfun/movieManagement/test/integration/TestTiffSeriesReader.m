@@ -57,6 +57,18 @@ classdef TestTiffSeriesReader <  TestCase
             end
         end
         
+        function checkLoadStack(self)
+            I = zeros(self.sizeY, self.sizeX, self.sizeZ, self.imClass);
+            for c = 1 : self.sizeC
+                for t = 1 : self.sizeT
+                    for z = 1 : self.sizeZ
+                        I(:,:,z) = self.getPlane(c, t, z);
+                    end
+                    assertEqual(self.reader.loadStack(c, t), cat(3, I));
+                end
+            end
+        end
+        
         function I = getPlane(self, c, t, z)
             index = sub2ind([self.sizeC self.sizeT self.sizeZ], c, t, z);
             I = index * ones(self.sizeY, self.sizeX, self.imClass);
@@ -73,6 +85,7 @@ classdef TestTiffSeriesReader <  TestCase
             
             self.checkDimensions();
             self.checkLoadImage();
+            self.checkLoadStack();
             assertFalse(self.reader.isSingleMultiPageTiff(1));
         end
         
@@ -87,6 +100,7 @@ classdef TestTiffSeriesReader <  TestCase
             
             self.checkDimensions();
             self.checkLoadImage();
+            self.checkLoadStack();
             assertTrue(self.reader.isSingleMultiPageTiff(1));
         end
         
@@ -105,6 +119,8 @@ classdef TestTiffSeriesReader <  TestCase
             
             self.checkDimensions();
             self.checkLoadImage();
+            self.checkLoadStack();
+
             assertFalse(self.reader.isSingleMultiPageTiff(1));
         end
         
