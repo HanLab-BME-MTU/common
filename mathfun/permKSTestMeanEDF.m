@@ -20,8 +20,10 @@ ip.addRequired('d1', @isnumeric);
 ip.addRequired('d2', @isnumeric);
 ip.addOptional('alpha', 0.05, @isscalar);
 ip.addOptional('nrep', 1900, @isscalar);
+ip.addParamValue('CmpFunction', @nanmean, @(x) isa(x, 'function_handle'));
 ip.parse(d1, d2, varargin{:})
 nrep = ip.Results.nrep;
+fct = ip.Results.CmpFunction;
 
 dAll = [d1; d2];
 
@@ -42,19 +44,19 @@ if nperms<=nrep % calculate all permutations
     P(pidx) = true;
     delta = zeros(nperms,1);
     for i = 1:nperms
-        delta(i) = max(abs(nanmean(dAll(P(:,i),:),1) - nanmean(dAll(~P(:,i)),1)));
+        delta(i) = max(abs(fct(dAll(P(:,i),:),1) - fct(dAll(~P(:,i)),1)));
     end
     ns = nperms;
 else % compute 'nrep' random permutations
     delta = zeros(nrep,1);
     for i = 1:nrep
         idx = randperm(N); % calculate random permutation of the samples
-        delta(i) = max(abs(nanmean(dAll(idx(1:n1),:),1) - nanmean(dAll(idx(n1+1:end),:),1)));
+        delta(i) = max(abs(fct(dAll(idx(1:n1),:),1) - fct(dAll(idx(n1+1:end),:),1)));
     end
     ns = nrep;
 end
 
-deltaRef = max(abs(mean(d1,1)-mean(d2,1)));
+deltaRef = max(abs(fct(d1,1)-fct(d2,1)));
 
 pValue = sum(delta >= deltaRef)/ns;
 H = pValue <= ip.Results.alpha;
