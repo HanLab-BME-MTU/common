@@ -37,8 +37,9 @@ classdef  BioFormatsReader < Reader
         
         function r = getReader(obj)
             r = obj.formatReader;
-            loci.common.DebugTools.enableLogging('WARN');
-            r.setId(obj.id);
+            if isempty(r.getCurrentFile())
+                r.setId(obj.id);
+            end
             r.setSeries(obj.getSeries());
         end
         
