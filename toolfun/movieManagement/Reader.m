@@ -1,5 +1,25 @@
 classdef  Reader < handle
-    % Concrete implementation of MovieObject for a single movie
+    % Reader is an abstract class for reading image data
+    %
+    % Known subclasses include
+    %
+    % BioFormatsReader
+    % TiffSeriesReader
+    % HCSReader
+    %
+    % Generally methods take the channel as an argument
+    %   which is usually added by similar calls in Channel
+    %
+    % Arguments are in the order C, T, Z
+    %
+    % Subclasses should consider consider overloading
+    % protected methods ending with an underscore, '_'
+    % such as loadImage_ and loadStack_.
+    %
+    % The public loadImage and loadStack methods contain
+    % input validation and default parameters which should
+    % be changed minimally.
+    %
     
     properties
         sizeX
@@ -54,7 +74,7 @@ classdef  Reader < handle
                 @(x) isscalar(x) && ismember(x, 1 : obj.getSizeZ(c)));
             ip.parse(c, t, varargin{:});
             
-            I = obj.loadImage_(obj, c , ip.Results.t , ip.Results.z);
+            I = obj.loadImage_(obj, c , t , ip.Results.z);
         end
         
         function I = loadStack(obj, c, t, varargin)
