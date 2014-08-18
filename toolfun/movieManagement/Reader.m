@@ -19,10 +19,43 @@ classdef  Reader < handle
         getBitDepth(obj)
         getImageFileNames(obj)
         getChannelNames(obj)
-        loadImage(obj)
     end
     
     methods ( Access = public )
+        function I = loadImage(obj, c, t, varargin)
+        % loadImage reads a single image plane as a 2D, YX Matrix
+        %
+        % loadImage(c,t,z) reads the YX plane at (c,t,z)
+        %
+        % loadImage(c,t) reads the YX plane at (c,t,1)
+        %
+        % Note: Override if you need to overload or change how the input is
+        % checked. Otherwise override loadImage_.
+        %
+        % Example:
+        %   reader = movieData.getReader();
+        %   I = reader.loadImage(1,1);
+        %   imshow(I,[]);
+        %
+        
+        % Backwards compatability before 2014/08/18:
+        % Previously this function was abstract and therefore should be
+        % overridden by all subclasses written prior to 2014/08/18
+         
+            ip = inputParser;
+            ip.addRequired('c', ...
+                @(x) isscalar(x) && ismember(x, 1 : obj.getSizeC()));
+            ip.addRequired('t', ...
+                @(x) isscalar(x) && ismember(x, 1 : obj.getSizeT(c)));
+            % Parse c first for validation check
+            %  since getSizeT and getSizeZ may depend on a valid c.
+            ip.parse(c);
+            ip.addOptional('z', 1, ...
+                @(x) isscalar(x) && ismember(x, 1 : obj.getSizeZ(c)));
+            ip.parse(c, t, varargin{:});
+            
+            I = obj.loadImage_(obj, c , ip.Results.t , ip.Results.z);
+        end
         
         function I = loadStack(obj, c, t, varargin)
         % loadStack reads a Z-stack and returns a YXZ Matrix
