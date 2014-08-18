@@ -1,10 +1,28 @@
-function [stepPos,betweenStepsVal] = fitDataWithMultiStepFunc(x,y,numStepsRange,alpha,doPlot)
-
+function [stepX,valY] = fitDataWithMultiStepFunc(x,y,numStepsRange,alpha,doPlot)
+%FITDATAWITHMULTISTEPFUNC fits a time series with a multi-step function with number of steps determined automatically
+%
+%SYNOPSIS [stepX,valY] = fitDataWithMultiStepFunc(x,y,numStepsRange,alpha,doPlot)
+%
+%INPUT  x            : Independent variable of time series.
+%       y            : Dependent variable of time series.
+%       numStepsRange: Row vector indicating minimum and maximum number
+%                      steps to attempt to fit.
+%                      Optional. Default: [0 5].
+%       alpha        : Alpha-value for F-test to determine number of steps.
+%                      Optional. Default: 0.05.
+%       doPlot       : 1 to plot data and fit, 0 otherwise.
+%                      Optional. Default: 0.
+%
+%OUTPUT stepX        : x-values at which there is a step.
+%       valY         : y-values between steps. If there are n steps, there
+%                      will be n+1 y-values. First value is before first
+%                      step, etc., and last value is after last step.
+%
 %Khuloud Jaqaman, August 2014
 
 %% Output
-stepPos = [];
-betweenStepsVal = [];
+stepX = [];
+valY = [];
 
 %% Input
 
@@ -51,15 +69,15 @@ while fit && iStep < maxNumSteps
     iStep = iStep + 1;
     
     %parameter initial guess
-    stepPos0 = round(linspace(1,numDataPoints,iStep+2)');
-    betweenStepsVal0 = ones(iStep+1,1);
+    stepX0 = round(linspace(1,numDataPoints,iStep+2)');
+    valY0 = ones(iStep+1,1);
     for iPart = 1 : iStep+1
-        betweenStepsVal0(iPart) = mean(y(stepPos0(iPart):stepPos0(iPart+1)));
+        valY0(iPart) = mean(y(stepX0(iPart):stepX0(iPart+1)));
     end
-    stepPos0 = x(stepPos0(2:end-1));
+    stepX0 = x(stepX0(2:end-1));
     
     %fit
-    paramT = fminsearch(@multiStepFunction,[stepPos0; betweenStepsVal0],options,x,y);
+    paramT = fminsearch(@multiStepFunction,[stepX0; valY0],options,x,y);
     [~,residualsT] = multiStepFunction(paramT,x,y);
     numDegFreeT = numDataPoints - length(paramT);
     
@@ -86,26 +104,28 @@ end
 
 %parameters for output
 numSteps = (length(param)-1)/2;
-stepPos = param(1:numSteps);
-betweenStepsVal = param(numSteps+1:end);
+stepX = param(1:numSteps);
+valY = param(numSteps+1:end);
 
 %% Plotting
 
 if doPlot
     
-    figure, hold on
-    plot(x,y)
-    if numSteps == 0
-        plot([x(1) x(end)],betweenStepsVal*[1 1],'r');
-    else
-        plot([x(1) stepPos(1)],betweenStepsVal(1)*[1 1],'r');
-        plot(stepPos(1)*[1 1]',betweenStepsVal(1:2),'r');
-        for iStep = 1 : numSteps-1
-            plot([stepPos(iStep) stepPos(iStep+1)],betweenStepsVal(iStep+1)*[1 1],'r');
-            plot(stepPos(iStep+1)*[1 1]',betweenStepsVal(iStep+1:iStep+2),'r');
-        end
-        plot([stepPos(end) x(end)],betweenStepsVal(end)*[1 1],'r');
-    end
+    overlayMultiStepFunc(x,y,stepX,valY)
+    
+%     figure, hold on
+%     plot(x,y)
+%     if numSteps == 0
+%         plot([x(1) x(end)],valY*[1 1],'r');
+%     else
+%         plot([x(1) stepX(1)],valY(1)*[1 1],'r');
+%         plot(stepX(1)*[1 1]',valY(1:2),'r');
+%         for iStep = 1 : numSteps-1
+%             plot([stepX(iStep) stepX(iStep+1)],valY(iStep+1)*[1 1],'r');
+%             plot(stepX(iStep+1)*[1 1]',valY(iStep+1:iStep+2),'r');
+%         end
+%         plot([stepX(end) x(end)],valY(end)*[1 1],'r');
+%     end
     
 end
 

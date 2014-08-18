@@ -1,5 +1,18 @@
 function [objFunc,residuals] = multiStepFunction(param,x,y)
-
+%MULTISTEPFUNCTION calculates difference between multi-step function and input data
+%
+%SYNOPSIS [objFunc,residuals] = multiStepFunction(param,x,y)
+%
+%INPUT  param        : Column vector with multi-step function parameters.
+%                      For a n steps, first n entries with step locations,
+%                      then n+1 entries with y-value between steps.
+%       x            : Independent variable of time series.
+%       y            : Dependent variable of time series.
+%
+%OUTPUT objFunc      : Objective function for minimization.
+%       residuals    : Difference between model and data. objFunc =
+%                      sum(residuals.^2).
+%
 %Khuloud Jaqaman, July 2014
 
 %% Output
