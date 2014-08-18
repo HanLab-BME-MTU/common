@@ -208,10 +208,9 @@ classdef Channel < hgsetget
             end
         end
         
-        function fileNames = getImageFileNames(obj,iFrame)
-            
-            fileNames = obj.getReader.getImageFileNames(obj.getChannelIndex());
-            if nargin>1, fileNames=fileNames(iFrame); end
+        function fileNames = getImageFileNames(obj,varargin)
+            % See Reader.getImageFileNames
+            fileNames = obj.getReader.getImageFileNames(obj.getChannelIndex(),varargin{:});
         end
         
         function Gname = getGenericName(obj, oFileName, flag) %oFileName is either from getImagesFiles or from hcsplatestack
@@ -232,31 +231,23 @@ classdef Channel < hgsetget
             end
         end
         
-        function I = loadImage(obj, iFrame, iZ)
+        function I = loadImage(obj,varargin)
             % Retrieve indidivual planes by timepoint and z-index
-            
-            if nargin < 3, iZ = 1; end
-            I = obj.getReader().loadImage(obj.getChannelIndex(), iFrame, iZ);
+            %
+            % See Reader.loadImage
+            %
+            I = obj.getReader().loadImage(obj.getChannelIndex(),varargin{:});
         end
         
-        function I = loadStack(obj,iFrame,iZ)            
+        function I = loadStack(obj,varargin)            
             %LOADSTACK Retrieve entire z-stack or sub-stack:
             %
             % I = loadStack(obj,iFrame)            
             % I = loadStack(obj,iFrame,iZ)            
             %
-            % iZ - if empty, load whole z-stack, or may be vector to specify sub-stack
+            % See Reader.loadStack
             
-            % if channel is stored as single stack, enable loading w/o input argument
-            if nargin < 2 || isempty(iFrame)
-                iFrame = 1;
-            end
-            
-            % if stack is a single frame, not a single multi-page TIFF of all frames
-            if nargin < 3 || isempty(iZ)
-                iZ = 1:obj.owner_.zSize_;
-            end
-            I = obj.getReader().loadStack(obj.getChannelIndex(), iFrame, iZ);
+            I = obj.getReader().loadStack(obj.getChannelIndex(),varargin{:});
 
         end
         

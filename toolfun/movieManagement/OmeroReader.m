@@ -62,12 +62,14 @@ classdef  OmeroReader < Reader
         end
         
         %% Image/Channel name functions
-        function fileNames = getImageFileNames(obj, iChan, varargin)
+        function fileNames = getImageFileNames(obj, iChan, iFrame, varargin)
             % Generate image file names
             basename = sprintf('Image%g_c%d_t', obj.imageID, iChan);
             fileNames = arrayfun(@(t) [basename num2str(t, ['%0' num2str(floor(log10(obj.getSizeT))+1) '.f']) '.tif'],...
                 1:obj.getSizeT,'Unif',false);
-            
+            if(nargin > 2)
+                fileNames = fileNames(iFrame);
+            end
         end
         
         function chanNames = getChannelNames(obj, iChan)
