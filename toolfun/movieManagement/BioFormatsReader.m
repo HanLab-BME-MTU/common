@@ -65,7 +65,7 @@ classdef  BioFormatsReader < Reader
         
         function fileNames = getImageFileNames(obj, iChan, varargin)
             % Generate image file names
-            usedFiles = obj.getReader().getUsedFiles(true);
+            usedFiles = obj.getReader().getUsedFiles();
             [~, fileName] = fileparts(char(usedFiles(1)));
             basename = sprintf('%s_s%g_c%d_t',fileName, obj.getSeries()+1, iChan);
             fileNames = arrayfun(@(t) [basename num2str(t, ['%0' num2str(floor(log10(obj.getSizeT))+1) '.f']) '.tif'],...
@@ -73,14 +73,13 @@ classdef  BioFormatsReader < Reader
         end
         
         function channelNames = getChannelNames(obj, iChan)
-            usedFiles = obj.getReader().getUsedFiles(true);
+            usedFiles = obj.getReader().getUsedFiles();
             [~, fileName, fileExt] = fileparts(char(usedFiles(1)));
-            
+            base = [fileName fileExt];
             if obj.getReader().getSeriesCount() > 1
-                base = [fileName fileExt ' Series ' num2str(obj.getSeries()+1) ' Channel '];
-            else
-                base = [fileName fileExt ' Channel '];
+                base = [base ' Series ' num2str(obj.getSeries()+1)];
             end
+            base = [base ' Channel '];
             
             channelNames = arrayfun(@(x) [base num2str(x)], iChan, 'Unif',false);
         end
