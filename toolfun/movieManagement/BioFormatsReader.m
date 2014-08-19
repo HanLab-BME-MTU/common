@@ -77,7 +77,12 @@ classdef  BioFormatsReader < Reader
             % Generate image file names
             usedFiles = obj.getReader().getUsedFiles();
             [~, fileName] = fileparts(char(usedFiles(1)));
-            basename = sprintf('%s_s%g_c%d_t',fileName, obj.getSeries()+1, iChan);
+            if obj.getReader().getSeriesCount() > 1
+                basename = sprintf('%s_s%g_c%d_t',fileName, obj.getSeries()+1, iChan);
+            else
+                basename = sprintf('%s_c%d_t',fileName, iChan);
+            end
+            
             fileNames = arrayfun(@(t) [basename num2str(t, ['%0' num2str(floor(log10(obj.getSizeT))+1) '.f']) '.tif'],...
                 1:obj.getSizeT,'Unif',false);
             if(nargin > 2)
