@@ -116,40 +116,17 @@ classdef  BioFormatsReader < Reader
             ip.parse(c, t, varargin{:});
             
             % Using bioformat tools, get the reader and retrieve dimension order
-            javaIndex =  obj.getIndex(ip.Results.z - 1, c - 1, t - 1);
-            I = bfGetPlane(obj.getReader(), javaIndex + 1);
-        end
-        
-        function I = loadStack(obj, c, t, varargin)
-            % Retrieve entire z-stack or sub-stack
-            
-            % Input check
-            ip = inputParser;
-            ip.addRequired('c', @(x) isscalar(x) && ismember(x, 1 : obj.getSizeC()));
-            ip.addRequired('t', @(x) isscalar(x) && ismember(x, 1 : obj.getSizeT()));
-            ip.addOptional('z', 1 : obj.getSizeZ(), @(x) all(ismember(x, 1 : obj.getSizeZ())));
-            ip.parse(c, t, varargin{:});
-            
-            % Determine image class from pixel type
-            r = obj.getReader();
-            pixelType = r.getPixelType();
-            pixelTypeString = loci.formats.FormatTools.getPixelTypeString(pixelType);
-            if strcmp(char(pixelTypeString), 'float'),
-                % Handle float/single conversion
-                imClass = 'single';
-            else
-                imClass = char(pixelTypeString);
-            end
-            % Load image stack by looping over bfGetPlane
-            I = zeros(obj.getSizeY(), obj.getSizeX(),numel(ip.Results.z), imClass);
-            for iz = 1 : numel(ip.Results.z)
-                javaIndex =  obj.getIndex(ip.Results.z(iz) - 1, c - 1, t - 1);
-                I(:, :, iz) = bfGetPlane(obj.getReader(), javaIndex + 1);
-            end
+            I = loadImage_(obj, c, t, ip.Results.z);
         end
         
         function delete(obj)
             obj.formatReader.close()
+        end
+    end
+    methods ( Access = protected )
+        function I = loadImage_(obj, c, t, z, varargin)
+            javaIndex =  obj.getIndex(z - 1, c - 1, t - 1);
+            I = bfGetPlane(obj.getReader(), javaIndex + 1);
         end
     end
 end
