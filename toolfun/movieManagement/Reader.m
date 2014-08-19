@@ -49,14 +49,14 @@ classdef  Reader < handle
             ip = inputParser;
             ip.addRequired('c', ...
                 @(x) isscalar(x) && ismember(x, 1 : obj.getSizeC() ) );
-            ip.addRequired('t', ...
-                @(x) isscalar(x) && ismember(x, 1 : obj.getSizeT(c) ) );
             % Parse c first for validation check
             %  since getSizeT and getSizeZ may depend on a valid c.
-            ip.parse(c, t);
+            ip.parse(c);
+            ip.addRequired('t', ...
+                @(x) isscalar(x) && ismember(x, 1 : obj.getSizeT(c) ) );
             ip.addOptional('z', 1 : obj.getSizeZ(c), ...
                 @(x) all(ismember(x, 1 : obj.getSizeZ(c) ) ) );
-            ip.parse(c, varargin{:});
+            ip.parse(c, t, varargin{:});
             t = ip.Results.t;
             z = ip.Results.z;
             
