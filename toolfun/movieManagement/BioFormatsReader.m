@@ -1,35 +1,45 @@
 classdef  BioFormatsReader < Reader
-    % Concrete implementation of MovieObject for a single movie
+    % BioFormatsReader is a Reader subclass which reads metadata/pixels
+    % from image files using the Bio-Formats library
     
-    properties (Transient =true)
+    properties (SetAccess=protected, Transient=true)
+        id
         formatReader
-        series = 0;
+        series
     end
     
     methods
         %% Constructor
         function obj = BioFormatsReader(varargin)
-            % Check loci-tools.jar is in the Java path
+            
+            % Input check
+            ip = inputParser();
+            ip.addRequired('id', @ischar);
+            ip.addOptional('series', 0, @(x) isscalar(x) && isnumeric(x));
+            ip.addParamValue('reader', [], @(x) isa(x, 'loci.formats.IFormatReader'));
+            ip.parse(varargin{:});
+            
+            % Initialize Bio-Formats
             bfCheckJavaPath();
-            if isa(varargin{1}, 'loci.formats.IFormatReader'),
-                obj.formatReader = varargin{1};
-                obj.series = obj.formatReader.getSeries();
+            
+            obj.id = ip.Results.id;
+            if ~isempty(ip.Results.reader),
+                obj.formatReader = ip.Results.reader;
             else
-                loci.common.DebugTools.enableLogging('OFF');
-                obj.formatReader = bfGetReader(varargin{1}, false);
+                obj.formatReader = bfGetReader(obj.id, false);
             end
-            if nargin>1,
-                obj.series = varargin{2};
-                obj.formatReader.setSeries(obj.series);
-            end
+            obj.series = ip.Results.series;
         end
         
         function metadataStore = getMetadataStore(obj)
-            metadataStore = obj.formatReader.getMetadataStore();
+            metadataStore = obj.getReader().getMetadataStore();
         end
         
         function r = getReader(obj)
             r = obj.formatReader;
+            if isempty(r.getCurrentFile())
+                r.setId(obj.id);
+            end
             r.setSeries(obj.getSeries());
         end
         
