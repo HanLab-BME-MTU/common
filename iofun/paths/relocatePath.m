@@ -1,6 +1,8 @@
 function newPath = relocatePath(oldPath,oldRootDir,newRootDir)
 % RELOCATEPATH relocates a path to a new location accounting for OS changes
 % 
+% newPath = relocatePath(oldPath,oldRootDir,newRootDir)
+%
 % Input:
 % 
 %   oldpath - The path(s) to be relocated. Works with strings, cell arrays 
