@@ -138,11 +138,22 @@ classdef TestBioFormatsReader < TestCase
             for c = 1 : self.sizeC
                 for z = 1 : self.sizeZ
                     for t = 1 : self.sizeT
-                        I(:,:,t) = self.getPlane(c, t, z);
+                        I(:,:,t) = self.getPlane(1, c, t, z);
                         assertEqual(self.reader.loadImage(c, t, z), I(:,:,t));
                     end
                 end
             end
+        end
+        
+        function testLoadImageMultiSeries(self)
+            self.id = 'test&series=2.fake';
+            r = bfGetReader(self.id);
+            self.reader = BioFormatsReader(self.id, 0, 'reader', r);
+            self.reader(2) = BioFormatsReader(self.id, 1, 'reader', r);
+            assertEqual(self.reader(1).loadImage(1, 1, 1),...
+                self.getPlane(1, 1, 1, 1));
+            assertEqual(self.reader(2).loadImage(1, 1, 1),...
+                self.getPlane(2, 1, 1, 1));
         end
         
         function testLoadStack(self)
@@ -168,7 +179,7 @@ classdef TestBioFormatsReader < TestCase
             for c = 1 : self.sizeC
                 for t = 1 : self.sizeT
                     for z = 1 : self.sizeZ
-                        I(:,:,z) = self.getPlane(c, t, z);
+                        I(:,:,z) = self.getPlane(1, c, t, z);
                     end
                     assertEqual(self.reader.loadStack(c, t), cat(3, I));
                     for z = 1 : self.sizeZ
@@ -179,10 +190,21 @@ classdef TestBioFormatsReader < TestCase
             end
         end
         
-        function I = getPlane(self, c, t, z)
+        function testLoadStackMultiSeries(self)
+            self.id = 'test&series=2.fake';
+            r = bfGetReader(self.id);
+            self.reader = BioFormatsReader(self.id, 0, 'reader', r);
+            self.reader(2) = BioFormatsReader(self.id, 1, 'reader', r);
+            assertEqual(self.reader(1).loadStack(1, 1, 1),...
+                self.getPlane(1, 1, 1, 1));
+            assertEqual(self.reader(2).loadStack(1, 1, 1),...
+                self.getPlane(2, 1, 1, 1));
+        end
+        
+        function I = getPlane(self, s, c, t, z)
             I = repmat(uint8(mod(0:512 - 1, 256)), 512, 1);
-            I(1:10, 1:10) = self.reader.getSeries() - 1;
-            I(1:10, 11:20) = self.reader.getIndex(z - 1, c - 1, t - 1);
+            I(1:10, 1:10) = s - 1;
+            I(1:10, 11:20) = sub2ind([self.sizeZ self.sizeC self.sizeT], z, c, t) -1 ;
             I(1:10, 21:30) = z - 1;
             I(1:10, 31:40) = c - 1;
             I(1:10, 41:50) = t - 1;
