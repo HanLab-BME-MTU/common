@@ -3,6 +3,9 @@ classdef TestBioFormatsReader < TestCase
     properties
         id = 'test.fake';
         reader
+        sizeZ=5
+        sizeC=3
+        sizeT=4
     end
     
     methods
@@ -109,6 +112,80 @@ classdef TestBioFormatsReader < TestCase
             self.reader(1).getReader();
             assertEqual(char(self.reader(1).formatReader.getCurrentFile()), self.id);
             assertEqual(char(self.reader(2).formatReader.getCurrentFile()), self.id);
+        end
+        
+        %% loadImage tests
+        function testLoadImage(self)
+            self.id = sprintf('test&sizeZ=%g&sizeC=%g&sizeT=%g.fake',...
+                self.sizeZ, self.sizeC, self.sizeT);
+            self.reader = BioFormatsReader(self.id);
+            assertExceptionThrown(@() self.reader.loadImage(), 'MATLAB:minrhs')
+            assertExceptionThrown(@() self.reader.loadImage(1), 'MATLAB:minrhs')
+            assertExceptionThrown(@() self.reader.loadImage(0, 1),...
+                'MATLAB:InputParser:ArgumentFailedValidation');
+            assertExceptionThrown(@() self.reader.loadImage(self.sizeC + 1, 1),...
+                'MATLAB:InputParser:ArgumentFailedValidation');
+            assertExceptionThrown(@() self.reader.loadImage(1, 0),...
+                'MATLAB:InputParser:ArgumentFailedValidation');
+            assertExceptionThrown(@() self.reader.loadImage(1, self.sizeT + 1),...
+                'MATLAB:InputParser:ArgumentFailedValidation');
+            assertExceptionThrown(@() self.reader.loadImage(1, 1, 0),...
+                'MATLAB:InputParser:ArgumentFailedValidation');
+            assertExceptionThrown(@() self.reader.loadImage(1, 1, self.sizeZ + 1),...
+                'MATLAB:InputParser:ArgumentFailedValidation');
+            
+            I = zeros(512, 512, self.sizeT, 'uint8');
+            for c = 1 : self.sizeC
+                for z = 1 : self.sizeZ
+                    for t = 1 : self.sizeT
+                        I(:,:,t) = self.getPlane(c, t, z);
+                        assertEqual(self.reader.loadImage(c, t, z), I(:,:,t));
+                    end
+                end
+            end
+        end
+        
+        function testLoadStack(self)
+            self.id = sprintf('test&sizeZ=%g&sizeC=%g&sizeT=%g.fake',...
+                self.sizeZ, self.sizeC, self.sizeT);
+            self.reader = BioFormatsReader(self.id);
+            assertExceptionThrown(@() self.reader.loadStack(), 'MATLAB:minrhs')
+            assertExceptionThrown(@() self.reader.loadStack(1), 'MATLAB:minrhs')
+            assertExceptionThrown(@() self.reader.loadStack(0, 1),...
+                'MATLAB:InputParser:ArgumentFailedValidation');
+            assertExceptionThrown(@() self.reader.loadStack(self.sizeC + 1, 1),...
+                'MATLAB:InputParser:ArgumentFailedValidation');
+            assertExceptionThrown(@() self.reader.loadStack(1, 0),...
+                'MATLAB:InputParser:ArgumentFailedValidation');
+            assertExceptionThrown(@() self.reader.loadStack(1, self.sizeT + 1),...
+                'MATLAB:InputParser:ArgumentFailedValidation');
+            assertExceptionThrown(@() self.reader.loadStack(1, 1, 0),...
+                'MATLAB:InputParser:ArgumentFailedValidation');
+            assertExceptionThrown(@() self.reader.loadStack(1, 1, self.sizeZ + 1),...
+                'MATLAB:InputParser:ArgumentFailedValidation');
+            
+            I = zeros(512, 512, self.sizeZ, 'uint8');
+            for c = 1 : self.sizeC
+                for t = 1 : self.sizeT
+                    for z = 1 : self.sizeZ
+                        I(:,:,z) = self.getPlane(c, t, z);
+                    end
+                    assertEqual(self.reader.loadStack(c, t), cat(3, I));
+                    for z = 1 : self.sizeZ
+                        assertEqual(self.reader.loadStack(c, t, 1:z),...
+                            cat(3, I(:, :, 1:z)));
+                    end
+                end
+            end
+        end
+        
+        function I = getPlane(self, c, t, z)
+            I = repmat(uint8(mod(0:512 - 1, 256)), 512, 1);
+            I(1:10, 1:10) = self.reader.getSeries() - 1;
+            I(1:10, 11:20) = self.reader.getIndex(z - 1, c - 1, t - 1);
+            I(1:10, 21:30) = z - 1;
+            I(1:10, 31:40) = c - 1;
+            I(1:10, 41:50) = t - 1;
         end
     end
 end
