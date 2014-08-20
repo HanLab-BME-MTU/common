@@ -812,10 +812,12 @@ userData=get(handles.figure1,'UserData');
 if userData.MO.isMock() && size(userData.MO.mockMD_.index,1) == 1
     frameNr = 1;
 else
-    frameNr= get(handles.slider_frame,'Value');
-    if userData.MO.is3D()
-        ZNr = get(handles.slider_depth, 'Value'); %%%%%%
-    end
+    frameNr = get(handles.slider_frame,'Value');
+end
+if userData.MO.is3D()
+    ZNr = get(handles.slider_depth, 'Value');
+else
+    ZNr = 1;
 end
 
 % Use corresponding method depending if input is channel or process output
@@ -825,10 +827,7 @@ channelBoxes =channelBoxes(index);
 if strcmp(imageTag,'radiobutton_channels')
     set(channelBoxes,'Enable','on');
     chanList=find(arrayfun(@(x)get(x,'Value'),channelBoxes));
-    if userData.MO.is3D()
-        varargin{1} = ZNr;%what kind of varargin cases are there????
-    end
-    userData.MO.channels_(chanList).draw(frameNr,varargin{:});
+    userData.MO.channels_(chanList).draw(frameNr,ZNr,varargin{:});
     displayMethod = userData.MO.channels_(chanList(1)).displayMethod_;
 else
     set(channelBoxes,'Enable','off');
