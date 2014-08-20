@@ -1,4 +1,4 @@
-function overlayMultiStepFunc(x,y,stepX,valY)
+function overlayMultiStepFunc(x,y,stepX,valY,figTitle)
 %OVERLAYMULTISTEPFUNC overlays a multi-step function on time series
 %
 %SYNOPSIS overlayMultiStepFunc(x,y,stepX,valY)
@@ -9,14 +9,20 @@ function overlayMultiStepFunc(x,y,stepX,valY)
 %       valY         : y-values between steps. If there are n steps, there
 %                      will be n+1 y-values. First value is before first
 %                      step, etc., and last value is after last step.
+%       figTitle     : Figure title.
 %
 %OUTPUT the plot
 %
 %Khuloud Jaqaman, August 2014
 
-figure, hold on
+if nargin < 5 || isempty(figTitle)
+    figure
+else
+    figure('Name',figTitle,'NumberTitle','off')
+end
+hold on
 
-plot(x,y)
+plot(x,y,'marker','.')
 
 numSteps = length(stepX);
 if numSteps == 0

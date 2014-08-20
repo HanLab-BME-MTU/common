@@ -48,45 +48,88 @@ end
 minNumSteps = numStepsRange(1);
 maxNumSteps = numStepsRange(2);
 
+%determine number of initial guesses for fitting
+numGuess = max(10,maxNumSteps*2);
+
+%take moving average of data to help with step initialization
+[~,yMA] = movAvSmooth(y,5,2,0);
+
 %get rid of NaNs in data
 indx = find(~isnan(y));
 x = x(indx);
 y = y(indx);
+yMA = yMA(indx);
 numDataPoints = length(indx);
 
 %% Calculation
 
+%locate positions of largest jumps in data for step initialization
+yMAdiff = abs(diff(yMA));
+[~,iSorted] = sort(yMAdiff,1,'descend');
+stepPosGuess = x(iSorted);
+numGuess = min(numGuess,length(stepPosGuess));
+
 %minimization options
 options = optimset('MaxFunEvals',100000,'MaxIter',10000,'TolFun',1e-3);
 
-%fit models one by one, checking residuals
+%determine parameters of "0 steps" fit, which is nothing but data mean
+%this is the minimal fit
+param = mean(y);
+residuals = param - y;
+numDegFree = numDataPoints - 1;
+
+%fit larger models one by one, checking residuals
 fit = 1;
-firstFit = 1;
-iStep = minNumSteps-1;
+iStep = 0;
 while fit && iStep < maxNumSteps
     
     %number of steps for current fit
     iStep = iStep + 1;
     
-    %parameter initial guess
-    stepX0 = round(linspace(1,numDataPoints,iStep+2)');
-    valY0 = ones(iStep+1,1);
-    for iPart = 1 : iStep+1
-        valY0(iPart) = mean(y(stepX0(iPart):stepX0(iPart+1)));
+    %number of parameters and degrees of freedom for current fit
+    numParamT = 2*iStep + 1;
+    numDegFreeT = numDataPoints - numParamT;
+    
+    %intermediate variables to handle multiple initial guesses
+    paramT = zeros(numParamT,numGuess);
+    residualsT = zeros(numDataPoints,numGuess);
+    ssr = zeros(numGuess,1);
+    
+    %use different initial guesses to increase chance of finding global
+    %minimum
+    for iGuess = 1 : numGuess
+        
+        %parameter initial guess
+        stepX0 = sort([param(1:iStep-1); stepPosGuess(iGuess)]);
+        stepIndx = zeros(iStep,1);
+        for iTmp = 1 : iStep
+            stepIndx(iTmp) = find(abs(x-stepX0(iTmp))==min(abs(x-stepX0(iTmp))));
+        end
+        stepIndx = [1; stepIndx; numDataPoints]; %#ok<AGROW>
+        valY0 = ones(iStep+1,1);
+        for iPart = 1 : iStep+1
+            valY0(iPart) = mean(y(stepIndx(iPart):stepIndx(iPart+1)));
+        end
+        
+        %fit
+        paramT(:,iGuess) = fminsearch(@multiStepFunction,[stepX0; valY0],options,x,y);
+        [~,residualsT(:,iGuess)] = multiStepFunction(paramT(:,iGuess),x,y);
+        ssr(iGuess) = sum(residualsT(:,iGuess).^2);
+        
     end
-    stepX0 = x(stepX0(2:end-1));
     
-    %fit
-    paramT = fminsearch(@multiStepFunction,[stepX0; valY0],options,x,y);
-    [~,residualsT] = multiStepFunction(paramT,x,y);
-    numDegFreeT = numDataPoints - length(paramT);
+    %keep fit with smallest SSR
+    indxGood = find(ssr == min(ssr));
+    indxGood = indxGood(1);
+    paramT = paramT(:,indxGood);
+    residualsT = residualsT(:,indxGood);
     
-    %keep fit if first, otherwise compare residuals
-    if firstFit
+    %keep fit if number of steps <= minimum, otherwise compare residuals
+    %and retain only if fit is significantly better than previous fit
+    if iStep <= minNumSteps
         param = paramT;
         numDegFree = numDegFreeT;
         residuals = residualsT;
-        firstFit = 0;
     else
         testStat = (sum(residualsT.^2)/numDegFreeT)/...
             (sum(residuals.^2)/numDegFree);
