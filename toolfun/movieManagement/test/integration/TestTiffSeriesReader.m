@@ -174,14 +174,7 @@ classdef TestTiffSeriesReader <  TestCase
             end
             self.reader = TiffSeriesReader(chPath);
             
-            self.checkDimensions();
-            for c = 1 : self.sizeC
-                S = I(1: self.sizeY(c), 1: self.sizeX(c));
-                for t = 1 : self.sizeT(c)
-                    assertEqual(self.reader.loadStack(c,t), ...
-                        repmat( (c+10*t) * S,[1 1 self.sizeZ(c)]));
-                end
-            end
+            assertExceptionThrown(@() self.checkDimensions(), '');
         end
 
         %% Test pixel types
