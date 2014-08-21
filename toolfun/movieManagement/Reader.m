@@ -40,7 +40,7 @@ classdef  Reader < handle
         % Example:
         %   reader = movieData.getReader();
         %   % The following are all equivalent
-        %   zStackMatrix = reader.loadStack(1,1,1:reader.getSizeZ(c));
+        %   zStackMatrix = reader.loadStack(1,1,1:reader.getSizeZ());
         %   zStackMatrix = reader.loadStack(1,1);
         %   zStackMatrix = reader.loadStack(1);
         %
