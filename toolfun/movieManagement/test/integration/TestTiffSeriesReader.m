@@ -174,7 +174,7 @@ classdef TestTiffSeriesReader <  TestCase
             end
             self.reader = TiffSeriesReader(chPath);
             
-            assertExceptionThrown(@() self.checkDimensions(), '');
+            assertExceptionThrown(@() self.checkDimensions(), 'Reader:dimensionMismatch');
         end
 
         %% Test pixel types
