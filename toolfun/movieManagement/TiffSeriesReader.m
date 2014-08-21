@@ -11,13 +11,7 @@ classdef  TiffSeriesReader < Reader
         % Constructor
         function obj = TiffSeriesReader(channelPaths)
             obj.paths = channelPaths;
-            nChan = numel(channelPaths);
-            obj.sizeX = - ones(nChan, 1);
-            obj.sizeY = - ones(nChan, 1);
-            obj.sizeT = - ones(nChan, 1);
             obj.sizeC = numel(channelPaths);
-            obj.sizeZ = - ones(nChan, 1);
-            obj.bitDepth = - ones(nChan, 1);
             obj.filenames = cell(obj.sizeC, 1);
         end
         
@@ -27,79 +21,73 @@ classdef  TiffSeriesReader < Reader
                 'Channel path specified is not a valid directory! Please double check the channel path!');
         end
         
-        function getDimensions(obj, iChan)
-            fileNames = obj.getImageFileNames(iChan);
-            imInfo = cellfun(@(x) imfinfo([obj.paths{iChan} filesep x]), fileNames, 'unif', 0);
-            sizeX = unique(cellfun(@(x)(x.Width), imInfo));
-            sizeY = unique(cellfun(@(x)(x.Height), imInfo));
-            if ~obj.isSingleMultiPageTiff(iChan)
-                sizeZ = unique(cellfun(@numel, imInfo));
-            else
-                sizeZ = 1;
+        function getDimensions(obj)
+            sizeX = zeros(obj.getSizeC(), 1);
+            sizeY = zeros(obj.getSizeC(), 1);
+            sizeT = zeros(obj.getSizeC(), 1);
+            sizeZ = zeros(obj.getSizeC(), 1);
+            bitDepth = zeros(obj.getSizeC(), 1);
+            for iChan = 1 : obj.getSizeC()
+                fileNames = obj.getImageFileNames(iChan);
+                imInfo = cellfun(@(x) imfinfo([obj.paths{iChan} filesep x]), fileNames, 'unif', 0);
+                sizeX(iChan) = unique(cellfun(@(x)(x.Width), imInfo));
+                sizeY(iChan) = unique(cellfun(@(x)(x.Height), imInfo));
+                
+                if length(fileNames)>1
+                    sizeZ(iChan) = unique(cellfun(@numel, imInfo));
+                    sizeT(iChan) = length(fileNames);
+                else % if single file, assume stack and check for # of files
+                    info = imfinfo(fullfile(obj.paths{iChan}, fileNames{1}));
+                    sizeT(iChan) = numel(info);
+                    sizeZ(iChan) = 1;                    
+                end
+                bitDepth(iChan) = unique(cellfun(@(x)(x.BitDepth), imInfo));
             end
-            
-            bitDepth = unique(cellfun(@(x)(x.BitDepth), imInfo));
-            assert(isscalar(sizeX) && isscalar(sizeY) && isscalar(sizeZ),...
+            assert(isscalar(unique(sizeX)) && isscalar(unique(sizeY)) &&...
+                isscalar(unique(sizeZ)) && isscalar(unique(sizeT)),...
                 ['Image sizes are inconsistent in: \n\n%s\n\n'...
                 'Please make sure all the images have the same size.'],obj.paths{iChan});
-            
-            assert(isscalar(bitDepth),...
+            assert(isscalar(unique(bitDepth)),...
                 ['Bit depth is inconsistent in: \n\n%s\n\n'...
                 'Please make sure all the images have the same bit depth.'],obj.paths{iChan});
-            
-            obj.sizeX(iChan) = sizeX;
-            obj.sizeY(iChan) = sizeY;
-            obj.sizeZ(iChan) = sizeZ;
-            obj.bitDepth(iChan) = bitDepth;
+            obj.sizeX = sizeX(1);
+            obj.sizeY = sizeY(1);
+            obj.sizeZ = sizeZ(1);
+            obj.sizeT = sizeT(1);
+            obj.bitDepth = bitDepth(1);
         end
         
-        function sizeX = getSizeX(obj, iChan)
-            if obj.sizeX(iChan) == -1,
-                obj.getDimensions(iChan);
-            end
-            sizeX = obj.sizeX(iChan);
+        function sizeX = getSizeX(obj)
+            if isempty(obj.sizeX), obj.getDimensions(); end
+            sizeX = obj.sizeX;
         end
         
-        function sizeY = getSizeY(obj, iChan)
-            if obj.sizeY(iChan) == -1,
-                obj.getDimensions(iChan);
-            end
-            sizeY = obj.sizeY(iChan);
+        function sizeY = getSizeY(obj)
+            if isempty(obj.sizeY), obj.getDimensions(); end
+            sizeY = obj.sizeY;
         end
         
-        function sizeZ = getSizeZ(obj, iChan)
-            if obj.sizeZ(iChan) == -1
-                obj.getDimensions(iChan);
-            end
-            sizeZ = obj.sizeZ(iChan);
+        function sizeZ = getSizeZ(obj)
+            if isempty(obj.sizeZ), obj.getDimensions(iChan); end
+            sizeZ = obj.sizeZ;
         end
         
-        function sizeC = getSizeC(obj, varargin)
+        function sizeC = getSizeC(obj)
             sizeC = obj.sizeC;
         end
         
-        function sizeT = getSizeT(obj, iChan)
-            if obj.sizeT(iChan) == -1,
-                fileNames = obj.getImageFileNames(iChan);
-                if length(fileNames)>1
-                    obj.sizeT(iChan) = length(fileNames);
-                else % if single file, assume stack and check for # of files
-                    info = imfinfo(fullfile(obj.paths{iChan}, fileNames{1}));
-                    obj.sizeT(iChan) = numel(info);
-                end
-            end
-            sizeT = obj.sizeT(iChan);
+        function sizeT = getSizeT(obj)
+            if isempty(obj.sizeT), obj.getDimensions(); end
+            sizeT = obj.sizeT;
         end
         
         function status = isSingleMultiPageTiff(obj, iChan)
-            status = obj.getSizeT(iChan)>1 && numel(obj.filenames{iChan})==1;
+            status = obj.getSizeT()>1 && numel(obj.filenames{iChan})==1;
         end
         
-        function bitDepth = getBitDepth(obj, iChan)
-            if obj.bitDepth(iChan) == -1,
-                obj.getDimensions(iChan);
-            end
-            bitDepth = obj.bitDepth(iChan);
+        function bitDepth = getBitDepth(obj)
+            if isempty(obj.bitDepth()), obj.getDimensions(); end
+            bitDepth = obj.bitDepth;
         end
         
         function filenames = getImageFileNames(obj, iChan, iFrame)
@@ -136,9 +124,9 @@ classdef  TiffSeriesReader < Reader
                 fileNames = obj.getImageFileNames(iChan, iFrame);
                 
                 % Initialize array
-                sizeX = obj.getSizeX(iChan);
-                sizeY = obj.getSizeY(iChan);
-                bitDepth = obj.getBitDepth(iChan);
+                sizeX = obj.getSizeX();
+                sizeY = obj.getSizeY();
+                bitDepth = obj.getBitDepth();
                 I = zeros([sizeY, sizeX, numel(iFrame)], ['uint' num2str(bitDepth)]);
                 
                 for i=1:numel(iFrame)
@@ -151,14 +139,14 @@ classdef  TiffSeriesReader < Reader
         
         function I = loadStack(obj, iChan, iFrame, iZ)
             assert(isscalar(iChan) && iChan <= obj.getSizeC());
-            assert(isscalar(iFrame) && iFrame <= obj.getSizeT(iChan));
+            assert(isscalar(iFrame) && iFrame <= obj.getSizeT());
             if nargin < 4 || isempty(iZ)
-                iZ = 1 : obj.getSizeZ(iChan);
+                iZ = 1 : obj.getSizeZ();
             else
-                assert(all(ismember(iZ, 1:obj.getSizeZ(iChan))));
+                assert(all(ismember(iZ, 1:obj.getSizeZ())));
             end
             
-            if obj.getSizeZ(iChan) > 1
+            if obj.getSizeZ() > 1
                 I = readtiff(fullfile(obj.paths{iChan}, obj.filenames{iChan}{iFrame}), iZ);
             else
                 I = obj.loadImage(iChan, iFrame, 1);

@@ -30,7 +30,7 @@ classdef  Reader < handle
         %   loadStack(c,t,Z) returns a Z-stack for channel c and
         %   time frame t  with Z planes indicated by the vector Z
         %
-        %   loadStack(c,t) returns loadStack(c,t, 1: getSizeZ(c) )
+        %   loadStack(c,t) returns loadStack(c,t, 1: getSizeZ())
         %
         % output: a 3D matrix with dimensions YXZ
         %
@@ -53,9 +53,9 @@ classdef  Reader < handle
             %  since getSizeT and getSizeZ may depend on a valid c.
             ip.parse(c);
             ip.addRequired('t', ...
-                @(x) isscalar(x) && ismember(x, 1 : obj.getSizeT(c) ) );
-            ip.addOptional('z', 1 : obj.getSizeZ(c), ...
-                @(x) all(ismember(x, 1 : obj.getSizeZ(c) ) ) );
+                @(x) isscalar(x) && ismember(x, 1 : obj.getSizeT() ) );
+            ip.addOptional('z', 1 : obj.getSizeZ(), ...
+                @(x) all(ismember(x, 1 : obj.getSizeZ() ) ) );
             ip.parse(c, t, varargin{:});
             t = ip.Results.t;
             z = ip.Results.z;
