@@ -172,7 +172,7 @@ classdef Channel < hgsetget
         %Verifies that the channel specification is valid, and returns
         %properties of the channel
         
-        function [width, height, nFrames, zSize] = sanityCheck(obj,varargin)
+        function sanityCheck(obj,varargin)
             % Check the sanity of the channels
             %
             % Check the validity of each channel and return pixel size and time
@@ -188,12 +188,6 @@ classdef Channel < hgsetget
             assert(isequal(obj.owner_,ip.Results.owner) ||...
                 isequal(obj.owner_,ip.Results.owner.parent_),...
                 'The channel''s owner is not the movie neither its parent')
-            
-            % Get the size along the X,Y and T dimensions
-            width = obj.getReader().getSizeX(obj.getChannelIndex());
-            height = obj.getReader().getSizeY(obj.getChannelIndex());
-            nFrames = obj.getReader().getSizeT(obj.getChannelIndex());
-            zSize = obj.getReader().getSizeZ(obj.getChannelIndex());
             
             if isempty(obj.psfSigma_) && ~isempty(obj.owner_), obj.calculatePSFSigma(); end
         end
