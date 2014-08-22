@@ -216,7 +216,7 @@ end
 if ~isempty(pstruct) && ip.Results.RefineMaskValid
     CC = bwconncomp(mask);
     labels = labelmatrix(CC);
-    loclabels = labels(sub2ind(size(img), pstruct.y_init, pstruct.x_init));
+    loclabels = labels(sub2ind(size(vol), pstruct.y_init, pstruct.x_init));
     idx = setdiff(1:CC.NumObjects, loclabels);
     CC.PixelIdxList(idx) = [];
     CC.NumObjects = length(CC.PixelIdxList);
