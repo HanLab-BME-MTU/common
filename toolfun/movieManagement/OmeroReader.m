@@ -87,31 +87,13 @@ classdef  OmeroReader < Reader
             ip.addOptional('z', 1, @(x) isscalar(x) && ismember(x, 1 : obj.getSizeZ()));
             ip.parse(c, t, varargin{:});
             
-            % Test session integrity
-            store = obj.getRawPixelsStore();
-            I = toMatrix(store.getPlane(ip.Results.z - 1, c - 1, t - 1),...
-                obj.getPixels())';
-        end
-        
-        function I = loadStack(obj, c, t, varargin)
-            
-            ip = inputParser;
-            ip.addRequired('c', @(x) isscalar(x) && ismember(x, 1 : obj.getSizeC()));
-            ip.addRequired('t', @(x) isscalar(x) && ismember(x, 1 : obj.getSizeT()));
-            ip.addOptional('z', 1 : obj.getSizeZ(), @(x) all(ismember(x, 1 : obj.getSizeZ())));
-            ip.parse(c, t, varargin{:});
-            
-            % First retrieve the entire Z-stack and permute it to be
-            % compatible with MATLAB format then extract the Z-range
-            store = obj.getRawPixelsStore();
-            I = toMatrix(store.getStack(c - 1, t - 1), obj.getPixels());
-            I = permute(I, [2 1 3]);
-            I = I(:, :, ip.Results.z);
+            I = obj.loadImage_(c, t, ip.Results.z);
         end
         
         function delete(obj)
+            % Delete stateful services
             if ~isempty(obj.rawPixelsStore),
-                obj.rawPixelsStore.close()
+                obj.rawPixelsStore.close();
             end
         end
         
@@ -136,6 +118,22 @@ classdef  OmeroReader < Reader
                 store = obj.rawPixelsStore;
             end
             
+        end
+    end
+    methods ( Access = protected )
+        function I = loadImage_(obj, c, t, z)
+            store = obj.getRawPixelsStore();
+            I = toMatrix(store.getPlane(z - 1, c - 1, t - 1),...
+                obj.getPixels())';
+        end
+        
+        function I = loadStack_(obj, c, t, z)
+            % First retrieve the entire Z-stack and permute it to be
+            % compatible with MATLAB format then extract the Z-range
+            store = obj.getRawPixelsStore();
+            I = toMatrix(store.getStack(c - 1, t - 1), obj.getPixels());
+            I = permute(I, [2 1 3]);
+            I = I(:, :, z);
         end
     end
 end
