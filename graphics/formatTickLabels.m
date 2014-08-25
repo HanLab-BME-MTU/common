@@ -22,10 +22,10 @@ ip.addOptional('YFormat', [], @ischar);
 ip.addParamValue('FormatXY', [true true], @(x) islogical(x) && numel(x)==2);
 ip.parse(varargin{:});
 h = ip.Results.h;
-xfmt = ip.Results.XFormat;
-yfmt = ip.Results.YFormat;
 
 for i = 1:numel(h)
+    xfmt = ip.Results.XFormat;
+    yfmt = ip.Results.YFormat;
     
     if ip.Results.FormatXY(1)
         xticks = cellstr(get(h(i), 'XTickLabel'));
@@ -48,16 +48,29 @@ for i = 1:numel(h)
     end
     if ip.Results.FormatXY(2)
         yticks = cellstr(get(h(i), 'YTickLabel'));
-        ppos = regexpi(yticks, '\.');
         nchar = cellfun(@numel, yticks);
-        idx = ~cellfun(@isempty, ppos);
-        if ~all(idx==0)
+        
+        ppos = regexpi(yticks, '\.');
+        idx = cellfun(@isempty, ppos);
+        ppos{idx} = nchar(idx)+1;
+        ppos = [ppos{:}]';
+        
+        if any(ppos~=0)
             val = cellfun(@str2num, yticks);
             if isempty(yfmt)
-                nd = max(nchar(idx)-[ppos{idx}]');
+                nd = max(nchar-ppos);
+                if nd>2 % remove labels with more than 2 digits
+                    nd = 2;
+                    clearIdx = nchar-ppos>2;
+                else
+                    clearIdx = [];
+                end
                 yfmt = ['%.' num2str(nd) 'f'];
             end
             yticks = arrayfun(@(i) num2str(i, yfmt), val, 'unif', 0);
+            if ~isempty(clearIdx)
+                [yticks{clearIdx}] = deal('');
+            end
             idx = find(val==0);
             if ~isempty(idx)
                 yticks{idx} = '0';

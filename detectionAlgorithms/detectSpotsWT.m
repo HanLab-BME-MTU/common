@@ -1,57 +1,26 @@
-function [frameInfo, imgDenoised] = detectSpotsWT(img, iclean, varargin)
-
-ip = inputParser;
-ip.CaseSensitive = false;
-ip.addRequired('img');
-ip.addOptional('iclean', 0);
-ip.addParamValue('LegacyMode', false);
-ip.addParamValue('BackwardsCompatible', true, @islogical); % to match output of main283AUTO
-ip.parse(img, iclean, varargin{:});
-
-iclean = ip.Results.iclean;
-
-% Wavelet decomposition calculated up to scale k
-k = 4;
-
-if ip.Results.LegacyMode
-    denoisefun = @wstarck2;
-else
-    denoisefun = @awtDenoising;    
-end
-
-% NOTE: this file is identical to main283AUTO_standalone in function.
-% The output vectors elements may be in a different order due to implementation differences.
-
-% Reconstructs a filtered image using iterative filtering from significant
-% coefficients ( see Book by Starck et al, p. 66)
-
-%Then calculates a binary image and the product of the binary image and the
-%reconstructed image
-
-% It then finds and plots ALL the local maxima on each cluster (at least
-% one maximum per cluster)
-
-%If a cluster has more than one maximum, it divides them into primary and
-%secondary (The secondaries are listed at the end.)
-
-%It calculates the intensity of each maximum and the total intensity and size (i.e. area) of
-%each cluster.
-
-%   INPUT
-%             img : input image
+%[frameInfo, imgDenoised] = detectSpotsWT(img, varargin)
 %
-%  OPTIONS
-%         iclean : 0 when only minimal cleaning of very small clusters is necessary (default)
+% Performs detection of local intensity clusters through a combination of 
+% wavelet denoising and multiscale products of wavelet coefficients
+%
+% For each detected cluster, the local maximum is identified (secondary maxima are
+% listed at the end of the coordinate vectors if more than one are found)
+%
+% INPUT
+%            img : input image
+%
+% OPTIONS
+%       PostProc : 0 when only minimal cleaning of very small clusters is necessary (default)
 %                  1 when some extra cleaning is necessary
 %                  2 when some more extra cleaning is necessary
 %                 -1 when even minimal cleaning is not necessary
 %
-%  OUTPUT
+% OUTPUT
 %
 %  Cluster-specific values:  
 %
 %     xav, yav   : centroid coordinates for the clusters
-%     num        : number of clusters
+%     num        : number of clusters in image
 %
 %  Local maxima (each cluster can have several)
 %     xmax, ymax : coordinates of local maxima 
@@ -60,11 +29,39 @@ end
 %                : this is repeated for each maxima within the cluster (change in future version?)
 %     csize      : number of pixels in each cluster (same as above)
 %     lxm        : number of local maxima in cluster (same again)
-%     labl       : cluster to which local maximum belong (i.e., cluster label) 
+%     labl       : cluster to which local maximum belong (i.e., cluster label)
 %     nmax       : number of local maxima in the image
 %
+%
+% References:
+% [1] Olivo-Marin, "Extraction of spots in biological images using multiscale products," Pattern Recoginition 35, pp. 1989-1996, 2002.
+% [2] Starck et al., "Image Processing and Data Analysis," Section 2.3.4, p. 73
+%
+%
+% Not: the behavior of this function is identical to main283AUTO_standalone.
+% The output vector elements may be in a different order due to implementation differences.
 
 % Last modified: 08/26/12 by Francois Aguet
+
+function [frameInfo, imgDenoised] = detectSpotsWT(img, varargin)
+
+ip = inputParser;
+ip.CaseSensitive = false;
+ip.addRequired('img');
+ip.addOptional('PostProc', 0);
+ip.addParamValue('LegacyMode', false);
+ip.addParamValue('MaxScale', 4);
+ip.addParamValue('BackwardsCompatible', true, @islogical); % to match output of main283AUTO
+ip.parse(img, varargin{:});
+
+% Wavelet decomposition calculated up to scale k
+k = ip.Results.MaxScale;
+
+if ip.Results.LegacyMode
+    denoisefun = @wstarck2;
+else
+    denoisefun = @awtDenoising;    
+end
 
 [ny,nx,nz] = size(img);
 imgDenoised = zeros(ny,nx,nz, 'uint8');
@@ -81,16 +78,13 @@ for ix = 1:nz
     mno=min(frame(:));
     frame = frame*450/mxo; % to renormalize the maximum intensity to a reasonable value.
        
-    rw = denoisefun(frame,k,0); % CALCULATES reconstructed image up to order k without kth detail(irecon=0)
+    rw = denoisefun(frame,k,0); % calculates reconstructed image up to order k without kth detail (irecon=0)
     er = frame - rw;  % This is the error image
     
     % Now do iterative filtering
     delta = 1;
-    n=0;
     sig1 = std(er(:));
     while delta > 0.002
-        
-        n = n+1;
         rw = rw + denoisefun(er,k,0);
         
         er = frame - rw;
@@ -120,9 +114,9 @@ for ix = 1:nz
     rwb=bwmorph(rwb,'spur'); % to remove single pixels 8-attached to clusters
     rwb=bwmorph(rwb,'spur');
     rwb=bwmorph(rwb,'clean');% to remove any remaining isolated pixels after applying spur twice
-    if iclean > 0
+    if ip.Results.PostProc > 0
         rwb=bwmorph(rwb,'erode'); %extra cleaning of small spots
-        if iclean >=2
+        if ip.Results.PostProc >= 2
             rwb=bwmorph(rwb,'spur'); %extra cleaning of small spots % for extraextra cleaning
         end
         rwb=bwmorph(rwb,'clean');%extra cleaning of small spots
