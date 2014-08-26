@@ -55,10 +55,15 @@ classdef TimeSeriesReader < CellReader
             end
         end
         function R = getSubIndexReader(obj,S)
-            classfcn = str2func(class(obj));
-            S.subs{3} = 1: obj.getSizeT(obj.sizeParam);
-            S.subs = S.subs([1 3 2]);
-            R = classfcn(SubIndexReader(obj,S(1).subs{:}));
+            if( length(S.subs) > 1 )
+                % map Z back to the 3rd dimension if present
+                S.subs{3} = S.subs{2};
+            end
+            % always include all time points when subindexing
+            S.subs{2} = 1: obj.getSizeT;
+            % linearize CZ if only one dimension is given
+            S.subs = obj.getLinSub(S.subs{:});
+            R = obj.getSubIndexReader@CellReader(S);
         end
     end
 end

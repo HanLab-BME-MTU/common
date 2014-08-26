@@ -38,9 +38,9 @@ classdef VolumeReader < CellReader
              end
         end
         function R = getSubIndexReader(obj,S)
-            classfcn = str2func(class(obj));
-            S.subs{3} = 1: obj.getSizeZ(obj.sizeParam);
-            R = classfcn(SubIndexReader(obj,S(1).subs{:}));
+            S.subs = obj.getLinSub(S.subs{:});
+            S.subs{3} = 1: obj.getSizeZ;
+            R = obj.getSubIndexReader@CellReader(S);
         end
     end
 end
