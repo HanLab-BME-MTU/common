@@ -52,7 +52,8 @@ for i = 1:numel(h)
         
         ppos = regexpi(yticks, '\.');
         idx = cellfun(@isempty, ppos);
-        ppos{idx} = nchar(idx)+1;
+        tmp = num2cell(nchar(idx)+1);
+        [ppos{idx}] = tmp{:};
         ppos = [ppos{:}]';
         
         if any(ppos~=0)
