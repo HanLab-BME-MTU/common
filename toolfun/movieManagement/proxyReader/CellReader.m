@@ -105,20 +105,7 @@ classdef CellReader < LinearReader
             case '.'
                 % Allow for named indexing
                 if(regexp(S(1).subs,'^[ctz]$'))
-                    % build a smooth brace subindex structure
-                    Q.type = '()';
-                    Q.subs = {':' ':' ':'};
-                    % map dimensions
-                    map = struct('c',1,'t',2,'z',3);
-                    if(length(S) > 1 && strcmp(S(2).type,'()'))
-                        Q.subs(map.(S(1).subs)) = S(2).subs;
-                        Q = [Q S(3:end)];
-                    else
-                        % no index given
-                        % do nothing? no, fail!
-                        error('CellReader: Named subindex requires subindex.')
-                        Q = [Q S(2:end)];
-                    end
+                    Q = obj.translateNamedIndex(S);
                     [varargout{1:nargout}] = obj.subsref(Q);
                 else
                     % nargout bump from 0 to 1
@@ -302,6 +289,22 @@ classdef CellReader < LinearReader
             % support subclasses of CellReader
             classfcn = str2func(class(obj));
             R = classfcn(SubIndexReader(obj,S(1).subs{:}));
+        end
+        function Q = translateNamedIndex(obj,S)
+            % build a smooth brace subindex structure
+            Q.type = '()';
+            Q.subs = {':' ':' ':'};
+            % map dimensions
+            map = struct('c',1,'t',2,'z',3);
+            if(length(S) > 1 && strcmp(S(2).type,'()'))
+                Q.subs(map.(S(1).subs)) = S(2).subs;
+                Q = [Q S(3:end)];
+            else
+                % no index given
+                % do nothing? no, fail!
+                error('CellReader: Named subindex requires subindex.')
+                Q = [Q S(2:end)];
+            end
         end
     end
     

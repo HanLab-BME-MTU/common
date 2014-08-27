@@ -65,5 +65,12 @@ classdef TimeSeriesReader < CellReader
             S.subs = obj.getLinSub(S.subs{:});
             R = obj.getSubIndexReader@CellReader(S);
         end
+        function Q = translateNamedIndex(obj,S)
+            % swap t and z dimensions for named indexing
+            map = struct('c','c','t','z','z','t');
+            S(1).subs = map.(S(1).subs);
+            Q = obj.translateNamedIndex@CellReader(S);
+        end
+
     end
 end
