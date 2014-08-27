@@ -18,8 +18,9 @@ ip = inputParser;
 ip.CaseSensitive = false;
 ip.addOptional('h', gca, @(x) all(arrayfun(@ishandle, x)));
 ip.addOptional('XFormat', [], @(x) isempty(x) || ischar(x));
-ip.addOptional('YFormat', [], @ischar);
+ip.addOptional('YFormat', [], @(x) isempty(x) || ischar(x));
 ip.addParamValue('FormatXY', [true true], @(x) islogical(x) && numel(x)==2);
+ip.addParamValue('MaxDigits', 2, @isscalar);
 ip.parse(varargin{:});
 h = ip.Results.h;
 
@@ -56,13 +57,13 @@ for i = 1:numel(h)
         [ppos{idx}] = tmp{:};
         ppos = [ppos{:}]';
         
-        if any(ppos~=0)
+        if any(ppos~=0) && ~all(idx)
             val = cellfun(@str2num, yticks);
             if isempty(yfmt)
-                nd = max(nchar-ppos);
-                if nd>2 % remove labels with more than 2 digits
-                    nd = 2;
-                    clearIdx = nchar-ppos>2;
+                nd = max(max(nchar-ppos),0);
+                if nd>ip.Results.MaxDigits % remove labels with more than 2 digits
+                    nd = ip.Results.MaxDigits;
+                    clearIdx = nchar-ppos>ip.Results.MaxDigits;
                 else
                     clearIdx = [];
                 end
