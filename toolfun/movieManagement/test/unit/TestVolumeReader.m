@@ -1,17 +1,14 @@
-classdef TestCellReader < TestProxyReader
+classdef TestVolumeReader < TestProxyReader
     methods
-        function self = TestCellReader(name,reader)
-            if(nargin < 2)
-                reader = MockReader;
-            end
-            self = self@TestProxyReader(name,CellReader(reader));
+        function self = TestVolumeReader(name)
+            self = self@TestProxyReader(name,VolumeReader(MockReader));
         end
         function testCellIndexing(self)
-            idxFcn = @(p,c,t,z) p{c,t,z};
+            idxFcn = @(p,c,t,z) p{c,t}(:,:,z);
             self.checkFcnToZ(idxFcn,@loadImage);
         end
         function testZColon(self)
-            zColon = @(p,c,t,z) p(c,t,:).to3D;
+            zColon = @(p,c,t,z) p(c,t).to3D;
             zStack = @(r,c,t,z) r.loadStack(c,t);
             self.checkFcnToZLight(zColon,zStack);
         end
@@ -20,6 +17,6 @@ classdef TestCellReader < TestProxyReader
             zStack = @(r,c,t,z) r.loadStack(c,t);
             self.checkFcnToZLight(zColon,zStack);
         end
-            
+
     end
 end

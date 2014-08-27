@@ -13,6 +13,8 @@ classdef TestProxyReader < TestCase
             end
             if(nargin < 3)
                 self.reader = self.proxy.reader;
+            else
+                self.reader = reader;
             end
         end
         function checkFcn(self,fcnProxy,fcnReader)
@@ -37,6 +39,20 @@ classdef TestProxyReader < TestCase
                 end
             end
         end
+        function checkFcnToZLight(self,fcnProxy,fcnReader)
+            if(nargin < 3)
+                fcnReader = fcnProxy;
+            end
+            for c = self.reader.getSizeC
+                for t = self.reader.getSizeT(c)
+                    for z = self.reader.getSizeZ(c)
+                        assertEqual( fcnProxy(self.proxy,c,t,z) , ... 
+                                     fcnReader(self.reader,c,t,z) );
+                    end
+                end
+            end
+        end
+
         function testGetSizeX(self)
             self.checkFcn(@getSizeX);
         end
@@ -66,6 +82,10 @@ classdef TestProxyReader < TestCase
         end
         function testLoadStack(self)
             self.checkFcnToZ(@loadStack);
+        end
+        function testNullConstructor(self)
+            classfcn = str2func(class(self.proxy));
+            classfcn();
         end
     end
 end
