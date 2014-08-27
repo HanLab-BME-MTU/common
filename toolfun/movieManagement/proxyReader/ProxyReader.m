@@ -123,6 +123,13 @@ classdef ProxyReader < Reader
         function reader = getReader(obj)
             reader = obj.reader;
         end
+        
+        function setDeleteBaseReader(obj,deleteBaseReader)
+            P = obj.findProxies;
+            for p = 1:length(P)
+                P{p}.deleteBaseReader = deleteBaseReader;
+            end
+        end
 
         
         % Delete parent reader if deleted

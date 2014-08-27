@@ -573,10 +573,13 @@ classdef  MovieData < MovieObject
         function setReader(obj, r)
             % Set the reader
             if( isa(r,'ProxyReader') )
-                if( isempty( r.getReader ) )
-                    r.setReader(obj.reader);
+                % If setting a proxy reader,
+                % set current reader as the server
+                proxies = r.findProxies();
+                if( isempty( proxies{end}.getReader ) )
+                    proxies{end}.setReader(obj.reader);
                 end
-                r.deleteBaseReader = true;
+                r.setDeleteBaseReader(true);
             end
             obj.reader = r;
         end
