@@ -12,8 +12,10 @@ classdef ProxyReader < Reader
     % Lab of Khuloud Jaqaman
     % UT Southwestern
     
-    properties
+    properties ( SetAccess = protected )
         reader;
+    end
+    properties ( Access = public )
         deleteBaseReader = false;
     end
    
@@ -24,15 +26,7 @@ classdef ProxyReader < Reader
                 return;
             end
             % at least one parameter
-            if(isa(varargin{1},'MovieData'))
-                varargin{1} = obj.replace(varargin{1});
-            end
-            if(isa(varargin{1},'Reader'))
-                obj.reader = varargin{1};
-                obj.proxyProperties;
-            else
-                error('ProxyReader:argChk','Single parameter must be a reader');
-            end
+            obj.setReader(varargin{1});
         end
         
         function obj = proxyProperties(obj)
@@ -45,7 +39,7 @@ classdef ProxyReader < Reader
         end
 
         function varargout = subsref(obj,S)
-            if(S(1).type(1) == '.')
+            if(~isempty(obj.reader) && S(1).type(1) == '.')
                 % if the subref for '.' is a property or method of upstream
                 % then forward it
                 % do not forward the reference to reader
@@ -116,11 +110,18 @@ classdef ProxyReader < Reader
             I = obj.reader.loadStack(varargin{:});
         end
 
-        % Replace the reader in movieData
-        function oldReader = replace(obj,movieData)
-            oldReader = movieData.getReader();
-            obj.deleteBaseReader = true;
-            movieData.setReader(obj);
+        function oldReader = setReader(obj,reader)
+            oldReader = obj.reader;
+            if(isa(reader,'Reader'))
+                obj.reader = reader;
+                obj.proxyProperties();
+            else
+                error('ProxyReader:argChk','Single parameter must be a reader');
+            end
+        end
+
+        function reader = getReader(obj)
+            reader = obj.reader;
         end
 
         

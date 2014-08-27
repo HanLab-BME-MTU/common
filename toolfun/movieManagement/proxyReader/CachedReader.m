@@ -34,6 +34,11 @@ classdef CachedReader < ProxyReader
                 end
             end
         end
+    
+        function [oldReader, oldCache] = setReader(obj,reader)
+            oldReader = obj.setReader@ProxyReader(reader);
+            oldCache = obj.resetCache();
+        end
                
         function I = loadImage(obj, c, t, varargin)
             % check if unknown parameters

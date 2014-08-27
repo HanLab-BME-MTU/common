@@ -7,8 +7,8 @@ classdef VolumeReader < CellReader
     % Lab of Khuloud Jaqaman
     % UT Southwestern
     methods
-        function obj = VolumeReader(reader)
-            obj = obj@CellReader(reader);
+        function obj = VolumeReader(varargin)
+            obj = obj@CellReader(varargin{:});
         end
         function s = getSize(obj)
             s = [obj.reader.getSizeC(obj.sizeParam)

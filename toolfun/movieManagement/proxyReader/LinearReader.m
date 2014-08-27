@@ -32,10 +32,10 @@ classdef LinearReader < ProxyReader
         % LinearReader requires that the dimensions do not change
         % sizeParam allows for some incidental compatibility
         % sizeParam will usually be the channel number if needed
-        function obj = LinearReader(reader,sizeParam)
-            obj = obj@ProxyReader(reader);
+        function obj = LinearReader(varargin)
+            obj = obj@ProxyReader(varargin{1:nargin});
             if(nargin > 1)
-                obj.sizeParam = sizeParam;
+                obj.sizeParam = varargin{2};
             end
         end
         % Obtain the CTZ size

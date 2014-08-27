@@ -13,8 +13,11 @@ classdef SubIndexReader < ProxyReader
     end
     
     methods
-        function obj =  SubIndexReader(reader,varargin)
-            obj = obj@ProxyReader(reader);
+        function obj =  SubIndexReader(varargin)
+            obj = obj@ProxyReader(varargin{ 1: min(1,nargin) });
+            obj.setSubIndices(varargin{2:nargin});
+        end
+        function oldSubIndices = setSubIndices(obj,varargin)
             obj.subIndices = varargin;
             obj.subIndices(nargin:3) = {NaN};
         end

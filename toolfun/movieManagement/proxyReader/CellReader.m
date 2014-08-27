@@ -158,8 +158,13 @@ classdef CellReader < LinearReader
             end
         end
 
-        function A = subsasgn(A, S, B)
-            error('CellReader is read-only. Subscript assignment is not allowed');
+        function obj = subsasgn(obj, S, B)
+            switch(S.type)
+            case '.'
+                obj = builtin('subsasgn',obj,S,B);
+            otherwise
+                error('CellReader is read-only. Subscript assignment is not allowed');
+            end
         end
 
         % The size follows the CTZ convention

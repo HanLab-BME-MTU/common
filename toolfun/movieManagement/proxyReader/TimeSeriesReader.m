@@ -7,8 +7,8 @@ classdef TimeSeriesReader < CellReader
     % Lab of Khuloud Jaqaman
     % UT Southwestern
     methods
-        function obj = TimeSeriesReader(reader)
-            obj = obj@CellReader(reader);
+        function obj = TimeSeriesReader(varargin)
+            obj = obj@CellReader(varargin{:});
         end
         function s = getSize(obj)
             s = [obj.reader.getSizeC(obj.sizeParam)
