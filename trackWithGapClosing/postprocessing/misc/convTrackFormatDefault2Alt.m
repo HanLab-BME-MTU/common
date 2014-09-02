@@ -32,7 +32,7 @@ numTracks = length(compTracks);
 
 %go over all compound tracks
 for iTrack = 1 : numTracks
-    
+
     %get this compound track's information
     seqOfEvents = compTracks(iTrack).seqOfEvents;
     tracksFeatIndx = compTracks(iTrack).tracksFeatIndxCG;
@@ -101,7 +101,10 @@ for iTrack = 1 : numTracks
     else
         seqOfEventsAlt = seqOfEvents;
         tracksFeatIndxAlt = tracksFeatIndx;
-        tracksCoordAmpAlt = tracksCoordAmp;
+        %082114 - Robel Yirdaw
+        %Convert sparse matrix back to full form to avoid bottleneck at
+        %lines 169 - 172.
+        tracksCoordAmpAlt = full(tracksCoordAmp);
     end
     
     %shift time in seqOfEventsAlt to make the track start at frame 1 or 0.5
@@ -126,7 +129,6 @@ for iTrack = 1 : numTracks
     
     %go over merging and splitting events
     for iEventTmp = 1 : numMSEvents
-
         %get event index
         iEvent = msEvents(iEventTmp);
         
@@ -221,7 +223,6 @@ for iTrack = 1 : numTracks
         indx = find(seqOfEventsAlt(iEvent+1:numEventsDef,4)==originalSegment);
         seqOfEventsAlt(iEvent+indx,4) = numSegmentsAlt;
 
-
     end
 
     %transpose matrices back
@@ -277,9 +278,12 @@ for iTrack = 1 : numTracks
     seqOfEventsAlt(:,1) = seqOfEventsAlt(:,1) + seqOfEvents(1,1) - 1;
     
     %store in output structure
+    %082014 - Robel Yirdaw
+    %Save tracksCoordAmpCG as a sparse matrix
     compTracksAlt(iTrack).seqOfEvents = seqOfEventsAlt;
     compTracksAlt(iTrack).tracksFeatIndxCG = tracksFeatIndxAlt;
-    compTracksAlt(iTrack).tracksCoordAmpCG = tracksCoordAmpAlt;
+    tracksCoordAmpAlt(isnan(tracksCoordAmpAlt)) = 0;
+    compTracksAlt(iTrack).tracksCoordAmpCG = sparse(tracksCoordAmpAlt);
     compTracksAlt(iTrack).alt2defSegmentCorrespond = alt2defSegCorr;
     
 end
