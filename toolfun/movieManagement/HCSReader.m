@@ -23,13 +23,13 @@ classdef HCSReader < Reader
                 'Channel path specified is not a valid directory! Please double check the channel path!');
         end
         
-        function getXYDimensions(obj)
+        function getDimensions(obj)
             sizeX = zeros(obj.getSizeC(), 1);
             sizeY = zeros(obj.getSizeC(), 1);
             sizeT = zeros(obj.getSizeC(), 1);
             bitDepth = zeros(obj.getSizeC(), 1);
             for iChan = 1 : obj.getSizeC()
-                fileNames = obj.filenames{iChan};
+                fileNames = obj.filenames(iChan);
                 %%%%%%%%%%%%%%%%%%%ONLY IF IMAGES ARE IN THE SAME FORMATS
                 %%%%%%%%%%%%%%%%%%%ACROSS THE PLATE
                 if min(size(fileNames)) ~= 1
@@ -48,8 +48,9 @@ classdef HCSReader < Reader
                 else
                     sizeT(iChan) = length(obj.filenames{iChan});
                 end
+                
                 imInfo = cellfun(@(x) imfinfo([obj.paths{iChan} filesep x]),...
-                    fileNames, 'UniformOutput', false);
+                    fileNames{1,1}, 'UniformOutput', false); %only taking the first well.
                 sizeX(iChan) = unique(cellfun(@(x)(x.Width), imInfo));
                 sizeY(iChan) = unique(cellfun(@(x)(x.Height), imInfo));
                 bitDepth(iChan) = unique(cellfun(@(x)(x.BitDepth), imInfo));
