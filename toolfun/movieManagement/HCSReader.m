@@ -29,11 +29,11 @@ classdef HCSReader < Reader
             sizeT = zeros(obj.getSizeC(), 1);
             bitDepth = zeros(obj.getSizeC(), 1);
             for iChan = 1 : obj.getSizeC()
-                fileNames = obj.filenames(iChan);
+                fileNames = obj.filenames{iChan};
                 %%%%%%%%%%%%%%%%%%%ONLY IF IMAGES ARE IN THE SAME FORMATS
                 %%%%%%%%%%%%%%%%%%%ACROSS THE PLATE
                 if min(size(fileNames)) ~= 1
-                    fileNames = fileNames{1,1};
+                    %fileNames = fileNames{1,1};
                     tni = 0;
                     for iv = 1:size(fileNames,1) %get number of rows
                         for ih = 1:size(fileNames,2) %get number of columns
@@ -48,9 +48,9 @@ classdef HCSReader < Reader
                 else
                     sizeT(iChan) = length(obj.filenames{iChan});
                 end
-                
+                if min(size(fileNames)) ~= 1, fileNames = fileNames{1,1}; end
                 imInfo = cellfun(@(x) imfinfo([obj.paths{iChan} filesep x]),...
-                    fileNames{1,1}, 'UniformOutput', false); %only taking the first well.
+                    fileNames, 'UniformOutput', false); %only taking the first well.
                 sizeX(iChan) = unique(cellfun(@(x)(x.Width), imInfo));
                 sizeY(iChan) = unique(cellfun(@(x)(x.Height), imInfo));
                 bitDepth(iChan) = unique(cellfun(@(x)(x.BitDepth), imInfo));
