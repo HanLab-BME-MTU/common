@@ -201,6 +201,10 @@ classdef Channel < hgsetget
                 iChan = 1;
             end
         end
+        function idx = subsindex(obj)
+            % subsindex is zero based
+            idx = getChannelIndex(obj)-1;
+        end
         
         function fileNames = getImageFileNames(obj,varargin)
             % See Reader.getImageFileNames

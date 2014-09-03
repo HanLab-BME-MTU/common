@@ -310,7 +310,7 @@ maxnumModes = max(numModes);
 %get mean, std and fraction of the modes in each frame
 allModeMean = NaN*ones(maxnumModes,numFrames);
 allModeStd = NaN*ones(maxnumModes,numFrames);
-allModeFrac = NaN*ones(maxnumModes,numFrames);
+allModeFrac = zeros(maxnumModes,numFrames);
 for i = startFrame : endFrame
     if ~isempty(intensityHist(i).modeParam)
         allModeMean(1:numModes(i),i) = intensityHist(i).modeParam(:,1);

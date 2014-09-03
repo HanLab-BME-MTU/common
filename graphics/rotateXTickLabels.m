@@ -14,7 +14,6 @@ ip.addOptional('ha', gca, @ishandle);
 ip.addParamValue('Angle', 45, @(x) isscalar(x) && (0<=x && x<=90));
 ip.addParamValue('Interpreter', 'tex', @(x) any(strcmpi(x, {'tex', 'latex', 'none'})));
 ip.addParamValue('AdjustFigure', true, @islogical);
-% ip.addParamValue('YOffset', 2);
 ip.parse(varargin{:});
 ha = ip.Results.ha;
 
@@ -26,8 +25,8 @@ end
 axPos = get(ha, 'Position');
 set(ha, 'XTickLabel', [], 'Position', axPos);
 
-fontName = get(ha, 'FontName');
-fontSize = get(ha, 'FontSize');
+fontName = get(get(ha, 'ylabel'), 'FontName');
+fontSize = get(get(ha, 'ylabel'), 'FontSize');
 
 XLim = get(ha, 'XLim');
 YLim = get(ha, 'Ylim');

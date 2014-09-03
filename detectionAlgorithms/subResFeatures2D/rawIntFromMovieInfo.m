@@ -1,4 +1,4 @@
-function [movieInfo,meanBg] = rawIntFromMovieInfo(movieInfo,psfSigma,imageFilePath,static)
+function [movieInfo,meanBg,tracksStatic] = rawIntFromMovieInfo(movieInfo,psfSigma,imageFilePath,static)
 %RAWINTFROMMOVIEINFO reads raw image intensities at locations specified in movieInfo
 %
 %SYNOPSIS movieInfo = rawIntFromMovieInfo(movieInfo,psfSigma,imageFilePath)
@@ -64,7 +64,7 @@ numFrames = length(movieInfo);
 image = double(imread(imageFilePath,1));
 imSize = size(image);
 
-%% Processing
+%% Read intensity
 
 %modify movieInfo if static = 1
 if static
@@ -132,5 +132,28 @@ for iFrame = 1 : numFrames
     
 end
 
+%% Tracks in case of static
+
+if static
+    
+    %track matrix
+    tracksMat = repmat([xCoord yCoord zeros(numObj,6)],1,numFrames);
+    for iFrame = 1 : numFrames
+        tracksMat(:,8*(iFrame-1)+4) = movieInfo(iFrame).intRaw;
+    end
+    
+    %convert to structure format
+    tracksStatic = repmat(struct('tracksCoordAmpCG',[],'tracksFeatIndxCG',[],'seqOfEvents',[]),numObj,1);
+    for iObj = 1 : numObj
+        tracksStatic(iObj).tracksCoordAmpCG = tracksMat(iObj,:);
+        tracksStatic(iObj).tracksFeatIndxCG = iObj*ones(1,numFrames);
+        tracksStatic(iObj).seqOfEvents = [1 1 1 NaN; numFrames 2 1 NaN];
+    end
+    
+else
+    
+    tracksStatic = [];
+    
+end
 
 %%%%% ~~ the end ~~ %%%%%
