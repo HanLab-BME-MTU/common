@@ -1,6 +1,6 @@
 function overlayFeaturesMovie(movieInfo,startend,saveMovie,movieName,...
     filterSigma,showRaw,intensityScale,firstImageFile,dir2saveMovie,...
-    movieType,plotFullScreen,channel)
+    movieType,plotFullScreen,iChannel)
 %OVERLAYFEATURESMOVIE makes a movie of detected features overlaid on images
 %
 %SYNPOSIS overlayFeaturesMovie(movieInfo,startend,saveMovie,movieName,...
@@ -47,7 +47,7 @@ function overlayFeaturesMovie(movieInfo,startend,saveMovie,movieName,...
 %                       screen. In this way the movie will be of highest
 %                       possible quality. default is 0.
 %
-%       channel: (default: channel=1) If analyzing multi-channel image,
+%       iChannel: (default: channel=1) If analyzing multi-channel image,
 %       select which channel detections should be overlaid on.
 %
 %OUTPUT the movie.
@@ -63,8 +63,8 @@ if nargin < 1
 end
 
 %check if specific channel should be used
-if nargin < 12 || isempty(channel)
-    channel = 1;
+if nargin < 12 || isempty(iChannel)
+    iChannel = 1;
 end
 
 
@@ -103,7 +103,7 @@ if(isa(fName,'char') && isa(dirName,'char'))
     numFrames = frameNum;
     
     %read first image to get image size
-    currentImage = imread(outFileList{1},channel);
+    currentImage = imread(outFileList{1},iChannel);
     [isx,isy] = size(currentImage);
     
 else %else, exit
@@ -201,7 +201,7 @@ switch intensityScale
         stdIntensity = meanIntensity;
         for iFrame = 1 : numFramesMovie
             if frame2fileMap(iFrame) ~= 0
-                imageStack = double(imread(outFileList{frame2fileMap(iFrame)},channel));
+                imageStack = double(imread(outFileList{frame2fileMap(iFrame)},iChannel));
                 meanIntensity(iFrame) = mean(imageStack(:));
                 stdIntensity(iFrame) = std(imageStack(:));
             end
@@ -214,7 +214,7 @@ switch intensityScale
         maxIntensity = minIntensity;
         for iFrame = 1 : numFramesMovie
             if frame2fileMap(iFrame) ~= 0
-                imageStack = double(imread(outFileList{frame2fileMap(iFrame)},channel)); 
+                imageStack = double(imread(outFileList{frame2fileMap(iFrame)},iChannel)); 
                 minIntensity(iFrame) = min(imageStack(:));
                 maxIntensity(iFrame) = max(imageStack(:));
             end
@@ -237,7 +237,7 @@ for iFrame = 1 : numFramesMovie
     if frame2fileMap(iFrame) ~= 0 %if frame exists
         
         %read specified image
-        imageStack = imread(outFileList{frame2fileMap(iFrame)},channel);
+        imageStack = imread(outFileList{frame2fileMap(iFrame)},iChannel);
         
         %filter images if requested
         if filterSigma
