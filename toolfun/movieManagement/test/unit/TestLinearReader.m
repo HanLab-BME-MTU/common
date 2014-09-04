@@ -6,11 +6,13 @@ classdef TestLinearReader < TestProxyReader
             end
             self = self@TestProxyReader(name,LinearReader(reader));
         end
-        function checkFcnLinear(proxyFcn,varargin)
-               rSize = [ proxy.reader.getSizeC , proxy.reader.getSizeT, proxy.reader.getSizeZ ];
-               linFcn = @(p,c,t,z) proxyFcn(p,sub2ind(rSize,c,t,z));
-               checkFcnToZ(linFcn,varargin{:});
+        function checkFcnToZ(obj,fcnProxy,fcnReader)
+               if(nargin < 3)
+                   fcnReader = fcnProxy;
+               end
+               rSize = [ obj.proxy.reader.getSizeC , obj.proxy.reader.getSizeT, obj.proxy.reader.getSizeZ ];
+               linFcn = @(p,c,t,z) fcnProxy(p,sub2ind(rSize,c,t,z));
+               obj.checkFcnToZ@TestProxyReader(linFcn,fcnReader);
         end
-
     end
 end

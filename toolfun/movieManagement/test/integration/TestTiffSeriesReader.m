@@ -36,10 +36,10 @@ classdef TestTiffSeriesReader <  TestCase
         function checkDimensions(self)
             assertEqual(self.reader.getSizeC, self.sizeC);
             for c = 1 : self.sizeC
-                assertEqual(self.reader.getSizeX(c), self.sizeX( min(c,length(self.sizeX)) ));
-                assertEqual(self.reader.getSizeY(c), self.sizeY( min(c,length(self.sizeY)) ));
-                assertEqual(self.reader.getSizeZ(c), self.sizeZ( min(c,length(self.sizeZ)) ));
-                assertEqual(self.reader.getSizeT(c), self.sizeT( min(c,length(self.sizeT)) ));
+                assertEqual(self.reader.getSizeX(), self.sizeX);
+                assertEqual(self.reader.getSizeY(), self.sizeY);
+                assertEqual(self.reader.getSizeZ(), self.sizeZ);
+                assertEqual(self.reader.getSizeT(), self.sizeT);
             end
         end
         
@@ -174,14 +174,7 @@ classdef TestTiffSeriesReader <  TestCase
             end
             self.reader = TiffSeriesReader(chPath);
             
-            self.checkDimensions();
-            for c = 1 : self.sizeC
-                S = I(1: self.sizeY(c), 1: self.sizeX(c));
-                for t = 1 : self.sizeT(c)
-                    assertEqual(self.reader.loadStack(c,t), ...
-                        repmat( (c+10*t) * S,[1 1 self.sizeZ(c)]));
-                end
-            end
+            assertExceptionThrown(@() self.checkDimensions(), 'Reader:dimensionMismatch');
         end
 
         %% Test pixel types
@@ -190,7 +183,7 @@ classdef TestTiffSeriesReader <  TestCase
             imwrite(I, fullfile(self.path, 'test.tif'));
             self.reader = TiffSeriesReader({self.path});
             
-            assertEqual(self.reader.getBitDepth(1), 8);
+            assertEqual(self.reader.getBitDepth(), 8);
             assertEqual(self.reader.loadImage(1, 1, 1), I);
         end
         
@@ -199,7 +192,7 @@ classdef TestTiffSeriesReader <  TestCase
             imwrite(I, fullfile(self.path, 'test.tif'));
             self.reader = TiffSeriesReader({self.path});
             
-            assertEqual(self.reader.getBitDepth(1), 16);
+            assertEqual(self.reader.getBitDepth(), 16);
             assertEqual(self.reader.loadImage(1, 1, 1), I);
         end
     end

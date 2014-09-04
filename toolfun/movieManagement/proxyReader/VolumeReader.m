@@ -11,8 +11,8 @@ classdef VolumeReader < CellReader
             obj = obj@CellReader(varargin{:});
         end
         function s = getSize(obj)
-            s = [obj.reader.getSizeC(obj.sizeParam)
-                 obj.reader.getSizeT(obj.sizeParam)]';
+            s = [obj.reader.getSizeC
+                 obj.reader.getSizeT]';
         end
         function matrix = toMatrix(obj)
             matrix = reshape(obj.to3D,[obj.getSizeY obj.getSizeX obj.getSizeZ obj.size]);

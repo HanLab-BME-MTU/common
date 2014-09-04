@@ -21,26 +21,14 @@ classdef SubIndexReader < ProxyReader
             obj.subIndices = varargin;
             obj.subIndices(nargin:3) = {NaN};
         end
-        function s = getSizeX(obj,varargin)
-            indices = obj.translate(varargin{:});
-            s = obj.reader.getSizeX(indices{:});
-        end
-        function s = getSizeY(obj,varargin)
-            indices = obj.translate(varargin{:});
-            s = obj.reader.getSizeY(indices{:});
-        end
-        function s = getSizeC(obj,varargin)
+        function s = getSizeC(obj)
             s = length(obj.subIndices{obj.dimension.C});
         end
-        function s = getSizeT(obj,varargin)
+        function s = getSizeT(obj)
             s = length(obj.subIndices{obj.dimension.T});
         end
-        function s = getSizeZ(obj,varargin)
+        function s = getSizeZ(obj)
             s = length(obj.subIndices{obj.dimension.Z});
-        end
-        function o = getBitDepth(obj,varargin)
-            indices = obj.translate(varargin{:});
-            o = obj.reader.getBitDepth(indices{:});
         end
         function o = getChannelNames(obj,varargin)
             indices = obj.translate(varargin{:});
@@ -82,13 +70,13 @@ classdef SubIndexReader < ProxyReader
     
     methods(Static)
         function r = getZStack(reader,c,t)
-            r = SubIndexReader(reader,{c t 1:reader.getSizeZ()});
+            r = SubIndexReader(reader,{c t 1:reader.getSizeZ});
         end
         function r = getCStack(reader,t,z)
-            r = SubIndexReader(reader,{1:reader.getSizeC() t z});
+            r = SubIndexReader(reader,{1:reader.getSizeC t z});
         end
         function r = getTStack(reader,c,z)
-            r = SubIndexReader(reader,{c 1:reader.getSizeT() z});
+            r = SubIndexReader(reader,{c 1:reader.getSizeT z});
         end
         function r = getTimeSeries(reader,c,z)
             r = getTStack(reader,c,z);

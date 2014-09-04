@@ -334,45 +334,38 @@ classdef  MovieData < MovieObject
             % Call the superclass sanityCheck
             if nargin>1, sanityCheck@MovieObject(obj,varargin{:}); end
             
-            % Initialize channels dimensions
-            width = zeros(1, length(obj.channels_));
-            height = zeros(1, length(obj.channels_));
-            nFrames = zeros(1, length(obj.channels_));
-            
             % Call subcomponents sanityCheck
             disp('Checking channels');
             for i = 1: length(obj.channels_)
-                [width(i), height(i), nFrames(i), zSize(i)] = obj.channels_(i).sanityCheck(obj);
+                obj.getChannel(i).sanityCheck(obj);
             end
             
-            assert(max(nFrames) == min(nFrames), 'MovieData:sanityCheck:nFrames',...
-                'Different number of frames are detected in different channels. Please make sure all channels have same number of frames.')
-            assert(max(zSize) == min(zSize), 'MovieData:sanityCheck:zSize',...
-                'Different number of Z sections are detected in different channels. Please make sure all channels have same number of frames.')
-            assert(max(width)==min(width) && max(height)==min(height), ...
-                'MovieData:sanityCheck:imSize',...
-                'Image sizes are inconsistent in different channels.\n\n')
+            % Read raw data dimensions
+            width = obj.getReader().getSizeX();
+            height = obj.getReader().getSizeY();
+            nFrames = obj.getReader().getSizeT();
+            zSize = obj.getReader().getSizeZ();
             
             % Define imSize_ and nFrames_;
             if ~isempty(obj.nFrames_) && ~isMock(obj)
                 assert(obj.nFrames_ == nFrames(1), 'MovieData:sanityCheck:nFrames',...
                     'Record shows the number of frames has changed in this movie.')
             else
-                obj.nFrames_ = nFrames(1);
+                obj.nFrames_ = nFrames;
             end
             if ~isempty(obj.imSize_)
-                assert(obj.imSize_(2) == width(1) && obj.imSize_(1) ==height(1),...
+                assert(obj.imSize_(2) == width && obj.imSize_(1) == height,...
                     'MovieData:sanityCheck:imSize',...
                     'Record shows image size has changed in this movie.')
             else
-                obj.imSize_ = [height(1) width(1)];
+                obj.imSize_ = [height width];
             end
             
             if ~isempty(obj.zSize_)
-                assert(obj.zSize_ == zSize(1), 'MovieData:sanityCheck:nFrames',...
+                assert(obj.zSize_ == zSize, 'MovieData:sanityCheck:nFrames',...
                     'Record shows the number of frames has changed in this movie.')
             else
-                obj.zSize_ = zSize(1);
+                obj.zSize_ = zSize;
             end
             
             % Fix roi/parent initialization
