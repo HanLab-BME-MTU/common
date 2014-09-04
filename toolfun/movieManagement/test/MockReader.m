@@ -17,53 +17,39 @@ classdef MockReader < Reader
             sizeT = 5;
             sizeZ = 7;
             % create channels
-            I = cell(1,sizeC);
+            I = cell(sizeC,sizeT,sizeZ);
             for c = 1 : sizeC
-                I{c} = cell(1,sizeT);
                 for t = 1 : sizeT
-                    I{c}{t} = cell(1,sizeZ);
                     for z = 1 : sizeZ
-                        I{c}{t}{z} = ones(sizeY,sizeX,'uint16');
-                        I{c}{t}{z}(:) = [ c t z]*[100 10 1]';
+                        I{c,t,z} = zeros(sizeY,sizeX,'uint16');
+                        I{c,t,z}(:) = [ c t z]*[100 10 1]';
                     end
                 end
             end
         end
-        function o = getSizeX(obj,c,t,z,varargin)
-            if(nargin < 2); c = 1; end;
-            if(nargin < 3); t = 1; end;
-            if(nargin < 4); z = 1; end;
-            o = size(obj.images{c}{t}{z},2);
+        function o = getSizeX(obj)
+            o = size(obj.images{1},2);
         end
-        function o = getSizeY(obj,c,t,z,varargin)
-            if(nargin < 2); c = 1; end;
-            if(nargin < 3); t = 1; end;
-            if(nargin < 4); z = 1; end;
-            o = size(obj.images{c}{t}{z},1);
+        function o = getSizeY(obj)
+            o = size(obj.images{1},1);
         end
-        function o = getSizeZ(obj,c,t,varargin)
-            if(nargin < 2); c = 1; end;
-            if(nargin < 3); t = 1; end;
-            o = size(obj.images{c}{t},2);
+        function o = getSizeZ(obj)
+            o = size(obj.images,3);
         end
-        function o = getSizeC(obj,varargin)
-            o = length(obj.images);
+        function o = getSizeC(obj)
+            o = size(obj.images,1);
         end
-        function o = getSizeT(obj,c,varargin)
-            if(nargin < 2); c = 1; end;
-            o = size(obj.images{c},2);
+        function o = getSizeT(obj)
+            o = size(obj.images,2);
         end
-        function o = getBitDepth(obj,c,t,z,varargin)
-            if(nargin < 2); c = 1; end;
-            if(nargin < 3); t = 1; end;
-            if(nargin < 4); z = 1; end;
-            o = str2num( strrep(class(obj.images{c}{t}{z}),'uint','') );
+        function o = getBitDepth(obj)
+            o = str2num( strrep(class(obj.images{1}),'uint','') );
         end
         function o = getImageFileNames(obj,c,t,z,varargin)
             if(nargin < 2); c = 1; end;
             if(nargin < 3); t = 1; end;
             if(nargin < 4); z = 1; end;
-            o = ['mockReader' num2str(obj.images{c}{t}{z}(1,1)) '.test'];
+            o = ['mockReader' num2str(obj.images{c,t,z}(1,1)) '.test'];
         end
         function o = getChannelNames(obj,c)
             if(nargin < 2); c = 1; end;
@@ -73,7 +59,7 @@ classdef MockReader < Reader
             if(nargin < 2); c = 1; end;
             if(nargin < 3); t = 1; end;
             if(nargin < 4); z = 1; end;
-            I = obj.images{c}{t}{z};
+            I = obj.images{c,t,z};
         end
     end
 end

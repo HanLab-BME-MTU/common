@@ -29,9 +29,9 @@ classdef CellReader < LinearReader
     %
     % CellReader is meant to replace the following sort code blocks:
     %
-    %     nc = reader.getSizeC();
-    %     nt = reader.getSizeT();
-    %     nz = reader.getSizeZ();
+    %     nc = reader.getSizeC;
+    %     nt = reader.getSizeT;
+    %     nz = reader.getSizeZ;
     %     cellData = cell(nc,nt,nz);
     %     for c=1:nc
     %         for t=1:nt
@@ -156,7 +156,6 @@ classdef CellReader < LinearReader
 
         % The size follows the CTZ convention
         function varargout = size(obj,dim)
-            % s = [getSizeC(obj) getSizeT(obj) getSizeZ(obj)];
             s = obj.getSize;
             if(nargin > 1)
                 s = s(dim);

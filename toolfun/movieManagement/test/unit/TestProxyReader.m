@@ -21,6 +21,13 @@ classdef TestProxyReader < TestCase
             if(nargin < 3)
                 fcnReader = fcnProxy;
             end
+            assertEqual( fcnProxy(self.proxy) , ... 
+                         fcnReader(self.reader) ) ;
+        end
+        function checkFcnC(self,fcnProxy,fcnReader)
+            if(nargin < 3)
+                fcnReader = fcnProxy;
+            end
             for c = 1 : self.reader.getSizeC
                 assertEqual( fcnProxy(self.proxy,c) , ... 
                              fcnReader(self.reader,c) ) ;
@@ -31,8 +38,8 @@ classdef TestProxyReader < TestCase
                 fcnReader = fcnProxy;
             end
             for c = 1 : self.reader.getSizeC
-                for t = 1 : self.reader.getSizeT(c)
-                    for z = 1 : self.reader.getSizeZ(c)
+                for t = 1 : self.reader.getSizeT
+                    for z = 1 : self.reader.getSizeZ
                         assertEqual( fcnProxy(self.proxy,c,t,z) , ... 
                                      fcnReader(self.reader,c,t,z) );
                     end
@@ -44,8 +51,8 @@ classdef TestProxyReader < TestCase
                 fcnReader = fcnProxy;
             end
             for c = self.reader.getSizeC
-                for t = self.reader.getSizeT(c)
-                    for z = self.reader.getSizeZ(c)
+                for t = self.reader.getSizeT
+                    for z = self.reader.getSizeZ
                         assertEqual( fcnProxy(self.proxy,c,t,z) , ... 
                                      fcnReader(self.reader,c,t,z) );
                     end
@@ -72,10 +79,10 @@ classdef TestProxyReader < TestCase
             self.checkFcn(@getBitDepth);
         end
         function testGetImageFileNames(self)
-            self.checkFcn(@getImageFileNames);
+            self.checkFcnC(@getImageFileNames);
         end
         function testGetChannelNames(self)
-            self.checkFcn(@getChannelNames);
+            self.checkFcnC(@getChannelNames);
         end
         function testLoadImage(self)
             self.checkFcnToZ(@loadImage);
