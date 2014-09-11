@@ -11,6 +11,7 @@
 % Note: NaN/Inf elements in input data are ignored
 
 % Francois Aguet, 03/02/2012 (modified on 10/29/2012)
+% Mark Kittisopikul, calculate udata only when requested, 09/11/2014
 
 function [rep, udata, sdata] = getMultiplicity(data)
 
@@ -18,4 +19,7 @@ function [rep, udata, sdata] = getMultiplicity(data)
 sdata = reshape(sort(data(isfinite(data))), 1, []);
 % count occurrences
 rep = diff([0 find([diff(sdata)~=0 1])]);
-udata = unique(sdata);
+
+if(nargout > 1)
+    udata = unique(sdata);
+end
