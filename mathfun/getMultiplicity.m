@@ -15,11 +15,22 @@
 
 function [rep, udata, sdata] = getMultiplicity(data)
 
-% sort, store as row vector
-sdata = reshape(sort(data(isfinite(data))), 1, []);
-% count occurrences
-rep = diff([0 find([diff(sdata)~=0 1])]);
+if(~isinteger(data))
+    data = data(isfinite(data));
+end
+% sort
+sdata = sort(data);
+% store as row vector
+sdata = sdata(:)';
+
+% find where the numbers change in the sorted array
+isDiff = [diff(sdata)~=0 1];
+idx = find(isDiff);
 
 if(nargout > 1)
-    udata = unique(sdata);
+    udata = sdata(idx);
 end
+
+% count occurrences
+rep = diff([0 idx]);
+
