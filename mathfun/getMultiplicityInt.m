@@ -30,7 +30,7 @@ end
 data = data(:);
 minValue = min(data);
 if(minValue ~= 1)
-    data = data + ( 1 - minValue );
+    data = data - (minValue - 1);
 end
 
 %where the magic happens
@@ -39,7 +39,9 @@ rep = accumarray(data,1);
 
 % if unique values requested, then return those with nonzero repeitions
 if(nargout > 1)
-    maxValue = max(data) - (1 - minValue);
+    % MATLAB is being buggy, switch to double when adding near intmax
+    dataClass = str2func(class(data));
+    maxValue = dataClass( double( max(data) ) + double(minValue) - 1);
     udata = minValue : maxValue;
     udata = udata(rep ~= 0);
 end
