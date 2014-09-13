@@ -19,7 +19,7 @@ if(~isinteger(data))
     data = data(isfinite(data));
 end
 % sort
-sdata = sort(data);
+sdata = sort(data(:));
 % store as row vector
 sdata = sdata(:)';
 
