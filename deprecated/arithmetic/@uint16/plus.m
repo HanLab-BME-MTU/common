@@ -14,5 +14,5 @@ c=double(a)+double(b);
 if any(c(:)<cmin) | any(c(:)>cmax)
     error('Result out of range.')
 else
-    c=int16(c);
+    c=uint16(c);
 end
