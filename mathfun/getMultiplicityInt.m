@@ -50,9 +50,17 @@ dataTypeMax = Inf;
 dataTypeMin = -Inf;
 dataType = class(data);
 
+if(nargin < 2)
+    index = false;
+end
+
+if(nargin < 3)
+    skipFiniteCheck = false;
+end
+
 if(isfloat(data))
     % only check for NaN or Inf if not an integer datatype
-    if(nargin < 3 || ~skipFiniteCheck)
+    if(~skipFiniteCheck)
         % Doing this consumes more time than the rest of the function
         data = data(isfinite(data));
     end
@@ -68,31 +76,29 @@ elseif(islogical(data))
     dataTypeMin = 0;
 end
 
-if(nargin > 1)
-    if(isscalar(index))
-        if(index)
-            [udata, ia, ic] = unique(data);
-            if(nargin > 2)
-                sdata = data(ia);
-            end
-            data = ic;
-        end
-    elseif(length(index) == length(data))
-        % if you have the third output of unique, then just pass that as data
-        % index is ic
-        if(nargout > 1)
-            udata = data(index);
-        end
-        data = index;
-    else
-        % index is udata
-        assert(strcmp(class(index),dataType));
-        udata = index;
-        map = sparse(max(udata),1);
-        map(udata) = 1:length(udata);
-        data = map(data);
-        data = full(data);
+if(isscalar(index))
+    if(index)
+        [udata, ia, ic] = unique(data);
+         if(nargout > 2)
+            sdata = data(ia);
+         end
+        data = ic;
     end
+elseif(length(index) == length(data))
+    % if you have the third output of unique, then just pass that as data
+    % index is ic
+    if(nargout > 1)
+        udata = data(index);
+     end
+     data = index;
+else
+    % index is udata
+    assert(strcmp(class(index),dataType));
+    udata = index;
+    map = sparse(max(udata),1);
+    map(udata) = 1:length(udata);
+    data = map(data);
+    data = full(data);
 end
 
 
@@ -138,13 +144,13 @@ catch err
     elseif(strcmp(err.identifier,'MATLAB:accumarray:pmaxsize') || ...
            strcmp(err.identifier,'MATLAB:nomem'))
         % maxValue - minValue is too big
-        if(nargin < 2 || ~index)
+        if(isscalar(index) && ~index)
             % attempt to index
             warning(['getMultiplicityInt: Range of values in data is large. ' ...
                      'Set second parameter to true or use getMultiplicity ' ...
                      'for faster execution.'])
             out = cell(1,3);
-            [out{1:max(nargout,1)}] =  getMultiplicityInt(data + minValue - 1,true);
+            [out{1:max(nargout,1)}] =  getMultiplicityInt(data + minValue - 1,true,skipFiniteCheck);
             [rep,udata,sdata] = out{:};
             return;
         else
