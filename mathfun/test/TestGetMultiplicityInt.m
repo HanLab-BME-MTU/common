@@ -27,5 +27,12 @@ classdef TestGetMultiplicityInt < TestGetMultiplicity
             [rep, udata, sdata] = self.fcn(M);
             self.checkOutput(rep,uint16(udata),uint16(sdata));
         end
+        function testUint16MatrixInput(self)
+            [rep, udata, sdata] = self.fcn(uint16(reshape(self.M,1e3,1e3)));
+            assertEqual( class(udata) , 'uint16');
+            assertEqual( class(sdata) , 'uint16');
+            self.checkOutput(rep,uint16(udata),uint16(sdata));
+        end
+
     end
 end

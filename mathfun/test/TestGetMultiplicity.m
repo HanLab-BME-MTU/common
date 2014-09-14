@@ -52,6 +52,20 @@ classdef TestGetMultiplicity < TestCase
             assertEqual( class(sdata) , 'uint16');
             self.checkOutput(rep,double(udata),double(sdata));
         end
+        function testUint16ExtremesInput(self)
+            % type uint16
+            M = [0 1 intmax('uint16')];
+            [rep, udata, sdata] = self.fcn(M);
+            assertEqual( rep, [ 1 1 1]);
+            assertEqual( udata, M);
+            assertEqual( sdata, M);
+        end
+        function testUint16MatrixInput(self)
+            [rep, udata, sdata] = self.fcn(uint16(reshape(self.M,1e3,1e3)));
+            assertEqual( class(udata) , 'uint16');
+            assertEqual( class(sdata) , 'uint16');
+            self.checkOutput(rep,double(udata),double(sdata));
+        end
         function tearDown(self)
             self.M = [];
         end
