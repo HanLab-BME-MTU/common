@@ -11,11 +11,26 @@
 % Note: NaN/Inf elements in input data are ignored
 
 % Francois Aguet, 03/02/2012 (modified on 10/29/2012)
+% Mark Kittisopikul, calculate udata only when requested, 09/11/2014
 
 function [rep, udata, sdata] = getMultiplicity(data)
 
-% sort, store as row vector
-sdata = reshape(sort(data(isfinite(data))), 1, []);
+if(~isinteger(data))
+    data = data(isfinite(data));
+end
+% sort
+sdata = sort(data(:));
+% store as row vector
+sdata = sdata(:)';
+
+% find where the numbers change in the sorted array
+isDiff = [diff(sdata)~=0 1];
+idx = find(isDiff);
+
+if(nargout > 1)
+    udata = sdata(idx);
+end
+
 % count occurrences
-rep = diff([0 find([diff(sdata)~=0 1])]);
-udata = unique(sdata);
+rep = diff([0 idx]);
+
