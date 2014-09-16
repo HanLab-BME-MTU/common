@@ -159,6 +159,7 @@ imageFileNames = movieData.getImageFileNames(p.ChannelIndex);
 nImages = movieData.nFrames_;
 nZ = movieData.zSize_;
 nImTot = nImages * nChanThresh;
+fString = ['%0' num2str(floor(log10(nImages))+1) '.f'];%For zero-padding output files
 
 %Get mask and image directories
 maskDirs  = thresProc.outFilePaths_(p.ChannelIndex);
@@ -265,7 +266,7 @@ for iChan = 1:nChanThresh
         end        
         
         %write the mask to file
-        stackWrite(imageMask,[maskDirs{iChan} filesep pString imageFileNames{iChan}{iImage}],'ccitt')        
+        stackWrite(imageMask,[maskDirs{iChan} filesep pString num2str(iImage,fString) '.tif'],'ccitt')        
         
         if ishandle(wtBar) && mod(iImage,5)
             %Update the waitbar occasionally to minimize slowdown
