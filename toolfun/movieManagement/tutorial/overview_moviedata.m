@@ -15,9 +15,10 @@ fprintf(1, 'Channels path: %s\n', MD.getChannel(1).channelPath_);
 
 % Retrieve movie dimensions
 disp('Dimensions');
+fprintf(1, '  Image size: %gX%g\n', MD.imSize_);
 fprintf(1, '  Number of channels: %g\n', numel(MD.channels_));
 fprintf(1, '  Number of timepoints: %g\n', MD.nFrames_);
-fprintf(1, '  Image size: %gX%g\n', MD.imSize_);
+fprintf(1, '  Number of z-slices: %g\n', MD.zSize_);
 
 % Retrieve raw metadata
 disp('Metadata');
@@ -34,11 +35,24 @@ for i = 1 : numel(MD.channels_),
 end
 
 % Retrieve the raw data
-disp('Pixel data');
-for i = 1 : numel(MD.channels_)
-    I = MD.getChannel(1).loadImage(1); % first timepoint of first channel
-    fprintf(1, '  Plane 1 of channel %g of type %s and dimensions %gx%g\n',...
-        i, class(I), size(I));
+disp('Planes');
+for c = 1 : numel(MD.channels_)
+    for t = 1 : MD.nFrames_
+        for z = 1 : MD.zSize_
+            I = MD.getChannel(c).loadImage(t, z);
+            fprintf(1, '  Channel %g Timepoint %g Z-slice %g\n',...
+                c, t, z);
+        end
+    end
+end
+
+disp('Stacks');
+for c = 1 : numel(MD.channels_)
+    for t = 1 : MD.nFrames_
+        fprintf(1, '  Channel %g Timepoint %g\n',...
+            c, t);
+        I = MD.getChannel(c).loadStack(t);
+    end
 end
 
 %% MovieData metadata
