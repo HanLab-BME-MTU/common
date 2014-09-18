@@ -1,9 +1,25 @@
 %% Create a MovieData object
 
+%% Data setup
+% Creating a fake file in a temporary directory for testing purposes
+
+% Create temporary directory
+java_tmpdir = char(java.lang.System.getProperty('java.io.tmpdir'));
+uuid = char(java.util.UUID.randomUUID().toString());
+tmpdir = fullfile(java_tmpdir, uuid);
+mkdir(tmpdir);
+
+% Create .fake file readable by Bio-Formats
+filePath = fullfile(tmpdir, 'test&sizeC=3&sizeZ=4&sizeT=10.fake');
+fid = fopen(filePath, 'w+');
+fclose(fid);
+
 %% MovieData initialization
-% Initialize an MD from A the MAT file
-dvPath = '~/Desktop/2014Mar20/110609_RhoWT_glycofect_001.dv';
-MD = MovieData(dvPath);
+
+% Using this constructor, filePath refers the full path to any file
+% readable by Bio-Formas
+% See http://www.openmicroscopy.org/site/support/bio-formats5/supported-formats.html
+MD = MovieData(filePath);
 fprintf(1, 'Object saved under: %s\n', MD.getFullPath());
 fprintf(1, 'Output directory for analysis: %s\n', MD.outputDirectory_);
 
