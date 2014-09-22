@@ -49,7 +49,8 @@ try
     % autoload java path and configure log4j
     bfInitLogging();
     % Retrieve movie reader and metadata
-    r = bfGetReader(dataPath);
+    r = loci.formats.Memoizer(bfGetReader());
+    r.setId(dataPath);
     r.setSeries(0);
 catch bfException
     ME = MException('lccb:import:error','Import error');
