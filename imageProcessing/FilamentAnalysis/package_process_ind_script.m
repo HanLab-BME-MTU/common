@@ -154,15 +154,21 @@ end
 
 % Get the sub sample rate on the VIF channel
 if(indexSteerabeleProcess>0)
-    Sub_Sample_Num_st = MD.processes_{indexSteerabeleProcess}.funParams_.Sub_Sample_Num;
-    Sub_Sample_Num_filament = MD.processes_{indexFilamentSegmentationProcess}.funParams_.Sub_Sample_Num;
-    
-    % In case they are not set to the same, take the largest common divider, if not 1
-    Sub_Sample_Num = gcd(Sub_Sample_Num_st,Sub_Sample_Num_filament);
-else
-    Sub_Sample_Num = 1;
-    Sub_Sample_Num_filament = 1;
+    Sub_Sample_Num_st = MD.processes_{indexSteerabeleProcess}.funParams_.Sub_Sample_Num;    
+else    
+    Sub_Sample_Num_st=1;    
 end
+
+if(indexFilamentSegmentationProcess>0)
+    Sub_Sample_Num_filament = MD.processes_{indexFilamentSegmentationProcess}.funParams_.Sub_Sample_Num;
+else
+    Sub_Sample_Num_filament=1;
+end
+
+
+% In case they are not set to the same, take the largest common divider, if not 1
+Sub_Sample_Num = gcd(Sub_Sample_Num_st,Sub_Sample_Num_filament);
+
 
 % Get frame number from the title of the image, this not neccesarily
 % the same as iFrame due to some shorting problem of the channel

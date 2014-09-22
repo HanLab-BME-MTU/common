@@ -143,6 +143,72 @@ classdef SteerableFilteringProcess < ImageProcessingProcess
             
         end
         
+        
+        
+         function out_data = loadChannelOutput(obj,iChan,iFrame,varargin)
+            % Input check
+            ip =inputParser;
+            ip.addRequired('iChan',@obj.checkChanNum);
+            ip.addRequired('iFrame',@obj.checkFrameNum);
+            
+            outputList = {'MAX_st_res','nms','orienation_map','scaleMap'};
+            ip.addParamValue('output',{},@(x) all(ismember(x,outputList)));
+            
+            ip.parse(iChan,iFrame,varargin{:})
+            
+            % Data loading
+            Channel_FilesNames = obj.getInImageFileNames(iChan);
+            filename_short_strs = uncommon_str_takeout(Channel_FilesNames{1});
+            
+            % this line in commandation for shortest version of filename
+            filename_shortshort_strs = all_uncommon_str_takeout(Channel_FilesNames{1});
+            
+            Sub_Sample_Num = obj.funParams_.Sub_Sample_Num;
+             Frames_to_Seg = 1:Sub_Sample_Num:obj.owner_.nFrames_;
+             
+             Frames_results_correspondence = im2col(repmat(Frames_to_Seg, [Sub_Sample_Num,1]),[1 1]);
+             Frames_results_correspondence = Frames_results_correspondence(1:obj.owner_.nFrames_);
+             
+       
+             % these loads are for old version of the naming system
+             
+             try
+                out_data_all = load([obj.outFilePaths_{1,iChan},'/steerable_',filename_short_strs{iFrame},'.mat'], ...
+                    'orienation_map', 'MAX_st_res','nms','scaleMap');
+            catch
+                try
+                    out_data_all = load([obj.outFilePaths_{1,iChan},'/steerable_',filename_shortshort_strs{iFrame},'.mat'], ...
+                                            'orienation_map', 'MAX_st_res','nms','scaleMap');
+                catch
+                    % when only on channel, one image, it will be last
+                    % character of the image, so 'f'
+                    out_data_all = load([obj.outFilePaths_{1,iChan},'/steerable_','f','.mat'], ...
+                                   'orienation_map', 'MAX_st_res','nms','scaleMap');
+                end
+            end
+            
+            
+            % if there is no output parameter
+            if( isempty(ip.Results.output))
+                out_data = out_data_all.current_seg;
+            else
+                % or according to user's defined output parameter
+                switch ip.Results.output
+                    case 'orienation_map'
+                        out_data = out_data_all.orienation_map;
+                    case 'MAX_st_res'
+                        out_data = out_data_all.MAX_st_res;
+                    case 'nms'
+                        out_data = out_data_all.nms;
+                    case 'scaleMap'
+                        out_data = out_data_all.scaleMap;
+                    otherwise
+                        out_data = out_data_all.MAX_st_res;
+                end
+            end
+        end
+        
+        
         function h = draw(obj,iChan,varargin)
             
             outputList = obj.getDrawableOutput();

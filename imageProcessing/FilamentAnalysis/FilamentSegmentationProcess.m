@@ -381,6 +381,12 @@ classdef FilamentSegmentationProcess < ImageProcessingProcess
             % iteration number
             funParams.IternationNumber=2;            
             
+            
+             % Canny thresholds in percentage
+            funParams.CannyHigherThreshold=80;            
+            funParams.CannyLowerThreshold=80;            
+            
+            
             % for code running preference
             % No jumping out figures disrupt other thing; change to 0 if want to see the figures
             funParams.nofiguredisruption = 1;

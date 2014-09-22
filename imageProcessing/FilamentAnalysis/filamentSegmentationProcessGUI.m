@@ -4,7 +4,7 @@ function varargout = filamentSegmentationProcessGUI(varargin)
 %      singleton*.
 %
 %      H = filamentSegmentationProcessGUI returns the handle to a new filamentSegmentationProcessGUI or the handle to
-%      the existing singleton*.
+%      the existing singleton*. 
 %
 %      filamentSegmentationProcessGUI('CALLBACK',hObject,eventData,handles,...) calls the local
 %      function named CALLBACK in filamentSegmentationProcessGUI.M with the given input arguments.
@@ -22,7 +22,7 @@ function varargout = filamentSegmentationProcessGUI(varargin)
 
 % Edit the above text to modify the response to help filamentSegmentationProcessGUI
 
-% Last Modified by GUIDE v2.5 07-Jul-2014 12:42:25
+% Last Modified by GUIDE v2.5 10-Aug-2014 21:29:33
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -106,6 +106,10 @@ if(length(funParams.StPace_Size)==1)
     funParams.Whole_movie_ind = funParams.Whole_movie_ind*ones_array;
     
     Combine_Way = funParams.Combine_Way;
+    % if in a cell, unwrap it out as the string
+    while(iscell(Combine_Way))
+        Combine_Way = Combine_Way{1,1};
+    end    
     
     funParams.Combine_Way=cell(1,1);
     
@@ -119,6 +123,8 @@ if(length(funParams.StPace_Size)==1)
     funParams.IternationNumber = funParams.IternationNumber*ones_array;
     funParams.CoefAlpha = funParams.CoefAlpha*ones_array;
     funParams.training_sample_number = funParams.training_sample_number*ones_array;
+    funParams.CannyHigherThreshold = funParams.CannyHigherThreshold*ones_array;
+    funParams.CannyLowerThreshold = funParams.CannyLowerThreshold*ones_array;
 end
     
 % with the previous lines of expansion of single value to an array of all
@@ -134,34 +140,48 @@ set(handles.edit_int_lowerbound_localthresholding,'String',funParams.int_lowerbo
 set(handles.popupmenu_cell_mask, 'Value',funParams.Cell_Mask_ind(current_ch_ind));
 set(handles.popupmenu_whole_movie,'Value',funParams.Whole_movie_ind(current_ch_ind));
 
-Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only','geo_based_training','geo_based_GM','Canny_Method'};
-for Combine_Way_ind = 1 : 8
+
+Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only','geo_based_training','geo_based_GM','canny_method', 'reserved_for_test'};
+for Combine_Way_ind = 1 : 9
     if(strcmp(funParams.Combine_Way{current_ch_ind}, Combine_Way_tag{Combine_Way_ind}))
         set(handles.popupmenu_segmentationbase,'Value',Combine_Way_ind);
         break;
     end
 end
 
+
 % visible or not, show the parameters for the geo based algorithm
 % when visible, set the numbers
 set(handles.popupmenu_classifier_type,'Value',funParams.Classifier_Type_ind(current_ch_ind));
-current_ch_ind
-funParams.LengthThreshold
+% current_ch_ind
+% funParams.LengthThreshold
 set(handles.edit_lengththreshold,'String',funParams.LengthThreshold(current_ch_ind));
 set(handles.edit_curvaturethreshold,'String',funParams.CurvatureThreshold(current_ch_ind));
 set(handles.edit_IternationNumber,'String',funParams.IternationNumber(current_ch_ind));
 set(handles.edit_linear_plane_offset_alpha,'String',funParams.CoefAlpha(current_ch_ind));
 set(handles.edit_train_number,'String',funParams.training_sample_number(current_ch_ind));
 
+% show the canny parameters regardless of visibility
+set(handles.editCannyHigherThreshold,'String',funParams.CannyHigherThreshold(current_ch_ind));
+set(handles.editCannyLowerThreshold,'String',funParams.CannyLowerThreshold(current_ch_ind));
+
+
 % first set everything as invisible
 set(handles.uipanel_threshold_panel,'Visible','off');
 set(handles.uipanel_Geo_panel,'Visible','off');
+set(handles.uipanel_canny_panel,'Visible','off');
 
-if (strcmp(funParams.Combine_Way{current_ch_ind},'geo_based_training') || strcmp(funParams.Combine_Way{current_ch_ind},'geo_based_GM'))
+
+
+if (strcmp(funParams.Combine_Way{current_ch_ind},'geo_based_training') ...
+        || strcmp(funParams.Combine_Way{current_ch_ind},'geo_based_GM') ...
+        || strcmp(funParams.Combine_Way{current_ch_ind},'reserved_for_test'))
     % with Geo based approaches, use the geo panel and make the
     % thresholding panel invisible
     set(handles.uipanel_threshold_panel,'Visible','off');
     set(handles.uipanel_Geo_panel,'Visible','on');
+    set(handles.uipanel_canny_panel,'Visible','off');
+
     
     if (strcmp(funParams.Combine_Way{current_ch_ind},'geo_based_training'))
         set(handles.edit_IternationNumber,'Enable','off');
@@ -169,29 +189,40 @@ if (strcmp(funParams.Combine_Way{current_ch_ind},'geo_based_training') || strcmp
         set(handles.edit_IternationNumber,'Enable','on');
     end
 else
-    % with thresholding based approaches, use the thresholding panel and make the
-    % Geo panel invisible
-    set(handles.uipanel_threshold_panel,'Visible','on');
-    set(handles.uipanel_Geo_panel,'Visible','off');
-    
-    %first enable both sets as default, in the following, details will
-    %be set.
-    set(handles.edit_StPaceSize,'Enable','on');
-    set(handles.edit_StPatchSize,'Enable','on');
-    set(handles.edit_st_lowerbound_localthresholding,'Enable','on');
-    set(handles.edit_IntPaceSize,'Enable','on');
-    set(handles.edit_IntPatchSize,'Enable','on');
-    set(handles.edit_int_lowerbound_localthresholding,'Enable','on');
-    
+    if (strcmp(funParams.Combine_Way{current_ch_ind},'canny_method') )
+        set(handles.uipanel_threshold_panel,'Visible','off');
+        set(handles.uipanel_Geo_panel,'Visible','off');
+        set(handles.uipanel_canny_panel,'Visible','on');
+
+    else
+        
+        % with thresholding based approaches, use the thresholding panel and make the
+        % Geo panel invisible
+        set(handles.uipanel_threshold_panel,'Visible','on');
+        set(handles.uipanel_Geo_panel,'Visible','off');
+        set(handles.uipanel_canny_panel,'Visible','off');
+        
+        %first enable both sets as default, in the following, details will
+        %be set.
+        set(handles.edit_StPaceSize,'Enable','on');
+        set(handles.edit_StPatchSize,'Enable','on');
+        set(handles.edit_st_lowerbound_localthresholding,'Enable','on');
+        set(handles.edit_IntPaceSize,'Enable','on');
+        set(handles.edit_IntPatchSize,'Enable','on');
+        set(handles.edit_int_lowerbound_localthresholding,'Enable','on');
+    end
 end
 
-if (strcmp(funParams.Combine_Way{current_ch_ind},'st_only')||strcmp(funParams.Combine_Way{current_ch_ind},'st_nms_two')||strcmp(funParams.Combine_Way{current_ch_ind},'st_nms_only'))
+if (strcmp(funParams.Combine_Way{current_ch_ind},'st_only')...
+        ||strcmp(funParams.Combine_Way{current_ch_ind},'st_nms_two')...
+        ||strcmp(funParams.Combine_Way{current_ch_ind},'st_nms_only'))
     
     % with st based threhold based approaches, use the threhold panel and make the
     % Geo panel invisible
     set(handles.uipanel_threshold_panel,'Visible','on');
     set(handles.uipanel_Geo_panel,'Visible','off');
-    
+    set(handles.uipanel_canny_panel,'Visible','off');
+       
     % make the st based parameters enabled, but the intensity based
     % parameters disabled.
     set(handles.edit_StPaceSize,'Enable','on');
@@ -208,6 +239,8 @@ if (strcmp(funParams.Combine_Way{current_ch_ind},'int_only'))
     
     set(handles.uipanel_threshold_panel,'Visible','on');
     set(handles.uipanel_Geo_panel,'Visible','off');
+    set(handles.uipanel_canny_panel,'Visible','off');
+       
     
     % make the intensity based parameters enabled, but the st based
     % parameters disabled.
@@ -217,12 +250,6 @@ if (strcmp(funParams.Combine_Way{current_ch_ind},'int_only'))
     set(handles.edit_IntPaceSize,'Enable','on');
     set(handles.edit_IntPatchSize,'Enable','on');
     set(handles.edit_int_lowerbound_localthresholding,'Enable','on');
-end
-
-if (strcmp(funParams.Combine_Way{current_ch_ind},'Canny_Method'))
-% with canny, no parameter to set for now    
-    set(handles.uipanel_threshold_panel,'Visible','off');
-    set(handles.uipanel_Geo_panel,'Visible','off');
 end
 
 % Update user data and GUI data
@@ -274,10 +301,16 @@ for this_channel_index = currentChannelIndex(:)'
         end
     end
     
-    Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only','geo_based_training','geo_based_GM','Canny_Method'};
+    % all possible way of combining
+    Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two', ...
+        'st_nms_only','geo_based_training','geo_based_GM','canny_method',...
+        'reserved_for_test'};
+    
     Combine_Way_ind = get(handles.popupmenu_segmentationbase, 'Value');
     funParams.Combine_Way{this_channel_index}=Combine_Way_tag{Combine_Way_ind};
     
+    
+    % the patch sizes
     StPace_Size = str2double(get(handles.edit_StPaceSize, 'String'));
     if isnan(StPace_Size) || StPace_Size < 0
         errordlg(['Please provide a valid input for '''...
@@ -380,6 +413,27 @@ for this_channel_index = currentChannelIndex(:)'
         end
         funParams.IternationNumber(this_channel_index)=IternationNumber;
     end
+    
+    
+    if(strcmp(get(handles.uipanel_canny_panel,'Visible'),'on'))
+                       
+        CannyHigherThreshold = str2double(get(handles.editCannyHigherThreshold, 'String'));
+        if isnan(CannyHigherThreshold) || CannyHigherThreshold < 0  || CannyHigherThreshold >100
+            errordlg('Please provide a valid input for Canny Higher Threshold',...
+                'Setting Error','modal');
+            return;
+        end
+        funParams.CannyHigherThreshold(this_channel_index)=CannyHigherThreshold;
+        
+        CannyLowerThreshold = str2double(get(handles.editCannyLowerThreshold, 'String'));
+        if isnan(CannyLowerThreshold) || CannyLowerThreshold < 0  || CannyLowerThreshold >100
+            errordlg('Please provide a valid input for Canny Higher Threshold',...
+                'Setting Error','modal');
+            return;
+        end
+        funParams.CannyLowerThreshold(this_channel_index)=CannyLowerThreshold;
+    end
+    
 end
 
 Rerun_WholeMovie = get(handles.checkbox_rerunwholemovie,'value');
@@ -604,7 +658,8 @@ function popupmenu_segmentationbase_Callback(hObject, eventdata, handles)
 % The following code is for set the parameter set editing boxes, that corresponds to combine way 
 % not choosen as disabled from editing
 
-Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only','geo_based_training','geo_based_GM','Canny_Method'};
+Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only',...
+    'geo_based_training','geo_based_GM','canny_method','reserved_for_test'};
 
 Combine_Way_ind = get(hObject, 'Value');
 Combine_Way=Combine_Way_tag{Combine_Way_ind};
@@ -652,10 +707,12 @@ else
     end
 end
 
-if (strcmp(Combine_Way,'geo_based_training') || strcmp(Combine_Way,'geo_based_GM') )
+if (strcmp(Combine_Way,'geo_based_training') || strcmp(Combine_Way,'geo_based_GM')...
+        || strcmp(Combine_Way,'reserved_for_test') )
     
     set(handles.uipanel_threshold_panel,'Visible','off');
     set(handles.uipanel_Geo_panel,'Visible','on');
+   set(handles.uipanel_canny_panel,'Visible','off');
     
     if (strcmp(Combine_Way,'geo_based_training'))
         set(handles.edit_IternationNumber,'Enable','off');
@@ -670,10 +727,12 @@ if (strcmp(Combine_Way,'geo_based_training') || strcmp(Combine_Way,'geo_based_GM
     
 end
 
-if (strcmp(Combine_Way,'Canny_Method'))
+if (strcmp(Combine_Way,'canny_method'))
 % with canny, no parameter to set for now    
     set(handles.uipanel_threshold_panel,'Visible','off');
     set(handles.uipanel_Geo_panel,'Visible','off');
+     set(handles.uipanel_canny_panel,'Visible','on');
+  
 end
 
 % --- Executes during object creation, after setting all properties.
@@ -689,11 +748,12 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 set(hObject,'String',{'Steerable Filter Results','Intensity','Combine Both St and Int',...
-    'St NMS two','St nms only', 'Geo based with training','Geo based with GM','Canny Method'});
+    'St NMS two','St nms only', 'Geo based with training','Geo based with GM','Canny Method',...
+    'Reserved for Tests'});
 
-Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only','geo_based_training','geo_based_GM','Canny_Method'};
-set(hObject,'Value',1);
-% for Combine_Way_ind = 1 : 8
+Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only','geo_based_training','geo_based_GM','canny_method','reserved_for_test'};
+% set(hObject,'Value',7);
+% for Combine_Way_ind = 1 : 9
 %     if(strcmp(funParams.Combine_Way, Combine_Way_tag{Combine_Way_ind}))
 %         set(hObject,'Value',Combine_Way_ind);
 %         break;
@@ -1196,7 +1256,7 @@ for this_channel_index = currentChannelIndex(:)
     
     funParams.channel_specific(this_channel_index)=1;
    
-    Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only','geo_based_training','geo_based_GM','Canny_Method'};
+    Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only','geo_based_training','geo_based_GM','canny_method','reserved_for_test'};
     Combine_Way_ind = get(handles.popupmenu_segmentationbase, 'Value');
     funParams.Combine_Way{this_channel_index}=Combine_Way_tag{Combine_Way_ind};
     
@@ -1301,6 +1361,27 @@ for this_channel_index = currentChannelIndex(:)
         end
         funParams.IternationNumber(this_channel_index)=IternationNumber;
     end
+    
+    
+    if(strcmp(get(handles.uipanel_canny_panel,'Visible'),'on'))
+                       
+        CannyHigherThreshold = str2double(get(handles.editCannyHigherThreshold, 'String'));
+        if isnan(CannyHigherThreshold) || CannyHigherThreshold < 0  || CannyHigherThreshold >100
+            errordlg('Please provide a valid input for Canny Higher Threshold',...
+                'Setting Error','modal');
+            return;
+        end
+        funParams.CannyHigherThreshold(this_channel_index)=CannyHigherThreshold;
+        
+        CannyLowerThreshold = str2double(get(handles.editCannyLowerThreshold, 'String'));
+        if isnan(CannyLowerThreshold) || CannyLowerThreshold < 0  || CannyLowerThreshold >100
+            errordlg('Please provide a valid input for Canny Higher Threshold',...
+                'Setting Error','modal');
+            return;
+        end
+        funParams.CannyLowerThreshold(this_channel_index)=CannyLowerThreshold;
+    end
+    
     msgbox(['Setting assigned to channel', num2str(this_channel_index)]);
 end
 
@@ -1354,7 +1435,7 @@ for this_channel_index = currentChannelIndex(:)'
     % even if this channel has been specifically signed setting, 
     % re-assign acorrding to the current one.
     funParams.channel_specific(this_channel_index)=0;
-    Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only','geo_based_training','geo_based_GM','Canny_Method'};
+    Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only','geo_based_training','geo_based_GM','canny_method','reserved_for_test'};
     Combine_Way_ind = get(handles.popupmenu_segmentationbase, 'Value');
     funParams.Combine_Way{this_channel_index} = Combine_Way_tag{Combine_Way_ind};
     
@@ -1457,6 +1538,26 @@ for this_channel_index = currentChannelIndex(:)'
             return;
         end
         funParams.IternationNumber(this_channel_index)=IternationNumber;
+   end
+    
+   
+   if(strcmp(get(handles.uipanel_canny_panel,'Visible'),'on'))
+                       
+        CannyHigherThreshold = str2double(get(handles.editCannyHigherThreshold, 'String'));
+        if isnan(CannyHigherThreshold) || CannyHigherThreshold < 0  || CannyHigherThreshold >100
+            errordlg('Please provide a valid input for Canny Higher Threshold',...
+                'Setting Error','modal');
+            return;
+        end
+        funParams.CannyHigherThreshold(this_channel_index)=CannyHigherThreshold;
+        
+        CannyLowerThreshold = str2double(get(handles.editCannyLowerThreshold, 'String'));
+        if isnan(CannyLowerThreshold) || CannyLowerThreshold < 0  || CannyLowerThreshold >100
+            errordlg('Please provide a valid input for Canny Higher Threshold',...
+                'Setting Error','modal');
+            return;
+        end
+        funParams.CannyLowerThreshold(this_channel_index)=CannyLowerThreshold;
     end
 end
 
@@ -1583,8 +1684,8 @@ set(handles.edit_int_lowerbound_localthresholding,'String',funParams.int_lowerbo
 set(handles.popupmenu_cell_mask, 'Value',funParams.Cell_Mask_ind(current_ch_ind));
 set(handles.popupmenu_whole_movie,'Value',funParams.Whole_movie_ind(current_ch_ind));
 
-Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only','geo_based_training','geo_based_GM','Canny_Method'};
-for Combine_Way_ind = 1 : 8
+Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only','geo_based_training','geo_based_GM','canny_method','reserved_for_test'};
+for Combine_Way_ind = 1 : 9
     if(strcmp(funParams.Combine_Way{current_ch_ind}, Combine_Way_tag{Combine_Way_ind}))
         set(handles.popupmenu_segmentationbase,'Value',Combine_Way_ind);
         break;
@@ -1604,23 +1705,35 @@ set(handles.edit_train_number,'String',funParams.training_sample_number(current_
 set(handles.uipanel_threshold_panel,'Visible','off');
 set(handles.uipanel_Geo_panel,'Visible','off');
 
-if (strcmp(funParams.Combine_Way{current_ch_ind},'geo_based_training') || strcmp(funParams.Combine_Way{current_ch_ind},'geo_based_GM'))
+if (strcmp(funParams.Combine_Way{current_ch_ind},'geo_based_training') ...
+        || strcmp(funParams.Combine_Way{current_ch_ind},'geo_based_GM') ...
+        || strcmp(funParams.Combine_Way{current_ch_ind},'reserved_for_test'))
     % with Geo based approaches, use the geo panel and make the
     % thresholding panel invisible
     set(handles.uipanel_threshold_panel,'Visible','off');
     set(handles.uipanel_Geo_panel,'Visible','on');
-    
+     set(handles.uipanel_canny_panel,'Visible','on');
+   
     if (strcmp(funParams.Combine_Way{current_ch_ind},'geo_based_training'))
         set(handles.edit_IternationNumber,'Enable','off');
     else
         set(handles.edit_IternationNumber,'Enable','on');
     end
 else
+    
+    if (strcmp(funParams.Combine_Way{current_ch_ind},'canny_method') )
+        set(handles.uipanel_threshold_panel,'Visible','off');
+        set(handles.uipanel_Geo_panel,'Visible','off');
+        set(handles.uipanel_canny_panel,'Visible','on');
+
+    else
+    
     % with thresholding based approaches, use the thresholding panel and make the
     % Geo panel invisible
     set(handles.uipanel_threshold_panel,'Visible','on');
     set(handles.uipanel_Geo_panel,'Visible','off');
-    
+     set(handles.uipanel_canny_panel,'Visible','off');
+
     %first enable both sets as default, in the following, details will
     %be set.
     set(handles.edit_StPaceSize,'Enable','on');
@@ -1629,7 +1742,7 @@ else
     set(handles.edit_IntPaceSize,'Enable','on');
     set(handles.edit_IntPatchSize,'Enable','on');
     set(handles.edit_int_lowerbound_localthresholding,'Enable','on');
-    
+    end
 end
 
 if (strcmp(funParams.Combine_Way{current_ch_ind},'st_only')||strcmp(funParams.Combine_Way{current_ch_ind},'st_nms_two')||strcmp(funParams.Combine_Way{current_ch_ind},'st_nms_only'))
@@ -1666,13 +1779,6 @@ if (strcmp(funParams.Combine_Way{current_ch_ind},'int_only'))
     set(handles.edit_int_lowerbound_localthresholding,'Enable','on');
 end
 
-if (strcmp(funParams.Combine_Way{current_ch_ind},'Canny_Method'))
-   
-    set(handles.uipanel_threshold_panel,'Visible','off');
-    set(handles.uipanel_Geo_panel,'Visible','off');
-    
-end
-
 
 % % since this is for display not input, no need for update
 %  processGUI_ApplyFcn_without_close_figure(hObject, eventdata, handles,funParams);
@@ -1685,3 +1791,208 @@ function checkbox_rerunwholemovie_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of checkbox_rerunwholemovie
+
+
+
+function editCannyLowerThreshold_Callback(hObject, eventdata, handles)
+% hObject    handle to editCannyLowerThreshold (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of editCannyLowerThreshold as text
+%        str2double(get(hObject,'String')) returns contents of editCannyLowerThreshold as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function editCannyLowerThreshold_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to editCannyLowerThreshold (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function editCannyHigherThreshold_Callback(hObject, eventdata, handles)
+% hObject    handle to editCannyHigherThreshold (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of editCannyHigherThreshold as text
+%        str2double(get(hObject,'String')) returns contents of editCannyHigherThreshold as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function editCannyHigherThreshold_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to editCannyHigherThreshold (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on selection change in popupmenu10.
+function popupmenu10_Callback(hObject, eventdata, handles)
+% hObject    handle to popupmenu10 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns popupmenu10 contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from popupmenu10
+
+
+% --- Executes during object creation, after setting all properties.
+function popupmenu10_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to popupmenu10 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function edit31_Callback(hObject, eventdata, handles)
+% hObject    handle to edit31 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit31 as text
+%        str2double(get(hObject,'String')) returns contents of edit31 as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit31_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit31 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function edit32_Callback(hObject, eventdata, handles)
+% hObject    handle to edit32 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit32 as text
+%        str2double(get(hObject,'String')) returns contents of edit32 as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit32_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit32 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function edit33_Callback(hObject, eventdata, handles)
+% hObject    handle to edit33 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit33 as text
+%        str2double(get(hObject,'String')) returns contents of edit33 as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit33_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit33 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function edit34_Callback(hObject, eventdata, handles)
+% hObject    handle to edit34 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit34 as text
+%        str2double(get(hObject,'String')) returns contents of edit34 as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit34_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit34 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on button press in pushbutton19.
+function pushbutton19_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton19 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+% --- Executes on button press in pushbutton20.
+function pushbutton20_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton20 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+% --- Executes on button press in pushbutton21.
+function pushbutton21_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton21 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+
+function edit35_Callback(hObject, eventdata, handles)
+% hObject    handle to edit35 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit35 as text
+%        str2double(get(hObject,'String')) returns contents of edit35 as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit35_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit35 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end

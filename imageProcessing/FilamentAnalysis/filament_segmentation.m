@@ -418,18 +418,15 @@ for iChannel = selected_channels
         % Correcting the nms ending semicircle due to the aritifact of
         % simulation perfect Gaussian ends
         
-        
-        median_nms = median(nms(:));
-        quarter_nms = median(nms(find(nms>median_nms)));
-        
-        nms(find(nms<quarter_nms))=0;
-        
-        binary_nms = nms>0;
-                
-        erode_nms = imerode(binary_nms, ones(2,2));
-        open_nms = imdilate(erode_nms, ones(2,2));
-        
-        eroded_nms = nms-nms.*open_nms;
+%         
+%         median_nms = median(nms(:));
+%         quarter_nms = median(nms(find(nms>median_nms)));
+       
+        open_nms = imopen(nms, ones(2,2));
+        eroded_nms = nms-open_nms;
+       
+        %use the opened image;
+        nms = eroded_nms;
         
         stophere=1;
         
@@ -503,34 +500,72 @@ for iChannel = selected_channels
                 SteerabelRes_Segment = current_seg;
                 Min_area = 6;
                 
-            case 'geo_based_GM'
+            case 'reserved_for_test'
                 
+                 % Liya: test for the running of the comparison
+%                 current_seg_canny_cell=cell(1,1);                
+%                display('Canny Test:');
+%                 tic
+% %                 for PercentOfPixelsNotEdges = 0.8: 0.1: 0.95
+% %                     for ThresholdRatio = 0.8 : 0.1: 0.95    
+%                 for iP = 1 : 5
+%                      for iT = 1 : 5
+%                         
+%                         PercentOfPixelsNotEdges = iP/20+0.70;
+%                         ThresholdRatio = iT/20+0.70;
+%                          
+%                         [lowThresh, highThresh, current_seg]...
+%                             = proximityBasedNmsSeg(MAX_st_res,...
+%                             orienation_map,funParams,...
+%                             PercentOfPixelsNotEdges,ThresholdRatio);
+%                         current_seg_canny_cell{iP,iT} = current_seg;
+%                         
+%                         
+%                     end
+%                 end
+%               toc  
+%                 
+%                 % Assume no training is done for the classifier, so use the
+%                 % linear plane classifier with the input parameters.
+%                 
+% %                 if(~isempty(funParams.F_classifier{iChannel}))
+% %                     load(funParams.F_classifier{iChannel});
+% %                 else
+%                   F_classifer_train_this_channel=[];  
+% %                 end
+%                 
+%                 display(['Geo based GM Frame',num2str(iFrame),':']);
+%                 tic
+%                 [level2, NMS_Segment,current_model ] = ...
+%                     geoBasedNmsSeg_withGM(nms,currentImg, F_classifer_train_this_channel,1,...
+%                     MaskCell,iFrame,FilamentSegmentationChannelOutputDir,funParams,iChannel);
+%                 toc
+%                 
+%                 current_seg = NMS_Segment;
+%                 Intensity_Segment = current_seg;
+%                 SteerabelRes_Segment = current_seg;
+%                 Min_area = 6;
+
+
+%% for screen no graph matching, no curvature/intensity control
+
+                  F_classifer_train_this_channel=[];  
+%                 end
                 
-                
-                
-                 % Liya: temp for the running of the comparison
-                current_seg_canny_cell=cell(1,1);                
-               display('Canny Test:');
+                display(['Only fisrt-first step: Geo based GM Frame',num2str(iFrame),':']);
                 tic
-%                 for PercentOfPixelsNotEdges = 0.8: 0.1: 0.95
-%                     for ThresholdRatio = 0.8 : 0.1: 0.95    
-                for iP = 1 : 5
-                     for iT = 1 : 5
-                        
-                        PercentOfPixelsNotEdges = iP/20+0.70;
-                        ThresholdRatio = iT/20+0.70;
-                         
-                        [lowThresh, highThresh, current_seg]...
-                            = proximityBasedNmsSeg(MAX_st_res,...
-                            orienation_map,funParams,...
-                            PercentOfPixelsNotEdges,ThresholdRatio);
-                        current_seg_canny_cell{iP,iT} = current_seg;
-                        
-                        
-                    end
-                end
-              toc  
+                [level2, NMS_Segment,current_model ] = ...
+                    geoBasedNmsSeg_withoutGM(nms,currentImg, F_classifer_train_this_channel,1,...
+                    MaskCell,iFrame,FilamentSegmentationChannelOutputDir,funParams,iChannel);
+                toc
                 
+                current_seg = NMS_Segment;
+                Intensity_Segment = current_seg;
+                SteerabelRes_Segment = current_seg;
+                Min_area = 6;
+
+            case 'geo_based_GM'
+                                           
                 % Assume no training is done for the classifier, so use the
                 % linear plane classifier with the input parameters.
                 
@@ -560,11 +595,39 @@ for iChannel = selected_channels
                 SteerabelRes_Segment = current_seg;
                   current_model=[];   
             
-            case 'Canny_Method'
+            case 'canny_method'
                 
+                
+                 % Liya: test for the running of the comparison
+                current_seg_canny_cell=cell(1,1);                
+               display('Canny Test:');
+                tic
+%                 for PercentOfPixelsNotEdges = 0.8: 0.1: 0.95
+%                     for ThresholdRatio = 0.8 : 0.1: 0.95    
+                for iP = 1 : 5
+                     for iT = 1 : 5
+                        
+                        PercentOfPixelsNotEdges = iP/20+0.70;
+                        ThresholdRatio = iT/20+0.70;
+                         
+                        [lowThresh, highThresh, current_seg]...
+                            = proximityBasedNmsSeg(MAX_st_res,...
+                            orienation_map,funParams,...
+                            PercentOfPixelsNotEdges,ThresholdRatio);
+                        current_seg_canny_cell{iP,iT} = current_seg;
+                        
+                        
+                    end
+                end
+              toc  
+                
+                % get the percentage threshold from funParam
+                HigherThresdhold = funParams.CannyHigherThreshold(iChannel)/100;
+                LowerThresdhold = funParams.CannyLowerThreshold(iChannel)/100;
+                                
                 tic
                 [lowThresh, highThresh, current_seg]...
-                    = proximityBasedNmsSeg(MAX_st_res,orienation_map,funParams,0.95,0.95);
+                    = proximityBasedNmsSeg(MAX_st_res,orienation_map,funParams,HigherThresdhold,LowerThresdhold);
                 toc
                 
                 level2 = highThresh;                
@@ -821,6 +884,13 @@ for iChannel = selected_channels
         tip_int(find(end_points_map==0)) = nan;
         tip_NMS(find(end_points_map==0)) = nan;
         
+        
+        
+        % see if canny test array exist
+        if(~exist('current_seg_canny_cell','var'))
+            current_seg_canny_cell=[];
+        end
+        
         %% Save segmentation results
         for sub_i = 1 : Sub_Sample_Num
             if iFrame + sub_i-1 <= nFrame
@@ -829,7 +899,8 @@ for iChannel = selected_channels
                     'currentImg','orienation_map_filtered','OrientationVoted','orienation_map','RGB_seg_orient_heat_map','RGB_seg_orient_heat_map_nms', ...
                     'MAX_st_res', 'current_seg','Intensity_Segment','SteerabelRes_Segment','NMS_Segment', ...
                     'current_model', 'RGB_seg_orient_heat_map','current_seg_orientation','tip_orientation',...
-                    'tip_int','tip_NMS');
+                    'tip_int','tip_NMS',...
+                    'current_seg_canny_cell');
                 
             end
         end

@@ -17,45 +17,52 @@ saveas(h22,['./GEO_frame_',num2str(iFrame),'_round0_trained_plane.tif']);
 saveas(h22,['./GEO_frame_',num2str(iFrame),'_round0_trained_plane.fig']);
 
  
-% h23 = figure(23);hold off;
-% imagesc(imageInt); colormap(gray); axis image; hold on;
-% axis off;
-% 
-% 
-% % get the mean intensity of the curves
-% for i_area = setdiff(setdiff(intersect(Good_ind',ind_long'),changed_ind_good_K),changed_ind_good_I)
-%     [all_y_i, all_x_i] = find(labelMask == i_area);
-%     % only for those good ones, check the curvature
-%     
-%     bw_i = zeros(size(bw_out));
-%     bw_i(sub2ind(size(bw_i), round(all_y_i),round(all_x_i)))=1;
-%     end_points_i = bwmorph(bw_i,'endpoints');
-%     [y_i, x_i]=find(end_points_i);
-%     
-%     if isempty(x_i)
-%         % if there is no end point, then it is a enclosed circle
-%         [line_i_x, line_i_y] = line_following_with_limit(labelMask == i_area, 1000, all_x_i(1),all_y_i(1));
-%     else
-%         [y_i, x_i]=find(end_points_i);
-%         [line_i_x, line_i_y] = line_following_with_limit(labelMask == i_area, 1000, x_i(1),y_i(1));
-%     end
-%     
-%     
-%     if(SaveFigures==1)
-%         h23 = figure(23);hold on;
-%         plot(line_i_x,line_i_y,'color',[100 100 255]/255);
-%     end
-%     
-%     
-%     
-% end
-% 
-% saveas(h23,[FilamentSegmentationChannelOutputDir,'/GEO/lightblue_all_', ...
-%     num2str(iFrame),'.fig']);
+h23 = figure(23);hold off;
+imagesc(imageInt_nohole); colormap(gray); axis image; hold on;
+axis off;
+h26 = figure(26);hold off;
+imagesc(imageInt_nohole); colormap(gray); axis image; hold on;
+axis off;
+
+
+% get the mean intensity of the curves
+for i_area = setdiff(setdiff(intersect(Good_ind',ind_long'),changed_ind_good_K),changed_ind_good_I)
+    [all_y_i, all_x_i] = find(labelMask == i_area);
+    % only for those good ones, check the curvature
+    
+    bw_i = zeros(size(bw_out));
+    bw_i(sub2ind(size(bw_i), round(all_y_i),round(all_x_i)))=1;
+    end_points_i = bwmorph(bw_i,'endpoints');
+    [y_i, x_i]=find(end_points_i);
+    
+    if isempty(x_i)
+        % if there is no end point, then it is a enclosed circle
+        [line_i_x, line_i_y] = line_following_with_limit(labelMask == i_area, 1000, all_x_i(1),all_y_i(1));
+    else
+        [y_i, x_i]=find(end_points_i);
+        [line_i_x, line_i_y] = line_following_with_limit(labelMask == i_area, 1000, x_i(1),y_i(1));
+    end
+    
+    
+    if(SaveFigures==1)
+        h23 = figure(23);hold on;
+        plot(line_i_x,line_i_y,'color',[100 100 255]/255);
+        
+          h26= figure(26);hold on;
+    plot(line_i_x,line_i_y,'color',[100 100 255]/255);
+
+    end
+    
+    
+    
+end
+
+saveas(h23,[FilamentSegmentationChannelOutputDir,'/GEO/lightblue_all_', ...
+    num2str(iFrame),'.fig']);
 
 
 h24 = figure(24);hold off;
-imagesc(imageInt);hold on; colormap(gray); axis image; hold on;
+imagesc(imageInt_nohole);hold on; colormap(gray); axis image; hold on;
 
 
 
@@ -78,6 +85,8 @@ for i_area = changed_ind_good_I'
     
     h24 = figure(24);hold on;
     plot(line_i_x,line_i_y,'c','LineWidth',1.1);
+    
+    
     
 end
 
@@ -127,11 +136,12 @@ for i_area = setdiff(setdiff(intersect(Bad_ind',ind_long'),changed_ind_good_K),c
     h24 = figure(24);hold on;
     plot(line_i_x,line_i_y,'r');
     
+        h26= figure(26);hold on;
+    plot(line_i_x,line_i_y,'r');
+
 end
 axis off;
 saveas(h24,[FilamentSegmentationChannelOutputDir,'/GEO/red_all_', ...
     num2str(iFrame),'.fig']);
-
-
-
-stophere=1;
+saveas(h26,[FilamentSegmentationChannelOutputDir,'/GEO/light_bluered_all_', ...
+    num2str(iFrame),'.fig']);

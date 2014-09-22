@@ -1,28 +1,31 @@
-function [output_model,current_matching_bw,new_model_ind,transformer] = ...
+function [output_model,current_matching_bw,new_model_ind,transformer,final_set_rescue, final_set_connection, connect_count,bw_rgb_three_color,bw_whitergb_three_color] = ...
     graph_matching_linking_once(current_model, bw_to_be_matched,  confidency_interval,currentImg,...
-                                Good_ind,ind_long, model_ind,feature_all,labelMask,master_flassier,iIteration,funParams)
+    Good_ind,ind_long, model_ind,feature_all,labelMask,master_flassier,...
+    iIteration,funParams,final_set_rescue, final_set_connection, connect_count,Original_set_Good_ind)
 % Graph matching one iteration
 
 
 new_model_ind=[];
 output_model=current_model;
-
+transformer=[];
+bw_rgb_three_color=[];
+bw_whitergb_three_color=[];
 
 %%
 % to show or not to show the figures; not affecting the saving part
- if(funParams.nofiguredisruption ==1 )
-     set_visible='off';
- else
-     set_visible='on';
- end
+if(funParams.nofiguredisruption ==1 )
+    set_visible='off';
+else
+    set_visible='on';
+end
 
- % save figures or not, show messages or not
- SaveFigures = funParams.savestepfigures;
- ShowDetailMessages = funParams.savestepfigures;
+% save figures or not, show messages or not
+SaveFigures = funParams.savestepfigures;
+ShowDetailMessages = funParams.savestepfigures;
 
- %%
+%%
 orig_current_model = current_model;
-count_linking=0; 
+count_linking=0;
 tomatch_ind = [];
 Matched_ind=[];
 UnMatched_ind=[];
@@ -55,8 +58,8 @@ if(~isempty(current_model))
     tomatch_ind = UnMatched_ind;
 else
     % if there is no current model, then this is the first matching, try
-    % match every good ones.    
-    tomatch_ind = Good_ind;    
+    % match every good ones.
+    tomatch_ind = Good_ind;
     
 end
 
@@ -86,7 +89,7 @@ ratio  = obShortaxis./obLongaxis;
 
 nms_seg_no_brancing  = zeros(size(labelMask));
 
-for i_ind = 1 : length(tomatch_ind)    
+for i_ind = 1 : length(tomatch_ind)
     nms_seg_no_brancing(labelMask==tomatch_ind(i_ind))=1;
 end
 
@@ -96,7 +99,7 @@ end
 % Input data
 end_points_all = bwmorph(nms_seg_no_brancing,'endpoints');
 ordered_end_points=[];
-   
+
 ordered_curve_xy = cell(2*(length(tomatch_ind)+length(current_model)),1);
 ordered_smooth_curve_xy = cell(2*(length(tomatch_ind)+length(current_model)),1);
 end_angles = nan(2*(length(tomatch_ind)+length(current_model)),1);
@@ -143,7 +146,7 @@ end
 if(~isempty(current_model))
     % for every matched curve to from previous matching
     for i_E = 1 : length(current_model)
-        % the index of curvelet in current_model as obtained in previous iterations        
+        % the index of curvelet in current_model as obtained in previous iterations
         model_ind_all(length(tomatch_ind)+i_E,1:length(model_ind(i_E,:)))  =  model_ind(i_E,:);
         
         y_i = current_model{i_E}(:,2);
@@ -152,7 +155,7 @@ if(~isempty(current_model))
         ordered_end_points = [ordered_end_points; end_points_this;];
         ordered_curve_xy{2*(length(tomatch_ind)+i_E)-1,1} = [x_i, y_i];
         ordered_curve_xy{2*(length(tomatch_ind)+i_E),1} = flipud([x_i, y_i]);
-         
+        
         line_i_x = (imfilter(x_i, line_smooth_H, 'replicate', 'same'));
         line_i_y = (imfilter(y_i, line_smooth_H, 'replicate', 'same'));
         
@@ -162,11 +165,11 @@ if(~isempty(current_model))
         length_line = length(line_i_x);
         
         end_angles(2*(length(tomatch_ind)+i_E)-1) = atan2(line_i_x(1)-line_i_x(min(3,length_line)),line_i_y(1)-line_i_y(min(3,length_line)));
-        end_angles(2*(length(tomatch_ind)+i_E)) = atan2(line_i_x(end)-line_i_x(max(1,length_line-2)),line_i_y(end)-line_i_y(max(1,length_line-2)));        
+        end_angles(2*(length(tomatch_ind)+i_E)) = atan2(line_i_x(end)-line_i_x(max(1,length_line-2)),line_i_y(end)-line_i_y(max(1,length_line-2)));
     end
 end
 
-%% 
+%%
 % temp fix problem of ind matrix big
 for ti = 1: size(model_ind_all,1)
     ind_line = model_ind_all(ti,:);
@@ -179,7 +182,7 @@ for ti = 1: size(model_ind_all,1)
     model_ind_all(ti,length(ind_line)+1:end) = nan;
     
 end
-    
+
 model_ind_all = model_ind_all(:,1:20);
 %%
 
@@ -191,7 +194,7 @@ if(ShowDetailMessages==1)
     display('finish build kdtree and angle calculation');
 end
 
-radii = 20;
+radii = 40;
 
 [idx, dist] = KDTreeBallQuery(ordered_end_points, ordered_end_points, radii);
 
@@ -203,7 +206,7 @@ E = [];
 W = [];
 angle_array=[];
 connection_xy_cell=cell(1,1);
-% 
+%
 
 % for now the parameters are set here, without adaptiveness
 % for the loop number,  include everything in the unmatched bw and the
@@ -228,7 +231,7 @@ for i_end = 1 : size(idx,1)
         for j_end =  setdiff(idx{i_end,1}',[1:2*round(i_end/2)])
             %         try
             num_loop = num_loop+1;
-%             display(['loop num: ',num2str(num_loop)]);
+            %             display(['loop num: ',num2str(num_loop)]);
             
             ax_j = ordered_curve_xy{j_end}(:,1);
             ay_j = ordered_curve_xy{j_end}(:,2);
@@ -269,7 +272,7 @@ for i_end = 1 : size(idx,1)
             dist_T = min( 3, min(length(ax_i),length(ax_j))/5);
             
             % this is to exclude the angles larger than certain value, for now, include everything
-            if abs(angle_ij) > pi/(2.5) && distance_ij >dist_T
+            if abs(angle_ij) > pi/(3) && distance_ij >dist_T
                 continue;
             end
             
@@ -281,7 +284,7 @@ for i_end = 1 : size(idx,1)
             if angle_ic < -pi
                 angle_ic = angle_ic + 2*pi;
             end
-            if abs(angle_ic) > pi/(2.5) && distance_ij >dist_T
+            if abs(angle_ic) > pi/(3) && distance_ij >dist_T
                 continue;
             end
             %
@@ -294,7 +297,7 @@ for i_end = 1 : size(idx,1)
             if angle_cj < -pi
                 angle_cj = angle_cj + 2*pi;
             end
-            if abs(angle_cj) > pi/(2.5) && distance_ij >dist_T
+            if abs(angle_cj) > pi/(3) && distance_ij >dist_T
                 continue;
             end
             %
@@ -345,35 +348,35 @@ for i_end = 1 : size(idx,1)
                 connection_xy_cell{size(E,1)} = [connect_x;connect_y];
             end
             
-%             h11=figure(11); hold off; plot(ax_i,ay_i,'.');
-%             axis equal
-%             hold on;
-%             plot(ax_j,ay_j,'r.');
-%             plot(ax_j(1),ay_j(1),'r*');
-%             plot(ax_i(1),ay_i(1),'*');
-%             
-%             plot(line_i_x,line_i_y,'-');
-%             plot(line_j_x,line_j_y,'r-');
-%             
-%             plot(extend_i_x,extend_i_y,':');
-%             plot(extend_j_x,extend_j_y,'r:');
-%             
-%             plot([ax_i(1) extend_j_x(ind_i_j(2))],[ay_i(1) extend_j_y(ind_i_j(2))],'m');
-%             plot([ax_j(1) extend_i_x(ind_j_i(2))],[ay_j(1) extend_i_y(ind_j_i(2))],'g');
-%             
-%             
-%             legend({['angle-ic ',num2str(angle_ic,'%.3f')], ['angle-cj ',num2str(angle_cj,'%.3f')], ...
-%                 ['angle-ij ',num2str(angle_ij,'%.3f')],...
-%                 ['pd i to j ',num2str(distance_i_p_j,'%.3f')],...
-%                 ['pd j to i ',num2str(distance_j_p_i,'%.3f')],...
-%                 ['angel i w ', num2str(angle_w_1,'%.3f')],...
-%                 ['angel j w ', num2str(angle_w_2,'%.3f')],...
-%                 ['dist w ', num2str(dis_w,'%.3f')]...
-%                 });
-%             
-%             saveas(h11, ['./endij/end_i_',num2str(i_end),'_end_j_',num2str(j_end),'.tif']);
+            %             h11=figure(11); hold off; plot(ax_i,ay_i,'.');
+            %             axis equal
+            %             hold on;
+            %             plot(ax_j,ay_j,'r.');
+            %             plot(ax_j(1),ay_j(1),'r*');
+            %             plot(ax_i(1),ay_i(1),'*');
+            %
+            %             plot(line_i_x,line_i_y,'-');
+            %             plot(line_j_x,line_j_y,'r-');
+            %
+            %             plot(extend_i_x,extend_i_y,':');
+            %             plot(extend_j_x,extend_j_y,'r:');
+            %
+            %             plot([ax_i(1) extend_j_x(ind_i_j(2))],[ay_i(1) extend_j_y(ind_i_j(2))],'m');
+            %             plot([ax_j(1) extend_i_x(ind_j_i(2))],[ay_j(1) extend_i_y(ind_j_i(2))],'g');
+            %
+            %
+            %             legend({['angle-ic ',num2str(angle_ic,'%.3f')], ['angle-cj ',num2str(angle_cj,'%.3f')], ...
+            %                 ['angle-ij ',num2str(angle_ij,'%.3f')],...
+            %                 ['pd i to j ',num2str(distance_i_p_j,'%.3f')],...
+            %                 ['pd j to i ',num2str(distance_j_p_i,'%.3f')],...
+            %                 ['angel i w ', num2str(angle_w_1,'%.3f')],...
+            %                 ['angel j w ', num2str(angle_w_2,'%.3f')],...
+            %                 ['dist w ', num2str(dis_w,'%.3f')]...
+            %                 });
+            %
+            %             saveas(h11, ['./endij/end_i_',num2str(i_end),'_end_j_',num2str(j_end),'.tif']);
             
-%                       pause;
+            %                       pause;
             
             
         end
@@ -420,6 +423,12 @@ for i_E = 1 : length(W)
         ay_i = ordered_curve_xy{E(i_E,1)}(:,2);
         ax_j = ordered_curve_xy{E(i_E,2)}(:,1);
         ay_j = ordered_curve_xy{E(i_E,2)}(:,2);
+        
+        
+        connect_xy = connection_xy_cell{i_E};
+        end_1_ind = E(i_E,1);
+        end_2_ind = E(i_E,2);
+        
         
         plot([ x_i x_j], [y_i y_j],'y-','LineWidth',3);
         hold on;
@@ -468,6 +477,29 @@ while(sum(M)>0)
             i_area = round(E(i_E,1)/2);
             j_area = round(E(i_E,2)/2);
             
+            % put into final rescue set and the connections
+            
+            try
+                % if failed, mean the i_area is not in tomatch_ind, so it is already matched
+                i_curve_index = tomatch_ind(i_area);
+            catch
+                i_curve_index = nan;
+            end
+            
+            try
+                % if failed, mean the i_area is not in tomatch_ind, so it is already matched
+                j_curve_index = tomatch_ind(j_area);
+            catch
+                j_curve_index = nan;
+            end
+            
+            final_set_rescue = [final_set_rescue; i_curve_index j_curve_index];
+            
+            
+            connect_count = connect_count+1;
+            final_set_connection{connect_count} = connection_xy_cell{i_E};
+            
+            
             if(mod(i_end,2)==1)
                 i_other_end = i_end+1;
             else
@@ -484,7 +516,8 @@ while(sum(M)>0)
             %%
             % see if the ind has been matched already matched to something else
             % find the index first, assumming it is going to be added
-            if (isnan(ind_matched_model(E(i_E,1))) && isnan(ind_matched_model(E(i_E,2))) )
+            if (isnan(ind_matched_model(E(i_E,1)))...
+                    && isnan(ind_matched_model(E(i_E,2))) )
                 iM=iM+1;
                 current_iM = iM;
             else
@@ -517,7 +550,7 @@ while(sum(M)>0)
                 new_meanint = mean([feature_all.feature_MeanInt(tomatch_ind(i_area)) feature_all.feature_MeanInt(tomatch_ind(j_area))]);
                 new_curv = sum([feature_all.feature_Curvature(tomatch_ind(i_area)) feature_all.feature_Curvature(tomatch_ind(j_area))]);
                 %                 if this qualifies, add it, if not, skip it.
-               
+                
                 line_xy = [flipud(part_i);part_c;part_j];
                 line_i_x = line_xy(:,1);
                 line_i_y = line_xy(:,2);
@@ -528,9 +561,10 @@ while(sum(M)>0)
                 Vertices = [line_i_x'; line_i_y']';
                 Lines=[(1:size(Vertices,1)-1)' (2:size(Vertices,1))'];
                 k=LineCurvature2D(Vertices,Lines);
+                new_curv=mean(abs(k));
                 
                 % if these two qualify to be new feature
-                if(master_flassier(new_meannms,new_length,new_curv,new_meanint)>0 && mean(k)<0.05)
+                if(master_flassier(new_meannms,new_length,new_curv,new_meanint)>0)
                     
                     % add to the system
                     
@@ -556,14 +590,35 @@ while(sum(M)>0)
                     if length(temp_indices)>50
                         stophere=1;
                     end
-%                     figure(21);imagescc(model_ind_all');axis on;
-%                     figure(22);bar(temp_indices);title(['i area:',num2str(i_area),', j area:',num2str(j_area)]);
-                
-                  
+                    %                     figure(21);imagescc(model_ind_all');axis on;
+                    %                     figure(22);bar(temp_indices);title(['i area:',num2str(i_area),', j area:',num2str(j_area)]);
+                    
+                    
                     model_ind_all(i_area,1:length(temp_indices))= temp_indices;
                     model_ind_all(j_area,1:length(temp_indices))= temp_indices;
                     
                     transformer = [transformer; tomatch_ind(i_area) tomatch_ind(j_area)];
+                    
+                    % put into final rescue and connecting lines
+                    try
+                        % if failed, mean the i_area is not in tomatch_ind, so it is already matched
+                        i_curve_index = tomatch_ind(i_area);
+                    catch
+                        i_curve_index = nan;
+                    end
+                    
+                    try
+                        % if failed, mean the i_area is not in tomatch_ind, so it is already matched
+                        j_curve_index = tomatch_ind(j_area);
+                    catch
+                        j_curve_index = nan;
+                    end
+                    
+                    final_set_rescue = [final_set_rescue; i_curve_index j_curve_index];
+                    
+                    connect_count = connect_count+1;
+                    final_set_connection{connect_count} = connection_xy_cell{i_E};
+                    
                 else
                     % if this is not successful, then remove this from the
                     % matched index, since the if requirement made it sure
@@ -599,8 +654,8 @@ while(sum(M)>0)
                 if length(temp_indices)>50
                     stophere=1;
                 end
-%                 figure(21);imagescc(model_ind_all');axis on;
-%                 figure(22);bar(temp_indices);title(['i area:',num2str(i_area),', j area:',num2str(j_area)]);
+                %                 figure(21);imagescc(model_ind_all');axis on;
+                %                 figure(22);bar(temp_indices);title(['i area:',num2str(i_area),', j area:',num2str(j_area)]);
                 
                 model_ind_all(i_area,1:length(temp_indices))= temp_indices;
                 model_ind_all(j_area,1:length(temp_indices))= temp_indices;
@@ -615,16 +670,16 @@ while(sum(M)>0)
 end
 
 current_model = build_open_model;
- 
+
 if(iIteration==3)
     stophere=1;
-end        
+end
 %%
 % check how the new current model is updated from the original model
- count_linking=size(build_open_model,1);
-   current_good_bw = zeros(size(new_current_all_matching_bw));
-if(~isempty(orig_current_model))    
-    for i_E = 1 : length(orig_current_model)        
+count_linking=size(build_open_model,1);
+current_good_bw = zeros(size(new_current_all_matching_bw));
+if(~isempty(orig_current_model))
+    for i_E = 1 : length(orig_current_model)
         y_i = orig_current_model{i_E}(:,2);
         x_i = orig_current_model{i_E}(:,1);
         
@@ -633,8 +688,8 @@ if(~isempty(orig_current_model))
             
             count_linking = count_linking + 1;
             current_model{count_linking} = [x_i, y_i];
-            new_model_ind(count_linking,1:length(model_ind(i_E,:)))= model_ind(i_E,:);           
-         end
+            new_model_ind(count_linking,1:length(model_ind(i_E,:)))= model_ind(i_E,:);
+        end
     end
 else
     %%
@@ -642,22 +697,21 @@ else
     % matching with the input bw containing only the good curves, so add
     % the rest of the unmatched curve to the model.
     matched_ind = E(find(copy_M>0),:);
-        
+    
     for i_area = 1 : length(tomatch_ind)
         
         ind = find(matched_ind==2*i_area-1 | matched_ind==2*i_area);
         if(isempty(ind) && ~isempty(ordered_curve_xy{2*i_area-1,1}))
             count_linking = count_linking+1;
             current_model{count_linking} = ordered_curve_xy{2*i_area-1,1};
-            new_model_ind(count_linking,1)= tomatch_ind(i_area);  
+            new_model_ind(count_linking,1)= tomatch_ind(i_area);
         end
     end
 end
 
 new_model_ind(new_model_ind==0)=nan;
 
-%%
-% plot the output image with these good ones
+%% plot the output image with these good ones
 current_matching_bw = zeros(size(labelMask));
 
 % if there is already a current model, build the image for matched lines
@@ -669,7 +723,7 @@ if(~isempty(current_model))
         x_i = x_i(ind);
         y_i = y_i(ind);
         current_model{i_E} = [x_i y_i];
-                        
+        
         if(~isempty(x_i))
             if(i_E>size(build_open_model,1) )
                 current_matching_bw(sub2ind(size(current_matching_bw), round(y_i),round(x_i)))=1.5;
@@ -677,7 +731,7 @@ if(~isempty(current_model))
                 current_matching_bw(sub2ind(size(current_matching_bw), round(y_i),round(x_i)))=2;
             end
         end
-    end 
+    end
 end
 
 h2=figure(2);set(h2,'Visible',set_visible);imagescc(current_matching_bw);
@@ -688,9 +742,104 @@ h3=figure(3);set(h3,'Visible',set_visible);imagescc(max(max(currentImg))-current
 [y,x]=find(current_matching_bw>0);
 
 plot(x,y,'.','MarkerSize',3);
- 
+
 % h1 = figure(2);print(h1,'-dtiff','new_all.tif');
 
 end_point_stop =1 ;
 
+bw_rgb_three_color = nan(size(currentImg,1),size(currentImg,2),3);
+R = currentImg*0;
+G = currentImg*0;
+B = currentImg*0;
+
+bw_whitergb_three_color = nan(size(currentImg,1),size(currentImg,2),3);
+whiteR = currentImg*0+1;
+whiteG = currentImg*0+1;
+whiteB = currentImg*0+1;
+
+h11 = figure(11);
+set(h11,'Visible',set_visible);imagescc(currentImg*0); caxis([0 1])
+
+h21 = figure(21);
+set(h21,'Visible',set_visible);imagescc(currentImg*0+1); caxis([0 1])
+
+% Original_set_Good_ind=Good_ind;
+for ind = Original_set_Good_ind'
+    [ind_y,ind_x] = find(labelMask==ind);
+    h11=figure(11);set(h11,'Visible',set_visible);
+    hold on;
+    plot(ind_x,ind_y,'.');
+    
+    R(sub2ind(size(currentImg),round(ind_y),round(ind_x)))=0;
+    G(sub2ind(size(currentImg),round(ind_y),round(ind_x)))=0;
+    B(sub2ind(size(currentImg),round(ind_y),round(ind_x)))=1;
+end
+
+
+for ind = Original_set_Good_ind'
+    [ind_y,ind_x] = find(labelMask==ind);
+    h21=figure(21);set(h21,'Visible',set_visible);
+    hold on;
+    plot(ind_x,ind_y,'.');
+    
+    whiteR(sub2ind(size(currentImg),round(ind_y),round(ind_x)))=0;
+    whiteG(sub2ind(size(currentImg),round(ind_y),round(ind_x)))=0;
+    whiteB(sub2ind(size(currentImg),round(ind_y),round(ind_x)))=1;
+end
+
+for ind = setdiff(final_set_rescue(:),Original_set_Good_ind)'
+    [ind_y,ind_x] = find(labelMask==ind);
+    h11=figure(11);hold on;set(h11,'Visible',set_visible);
+    plot(ind_x,ind_y,'r.');
+    
+    R(sub2ind(size(currentImg),round(ind_y),round(ind_x)))=1;
+    G(sub2ind(size(currentImg),round(ind_y),round(ind_x)))=0;
+    B(sub2ind(size(currentImg),round(ind_y),round(ind_x)))=0;
+    
+end
+
+for ind = setdiff(final_set_rescue(:),Original_set_Good_ind)'
+    [ind_y,ind_x] = find(labelMask==ind);
+    h21=figure(21);hold on;set(h21,'Visible',set_visible);
+    hold on;
+    plot(ind_x,ind_y,'r.');
+    
+    whiteR(sub2ind(size(currentImg),round(ind_y),round(ind_x)))=1;
+    whiteG(sub2ind(size(currentImg),round(ind_y),round(ind_x)))=0;
+    whiteB(sub2ind(size(currentImg),round(ind_y),round(ind_x)))=0;
+    
+end
+
+for ind = 1:connect_count
+    XY = final_set_connection{ind};
+    h11=figure(11);hold on;set(h11,'Visible',set_visible);
+    hold on;
+    plot(XY(1,:),XY(2,:),'g.');
+    
+    R(sub2ind(size(currentImg),round(XY(2,:)),round(XY(1,:))))=0;
+    G(sub2ind(size(currentImg),round(XY(2,:)),round(XY(1,:))))=0.7;
+    B(sub2ind(size(currentImg),round(XY(2,:)),round(XY(1,:))))=0;
+    
+    
+end
+
+for ind = 1:connect_count
+    XY = final_set_connection{ind};
+    h21=figure(21);hold on;set(h21,'Visible',set_visible);
+    hold on;
+    plot(XY(1,:),XY(2,:),'g.');
+    
+    whiteR(sub2ind(size(currentImg),round(XY(2,:)),round(XY(1,:))))=0;
+    whiteG(sub2ind(size(currentImg),round(XY(2,:)),round(XY(1,:))))=0.7;
+    whiteB(sub2ind(size(currentImg),round(XY(2,:)),round(XY(1,:))))=0;
+    
+    
+end
+
+bw_rgb_three_color(:,:,1)=R;
+bw_rgb_three_color(:,:,2)=G;
+bw_rgb_three_color(:,:,3)=B;
+bw_whitergb_three_color(:,:,1)=whiteR;
+bw_whitergb_three_color(:,:,2)=whiteG;
+bw_whitergb_three_color(:,:,3)=whiteB;
 
