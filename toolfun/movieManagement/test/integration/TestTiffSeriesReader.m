@@ -18,11 +18,9 @@ classdef TestTiffSeriesReader <  TestCase
         
         %% Set up and tear down methods
         function setUp(self)
-            if isunix,
-                self.path = '/tmp/testTiffSeries';
-            else
-                self.path = 'C:\testTiffSeries';
-            end
+            java_tmpdir = char(java.lang.System.getProperty('java.io.tmpdir'));
+            uuid = char(java.util.UUID.randomUUID().toString());
+            self.path = fullfile(java_tmpdir, uuid);
             mkdir(self.path);
         end
         
