@@ -1,11 +1,9 @@
-%% Create a MovieData object
+%% Use a MovieData object
 
 %% MovieData initialization
-% Initialize an MD from A the MAT file
-dvPath = '~/Desktop/2014Mar20/110609_RhoWT_glycofect_001.dv';
-MD = MovieData(dvPath);
-fprintf(1, 'Object saved under: %s\n', MD.getFullPath());
-fprintf(1, 'Output directory for analysis: %s\n', MD.outputDirectory_);
+
+% Use init_moviedata.m script that creates MD if not given
+init_moviedata;
 
 %% MovieData metadata
 
