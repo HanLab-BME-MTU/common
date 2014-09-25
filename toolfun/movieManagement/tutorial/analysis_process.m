@@ -3,10 +3,19 @@
 
 %% Initialization
 
-dvPath = '~/Desktop/2014Mar26/Actin-TM2.ome.tif';
-MD = MovieData(dvPath);
-fprintf(1, 'Object saved under: %s\n', MD.getFullPath());
-fprintf(1, 'Output directory for analysis: %s\n', MD.outputDirectory_);
+% dvPath = '~/Desktop/2014Mar26/Actin-TM2.ome.tif';
+% MD = MovieData(dvPath);
+% fprintf(1, 'Object saved under: %s\n', MD.getFullPath());
+% fprintf(1, 'Output directory for analysis: %s\n', MD.outputDirectory_);
+
+% use default MD initialization
+init_moviedata;
+
+% currently fails with error:
+%   Error using thresholdMovie (line 220)
+%   Could not automatically select a threshold in frame 18! Try specifying a threshold level, or
+%   enabling the MaxJump option!
+% 
 
 %% Reset
 

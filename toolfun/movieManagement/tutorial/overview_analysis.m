@@ -1,7 +1,11 @@
 %% Load a rich MovieData object
 % Load the MAT file
-savedMoviePath = '~/Desktop/SoftwareDay-Data/QFSM/cont1/movieData.mat';
-MD = MovieData.load(savedMoviePath);
+% savedMoviePath = '~/Desktop/SoftwareDay-Data/QFSM/cont1/movieData.mat';
+% MD = MovieData.load(savedMoviePath);
+
+% initialization movie data
+init_moviedata;
+% may need to add a process
 
 %% Analysis
 
