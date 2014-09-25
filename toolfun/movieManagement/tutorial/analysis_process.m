@@ -63,7 +63,7 @@ fprintf(1,'  Input has been updated by an upstream process: ');
 if ~process.updated_, fprintf(1, 'yes\n'); else fprintf(1, 'no\n'); end
 
 % Run the first process
-disp(1,'Output');
+fprintf(1,'Output');
 processedChannels = find(process.checkChannelOutput());
 fprintf(1,'  Channel with a valid output:%g', processedChannels);
 

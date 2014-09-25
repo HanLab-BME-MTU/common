@@ -3,17 +3,26 @@
 
 %% Initialization
 
+% Create temporary directory
+java_tmpdir = char(java.lang.System.getProperty('java.io.tmpdir'));
+% Split UUID into two lines since MATLAB complains:
+% 'Static method or constructor invocations cannot be indexed.'
+uuid = java.util.UUID.randomUUID();
+uuid = char(uuid.toString());
+tmpdir = fullfile(java_tmpdir, uuid);
+mkdir(tmpdir);
+
+
 % Download test data for u-track
 url =  'http://downloads.openmicroscopy.org/images/u-track/integrins.zip';
-rootPath = fullfile(getenv('HOME'), 'Desktop');
-zipPath = fullfile(rootPath, 'integrins.zip');
+zipPath = fullfile(tmpdir, 'integrins.zip');
 urlwrite(url, zipPath);
 
 % Unzip test imagesa
-unzip(zipPath, rootPath);
+unzip(zipPath, tmpdir);
 
 % Initialize MovieData from high SNR example
-omeTiffPath = fullfile(rootPath, 'case1_higherSNR.ome.tiff');
+omeTiffPath = fullfile(tmpdir, 'case1_higherSNR.ome.tiff');
 MD = MovieData(omeTiffPath);
 
 %%
