@@ -57,6 +57,7 @@ for iFrame = 1 : numFrames
         %object information
         xCoord = round(movieInfo(iFrame).xCoord(:,1));
         yCoord = round(movieInfo(iFrame).yCoord(:,1));
+        amp = NaN(length(xCoord),1);
         for iField = 1 : numField
             amp(:,iField) = movieInfo(iFrame).(fieldsNew{iField})(:,1);
         end

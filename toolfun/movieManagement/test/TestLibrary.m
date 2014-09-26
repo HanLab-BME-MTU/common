@@ -3,6 +3,7 @@ classdef TestLibrary < handle
     %   Detailed explanation goes here
     
     properties
+        tmpdir = char(java.lang.System.getProperty('java.io.tmpdir'));
         channels = Channel.empty(1, 0)
         movie = MovieData.empty(1, 0)
         nRois

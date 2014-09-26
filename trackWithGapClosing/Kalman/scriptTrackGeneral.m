@@ -1,11 +1,11 @@
 
 %% general gap closing parameters
-gapCloseParam.timeWindow = 7; %maximum allowed time gap (in frames) between a track segment end and a track segment start that allows linking them.
-gapCloseParam.mergeSplit = 1; %1 if merging and splitting are to be considered, 2 if only merging is to be considered, 3 if only splitting is to be considered, 0 if no merging or splitting are to be considered.
-gapCloseParam.minTrackLen = 2; %minimum length of track segments from linking to be used in gap closing.
+gapCloseParam.timeWindow = 20; %maximum allowed time gap (in frames) between a track segment end and a track segment start that allows linking them.
+gapCloseParam.mergeSplit = 0; %1 if merging and splitting are to be considered, 2 if only merging is to be considered, 3 if only splitting is to be considered, 0 if no merging or splitting are to be considered.
+gapCloseParam.minTrackLen = 1; %minimum length of track segments from linking to be used in gap closing.
 
 %optional input:
-gapCloseParam.diagnostics = 0; %1 to plot a histogram of gap lengths in the end; 0 or empty otherwise.
+gapCloseParam.diagnostics = 1; %1 to plot a histogram of gap lengths in the end; 0 or empty otherwise.
 
 %% cost matrix for frame-to-frame linking
 
@@ -15,9 +15,8 @@ costMatrices(1).funcName = 'costMatRandomDirectedSwitchingMotionLink';
 %parameters
 
 parameters.linearMotion = 0; %use linear motion Kalman filter.
-
 parameters.minSearchRadius = 2; %minimum allowed search radius. The search radius is calculated on the spot in the code given a feature's motion parameters. If it happens to be smaller than this minimum, it will be increased to the minimum.
-parameters.maxSearchRadius = 4.5; %maximum allowed search radius. Again, if a feature's calculated search radius is larger than this maximum, it will be reduced to this maximum.
+parameters.maxSearchRadius = 2; %maximum allowed search radius. Again, if a feature's calculated search radius is larger than this maximum, it will be reduced to this maximum.
 parameters.brownStdMult = 3; %multiplication factor to calculate search radius from standard deviation.
 
 parameters.useLocalDensity = 1; %1 if you want to expand the search radius of isolated features in the linking (initial tracking) step.
@@ -43,10 +42,10 @@ costMatrices(2).funcName = 'costMatRandomDirectedSwitchingMotionCloseGaps';
 parameters.linearMotion = 0; %use linear motion Kalman filter.
 
 parameters.minSearchRadius = 2; %minimum allowed search radius.
-parameters.maxSearchRadius = 4.5; %maximum allowed search radius.
+parameters.maxSearchRadius = 2; %maximum allowed search radius.
 parameters.brownStdMult = 3*ones(gapCloseParam.timeWindow,1); %multiplication factor to calculate Brownian search radius from standard deviation.
 
-parameters.brownScaling = [0.25 0.01]; %power for scaling the Brownian search radius with time, before and after timeReachConfB (next parameter).
+parameters.brownScaling = [0 0.01]; %power for scaling the Brownian search radius with time, before and after timeReachConfB (next parameter).
 % parameters.timeReachConfB = 3; %before timeReachConfB, the search radius grows with time with the power in brownScaling(1); after timeReachConfB it grows with the power in brownScaling(2).
 parameters.timeReachConfB = gapCloseParam.timeWindow; %before timeReachConfB, the search radius grows with time with the power in brownScaling(1); after timeReachConfB it grows with the power in brownScaling(2).
 
@@ -85,8 +84,8 @@ kalmanFunctions.timeReverse = 'kalmanReverseLinearMotion';
 %% additional input
 
 %saveResults
-saveResults.dir = 'C:\kjData\Galbraiths\data\alphaVY773AandCellEdge\140226_Cs3C2_Y773A\analysisAlphaVY773A\'; %directory where to save input and output
-saveResults.filename = 'tracksAll1.mat'; %name of file where input and output are saved
+saveResults.dir = 'C:\kjData\test\140825_Sungsoo\'; %directory where to save input and output
+saveResults.filename = 'tracksTest4.mat'; %name of file where input and output are saved
 % saveResults = 0; %don't save results
 
 %verbose state
@@ -97,15 +96,15 @@ probDim = 2;
 
 %% tracking function call
 
-% [tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfo(1:300),...
-%     costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
+[tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfo,...
+    costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
 
-for i = 1 : 12
-    movieInfoTmp((i-1)*1200+1:i*1200) = movieInfo((i-1)*1200+1:i*1200);
-    saveResults.filename = ['tracks1All_' sprintf('%02i',i) '.mat'];
-    [tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfoTmp,...
-        costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
-    clear movieInfoTmp
-end
+% for i = 1 : 12
+%     movieInfoTmp((i-1)*1200+1:i*1200) = movieInfo((i-1)*1200+1:i*1200);
+%     saveResults.filename = ['tracks1All_' sprintf('%02i',i) '.mat'];
+%     [tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfoTmp,...
+%         costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
+%     clear movieInfoTmp
+% end
 
 %% ~~~ the end ~~~

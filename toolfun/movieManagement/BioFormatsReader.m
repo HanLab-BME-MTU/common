@@ -47,27 +47,27 @@ classdef  BioFormatsReader < Reader
             series = obj.series;
         end
         
-        function sizeX = getSizeX(obj, varargin)
+        function sizeX = getSizeX(obj)
             sizeX = obj.getMetadataStore().getPixelsSizeX(obj.getSeries()).getValue();
         end
         
-        function sizeY = getSizeY(obj, varargin)
+        function sizeY = getSizeY(obj)
             sizeY = obj.getMetadataStore().getPixelsSizeY(obj.getSeries()).getValue();
         end
         
-        function sizeZ = getSizeZ(obj, varargin)
+        function sizeZ = getSizeZ(obj)
             sizeZ = obj.getMetadataStore().getPixelsSizeZ(obj.getSeries()).getValue();
         end
         
-        function sizeT = getSizeT(obj, varargin)
+        function sizeT = getSizeT(obj)
             sizeT = obj.getMetadataStore().getPixelsSizeT(obj.getSeries()).getValue();
         end
         
-        function sizeC = getSizeC(obj, varargin)
+        function sizeC = getSizeC(obj)
             sizeC = obj.getMetadataStore().getPixelsSizeC(obj.getSeries()).getValue();
         end
         
-        function bitDepth = getBitDepth(obj, varargin)
+        function bitDepth = getBitDepth(obj)
             pixelType = obj.getReader().getPixelType();
             bpp = loci.formats.FormatTools.getBytesPerPixel(pixelType);
             bitDepth = 8 * bpp;

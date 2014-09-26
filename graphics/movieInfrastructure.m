@@ -7,7 +7,8 @@ switch whatToDo
 
         switch movieType
             case 'mov'
-                eval(['MakeQTMovie start ', fullfile(dir2saveMovie,movieName) '.mov']);
+                %eval(['MakeQTMovie start ', fullfile(dir2saveMovie,movieName) '.mov']);
+                MakeQTMovie('start', [ fullfile(dir2saveMovie,movieName) '.mov']) % Edit by Tony so that file names with spaces can be used
             case {'mp4_unix','avi_unix'}
                 frameDir = [dir2saveMovie filesep 'tmpFramesMovie'];
                 [~,~] = mkdir(frameDir);

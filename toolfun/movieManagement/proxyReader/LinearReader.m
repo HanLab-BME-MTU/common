@@ -24,26 +24,16 @@ classdef LinearReader < ProxyReader
     % Lab of Khuloud Jaqaman
     % UT Southwestern
     
-    properties
-        sizeParam = 1;
-    end
-    
     methods
-        % LinearReader requires that the dimensions do not change
-        % sizeParam allows for some incidental compatibility
-        % sizeParam will usually be the channel number if needed
         function obj = LinearReader(varargin)
-            obj = obj@ProxyReader(varargin{1:nargin});
-            if(nargin > 1)
-                obj.sizeParam = varargin{2};
-            end
+            obj = obj@ProxyReader(varargin{:});
         end
         % Obtain the CTZ size
         % Order is by convention from the reader interface
         function s = getSize(obj)
-            s = [obj.reader.getSizeC(obj.sizeParam)
-                 obj.reader.getSizeT(obj.sizeParam)
-                 obj.reader.getSizeZ(obj.sizeParam)]';
+            s = [obj.reader.getSizeC
+                 obj.reader.getSizeT
+                 obj.reader.getSizeZ]';
         end
         % loadImage only loads one image at a time
         % Accept one to three parameters

@@ -137,12 +137,10 @@ classdef TestChannelTiffSeries < TestTiffSeriesReader
             % Failure should have occurred at the number of frames (time slice)            
             % Another error could occur first, order not important
             assertEqual(self.movieDataSanityCheckErr.identifier, ...
-                'MovieData:sanityCheck:nFrames');
+                'Reader:dimensionMismatch');
 
             % zSize_ should be empty since MovieData.sanityCheck did not complete
             assert(isempty(self.movieData.zSize_));
-            self.checkLoadImage();
-            self.checkLoadStack();
         end
 
     end

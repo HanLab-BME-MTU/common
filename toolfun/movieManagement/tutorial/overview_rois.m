@@ -3,10 +3,12 @@
 
 %% Initialization
 
-dvPath = '~/Desktop/2014Mar26/Actin-TM2.ome.tif';
-MD = MovieData(dvPath);
-fprintf(1, 'Object saved under: %s\n', MD.getFullPath());
-fprintf(1, 'Output directory for analysis: %s\n', MD.outputDirectory_);
+% dvPath = '~/Desktop/2014Mar26/Actin-TM2.ome.tif';
+% MD = MovieData(dvPath);
+% fprintf(1, 'Object saved under: %s\n', MD.getFullPath());
+% fprintf(1, 'Output directory for analysis: %s\n', MD.outputDirectory_);
+
+init_moviedata;
 
 %% Create top-level analysis
 
@@ -16,7 +18,7 @@ MD.getPackage(1).createDefaultProcess(1);
 MD.getPackage(1).createDefaultProcess(2);
 
 %% ROI Creation
-
+% can we depend on imSize_ being not empty
 fullMask = true(MD.imSize_);
 
 % Create ROI mask
