@@ -55,7 +55,7 @@ if nargin < 2
     paramsIn = [];
     funParams = movieData.processes_{indexFilamentSegmentationProcess}.funParams_;
 else
-    funParams = paramsIn;    
+    funParams = paramsIn;
 end
 
 
@@ -103,7 +103,7 @@ if(length(funParams.StPace_Size)==1 && numel(movieData.channels_)>1)
     
     funParams.Combine_Way=cell(1,1);
     
-   for iC = 1 : numel(movieData.channels_)
+    for iC = 1 : numel(movieData.channels_)
         funParams.Combine_Way{iC}= Combine_Way;
     end
     
@@ -130,7 +130,7 @@ if (indexFilamentPackage>0)
         % and this directory exists
         if (exist(movieData.packages_{indexFilamentPackage}.outputDirectory_,'dir'))
             FilamentSegmentationProcessOutputDir  = [movieData.packages_{indexFilamentPackage}.outputDirectory_, filesep 'FilamentSegmentation'];
-       end
+        end
     end
 end
 
@@ -197,7 +197,7 @@ end
 % if user want to use an input whole movie stat result, use it
 if nargin >=3
     load(wholemovie_input_filename);
-    funParams.Whole_movie_stat_cell = Whole_movie_stat_cell;    
+    funParams.Whole_movie_stat_cell = Whole_movie_stat_cell;
 else
     % or, calculate it
     %% May 1st 2014, due to change in flattening precedure, this whole movie stat need rerun,
@@ -235,10 +235,10 @@ end
 %     end
 % end
 % cone_zero_mask = cone_zero<cone_angle/180*pi | cone_zero>pi - cone_angle/180*pi;
-% 
+%
 % cone_zero_mask(cone_size-3:cone_size+3,:)=1;
-% 
-% 
+%
+%
 % for cone_i = 1 :180
 %     cone_mask{cone_i} = imrotate(cone_zero_mask, cone_i, 'nearest','crop');
 % end
@@ -269,7 +269,7 @@ for iChannel = selected_channels
         Stlowerbound =  st_lowerbound_localthresholding_movie;
         IntPace_Size = IntPace_Size_movie;
         IntPatch_Size = IntPatch_Size_movie;
-        Intlowerbound =  int_lowerbound_localthresholding_movie;        
+        Intlowerbound =  int_lowerbound_localthresholding_movie;
         Combine_Way = Combine_Way_movie;
         Cell_Mask_ind = Cell_Mask_ind_movie;
     end
@@ -280,7 +280,7 @@ for iChannel = selected_channels
     
     % Get frame number from the title of the image, this not neccesarily
     % the same as iFrame due to some shorting problem of the channel
-   Channel_FilesNames = movieData.channels_(iChannel).getImageFileNames(1:movieData.nFrames_);
+    Channel_FilesNames = movieData.channels_(iChannel).getImageFileNames(1:movieData.nFrames_);
     
     filename_short_strs = uncommon_str_takeout(Channel_FilesNames);
     
@@ -336,7 +336,7 @@ for iChannel = selected_channels
     Frames_results_correspondence = im2col(repmat(Frames_to_Seg, [Sub_Sample_Num,1]),[1 1]);
     Frames_results_correspondence = Frames_results_correspondence(1:nFrame);
     
-%     indexFlattenProcess=1;
+    %     indexFlattenProcess=1;
     for iFrame_index = 1 : length(Frames_to_Seg)
         iFrame = Frames_to_Seg(iFrame_index);
         
@@ -351,27 +351,27 @@ for iChannel = selected_channels
         currentImg = double(currentImg);
         
         %% %tif stack cost too much memory, comment these
-%         
-%         if( save_tif_flag==1 && iFrame==Frames_to_Seg(1)  )
-%             % Gelfand lab needs single file results for tif stack
-%             tif_stack_binary_seg_image_data = uint8(zeros(size(currentImg,1),size(currentImg,2),length(Frames_to_Seg)));
-%             tif_stack_RGB_heat_image_data = uint8(zeros(size(currentImg,1),size(currentImg,2),3,length(Frames_to_Seg)));
-%         end
+        %
+        %         if( save_tif_flag==1 && iFrame==Frames_to_Seg(1)  )
+        %             % Gelfand lab needs single file results for tif stack
+        %             tif_stack_binary_seg_image_data = uint8(zeros(size(currentImg,1),size(currentImg,2),length(Frames_to_Seg)));
+        %             tif_stack_RGB_heat_image_data = uint8(zeros(size(currentImg,1),size(currentImg,2),3,length(Frames_to_Seg)));
+        %         end
         %%
         
         % this line in commandation for shortest version of filename
         filename_shortshort_strs = all_uncommon_str_takeout(Channel_FilesNames{1});
-            
+        
         try
             load([SteerableChannelOutputDir, filesep, 'steerable_',...
-                filename_short_strs{iFrame},'.mat']);            
+                filename_short_strs{iFrame},'.mat']);
         catch
             % in the case of only having the short-old version
             load([SteerableChannelOutputDir, filesep, 'steerable_',...
-                filename_shortshort_strs{iFrame},'.mat']);            
+                filename_shortshort_strs{iFrame},'.mat']);
         end
         
-                
+        
         %%
         
         
@@ -391,7 +391,7 @@ for iChannel = selected_channels
                         MaskMTCell = movieData.processes_{indexCellSegProcess}.loadChannelOutput(1,iFrame);
                         MaskCell = MaskVIFCell | MaskMTCell;
                         
-                        else
+                    else
                         % Combine from both channel
                         % In this option, the channel need to be 1. MT or Membrame, 2. VIF or Actin
                         MaskVIFCell = movieData.processes_{indexCellSegProcess}.loadChannelOutput(2,iFrame);
@@ -411,20 +411,20 @@ for iChannel = selected_channels
                 end
             end
         end
-                
         
         
-        %% 
+        
+        %%
         % Correcting the nms ending semicircle due to the aritifact of
         % simulation perfect Gaussian ends
         
-%         
-%         median_nms = median(nms(:));
-%         quarter_nms = median(nms(find(nms>median_nms)));
-       
+        %
+        %         median_nms = median(nms(:));
+        %         quarter_nms = median(nms(find(nms>median_nms)));
+        
         open_nms = imopen(nms, ones(2,2));
         eroded_nms = nms-open_nms;
-       
+        
         %use the opened image;
         nms = eroded_nms;
         
@@ -448,48 +448,48 @@ for iChannel = selected_channels
                 thresh_Segment = MAX_st_res > level0;
                 % all the local seg was changed back to one without the
                 % last parameter; could be a version conflict
-%                 [level1, SteerabelRes_Segment ] = thresholdLocalSeg(MAX_st_res,'Otsu',StPatch_Size,StPace_Size,Stlowerbound,0,Whole_movie_stat_cell{iChannel}.otsu_ST);
-%                 [level2, Intensity_Segment ] = thresholdLocalSeg(currentImg,'Otsu',IntPatch_Size,IntPace_Size,Intlowerbound,0,Whole_movie_stat_cell{iChannel}.otsu_INT);
+                %                 [level1, SteerabelRes_Segment ] = thresholdLocalSeg(MAX_st_res,'Otsu',StPatch_Size,StPace_Size,Stlowerbound,0,Whole_movie_stat_cell{iChannel}.otsu_ST);
+                %                 [level2, Intensity_Segment ] = thresholdLocalSeg(currentImg,'Otsu',IntPatch_Size,IntPace_Size,Intlowerbound,0,Whole_movie_stat_cell{iChannel}.otsu_INT);
                 [level1, SteerabelRes_Segment ] = thresholdLocalSeg(MAX_st_res,'Otsu',StPatch_Size,StPace_Size,Stlowerbound,'showPlots',0);
                 [level2, Intensity_Segment ] = thresholdLocalSeg(currentImg,'Otsu',IntPatch_Size,IntPace_Size,Intlowerbound,'showPlots',0);
                 current_seg = and(Intensity_Segment,SteerabelRes_Segment);
-                     current_model=[];
-            
+                current_model=[];
+                
             case 'st_only'
-%                 [level1, SteerabelRes_Segment ] = thresholdLocalSeg(MAX_st_res,'Otsu',StPatch_Size,StPace_Size,Stlowerbound,0,Whole_movie_stat_cell{iChannel}.otsu_ST);
-                 [level1, SteerabelRes_Segment ] = thresholdLocalSeg(MAX_st_res,'Otsu',StPatch_Size,StPace_Size,Stlowerbound,'showPlots',0);
+                %                 [level1, SteerabelRes_Segment ] = thresholdLocalSeg(MAX_st_res,'Otsu',StPatch_Size,StPace_Size,Stlowerbound,0,Whole_movie_stat_cell{iChannel}.otsu_ST);
+                [level1, SteerabelRes_Segment ] = thresholdLocalSeg(MAX_st_res,'Otsu',StPatch_Size,StPace_Size,Stlowerbound,'showPlots',0);
                 current_seg = SteerabelRes_Segment;
                 Intensity_Segment = current_seg;
                 SteerabelRes_Segment = current_seg;
-                    current_model=[];
-             
+                current_model=[];
+                
             case 'st_nms_two'
-%                 [level1, SteerabelRes_Segment ] = thresholdLocalSeg(MAX_st_res,'Otsu',StPatch_Size,StPace_Size,Stlowerbound*0.7,0,Whole_movie_stat_cell{iChannel}.otsu_ST);
-%                 [level2, NMS_Segment ] = thresholdLocalSeg(nms,'Rosin',StPatch_Size,StPace_Size,Stlowerbound*1.3,0,Whole_movie_stat_cell{iChannel}.otsu_NMS);
+                %                 [level1, SteerabelRes_Segment ] = thresholdLocalSeg(MAX_st_res,'Otsu',StPatch_Size,StPace_Size,Stlowerbound*0.7,0,Whole_movie_stat_cell{iChannel}.otsu_ST);
+                %                 [level2, NMS_Segment ] = thresholdLocalSeg(nms,'Rosin',StPatch_Size,StPace_Size,Stlowerbound*1.3,0,Whole_movie_stat_cell{iChannel}.otsu_NMS);
                 [level1, SteerabelRes_Segment ] = thresholdLocalSeg(MAX_st_res,'Otsu',StPatch_Size,StPace_Size,Stlowerbound*0.7,'showPlots',0);
                 [level2, NMS_Segment ] = thresholdLocalSeg(nms,'Rosin',StPatch_Size,StPace_Size,Stlowerbound*1.3,showPlots,0);
                 current_seg = imdilateWithScale(NMS_Segment,scaleMap,BaseSteerableFilterSigma.*(2.^((1:Levelsofsteerablefilters)-1)))...
                     .*SteerabelRes_Segment;
-                       
+                
                 Intensity_Segment = current_seg;
                 SteerabelRes_Segment = current_seg;
-                   current_model=[];
-      
+                current_model=[];
+                
             case 'st_nms_only'
-%                 [level2, NMS_Segment ] = thresholdLocalSeg(nms,'Rosin',StPatch_Size,StPace_Size,Stlowerbound,0,Whole_movie_stat_cell{iChannel}.otsu_NMS);
+                %                 [level2, NMS_Segment ] = thresholdLocalSeg(nms,'Rosin',StPatch_Size,StPace_Size,Stlowerbound,0,Whole_movie_stat_cell{iChannel}.otsu_NMS);
                 [level2, NMS_Segment ] = thresholdLocalSeg(nms,'Rosin',StPatch_Size,StPace_Size,Stlowerbound,'showPlots',0);
                 current_seg = NMS_Segment;
                 Intensity_Segment = current_seg;
-                 SteerabelRes_Segment = current_seg;
+                SteerabelRes_Segment = current_seg;
                 Min_area = 6;
-                  current_model=[];
-           
+                current_model=[];
+                
             case 'geo_based_training'
                 
                 if(~isempty(funParams.F_classifier{iChannel}))
                     load(funParams.F_classifier{iChannel});
                 else
-                  F_classifer_train_this_channel=[];  
+                    F_classifer_train_this_channel=[];
                 end
                 
                 [level2, NMS_Segment,current_model ] = ...
@@ -502,57 +502,57 @@ for iChannel = selected_channels
                 
             case 'reserved_for_test'
                 
-                 % Liya: test for the running of the comparison
-%                 current_seg_canny_cell=cell(1,1);                
-%                display('Canny Test:');
-%                 tic
-% %                 for PercentOfPixelsNotEdges = 0.8: 0.1: 0.95
-% %                     for ThresholdRatio = 0.8 : 0.1: 0.95    
-%                 for iP = 1 : 5
-%                      for iT = 1 : 5
-%                         
-%                         PercentOfPixelsNotEdges = iP/20+0.70;
-%                         ThresholdRatio = iT/20+0.70;
-%                          
-%                         [lowThresh, highThresh, current_seg]...
-%                             = proximityBasedNmsSeg(MAX_st_res,...
-%                             orienation_map,funParams,...
-%                             PercentOfPixelsNotEdges,ThresholdRatio);
-%                         current_seg_canny_cell{iP,iT} = current_seg;
-%                         
-%                         
-%                     end
-%                 end
-%               toc  
-%                 
-%                 % Assume no training is done for the classifier, so use the
-%                 % linear plane classifier with the input parameters.
-%                 
-% %                 if(~isempty(funParams.F_classifier{iChannel}))
-% %                     load(funParams.F_classifier{iChannel});
-% %                 else
-%                   F_classifer_train_this_channel=[];  
-% %                 end
-%                 
-%                 display(['Geo based GM Frame',num2str(iFrame),':']);
-%                 tic
-%                 [level2, NMS_Segment,current_model ] = ...
-%                     geoBasedNmsSeg_withGM(nms,currentImg, F_classifer_train_this_channel,1,...
-%                     MaskCell,iFrame,FilamentSegmentationChannelOutputDir,funParams,iChannel);
-%                 toc
-%                 
-%                 current_seg = NMS_Segment;
-%                 Intensity_Segment = current_seg;
-%                 SteerabelRes_Segment = current_seg;
-%                 Min_area = 6;
-
-
-%% for screen no graph matching, no curvature/intensity control
-
-                  F_classifer_train_this_channel=[];  
-%                 end
+                % Liya: test for the running of the comparison
+                current_seg_canny_cell=cell(1,1);
+                display('Canny Test:');
+                tic
+                %                 for PercentOfPixelsNotEdges = 0.8: 0.1: 0.95
+                %                     for ThresholdRatio = 0.8 : 0.1: 0.95
+                for iP = 1 : 5
+                    for iT = 1 : 5
+                        
+                        PercentOfPixelsNotEdges = iP/20+0.70;
+                        ThresholdRatio = iT/20+0.70;
+                        
+                        [lowThresh, highThresh, current_seg]...
+                            = proximityBasedNmsSeg(MAX_st_res,...
+                            orienation_map,funParams,...
+                            PercentOfPixelsNotEdges,ThresholdRatio);
+                        current_seg_canny_cell{iP,iT} = current_seg;
+                        
+                        
+                    end
+                end
+                toc
                 
-                display(['Only fisrt-first step: Geo based GM Frame',num2str(iFrame),':']);
+                % Assume no training is done for the classifier, so use the
+                % linear plane classifier with the input parameters.
+                
+                %                 if(~isempty(funParams.F_classifier{iChannel}))
+                %                     load(funParams.F_classifier{iChannel});
+                %                 else
+                F_classifer_train_this_channel=[];
+                %                 end
+                
+                display(['Geo based GM Frame',num2str(iFrame),':']);
+                tic
+                [level2, NMS_Segment,current_model ] = ...
+                    geoBasedNmsSeg_withGM(nms,currentImg, F_classifer_train_this_channel,1,...
+                    MaskCell,iFrame,FilamentSegmentationChannelOutputDir,funParams,iChannel);
+                toc
+                
+                current_seg = NMS_Segment;
+                Intensity_Segment = current_seg;
+                SteerabelRes_Segment = current_seg;
+                Min_area = 6;
+                
+                
+                %% for screen no graph matching, no curvature/intensity control
+            case 'geo_based_no_GM'
+                F_classifer_train_this_channel=[];
+                %                 end
+                
+                display(['Geo based NO-GM, Frame',num2str(iFrame),':']);
                 tic
                 [level2, NMS_Segment,current_model ] = ...
                     geoBasedNmsSeg_withoutGM(nms,currentImg, F_classifer_train_this_channel,1,...
@@ -563,17 +563,17 @@ for iChannel = selected_channels
                 Intensity_Segment = current_seg;
                 SteerabelRes_Segment = current_seg;
                 Min_area = 6;
-
+                
             case 'geo_based_GM'
-                                           
+                
                 % Assume no training is done for the classifier, so use the
                 % linear plane classifier with the input parameters.
                 
-%                 if(~isempty(funParams.F_classifier{iChannel}))
-%                     load(funParams.F_classifier{iChannel});
-%                 else
-                  F_classifer_train_this_channel=[];  
-%                 end
+                %                 if(~isempty(funParams.F_classifier{iChannel}))
+                %                     load(funParams.F_classifier{iChannel});
+                %                 else
+                F_classifer_train_this_channel=[];
+                %                 end
                 
                 display(['Geo based GM Frame',num2str(iFrame),':']);
                 tic
@@ -588,28 +588,27 @@ for iChannel = selected_channels
                 Min_area = 6;
                 
             case 'int_only'
-%                 [level2, Intensity_Segment ] = thresholdLocalSeg(currentImg,'Otsu',IntPatch_Size,IntPace_Size,Intlowerbound,0);
-                 [level2, Intensity_Segment ] = thresholdLocalSeg(currentImg,'Otsu',IntPatch_Size,IntPace_Size,Intlowerbound,'showPlots',0);
+                %                 [level2, Intensity_Segment ] = thresholdLocalSeg(currentImg,'Otsu',IntPatch_Size,IntPace_Size,Intlowerbound,0);
+                [level2, Intensity_Segment ] = thresholdLocalSeg(currentImg,'Otsu',IntPatch_Size,IntPace_Size,Intlowerbound,'showPlots',0);
                 
                 current_seg = Intensity_Segment;
                 SteerabelRes_Segment = current_seg;
-                  current_model=[];   
-            
-            case 'canny_method'
+                current_model=[];
                 
+            case 'canny_method'                
                 
-                 % Liya: test for the running of the comparison
-                current_seg_canny_cell=cell(1,1);                
-               display('Canny Test:');
+                % Liya: test for the running of the comparison
+                current_seg_canny_cell=cell(1,1);
+                display('Canny Test:');
                 tic
-%                 for PercentOfPixelsNotEdges = 0.8: 0.1: 0.95
-%                     for ThresholdRatio = 0.8 : 0.1: 0.95    
+                %                 for PercentOfPixelsNotEdges = 0.8: 0.1: 0.95
+                %                     for ThresholdRatio = 0.8 : 0.1: 0.95
                 for iP = 1 : 5
-                     for iT = 1 : 5
+                    for iT = 1 : 5
                         
                         PercentOfPixelsNotEdges = iP/20+0.70;
                         ThresholdRatio = iT/20+0.70;
-                         
+                        
                         [lowThresh, highThresh, current_seg]...
                             = proximityBasedNmsSeg(MAX_st_res,...
                             orienation_map,funParams,...
@@ -619,30 +618,30 @@ for iChannel = selected_channels
                         
                     end
                 end
-              toc  
+                toc
                 
                 % get the percentage threshold from funParam
                 HigherThresdhold = funParams.CannyHigherThreshold(iChannel)/100;
                 LowerThresdhold = funParams.CannyLowerThreshold(iChannel)/100;
-                                
+                
                 tic
                 [lowThresh, highThresh, current_seg]...
                     = proximityBasedNmsSeg(MAX_st_res,orienation_map,funParams,HigherThresdhold,LowerThresdhold);
                 toc
                 
-                level2 = highThresh;                
+                level2 = highThresh;
                 Intensity_Segment = current_seg;
                 SteerabelRes_Segment = current_seg;
                 Min_area = 6;
                 current_model=[];
-                  
-           otherwise
+                
+            otherwise
                 warning('Use the default of union');
-%                    [level1, SteerabelRes_Segment ] = thresholdLocalSeg(MAX_st_res,'Otsu',StPatch_Size,StPace_Size,Stlowerbound,0,Whole_movie_stat_cell{iChannel}.otsu_ST);
-%                 [level2, Intensity_Segment ] = thresholdLocalSeg(currentImg,'Otsu',IntPatch_Size,IntPace_Size,Intlowerbound,0,Whole_movie_stat_cell{iChannel}.otsu_INT);
+                %                    [level1, SteerabelRes_Segment ] = thresholdLocalSeg(MAX_st_res,'Otsu',StPatch_Size,StPace_Size,Stlowerbound,0,Whole_movie_stat_cell{iChannel}.otsu_ST);
+                %                 [level2, Intensity_Segment ] = thresholdLocalSeg(currentImg,'Otsu',IntPatch_Size,IntPace_Size,Intlowerbound,0,Whole_movie_stat_cell{iChannel}.otsu_INT);
                 [level1, SteerabelRes_Segment ] = thresholdLocalSeg(MAX_st_res,'Otsu',StPatch_Size,StPace_Size,Stlowerbound,'showPlots',0);
                 [level2, Intensity_Segment ] = thresholdLocalSeg(currentImg,'Otsu',IntPatch_Size,IntPace_Size,Intlowerbound,'showPlots',0);
-                 % The segmentation is set as the union of two segmentation.
+                % The segmentation is set as the union of two segmentation.
                 current_seg = or(Intensity_Segment,SteerabelRes_Segment);
                 current_model=[];
         end
@@ -672,8 +671,8 @@ for iChannel = selected_channels
             % if the segmentation is not done with geo_based method, do
             % some geometry based checking on the results
             
-            %% Deleting the small isolated dots            
-            labelMask = bwlabel(current_seg);            
+            %% Deleting the small isolated dots
+            labelMask = bwlabel(current_seg);
             ob_prop = regionprops(labelMask,'Area','MajorAxisLength','Eccentricity','MinorAxisLength');
             
             obAreas = [ob_prop.Area];
@@ -694,7 +693,7 @@ for iChannel = selected_channels
                 end
             end
             
-            current_seg = labelMask > 0;            
+            current_seg = labelMask > 0;
             
             labelMask = bwlabel(current_seg);
             
@@ -768,26 +767,26 @@ for iChannel = selected_channels
                     filename_short_strs{iFrame+ sub_i-1},'.tif']);
                 imwrite(orienation_map_filtered.*double(current_seg), ...
                     [OrientationOutputDir,'/segment_orientation_',...
-                    filename_short_strs{iFrame+ sub_i-1},'.tif']);                
+                    filename_short_strs{iFrame+ sub_i-1},'.tif']);
             end
         end
         
         
         if(~isempty(current_model))
-             [Vif_digital_model,Vif_orientation_model,VIF_XX,VIF_YY,VIF_OO] ...
-                 = filament_model_to_digital_with_orientation(current_model);
-             
-             OO_flip = pi-VIF_OO;
-             
-             OO_flip(OO_flip<-pi/2)=OO_flip(OO_flip<-pi/2)+pi;
-             OO_flip(OO_flip>pi/2)=OO_flip(OO_flip>pi/2)-pi;
-             OO_flip(OO_flip<-pi/2)=OO_flip(OO_flip<-pi/2)+pi;
-             OO_flip(OO_flip>pi/2)=OO_flip(OO_flip>pi/2)-pi;
-             OO_flip(OO_flip<-pi/2)=OO_flip(OO_flip<-pi/2)+pi;
-             OO_flip(OO_flip>pi/2)=OO_flip(OO_flip>pi/2)-pi;
-             OO_flip(OO_flip<-pi/2)=OO_flip(OO_flip<-pi/2)+pi;
-             OO_flip(OO_flip>pi/2)=OO_flip(OO_flip>pi/2)-pi;
-             
+            [Vif_digital_model,Vif_orientation_model,VIF_XX,VIF_YY,VIF_OO] ...
+                = filament_model_to_digital_with_orientation(current_model);
+            
+            OO_flip = pi-VIF_OO;
+            
+            OO_flip(OO_flip<-pi/2)=OO_flip(OO_flip<-pi/2)+pi;
+            OO_flip(OO_flip>pi/2)=OO_flip(OO_flip>pi/2)-pi;
+            OO_flip(OO_flip<-pi/2)=OO_flip(OO_flip<-pi/2)+pi;
+            OO_flip(OO_flip>pi/2)=OO_flip(OO_flip>pi/2)-pi;
+            OO_flip(OO_flip<-pi/2)=OO_flip(OO_flip<-pi/2)+pi;
+            OO_flip(OO_flip>pi/2)=OO_flip(OO_flip>pi/2)-pi;
+            OO_flip(OO_flip<-pi/2)=OO_flip(OO_flip<-pi/2)+pi;
+            OO_flip(OO_flip>pi/2)=OO_flip(OO_flip>pi/2)-pi;
+            
             orienation_map_filtered(sub2ind(size(currentImg), VIF_YY,VIF_XX))=OO_flip;
         end
         
@@ -848,7 +847,7 @@ for iChannel = selected_channels
         
         if(strcmp(Combine_Way,'st_nms_two'))
             RGB_seg_orient_heat_map_nms = RGB_seg_orient_heat_map*0;
-                        
+            
             enhanced_im_r = currentImg;
             enhanced_im_g = currentImg;
             enhanced_im_b = currentImg;
@@ -868,23 +867,21 @@ for iChannel = selected_channels
                         [HeatEnhOutputDir,'/NMS_Segment_heat_',...
                         filename_short_strs{iFrame+ sub_i-1},'.tif']);
                 end
-            end
-            
+            end            
             RGB_seg_orient_heat_map = RGB_seg_orient_heat_map_nms;
         end
         
         current_seg_orientation = current_seg.*orienation_map_filtered;
         current_seg_orientation(find(current_seg==0)) = nan;
         end_points_map = bwmorph(current_seg,'endpoints');
-       
+        
         tip_orientation = double(end_points_map).*double(orienation_map_filtered);
         tip_int = double(end_points_map).*double(currentImg);
         tip_NMS = double(end_points_map).*double(nms);
         tip_orientation(find(end_points_map==0)) = nan;
         tip_int(find(end_points_map==0)) = nan;
         tip_NMS(find(end_points_map==0)) = nan;
-        
-        
+                
         
         % see if canny test array exist
         if(~exist('current_seg_canny_cell','var'))
@@ -906,15 +903,15 @@ for iChannel = selected_channels
         end
         
         
-         %% %tif stack cost too much memory, comment these
-%         if( save_tif_flag==1)
-% %             current_seg = (imread([FilamentSegmentationChannelOutputDir,'/segment_binary_',filename_short_strs{iFrame},'.tif']))>0;
-% %             RGB_seg_orient_heat_map = imread([HeatEnhOutputDir,'/segment_heat_',filename_short_strs{iFrame},'.tif']);
-% %             
-%             tif_stack_binary_seg_image_data(:,:,iFrame_index) = uint8(current_seg*255);
-%             tif_stack_RGB_heat_image_data(:,:,:,iFrame_index) = uint8(RGB_seg_orient_heat_map);
-%             
-%         end
+        %% %tif stack cost too much memory, comment these
+        %         if( save_tif_flag==1)
+        % %             current_seg = (imread([FilamentSegmentationChannelOutputDir,'/segment_binary_',filename_short_strs{iFrame},'.tif']))>0;
+        % %             RGB_seg_orient_heat_map = imread([HeatEnhOutputDir,'/segment_heat_',filename_short_strs{iFrame},'.tif']);
+        % %
+        %             tif_stack_binary_seg_image_data(:,:,iFrame_index) = uint8(current_seg*255);
+        %             tif_stack_RGB_heat_image_data(:,:,:,iFrame_index) = uint8(RGB_seg_orient_heat_map);
+        %
+        %         end
         %%
     end
     %% For Gelfand Lab, save results as tif stack file
@@ -926,9 +923,9 @@ for iChannel = selected_channels
         
         % Save the multi-frame RGB color image
         options.color = true;
-%         saveastiff(tif_stack_RGB_heat_image_data, [FilamentSegmentationProcessOutputDir,'/channel_',num2str(iChannel),'_seg_heat.tif'], options);
+        %         saveastiff(tif_stack_RGB_heat_image_data, [FilamentSegmentationProcessOutputDir,'/channel_',num2str(iChannel),'_seg_heat.tif'], options);
         options.color = false;
-%         saveastiff(tif_stack_binary_seg_image_data, [FilamentSegmentationProcessOutputDir,'/channel_',num2str(iChannel),'_seg_binary.tif'], options);
+        %         saveastiff(tif_stack_binary_seg_image_data, [FilamentSegmentationProcessOutputDir,'/channel_',num2str(iChannel),'_seg_binary.tif'], options);
         
     end
     

@@ -92,15 +92,6 @@ T_otsu_start =  max(mode_nms/2, (-abs(T_otsu - mode_nms)*0.1+mode_nms));
 
 MaskCell=MaskCell>0;
 
-T_otsu_start=0.4;
-
-MaskCell_nohole = MaskCell;
-MaskCell_nohole = bwmorph(MaskCell,'fill');
-MaskCell_nohole(140:170,140:170)=1;
-
-imageNMS_nohole = imageNMS.*MaskCell_nohole;
-imageInt_nohole = imageInt.*MaskCell_nohole;
-
 imageNMS = imageNMS.*MaskCell;
 imageInt = imageInt.*MaskCell;
 
@@ -143,45 +134,36 @@ obCentroid(:) = [ob_prop.Centroid];
 % The ratio of short vs long axis
 ratio  = obShortaxis./obLongaxis;
 
-
 feature_MeanInt = nan(nLine,1);
 feature_MeanNMS = nan(nLine,1);
 feature_Length = obAreas';
-smoothed_ordered_points = cell(1,1);
 feature_Curvature = nan(nLine,1);
-
 
 % for the features, only include those curves/lines longer than 4 pixels
 ind_long = find(feature_Length>=LengthThreshold);
 
-
-h14 = figure(14); set(h14,'Visible',set_visible); hold off;
-display_labelMask = 0*labelMask;
-
-for iiii = ind_long'
-    display_labelMask(labelMask==iiii)=iiii+100;
-end
-
-imagesc(display_labelMask);
-hold on;
-for iiii = ind_long'
-    %     obCentroid(1,iiii)
-    text(obCentroid(1,iiii),obCentroid(2,iiii),num2str(iiii),'color','r');
-end
 if(SaveFigures==1)
+    h14 = figure(14); set(h14,'Visible',set_visible); hold off;
+    display_labelMask = 0*labelMask;
     
+    for iiii = ind_long'
+        display_labelMask(labelMask==iiii)=iiii+100;
+    end
+    
+    imagesc(display_labelMask);
+    hold on;
+    for iiii = ind_long'
+        %     obCentroid(1,iiii)
+        text(obCentroid(1,iiii),obCentroid(2,iiii),num2str(iiii),'color','r');
+    end
     if(  ~exist([FilamentSegmentationChannelOutputDir,'/GEO'],'dir'))
         mkdir([FilamentSegmentationChannelOutputDir,'/GEO']);
     end
     
-    
     saveas(h14,[FilamentSegmentationChannelOutputDir,'/GEO/numbers_filament_f',num2str(iFrame),'.fig']);
     saveas(h14,[FilamentSegmentationChannelOutputDir,'/GEO/numbers_filament_f',num2str(iFrame),'.tif']);
-    saveas(h14,[FilamentSegmentationChannelOutputDir,'/GEO/numbers_filament_f',num2str(iFrame),'.eps']);
+    
 end
-
-
-
 
 
 

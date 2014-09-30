@@ -141,8 +141,9 @@ set(handles.popupmenu_cell_mask, 'Value',funParams.Cell_Mask_ind(current_ch_ind)
 set(handles.popupmenu_whole_movie,'Value',funParams.Whole_movie_ind(current_ch_ind));
 
 
-Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only','geo_based_training','geo_based_GM','canny_method', 'reserved_for_test'};
-for Combine_Way_ind = 1 : 9
+Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only',...
+    'geo_based_training','geo_based_GM','geo_based_no_GM','canny_method', 'reserved_for_test'};
+for Combine_Way_ind = 1 : 10
     if(strcmp(funParams.Combine_Way{current_ch_ind}, Combine_Way_tag{Combine_Way_ind}))
         set(handles.popupmenu_segmentationbase,'Value',Combine_Way_ind);
         break;
@@ -175,7 +176,8 @@ set(handles.uipanel_canny_panel,'Visible','off');
 
 if (strcmp(funParams.Combine_Way{current_ch_ind},'geo_based_training') ...
         || strcmp(funParams.Combine_Way{current_ch_ind},'geo_based_GM') ...
-        || strcmp(funParams.Combine_Way{current_ch_ind},'reserved_for_test'))
+         || strcmp(funParams.Combine_Way{current_ch_ind},'geo_based_no_GM') ...
+      || strcmp(funParams.Combine_Way{current_ch_ind},'reserved_for_test'))
     % with Geo based approaches, use the geo panel and make the
     % thresholding panel invisible
     set(handles.uipanel_threshold_panel,'Visible','off');
@@ -188,6 +190,16 @@ if (strcmp(funParams.Combine_Way{current_ch_ind},'geo_based_training') ...
     else
         set(handles.edit_IternationNumber,'Enable','on');
     end
+    
+    
+     
+    if (strcmp(funParams.Combine_Way{current_ch_ind},'geo_based_no_GM'))
+        set(handles.edit_IternationNumber,'Enable','off');
+        set(handles.edit_IternationNumber,'Value',0');
+    else
+        set(handles.edit_IternationNumber,'Enable','on');
+    end
+    
 else
     if (strcmp(funParams.Combine_Way{current_ch_ind},'canny_method') )
         set(handles.uipanel_threshold_panel,'Visible','off');
@@ -303,7 +315,7 @@ for this_channel_index = currentChannelIndex(:)'
     
     % all possible way of combining
     Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two', ...
-        'st_nms_only','geo_based_training','geo_based_GM','canny_method',...
+        'st_nms_only','geo_based_training','geo_based_GM','geo_based_no_GM','canny_method',...
         'reserved_for_test'};
     
     Combine_Way_ind = get(handles.popupmenu_segmentationbase, 'Value');
@@ -659,7 +671,7 @@ function popupmenu_segmentationbase_Callback(hObject, eventdata, handles)
 % not choosen as disabled from editing
 
 Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only',...
-    'geo_based_training','geo_based_GM','canny_method','reserved_for_test'};
+    'geo_based_training','geo_based_GM','geo_based_no_GM','canny_method','reserved_for_test'};
 
 Combine_Way_ind = get(hObject, 'Value');
 Combine_Way=Combine_Way_tag{Combine_Way_ind};
@@ -667,13 +679,15 @@ Combine_Way=Combine_Way_tag{Combine_Way_ind};
 
 set(handles.uipanel_threshold_panel,'Visible','off');
 set(handles.uipanel_Geo_panel,'Visible','off');
+set(handles.uipanel_canny_panel,'Visible','off');
 
 % see line 122 and on for comments, same thing
 if (strcmp(Combine_Way,'st_only')||strcmp(Combine_Way,'st_nms_two')||strcmp(Combine_Way,'st_nms_only'))
      
     set(handles.uipanel_threshold_panel,'Visible','on');    
     set(handles.uipanel_Geo_panel,'Visible','off');
-    
+    set(handles.uipanel_canny_panel,'Visible','off');
+
     set(handles.edit_StPaceSize,'Enable','on');
     set(handles.edit_StPatchSize,'Enable','on');
     set(handles.edit_st_lowerbound_localthresholding,'Enable','on');
@@ -697,7 +711,8 @@ else
          
     set(handles.uipanel_threshold_panel,'Visible','on');    
     set(handles.uipanel_Geo_panel,'Visible','off');
-    
+    set(handles.uipanel_canny_panel,'Visible','off');
+
         set(handles.edit_StPaceSize,'Enable','on');
         set(handles.edit_StPatchSize,'Enable','on');
         set(handles.edit_st_lowerbound_localthresholding,'Enable','on');
@@ -708,7 +723,7 @@ else
 end
 
 if (strcmp(Combine_Way,'geo_based_training') || strcmp(Combine_Way,'geo_based_GM')...
-        || strcmp(Combine_Way,'reserved_for_test') )
+        || strcmp(Combine_Way,'geo_based_no_GM')|| strcmp(Combine_Way,'reserved_for_test') )
     
     set(handles.uipanel_threshold_panel,'Visible','off');
     set(handles.uipanel_Geo_panel,'Visible','on');
@@ -720,8 +735,16 @@ if (strcmp(Combine_Way,'geo_based_training') || strcmp(Combine_Way,'geo_based_GM
         set(handles.edit_IternationNumber,'Enable','on');
     end   
     
+      
+    if (strcmp(Combine_Way,'geo_based_no_GM'))
+        set(handles.edit_IternationNumber,'Enable','off');
+        set(handles.edit_IternationNumber,'Value',0');
+    else
+        set(handles.edit_IternationNumber,'Enable','on');
+    end
     
-    if (strcmp(Combine_Way,'geo_based_GM') )
+    
+    if (strcmp(Combine_Way,'geo_based_GM') ||strcmp(Combine_Way,'geo_based_no_GM') )
           set(handles.popupmenu_classifier_type,'Value',1);  
     end
     
@@ -748,12 +771,14 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 set(hObject,'String',{'Steerable Filter Results','Intensity','Combine Both St and Int',...
-    'St NMS two','St nms only', 'Geo based with training','Geo based with GM','Canny Method',...
+    'St NMS two','St nms only', 'Geo based with training','Geo based with GM',...
+    'Geo based without GM','Canny Method',...
     'Reserved for Tests'});
 
-Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only','geo_based_training','geo_based_GM','canny_method','reserved_for_test'};
+Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only',...
+    'geo_based_training','geo_based_GM','geo_based_no_GM','canny_method','reserved_for_test'};
 % set(hObject,'Value',7);
-% for Combine_Way_ind = 1 : 9
+% for Combine_Way_ind = 1 : 10
 %     if(strcmp(funParams.Combine_Way, Combine_Way_tag{Combine_Way_ind}))
 %         set(hObject,'Value',Combine_Way_ind);
 %         break;
@@ -1256,7 +1281,8 @@ for this_channel_index = currentChannelIndex(:)
     
     funParams.channel_specific(this_channel_index)=1;
    
-    Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only','geo_based_training','geo_based_GM','canny_method','reserved_for_test'};
+    Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only',...
+        'geo_based_training','geo_based_GM','geo_based_no_GM','canny_method','reserved_for_test'};
     Combine_Way_ind = get(handles.popupmenu_segmentationbase, 'Value');
     funParams.Combine_Way{this_channel_index}=Combine_Way_tag{Combine_Way_ind};
     
@@ -1435,7 +1461,8 @@ for this_channel_index = currentChannelIndex(:)'
     % even if this channel has been specifically signed setting, 
     % re-assign acorrding to the current one.
     funParams.channel_specific(this_channel_index)=0;
-    Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only','geo_based_training','geo_based_GM','canny_method','reserved_for_test'};
+    Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only',...
+        'geo_based_training','geo_based_GM','geo_based_no_GM','canny_method','reserved_for_test'};
     Combine_Way_ind = get(handles.popupmenu_segmentationbase, 'Value');
     funParams.Combine_Way{this_channel_index} = Combine_Way_tag{Combine_Way_ind};
     
@@ -1684,8 +1711,9 @@ set(handles.edit_int_lowerbound_localthresholding,'String',funParams.int_lowerbo
 set(handles.popupmenu_cell_mask, 'Value',funParams.Cell_Mask_ind(current_ch_ind));
 set(handles.popupmenu_whole_movie,'Value',funParams.Whole_movie_ind(current_ch_ind));
 
-Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only','geo_based_training','geo_based_GM','canny_method','reserved_for_test'};
-for Combine_Way_ind = 1 : 9
+Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only',...
+    'geo_based_training','geo_based_GM','geo_based_no_GM','canny_method','reserved_for_test'};
+for Combine_Way_ind = 1 : 10
     if(strcmp(funParams.Combine_Way{current_ch_ind}, Combine_Way_tag{Combine_Way_ind}))
         set(handles.popupmenu_segmentationbase,'Value',Combine_Way_ind);
         break;
@@ -1704,21 +1732,31 @@ set(handles.edit_train_number,'String',funParams.training_sample_number(current_
 % first set everything as invisible
 set(handles.uipanel_threshold_panel,'Visible','off');
 set(handles.uipanel_Geo_panel,'Visible','off');
+set(handles.uipanel_canny_panel,'Visible','off');
 
 if (strcmp(funParams.Combine_Way{current_ch_ind},'geo_based_training') ...
         || strcmp(funParams.Combine_Way{current_ch_ind},'geo_based_GM') ...
+         || strcmp(funParams.Combine_Way{current_ch_ind},'geo_based_no_GM') ...
         || strcmp(funParams.Combine_Way{current_ch_ind},'reserved_for_test'))
     % with Geo based approaches, use the geo panel and make the
     % thresholding panel invisible
     set(handles.uipanel_threshold_panel,'Visible','off');
     set(handles.uipanel_Geo_panel,'Visible','on');
-     set(handles.uipanel_canny_panel,'Visible','on');
+     set(handles.uipanel_canny_panel,'Visible','off');
    
     if (strcmp(funParams.Combine_Way{current_ch_ind},'geo_based_training'))
         set(handles.edit_IternationNumber,'Enable','off');
     else
         set(handles.edit_IternationNumber,'Enable','on');
     end
+    
+    if (strcmp(funParams.Combine_Way{current_ch_ind},'geo_based_no_GM'))
+        set(handles.edit_IternationNumber,'Enable','off');
+         set(handles.edit_IternationNumber,'Value',0);
+    else
+        set(handles.edit_IternationNumber,'Enable','on');
+    end
+    
 else
     
     if (strcmp(funParams.Combine_Way{current_ch_ind},'canny_method') )
@@ -1751,7 +1789,8 @@ if (strcmp(funParams.Combine_Way{current_ch_ind},'st_only')||strcmp(funParams.Co
     % Geo panel invisible
     set(handles.uipanel_threshold_panel,'Visible','on');
     set(handles.uipanel_Geo_panel,'Visible','off');
-    
+    set(handles.uipanel_canny_panel,'Visible','off');
+
     % make the st based parameters enabled, but the intensity based
     % parameters disabled.
     set(handles.edit_StPaceSize,'Enable','on');
@@ -1768,7 +1807,8 @@ if (strcmp(funParams.Combine_Way{current_ch_ind},'int_only'))
     
     set(handles.uipanel_threshold_panel,'Visible','on');
     set(handles.uipanel_Geo_panel,'Visible','off');
-    
+    set(handles.uipanel_canny_panel,'Visible','off');
+
     % make the intensity based parameters enabled, but the st based
     % parameters disabled.
     set(handles.edit_StPaceSize,'Enable','off');
