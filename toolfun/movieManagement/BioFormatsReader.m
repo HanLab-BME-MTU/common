@@ -26,8 +26,8 @@ classdef  BioFormatsReader < Reader
             if ~isempty(ip.Results.reader),
                 obj.formatReader = ip.Results.reader;
             else
-                obj.formatReader = loci.formats.Memoizer(bfGetReader());
-                obj.formatReader.setId(self.id);
+                obj.formatReader = loci.formats.Memoizer(bfGetReader(),0);
+                obj.formatReader.setId(obj.id);
             end
             obj.series = ip.Results.series;
         end

@@ -49,7 +49,7 @@ try
     % autoload java path and configure log4j
     bfInitLogging();
     % Retrieve movie reader and metadata
-    r = loci.formats.Memoizer(bfGetReader());
+    r = loci.formats.Memoizer(bfGetReader(),0);
     r.setId(dataPath);
     r.setSeries(0);
 catch bfException
