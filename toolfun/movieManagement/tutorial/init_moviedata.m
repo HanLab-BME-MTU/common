@@ -1,12 +1,17 @@
-%% Create a MovieData object
+function MD = init_moviedata(varargin)
+%% TutorialCreate a MovieData object
+
+ip = inputParser();
+ip.addOptional('filePath', '', @ischar);
+ip.parse(varargin{:});
 
 %% Data setup
 % Provide your own filePath if you would like.
 % Otherwise, we will create fake sample data
-if(~exist('filePath','var'))
-
+if isempty(ip.Results.filePath)
+    
     % Creating a fake file in a temporary directory for testing purposes
-
+    
     % Create temporary directory
     java_tmpdir = char(java.lang.System.getProperty('java.io.tmpdir'));
     % Split UUID into two lines since MATLAB complains:
@@ -15,7 +20,7 @@ if(~exist('filePath','var'))
     uuid = char(uuid.toString());
     tmpdir = fullfile(java_tmpdir, uuid);
     mkdir(tmpdir);
-
+    
     % Create .fake file readable by Bio-Formats
     filePath = fullfile(tmpdir, 'test&sizeC=3&sizeZ=4&sizeT=10.fake');
     fid = fopen(filePath, 'w+');
@@ -26,11 +31,11 @@ end
 %% MovieData initialization
 
 % You can also provide your own MovieData object called MD
-if(~exist('MD','var'))
+if ~exist('MD','var') || nargout > 0
     % Using this constructor, filePath refers the full path to any file
     % readable by Bio-Formats.
     %
-    % For example: 
+    % For example:
     %
     %     filePath = '/home/user/Desktop/2014Mar20/110609_RhoWT_glycofect_001.dv';
     %

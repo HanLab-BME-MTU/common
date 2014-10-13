@@ -4,7 +4,12 @@
 % MD = MovieData.load(savedMoviePath);
 
 % initialization movie data
-init_moviedata;
+init_moviedata();
+
+%% 
+
+MD.addProcess(ExampleProcess(MD));
+MD.addPackage(ExamplePackage(MD));
 % may need to add a process
 
 %% Analysis
@@ -27,7 +32,7 @@ end
 %% Process
 
 % Retrieve second analysis process of the processes list
-process = MD.getProcess(2);
+process = MD.getProcess(1);
 fprintf(1, 'Process %g: %s\n', 1, process.getName());
 
 % Retrieve analysis parameters
