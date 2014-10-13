@@ -50,6 +50,11 @@ dataTypeMax = Inf;
 dataTypeMin = -Inf;
 dataType = class(data);
 
+if(isempty(data))
+    rep = [];
+    return;
+end
+
 if(nargin < 2)
     index = false;
 end

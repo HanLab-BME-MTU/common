@@ -15,6 +15,13 @@
 
 function [rep, udata, sdata] = getMultiplicity(data)
 
+% fail quickly if data is empty
+if(isempty(data))
+    r = [];
+    udata = data;
+    sdata = data;
+end
+
 if(~isinteger(data))
     data = data(isfinite(data));
 end
