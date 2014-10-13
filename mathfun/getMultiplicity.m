@@ -17,9 +17,10 @@ function [rep, udata, sdata] = getMultiplicity(data)
 
 % fail quickly if data is empty
 if(isempty(data))
-    r = [];
+    rep = [];
     udata = data;
     sdata = data;
+    return;
 end
 
 if(~isinteger(data))
