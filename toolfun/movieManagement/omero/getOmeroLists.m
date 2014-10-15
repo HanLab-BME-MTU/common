@@ -39,9 +39,7 @@ nLists = numel(datasets);
 ML(nLists) = MovieList();
 
 % Make sure the target directory existis
-if ~exist(ip.Results.path, 'dir') == 7
-    mkdir(ip.Results.path);
-end
+if ~isdir(ip.Results.path), mkdir(ip.Results.path); end
 
 % Set temporary file to extract file annotations
 namespace = getLCCBOmeroNamespace;
