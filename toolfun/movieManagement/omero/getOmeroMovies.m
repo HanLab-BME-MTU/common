@@ -36,7 +36,9 @@ nMovies = numel(imageIDs);
 MD(nMovies) = MovieData();
 
 % Make sure the target directory existis
-if ~isdir(ip.Results.path), mkdir(ip.Results.path); end
+if ~exist(ip.Results.path, 'dir') == 7
+    mkdir(ip.Results.path);
+end
 
 % Set temporary file to extract file annotations
 namespace = getLCCBOmeroNamespace;
