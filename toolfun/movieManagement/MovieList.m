@@ -180,12 +180,16 @@ classdef MovieList < MovieObject
         end
         
         function obj = loadOmero(session, varargin)
-            % Load or create a movie list from a dataset stored onto an
-            % OMERO server
+            % Load a movie list from a dataset stored onto an OMERO server
             obj = getOmeroLists(session, varargin{:});
         end
         
-         function status=checkValue(property,value)
+        function obj = loadMatFile(varargin)
+            % Load a movie list from a local MAT file
+            obj = MovieObject.loadMatFile('MovieList', varargin{:});
+        end
+        
+        function status=checkValue(property,value)
            % Return true/false if the value for a given property is valid
             
            % Parse input

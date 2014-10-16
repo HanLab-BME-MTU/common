@@ -652,15 +652,20 @@ classdef  MovieData < MovieObject
                 if isMatFile,
                     obj = MovieData.loadMatFile(varargin{:});
                 else
+                    % Backward-compatibility - call the constructor
                     obj = MovieData(varargin{:});
                 end
             end
         end
-        
+
         function obj = loadOmero(session, varargin)
-            % Load or create a movie from an image stored onto an OMERO
-            % server
+            % Load a movie from an image stored onto an OMERO server
             obj = getOmeroMovies(session, varargin{:});
+        end
+        
+        function obj = loadMatFile(varargin)
+            % Load a movie data from a local MAT file
+            obj = MovieObject.loadMatFile('MovieData', varargin{:});
         end
         
         function status=checkValue(property,value)

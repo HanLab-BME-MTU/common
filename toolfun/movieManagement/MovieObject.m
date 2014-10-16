@@ -440,7 +440,7 @@ classdef  MovieObject < hgsetget
     
     methods(Static)
 
-        function obj = loadMatFile(filepath, varargin)
+        function obj = loadMatFile(class, filepath, varargin)
             % Load a movie object saves as a MAT file on disk
             
             % Retrieve the absolute path
@@ -458,7 +458,8 @@ classdef  MovieObject < hgsetget
             end
             
             % Check if a single movie object is in the variables
-            isMovie = cellfun(@(x) any(strcmp(superclasses(x),'MovieObject')),{vars.class});
+            isMovie = cellfun(@(x) strcmp(x, class) || ...
+                any(strcmp(superclasses(x), class)),{vars.class});
             assert(any(isMovie),'lccb:movieObject:load', ...
                 'No movie object is found in selected MAT file.');
             assert(sum(isMovie)==1,'lccb:movieObject:load', ...
@@ -470,7 +471,7 @@ classdef  MovieObject < hgsetget
             
             % Perform sanityCheck using the input path
             [moviePath,movieName,movieExt]=fileparts(filepath);
-            if nargin>1 &&  MovieObject.isOmeroSession(varargin{1}),
+            if nargin>2 &&  MovieObject.isOmeroSession(varargin{1}),
                 obj.setOmeroSession(varargin{1});
                 obj.sanityCheck(moviePath,[movieName movieExt], varargin{2:end});
             else
