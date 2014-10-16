@@ -163,6 +163,28 @@ classdef MovieList < MovieObject
     
     methods(Static)
         
+        function obj = load(varargin)
+            % Load or a movie list
+            
+            assert(nargin > 0);
+            assert(MovieList.isOmeroSession(varargin{1}) || ...
+                exist(varargin{1}, 'file') == 2)
+            
+            if MovieList.isOmeroSession(varargin{1}),
+                obj = MovieList.loadOmero(varargin{:});
+            else
+                assert(strcmpi(varargin{1}(end-3:end), '.mat'),...
+                    'Input must be a MAT file');
+                obj = MovieList.loadMatFile(varargin{:});
+            end
+        end
+        
+        function obj = loadOmero(session, varargin)
+            % Load or create a movie list from a dataset stored onto an
+            % OMERO server
+            obj = getOmeroLists(session, varargin{:});
+        end
+        
          function status=checkValue(property,value)
            % Return true/false if the value for a given property is valid
             
