@@ -286,8 +286,8 @@ classdef  MovieData < MovieObject
             roiService = obj.getOmeroSession().getRoiService();
             roi = toMatlabList(roiService.findByRoi(obj.roiOmeroId_,...
                 omero.api.RoiOptions()).rois);
-            assert(isscalar(roi))
-            mask = false([obj.imSize_ obj.nFrames_]);
+            mask = true([obj.imSize_ obj.nFrames_]);
+            if isempty(roi) || ~isscalar(roi), return; end
             for i = 1: roi.sizeOfShapes
                 shape = roi.getShape(i-1);
                 t = shape.getTheT.getValue + 1;
