@@ -463,7 +463,9 @@ classdef  MovieObject < hgsetget
             assert(any(isMovie),'lccb:movieObject:load', ...
                 'No movie object is found in selected MAT file.');
             assert(sum(isMovie)==1,'lccb:movieObject:load', ...
-                'Multiple movie objects are found in selected MAT file.');
+                'Multiple objects are found in selected MAT file.');
+            assert(isequal(prod(vars(isMovie).size), 1),'lccb:movieObject:load', ...
+                'Multiple objects are found in selected MAT file.');
             
             % Load movie object
             data = load(filepath, '-mat', vars(isMovie).name);
