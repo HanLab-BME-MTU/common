@@ -96,15 +96,20 @@ classdef ImageDisplay < MovieDataDisplay
             params(6).name='lfont';
             params(6).validator=@iscell;
             params(7).name='ColorbarLocation';
-            findclass(findpackage('scribe'),'colorbar');
-            locations = findtype('ColorbarLocationPreset');
-            locations = locations.Strings;
-            params(7).validator=@(x) any(strcmp(x,locations));
+            params(7).validator=@(x) any(strcmp(x, ImageDisplay.getColorBarLocations()));
             params(8).name='ScaleFactor';
             params(8).validator=@isscalar;
             params(9).name='NaNColor';
             params(9).validator=@isvector;
         end
+        
+        function locations = getColorBarLocations()
+            locations = {...
+                'North', 'South', 'East', 'West',...
+                'NorthOutside', 'SouthOutside', 'EastOutside',...
+                'WestOutside' };
+        end
+        
         function f=getDataValidator()
             f=@isnumeric;
         end
