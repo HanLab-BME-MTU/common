@@ -1,21 +1,38 @@
 function movieData = filament_segmentation(movieData, paramsIn, wholemovie_input_filename, varargin)
+% Main function for the segmentation/reconstruction step in filament analysis
+
+% Input:     movieData:  movieData object, with the parameters
+%            funParams:  the parameters to use, if given, overlay
+%                    the funParams that comes with movieData. Here are the
+%                    fields:
+%                      funParams.ChannelIndex:         the channels to process
+%                      funParams.Pace_Size:            the parameter to set pace in local segmentation
+%                      funParams.Patch_Size:           the parameter to set patch size in local segmentation, for the estimation of local threshold
+%                      funParams.lowerbound_localthresholding: The percentage as the lower bound of local thresholding
+%                                    local threshold has to be larger or equal to this percentage of the global threshold
+%                      funParams.Combine_Way :         The way to combine segmentation results from steerable filtering responce
+%                                     and from intensity, default is : only use steerable filtering result
+%                      funParams.Cell_Mask_ind:        Flag to set if cell mask is used, if 1, use segmentation(refined) results,
+%                                     if 2, use the user define ROI as in MD_ROI.tif in movieData folder, if 3, no such limit
+%                      funParams.VIF_Outgrowth_Flag:   Flag to do VIF_outgrowth or not. This is an option made for Gelfand lab
+%            wholemovie_input_filename: the filename of mat file previously saved for the
+%                           whole movie statistics for this or some other
+%                           movie. If given, this will overwrite the
+%                           wholemovie statistics that comes with the
+%                           movieData
+
+% Output:    movieData:   updated movieData object. With the segmentation
+%                   resulting images saved to the hard disk with corresponing locations.
+
 % Created 07 2012 by Liya Ding, Matlab R2011b
 
-% input movieData object, with the parameters
-%   funParams.ChannelIndex:         the channels to process
-%   funParams.Pace_Size:            the parameter to set pace in local segmentation
-%   funParams.Patch_Size:           the parameter to set patch size in local segmentation, for the estimation of local threshold
-%   funParams.lowerbound_localthresholding: The percentage as the lower bound of local thresholding
-%                                    local threshold has to be larger or equal to this percentage of the global threshold
-%   funParams.Combine_Way :         The way to combine segmentation results from steerable filtering responce
-%                                     and from intensity, default is : only use steerable filtering result
-%   funParams.Cell_Mask_ind:        Flag to set if cell mask is used, if 1, use segmentation(refined) results,
-%                                     if 2, use the user define ROI as in MD_ROI.tif in movieData folder, if 3, no such limit
-%   funParams.VIF_Outgrowth_Flag:   Flag to do VIF_outgrowth or not. This is an option made for Gelfand lab
+%% Data Preparation
+
+% before even looking at the nargin, check for the condition and indices
+% for the different packages.
 
 % a temp flag for saving tif stack image for Gelfand Lab
 save_tif_flag=1;
-
 
 % Find the package of Filament Analysis
 nPackage = length(movieData.packages_);
@@ -32,7 +49,6 @@ if(indexFilamentPackage==0)
     msgbox('Need to be in Filament Package for now.')
     return;
 end
-
 
 nProcesses = length(movieData.processes_);
 
@@ -57,8 +73,6 @@ if nargin < 2
 else
     funParams = paramsIn;
 end
-
-
 
 
 selected_channels = funParams.ChannelIndex;
@@ -86,8 +100,8 @@ IternationNumber_movie = funParams.IternationNumber;
 CurvatureThreshold_movie = funParams.CurvatureThreshold;
 Cell_Mask_ind = Cell_Mask_ind_movie;
 
-
-
+% if the package was run with old version with only one set of parameter
+% for all channels, make a copy of parameter to every channel
 if(length(funParams.StPace_Size)==1 && numel(movieData.channels_)>1)
     ones_array = ones(1,numel(movieData.channels_));
     funParams.StPace_Size = funParams.StPace_Size*ones_array;
@@ -117,8 +131,6 @@ end
 
 
 %% Output Directories
-
-
 
 % default steerable filter process output dir
 FilamentSegmentationProcessOutputDir = [movieData.outputDirectory_, filesep 'FilamentSegmentation'];
@@ -600,25 +612,25 @@ for iChannel = selected_channels
                 % Liya: test for the running of the comparison
                 current_seg_canny_cell=cell(1,1);
                 display('Canny Test:');
-                tic
-                %                 for PercentOfPixelsNotEdges = 0.8: 0.1: 0.95
-                %                     for ThresholdRatio = 0.8 : 0.1: 0.95
-                for iP = 1 : 5
-                    for iT = 1 : 5
-                        
-                        PercentOfPixelsNotEdges = iP/20+0.70;
-                        ThresholdRatio = iT/20+0.70;
-                        
-                        [lowThresh, highThresh, current_seg]...
-                            = proximityBasedNmsSeg(MAX_st_res,...
-                            orienation_map,funParams,...
-                            PercentOfPixelsNotEdges,ThresholdRatio);
-                        current_seg_canny_cell{iP,iT} = current_seg;
-                        
-                        
-                    end
-                end
-                toc
+%                 tic
+%                 %                 for PercentOfPixelsNotEdges = 0.8: 0.1: 0.95
+%                 %                     for ThresholdRatio = 0.8 : 0.1: 0.95
+%                 for iP = 1 : 5
+%                     for iT = 1 : 5
+%                         
+%                         PercentOfPixelsNotEdges = iP/20+0.70;
+%                         ThresholdRatio = iT/20+0.70;
+%                         
+%                         [lowThresh, highThresh, current_seg]...
+%                             = proximityBasedNmsSeg(MAX_st_res,...
+%                             orienation_map,funParams,...
+%                             PercentOfPixelsNotEdges,ThresholdRatio);
+%                         current_seg_canny_cell{iP,iT} = current_seg;
+%                         
+%                         
+%                     end
+%                 end
+%                 toc
                 
                 % get the percentage threshold from funParam
                 HigherThresdhold = funParams.CannyHigherThreshold(iChannel)/100;
