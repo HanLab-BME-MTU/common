@@ -247,7 +247,7 @@ set(handles.text_status, 'Position',...
 for i = 1:nProc
     for j=1:length(templateTag)
         procTag{j}=[templateTag{j} '_' num2str(i)];
-        handles.(procTag{j}) = copyobj(handles.(templateTag{j}),handles.panel_proc);
+        handles.(procTag{j}) = copyobj(handles.(templateTag{j}),handles.panel_proc, 'legacy');
         set(handles.(procTag{j}),'Tag',procTag{j},'Position',...
             get(handles.(templateTag{j}),'Position')+(nProc-i)*[0 40 0 0]);
     end
