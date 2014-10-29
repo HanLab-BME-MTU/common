@@ -77,7 +77,7 @@ ip.addParamValue('mainFig',-1,@ishandle);
 ip.parse(hObject,eventdata,handles,varargin{:})
 
 % Store inpu
-userData = get(handles.figure1, 'UserData');
+if isempty(userData), userData = struct(); end
 userData.MD=ip.Results.MD;
 userData.mainFig=ip.Results.mainFig;
 

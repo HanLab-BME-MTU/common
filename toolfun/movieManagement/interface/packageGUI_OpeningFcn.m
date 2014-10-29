@@ -67,6 +67,7 @@ assert(any(strcmp(superclasses(packageName),'Package')),...
       
 handles.output = hObject;
 userData = get(handles.figure1,'UserData');
+if isempty(userData), userData = struct(); end
 userData.packageName = packageName;
 userData.MD = ip.Results.MD;
 userData.ML = ip.Results.ML;
