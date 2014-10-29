@@ -19,10 +19,14 @@ ip.parse(handles,type)
 
 % Retrieve handles
 userData = get(handles.figure1, 'UserData');
+if isempty(userData), userData = struct(); end
 nProc = size(userData.dependM, 1);
-setupHandles = arrayfun(@(i)handles.(['checkbox_',num2str(i)]),1:nProc);
-showHandles = arrayfun(@(i)handles.(['pushbutton_show_',num2str(i)]),1:nProc);
-openHandles = arrayfun(@(i)handles.(['pushbutton_open_',num2str(i)]),1:nProc);
+
+for i = 1 : nProc
+    setupHandles(i) = handles.(['checkbox_',num2str(i)]);
+    showHandles(i) = handles.(['pushbutton_show_',num2str(i)]);
+    openHandles(i) = handles.(['pushbutton_open_',num2str(i)]);
+end
 set(setupHandles,'Enable','on');
 
 % Set movie data path
