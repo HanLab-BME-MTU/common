@@ -7,7 +7,7 @@ function processGUI_ApplyFcn(hObject, eventdata, handles,funParams,varargin)
 % Check input
 ip = inputParser;
 ip.addRequired('hObject',@ishandle);
-ip.addRequired('eventdata',@(x) isstruct(x) || isempty(x));
+ip.addRequired('eventdata',@(x) isstruct(x) || isempty(x) || isa(x, 'event.EventData'));
 ip.addRequired('handles',@isstruct);
 ip.addRequired('funParams',@(x) isstruct(x) || isempty(x))
 ip.addOptional('settingFcn',{},@iscell);
