@@ -22,7 +22,7 @@ function varargout = movieSelectorGUI(varargin)
 
 % Edit the above text to modify the response to help movieSelectorGUI
 
-% Last Modified by GUIDE v2.5 12-Nov-2013 11:23:44
+% Last Modified by GUIDE v2.5 21-Oct-2014 12:46:50
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -298,49 +298,69 @@ function pushbutton_open_Callback(hObject, eventdata, handles)
 
 userData = get(handles.figure1, 'UserData');
 filespec = {'*.mat','MATLAB Files'};
-[filename, pathname] = uigetfile(filespec,'Select a movie or a list of movies', ...
+[filename, pathname] = uigetfile(filespec,'Select a movie to load', ...
     userData.userDir);
 if ~any([filename pathname]), return; end
 userData.userDir = pathname;
 
 % Check if reselect the movie data that is already in the listbox
 moviePaths = get(handles.listbox_movie, 'String');
-movieListPaths = get(handles.listbox_movieList, 'String');
-
-if any(strcmp([pathname filename],vertcat(moviePaths,movieListPaths)))
+if any(strcmp([pathname filename], moviePaths))
     errordlg('This movie has already been selected.','Error','modal');
     return
 end
 
 try
-    M = MovieObject.load([pathname filename]);
+    MD = MovieData.load([pathname filename]);
+    userData.MD = horzcat(userData.MD, MD);
 catch ME
     msg = sprintf('Movie: %s\n\nError: %s\n\nMovie is not successfully loaded. Please refer to movie detail and adjust your data.', [pathname filename],ME.message);
     errordlg(msg, 'Movie error','modal');
     return
 end
 
-switch class(M)
-    case 'MovieData'
-        userData.MD = horzcat(userData.MD, M);
-    case 'MovieList'        
-        % Find duplicate movie data in list box
-        movieDataFile = M.movieDataFile_;
-        index = 1: length(movieDataFile);
-        movieList=get(handles.listbox_movie,'String');
-        index = index(~ismember(movieDataFile,movieList));
-        
-        if isempty(index)
-            msg = sprintf('All movie data in movie list file %s has already been added to the movie list box.', M.movieListFileName_);
-            warndlg(msg,'Warning','modal');
-        end
-                  
-        % Healthy Movie Data        
-        userData.ML = horzcat(userData.ML, M);
-        userData.MD = horzcat(userData.MD,M.getMovies{index});
-    otherwise
-        error('User-defined: varable ''type'' does not have an approprate value.')
+% Refresh movie box in movie selector panel
+set(handles.figure1, 'UserData', userData);
+refreshDisplay(hObject,eventdata,handles);
+
+% --- Executes on button press in pushbutton_openlist.
+function pushbutton_openlist_Callback(hObject, eventdata, handles)
+
+userData = get(handles.figure1, 'UserData');
+filespec = {'*.mat','MATLAB Files'};
+[filename, pathname] = uigetfile(filespec,'Select a movie list to load', ...
+    userData.userDir);
+if ~any([filename pathname]), return; end
+userData.userDir = pathname;
+
+% Check if reselect the movie list that is already in the listbox
+movieListPaths = get(handles.listbox_movieList, 'String');
+if any(strcmp([pathname filename], movieListPaths))
+    errordlg('This movie list has already been opened.','Error','modal');
+    return
 end
+
+try
+    ML = MovieList.load([pathname filename]);
+catch ME
+    msg = sprintf('Movie: %s\n\nError: %s\n\nMovie is not successfully loaded. Please refer to movie detail and adjust your data.', [pathname filename],ME.message);
+    errordlg(msg, 'Movie error','modal');
+    return
+end
+% Find duplicate movie data in list box
+movieDataFile = ML.movieDataFile_;
+index = 1: length(movieDataFile);
+movieList=get(handles.listbox_movie,'String');
+index = index(~ismember(movieDataFile,movieList));
+
+if isempty(index)
+    msg = sprintf('All movies in movie list file %s have already been added to the list of movies.', ML.movieListFileName_);
+    warndlg(msg,'Warning','modal');
+end
+
+% Healthy movie list
+userData.ML = horzcat(userData.ML, ML);
+userData.MD = horzcat(userData.MD,ML.getMovies{index});
 
 % Refresh movie list box in movie selector panel
 set(handles.figure1, 'UserData', userData);
@@ -502,7 +522,7 @@ userData = get(handles.figure1, 'Userdata');
 if isempty(userData.MD), return;end
 
 % Delete channel object
-iList = get(handles.listbox_movie,'Value');
+iList = get(handles.listbox_movieList,'Value');
 delete(userData.ML(iList));
 userData.ML(iList) = [];
 

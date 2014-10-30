@@ -638,6 +638,36 @@ classdef  MovieData < MovieObject
         
     end
     methods(Static)
+        function obj = load(varargin)
+            % Load or re-load a movie object
+            
+            assert(nargin > 0);
+            assert(MovieData.isOmeroSession(varargin{1}) || ...
+                exist(varargin{1}, 'file') == 2)
+            
+            if MovieObject.isOmeroSession(varargin{1}),
+                obj = MovieData.loadOmero(varargin{:});
+            else
+                isMatFile = strcmpi(varargin{1}(end-3:end), '.mat');
+                if isMatFile,
+                    obj = MovieData.loadMatFile(varargin{:});
+                else
+                    % Backward-compatibility - call the constructor
+                    obj = MovieData(varargin{:});
+                end
+            end
+        end
+
+        function obj = loadOmero(session, varargin)
+            % Load a movie from an image stored onto an OMERO server
+            obj = getOmeroMovies(session, varargin{:});
+        end
+        
+        function obj = loadMatFile(varargin)
+            % Load a movie data from a local MAT file
+            obj = MovieObject.loadMatFile('MovieData', varargin{:});
+        end
+        
         function status=checkValue(property,value)
             % Return true/false if the value for a given property is valid
             
