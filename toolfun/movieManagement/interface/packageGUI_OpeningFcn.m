@@ -244,19 +244,28 @@ set(handles.panel_proc,'Position',...
 set(handles.text_status, 'Position',...
     get(handles.text_status,'Position')+(nProc-1)*[0 40 0 0])      
 
-for i = 1:nProc
-    for j=1:length(templateTag)
+% Replicate templates ui controls for each process
+for i = 1 : nProc
+    for j = 1 : length(templateTag)
         procTag{j}=[templateTag{j} '_' num2str(i)];
-        handles.(procTag{j}) = copyobj(handles.(templateTag{j}),handles.panel_proc, 'legacy');
+        handles.(procTag{j}) = copyobj(handles.(templateTag{j}),handles.panel_proc);
         set(handles.(procTag{j}),'Tag',procTag{j},'Position',...
             get(handles.(templateTag{j}),'Position')+(nProc-i)*[0 40 0 0]);
+        if ~strcmp(templateTag{j}(1:4), 'axes')
+            % Make sure callbacks are copied - copyobj does not copy
+            % callbacks starting with R2014b
+            set(handles.(procTag{j}),'Callback',...
+                get(handles.(templateTag{j}),'Callback'));
+        end
     end
   
+    % Set name of the process in the corresponding checkbox
     processClassName = userData.crtPackage.getProcessClassNames{i};
     processName=eval([processClassName '.getName']);
     checkboxString = [' Step ' num2str(i) ': ' processName];
     set(handles.(procTag{1}),'String',checkboxString)
     
+    % Setup help button
     set(handles.figure1,'CurrentAxes',handles.(procTag{5}));
     Img = image(userData.smallquestIconData);
     set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'),...
@@ -265,9 +274,11 @@ for i = 1:nProc
         'UserData', struct('class', processClassName))
 end
 
-cellfun(@(x)delete(handles.(x)),templateTag)
+% Remove templates and remove from the handles structure
+cellfun(@(x) delete(handles.(x)), templateTag)
 handles = rmfield(handles,templateTag);
 
+% Add text boxes for optional processes
 optTag = 'text_optional';
 for i = userData.optProcID
     procOptTag=[optTag '_' num2str(i)];
@@ -276,9 +287,9 @@ for i = userData.optProcID
         get(handles.(optTag),'Position')+(nProc-i)*[0 40 0 0]);
 end
 
+% Remove template optional text box
 delete(handles.(optTag));
 handles = rmfield(handles,optTag);
-
 
 % --------------------------Create tools menu-----------------------------
 
