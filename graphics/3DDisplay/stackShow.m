@@ -28,20 +28,23 @@ ip.addParamValue('threshold',0,@isnumeric);
 ip.parse(vol, varargin{:});
 
 vol(vol<ip.Results.threshold)=0;
+vol=double(vol);
+
+colordef black;
 
 if ~isempty(ip.Results.overlay)
     label=ip.Results.overlay;
-    vol=vol/max(vol(:));
-    volView=repmat(vol,[1 1 1 3]);
-    volView=double(volView);
-    volView(:,:,:,1)=label;
-    vol3d('cdata',volView,'Alpha',vol);     
+    gvol=mat2gray(vol,quantile(vol(:),[0.9 .999]));
+    volView=repmat(gvol,[1 1 1 3]);
+    gvol(label>0)=label(label>0);
+    volView(:,:,:,1)=gvol;
+    vol3d('cdata',volView,'Alpha',max(label,mat2gray(vol,quantile(vol(:),[.5 1.]))));     
 else
-    vol=vol/max(vol(:));
-    volView=repmat(vol,[1 1 1 3]);
+    gvol=mat2gray(vol,quantile(vol(:),[0.5 0.999]));
+    %vol=mat2gray(vol);
+    volView=repmat(gvol,[1 1 1 3]);
     volView=double(volView);
-    vol3d('cdata',volView,'Alpha',vol);   
-    colormap('gray');
+    vol3d('cdata',volView,'Alpha',mat2gray(vol,quantile(vol(:),[0.5 1.])));
 end    
 
 % Respect proportional aspect ratios
