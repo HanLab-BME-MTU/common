@@ -3,11 +3,11 @@ function [N,X,sp] = optimalHistogram(varargin)
 %
 % This function was previously called histogram prior to R2014B
 %
-% If called with no output argument, histogram plots into the current axes
+% If called with no output argument, optimalHistogram plots into the current axes
 %
-% SYNOPSIS [N,X,sp] = histogram(data,factor,normalize)
-%          [...] = histogram(data,'smooth')
-%          [...] = histogram(axesHandle,...)
+% SYNOPSIS [N,X,sp] = optimalHistogram(data,factor,normalize)
+%          [...] = optimalHistogram(data,'smooth')
+%          [...] = optimalHistogram(axesHandle,...)
 %
 % INPUT    data: vector of input data
 %          factor: (opt) factor by which the bin-widths are multiplied
@@ -53,7 +53,7 @@ function [N,X,sp] = optimalHistogram(varargin)
 
 % test input
 if nargin < 1
-    error('not enough input arguments for histogram')
+    error('not enough input arguments for optimalHistogram')
 end
 
 % check for axes handle
@@ -93,7 +93,7 @@ if ischar(factor)
         case {'continuous','c'}
             factor = -3;
     otherwise
-        error('The only string inputs permitted for histogram.m are ''smooth'',''discrete'', or ''continuous''')
+        error('The only string inputs permitted for optimalHistogram.m are ''smooth'',''discrete'', or ''continuous''')
     end
 else
     % check for normalize, but do so only if there is no "smooth". Note
