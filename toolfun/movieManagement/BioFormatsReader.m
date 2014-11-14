@@ -21,6 +21,8 @@ classdef  BioFormatsReader < Reader
             
             % Initialize Bio-Formats
             bfCheckJavaPath();
+            % Initialize log4j
+            loci.common.DebugTools.enableLogging('WARN');
             
             obj.id = ip.Results.id;
             if ~isempty(ip.Results.reader),
