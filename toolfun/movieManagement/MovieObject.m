@@ -440,7 +440,7 @@ classdef  MovieObject < hgsetget
     
     methods(Static)
 
-        function obj = loadMatFile(class, filepath, varargin)
+        function obj = loadMatFile(class, filepath)
             % Load a movie object saves as a MAT file on disk
             
             % Retrieve the absolute path
@@ -470,15 +470,6 @@ classdef  MovieObject < hgsetget
             % Load movie object
             data = load(filepath, '-mat', vars(isMovie).name);
             obj= data.(vars(isMovie).name);
-            
-            % Perform sanityCheck using the input path
-            [moviePath,movieName,movieExt]=fileparts(filepath);
-            if nargin>2 &&  MovieObject.isOmeroSession(varargin{1}),
-                obj.setOmeroSession(varargin{1});
-                obj.sanityCheck(moviePath,[movieName movieExt], varargin{2:end});
-            else
-                obj.sanityCheck(moviePath,[movieName movieExt], varargin{:});
-            end
         end
         
         function validator = getPropertyValidator(property)
