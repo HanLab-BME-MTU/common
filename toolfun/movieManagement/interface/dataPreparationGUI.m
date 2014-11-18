@@ -359,7 +359,7 @@ function pushbutton_edit_movie_Callback(hObject, ~, handles)
 
 userData = get(handles.figure1, 'UserData');
 
-if isempty(userData.movies), return; end
+if isempty(userData), userData = struct(); end
 % Retrieve the selected movie ID and launch a dialog box asking the user
 % for the new movie name
 selectedMovie = get(handles.listbox_movies,'Value');

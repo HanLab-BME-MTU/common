@@ -65,6 +65,9 @@ function channelGUI_OpeningFcn(hObject, ~, handles, varargin)
 set(handles.text_copyright, 'String', getLCCBCopyright())
 
 userData = get(handles.figure1, 'UserData');
+
+if isempty(userData), userData = struct(); end
+
 % Choose default command line output for channelGUI
 handles.output = hObject;
 
