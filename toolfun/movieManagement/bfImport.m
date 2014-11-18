@@ -47,8 +47,7 @@ dataPath = f.Name;
 
 try
     % autoload java path and configure log4j
-    bfCheckJavaPath();
-    loci.common.DebugTools.enableLogging('WARN');
+    bfInitLogging();
     % Retrieve movie reader and metadata
     r = bfGetReader(dataPath);
     r.setSeries(0);
