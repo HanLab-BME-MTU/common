@@ -59,6 +59,7 @@ ip.addRequired('handles',@isstruct);
 ip.addOptional('MD',[],@(x)isa(x,'MovieData'));
 ip.addParamValue('mainFig',-1,@ishandle);
 ip.parse(hObject,eventdata,handles,varargin{:});
+
 userData.MD =ip.Results.MD;
 userData.mainFig =ip.Results.mainFig;
         
@@ -117,12 +118,14 @@ function figure1_DeleteFcn(hObject, ~, handles)
 % Notify the package GUI that the setting panel is closed
 userData = get(handles.figure1, 'UserData');
 
-if ishandle(userData.helpFig), delete(userData.helpFig); end
-if ishandle(userData.previewFig), delete(userData.previewFig); end
-
-set(handles.figure1, 'UserData', userData);
-guidata(hObject,handles);
-
+if ~isempty(userData)
+    
+    if ishandle(userData.helpFig), delete(userData.helpFig); end
+    if ishandle(userData.previewFig), delete(userData.previewFig); end
+    
+    set(handles.figure1, 'UserData', userData);
+    guidata(hObject,handles);
+end
 
 % --- Executes on key press with focus on pushbutton_addROI and none of its controls.
 function pushbutton_addROI_KeyPressFcn(~, eventdata, handles)

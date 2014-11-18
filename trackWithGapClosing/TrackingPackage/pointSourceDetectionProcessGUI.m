@@ -155,6 +155,7 @@ delete(handles.figure1);
 function figure1_DeleteFcn(hObject, ~, handles)
 % Notify the package GUI that the setting panel is closed
 userData = get(handles.figure1, 'UserData');
+if(isempty(userData)), userData = struct(); end;
 
 if isfield(userData, 'helpFig') && ishandle(userData.helpFig)
    delete(userData.helpFig) 
@@ -512,6 +513,8 @@ procID = props{1}{props{2}};
 
 % Read process and check available channels
 userData = get(handles.figure1, 'UserData');
+if(isempty(userData)), userData = struct(); end;
+
 if isempty(procID)
     allChannelIndex=1:numel(userData.MD.channels_);
 else
