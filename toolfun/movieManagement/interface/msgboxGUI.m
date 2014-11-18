@@ -81,9 +81,8 @@ set(handles.text_title, 'string',ip.Results.title)
 
 if ~isempty(ip.Results.extendedText),
     userData = get(handles.figure1,'UserData');
-    
+
     if isempty(userData), userData = struct(); end
-    
     set(handles.pushbutton_extendedText,'Visible','on');
     userData.text = ip.Results.text;
     userData.extendedText=ip.Results.extendedText;
