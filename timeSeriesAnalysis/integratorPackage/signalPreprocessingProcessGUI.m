@@ -50,6 +50,7 @@ function signalPreprocessingProcessGUI_OpeningFcn(hObject,eventdata,handles,vara
 processGUI_OpeningFcn(hObject, eventdata, handles, varargin{:});
 
 userData=get(handles.figure1,'UserData');
+if isempty(userData), userData = struct(); end
 funParams = userData.crtProc.funParams_;
 
 % Set up available movies
@@ -157,6 +158,7 @@ delete(handles.figure1);
 function figure1_DeleteFcn(hObject, ~, handles)
 % Notify the package GUI that the setting panel is closed
 userData = get(handles.figure1, 'UserData');
+if isempty(userData), userData = struct(); end
 
 delete(userData.helpFig(ishandle(userData.helpFig)));
 delete(userData.previewFig(ishandle(userData.previewFig)));
@@ -308,6 +310,7 @@ processGUI_ApplyFcn(hObject, eventdata, handles,funParams);
 function update_preview(hObject, eventdata, handles)
 
 userData=get(handles.figure1,'UserData');
+if isempty(userData), userData = struct(); end
 
 % Delete figure if checkbox is unselected
 if ~get(handles.checkbox_selectSlices,'Value')
@@ -379,6 +382,7 @@ set(f,'UserData',userData,'WindowButtonMotionFcn',@updateAlphaMask,...
 function saveAlphaMask(src,event)
 
 userData = updateAlphaMask(src);
+if isempty(userData), userData = struct(); end
 % Save data in the figure
 set(src,'UserData',userData);
 set(src,'WindowButtonMotionFcn',[],'WindowButtonUpFcn',[]);
@@ -387,6 +391,7 @@ function userData=updateAlphaMask(src,event)
 
 % Retrieve current point
 userData = get(src,'UserData');
+if isempty(userData), userData = struct(); end
 point = get(gca,'CurrentPoint');
 windowIndex=floor(point(1,2));
 
@@ -411,6 +416,7 @@ function closeGraphFigure(src,event)
 
 % Update SliceIndex parameters in main process figure
 userData = get(src,'UserData');
+if isempty(userData), userData = struct(); end
 userData_main =get(userData.mainFig,'UserData');
 handles_main = guidata(userData.mainFig);
 userData_main.SliceIndex{userData_main.movieID}=logical(sum(userData.alphamask,2));
