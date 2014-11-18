@@ -62,6 +62,7 @@ ip.parse(hObject,eventdata,handles,varargin{:})
 
 % Store inpu
 userData = get(handles.figure1, 'UserData');
+if isempty(userData), userData = struct(); end
 userData.mainFig=ip.Results.mainFig;
 
 
@@ -124,6 +125,7 @@ props = get(handles.popupmenu_user, {'Value', 'UserData'});
 userId = props{2}(props{1});
 
 userData = get(handles.figure1, 'UserData');
+if isempty(userData), userData = struct(); end
 if userId ~= session.getAdminService.getEventContext().userId && ...
         ~userData.groupPermissions.isGroupAnnotate(),
     set(handles.pushbutton_load_images, 'Enable', 'off');
@@ -158,6 +160,7 @@ set(handles.popupmenu_project, 'Value', 1, 'String', projectNames,...
 
 % Save orphaned datasets
 userData = get(handles.figure1, 'UserData');
+if isempty(userData), userData = struct(); end
 userData.orphaned_datasets = orphanedDatasets;
 set(handles.figure1, 'UserData', userData);
 
@@ -236,6 +239,7 @@ imageIDs = arrayfun(@(x) x.getId().getValue(), props{2}(props{1}));
 
 % If derivated from movie selection window, only load new movies
 userData = get(handles.figure1, 'UserData');
+if isempty(userData), userData = struct(); end
 if ishandle(userData.mainFig),
     userData=get(handles.figure1,'UserData');
     userData_main = get(userData.mainFig, 'UserData');
@@ -280,6 +284,7 @@ datasetIDs = props{2}(props{1}-1).getId().getValue();
 
 % If derivated from movie selection window, only load new movies
 userData = get(handles.figure1, 'UserData');
+if isempty(userData), userData = struct(); end
 if ishandle(userData.mainFig),
     userData=get(handles.figure1,'UserData');
     userData_main = get(userData.mainFig, 'UserData');
