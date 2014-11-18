@@ -32,7 +32,7 @@ function fileName=chooseFile(fileString,fileDir,chooseMode,excludeStr)
 %c: 2-03 Jonas
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-fprintf(2,['Warning: ''' mfilename ''' is deprecated and should no longer be used.\n']);
+%fprintf(2,['Warning: ''' mfilename ''' is deprecated and should no longer be used.\n']);
 
 %test input
 if ~isa(fileString,'char') | nargin==0
