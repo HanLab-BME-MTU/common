@@ -51,6 +51,8 @@ processGUI_OpeningFcn(hObject, eventdata, handles, varargin{:},'initChannel',1)
 
 % Parameter Setup
 userData = get(handles.figure1, 'UserData');
+if(isempty(userData)), userData = struct(); end;
+
 funParams = userData.crtProc.funParams_;
 
 set(handles.edit_camBitDepth,'String',funParams.detectionParam.bitDepth);
@@ -193,6 +195,8 @@ set(get(handles.uipanel_background,'Children'),'Enable',state);
 function pushbutton_cancel_Callback(hObject, eventdata, handles)
 
 userData = get(handles.figure1, 'UserData');
+if(isempty(userData)), userData = struct(); end;
+
 delete(handles.figure1);
 
 
@@ -201,6 +205,8 @@ function pushbutton_done_Callback(hObject, eventdata, handles)
 % Call back function of 'Apply' button
 
 userData = get(handles.figure1, 'UserData');
+if(isempty(userData)), userData = struct(); end;
+
 
 if isempty(get(handles.listbox_selectedChannels, 'String'))
     errordlg('Please select at least one input channel from ''Available Channels''.','Setting Error','modal')

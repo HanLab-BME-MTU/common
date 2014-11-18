@@ -84,6 +84,7 @@ delete(handles.figure1);
 function figure1_DeleteFcn(hObject, ~, handles)
 % Notify the package GUI that the setting panel is closed
 userData = get(handles.figure1, 'UserData');
+if(isempty(userData)), userData = struct(); end;
 
 if isfield(userData, 'helpFig') && ishandle(userData.helpFig)
    delete(userData.helpFig) 
@@ -123,6 +124,7 @@ funParams.ChannelIndex = channelIndex;
 
 % Retrieve detection parameters
 userData = get(handles.figure1, 'UserData');
+if(isempty(userData)), userData = struct(); end;
 for i = 1:numel(userData.numParams)
     paramName = userData.numParams{i};
     value = str2double(get(handles.(['edit_' paramName]),'String'));

@@ -50,6 +50,8 @@ function motionAnalysisVisualGUI_OpeningFcn(hObject, eventdata, handles, varargi
 set(handles.text_copyright, 'String', getLCCBCopyright());
 
 userData = get(handles.figure1, 'UserData');
+if(isempty(userData)), userData = struct(); end;
+
 % Choose default command line output for detectionVisualGUI
 handles.output = hObject;
 
@@ -128,6 +130,7 @@ function pushbutton_display_Callback(hObject, eventdata, handles)
 % Tool 1: plotTrakcs2D
 
 userData = get(handles.figure1, 'UserData');
+if(isempty(userData)), userData = struct(); end;
 
 
 % Frame range
@@ -175,6 +178,7 @@ function pushbutton_image_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 userData = get(handles.figure1, 'UserData');
+if(isempty(userData)), userData = struct(); end;
 
 [file,path] = uigetfile('*.*','Select an Image',...
              get(handles.edit_image, 'String'));
