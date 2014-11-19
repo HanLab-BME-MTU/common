@@ -198,6 +198,15 @@ if metadataStore.getInstrumentCount() > 0 &&...
     end
 end
 
+acquisitionDate = metadataStore.getImageAcquisitionDate(iSeries);
+if ~isempty(acquisitionDate)
+    % The acquisition date is returned as an ome.xml.model.primitives.Timestamp
+    % object which is using the ISO 8601 format
+    movieArgs=horzcat(movieArgs, 'acquisitionDate_',...
+        datevec(char(acquisitionDate.toString()),'yyyy-mm-ddTHH:MM:SS'));
+end
+
+
 function channelArgs = getChannelMetadata(r, iSeries, iChan)
 
 import ome.units.UNITS;
