@@ -51,6 +51,7 @@ set(handles.text_copyright, 'String', getLCCBCopyright())
 
 
 userData = get(handles.figure1, 'UserData');
+if isempty(userData), userData = struct(); end
 handles.output = hObject;
 
 % Get main figure handle and process id
@@ -117,7 +118,7 @@ delete(handles.figure1)
 function pushbutton_done_Callback(hObject, eventdata, handles)
 
 userData=get(handles.figure1,'UserData');
-
+if isempty(userData), userData = struct(); end
 nBoot=str2double(get(handles.edit_nBoot,'String'));
 if isnan(nBoot) || nBoot<=0
     errordlg(sprintf('Invalid value for the %s.',get(handles.text_nBoot,'String')),'Setting Error','modal')

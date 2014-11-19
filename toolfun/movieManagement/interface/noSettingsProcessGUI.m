@@ -49,10 +49,6 @@ function noSettingsProcessGUI_OpeningFcn(hObject,eventdata,handles,varargin)
 
 processGUI_OpeningFcn(hObject, eventdata, handles, varargin{:});
 
-userData = get(handles.figure1, 'UserData');
-funParams = userData.crtProc.funParams_;
-
-
 % Choose default command line output for noSettingsProcessGUI
 handles.output = hObject;
 

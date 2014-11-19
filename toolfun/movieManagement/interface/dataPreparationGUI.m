@@ -69,6 +69,7 @@ set(handles.text_copyright, 'String', getLCCBCopyright())
 handles.output = hObject;
 
 userData = get(handles.figure1, 'UserData');
+if isempty(userData), userData = struct(); end
 
 % Initialize the userData
 userData.projectDir = pwd;
@@ -358,7 +359,7 @@ function pushbutton_edit_movie_Callback(hObject, ~, handles)
 
 userData = get(handles.figure1, 'UserData');
 
-if isempty(userData.movies), return; end
+if isempty(userData), userData = struct(); end
 % Retrieve the selected movie ID and launch a dialog box asking the user
 % for the new movie name
 selectedMovie = get(handles.listbox_movies,'Value');
@@ -592,6 +593,8 @@ function pushbutton_done_Callback(~, eventdata, handles)
 userData = get(handles.figure1, 'UserData');
 
 % Check all movies and channels have been attributed
+if isempty(userData.rawData), return; end
+    
 checkMovies = any(cellfun(@isempty,{userData.rawData.movieIndx}));
 if checkMovies,
     errordlg('All components have not been affected to a movie','modal');

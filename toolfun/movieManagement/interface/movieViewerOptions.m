@@ -117,9 +117,8 @@ uicontrol(imagePanel,'Style','checkbox',...
     'Position',[10 hPosition 120 20],'Tag','checkbox_colorbar',...
     'String',' Colorbar','HorizontalAlignment','left',...
     'Callback',@(h,event) setColorbar(guidata(h)));
-findclass(findpackage('scribe'),'colorbar');
-locations = findtype('ColorbarLocationPreset');
-locations = locations.Strings;
+%findclass(findpackage('scribe'),'colorbar');
+locations = ImageDisplay.getColorBarLocations();
 uicontrol(imagePanel,'Style','popupmenu','String',locations,...
     'Position',[130 hPosition 120 20],'Tag','popupmenu_colorbarLocation',...
     'HorizontalAlignment','left','Callback',@(h,event) setColorbar(guidata(h)));
@@ -324,7 +323,7 @@ h = findobj(0, '-regexp', 'Name', '^Movie$');
 if isempty(h), userData.redrawImageFcn(handles); end
 
 % Retrieve the handle of the axes containing the image
-hImage = findobj(h, 'Type', 'image', '-and', '-regexp', 'Tag', 'process');
+hImage = findobj(h, 'Type', 'image', '-and', '-regexp', 'Tag', 'process','-or','Tag','channels');
 hAxes = get(hImage, 'Parent');
 
 % Allow use to draw polygon and retrieve mask once it is double-clicked

@@ -51,6 +51,7 @@ processGUI_OpeningFcn(hObject, eventdata, handles, varargin{:},'initChannel',1);
 
 % Set default parameters
 userData = get(handles.figure1, 'UserData');
+if(isempty(userData)), userData = struct(); end;
 funParams = userData.crtProc.funParams_;
 
 set(handles.popupmenu_probDim,'String',{'2','3'},'UserData',[2 3],...
@@ -96,6 +97,7 @@ delete(handles.figure1);
 function figure1_DeleteFcn(hObject, ~, handles)
 % Notify the package GUI that the setting panel is closed
 userData = get(handles.figure1, 'UserData');
+if(isempty(userData)), userData = struct(); end;
 
 delete(userData.helpFig(ishandle(userData.helpFig))); 
 

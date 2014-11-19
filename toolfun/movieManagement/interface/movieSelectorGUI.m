@@ -76,7 +76,7 @@ ip.parse(hObject,eventdata,handles,varargin{:});
 set(handles.text_copyright, 'String', getLCCBCopyright())
 
 userData = get(handles.figure1, 'UserData');
-
+if isempty(userData), userData = struct(); end
 % Choose default command line output for setupMovieDataGUI
 handles.output = hObject;
 
@@ -108,15 +108,16 @@ nPackages=numel(packageList);
 pos = get(handles.uipanel_packages,'Position');
 for i=1:nPackages
     uicontrol(handles.uipanel_packages,'Style','radio',...
-    'Position',[30 pos(4)-20-30*i pos(3)-35 20],'Tag',['radiobutton_package' num2str(i)],...
-    'String',[' ' packageNames{i}],'UserData',packageList{i},...
-    'Value',strcmp(packageList{i},ip.Results.packageName))
-
-    axes('Units','pixels',...
+        'Position',[30 pos(4)-20-30*i pos(3)-35 20],'Tag',['radiobutton_package' num2str(i)],...
+        'String',[' ' packageNames{i}],'UserData',packageList{i},...
+        'Value',strcmp(packageList{i},ip.Results.packageName))
+    
+    axes_handle = axes('Units','pixels',...
         'Position',[10 pos(4)-20-30*i 20 20],'Tag',['axes_help_package' num2str(i)],...
-        'Parent',handles.uipanel_packages)
-    Img = image(userData.questIconData, 'UserData', struct('class', packageList{i}));
-    set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'), 'Visible','off');
+        'Parent',handles.uipanel_packages);
+    Img = image(userData.questIconData, 'UserData', struct('class', packageList{i}),...
+        'Parent', axes_handle);
+    set(axes_handle, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'), 'Visible','off');
     set(Img,'ButtonDownFcn',@icon_ButtonDownFcn);
     
 end

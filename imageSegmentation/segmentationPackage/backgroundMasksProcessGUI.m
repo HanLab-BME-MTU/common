@@ -52,6 +52,7 @@ processGUI_OpeningFcn(hObject, eventdata, handles, varargin{:},'initChannel',1);
 
 % Parameters setup 
 userData = get(handles.figure1, 'UserData');
+if isempty(userData), userData = struct(); end
 funParams = userData.crtProc.funParams_;
 
 set(handles.edit_gr, 'String', num2str(funParams.GrowthRadius));
@@ -83,6 +84,7 @@ delete(handles.figure1);
 function pushbutton_done_Callback(hObject, eventdata, handles)
 % Call back function of 'Apply' button
 userData = get(handles.figure1, 'UserData');
+if isempty(userData), userData = struct(); end
 userData_main = get(userData.mainFig, 'UserData');
 
 % -------- Check user input --------
@@ -124,6 +126,7 @@ processGUI_ApplyFcn(hObject, eventdata, handles,funParams);
 % --- Executes during object deletion, before destroying properties.
 function figure1_DeleteFcn(hObject, eventdata, handles)
 userData = get(handles.figure1, 'UserData');
+if isempty(userData), userData = struct(); end
 
 if isfield(userData, 'helpFig') && ishandle(userData.helpFig)
    delete(userData.helpFig) 
