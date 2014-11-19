@@ -149,8 +149,8 @@ metadataStore = r.getMetadataStore();
 pixelSizeX = metadataStore.getPixelsPhysicalSizeX(iSeries);
 if ~isempty(pixelSizeX)
     pixelSizeY = metadataStore.getPixelsPhysicalSizeY(iSeries);
-    pixelSizeX = pixelSizeX.value(UNITS.MICROM).doubleValue();
-    pixelSizeY = pixelSizeY.value(UNITS.MICROM).doubleValue();
+    pixelSizeX = pixelSizeX.value(UNITS.NM).doubleValue();
+    pixelSizeY = pixelSizeY.value(UNITS.NM).doubleValue();
     assert(isequal(pixelSizeX, pixelSizeY),...
         'Pixel size different in x and y');
     if pixelSizeX ~= 1000  % Metamorph fix
@@ -161,7 +161,7 @@ end
 % Retrieve pixel size along the Z-axis
 pixelSizeZ = metadataStore.getPixelsPhysicalSizeZ(iSeries);
 if ~isempty(pixelSizeZ)
-    pixelSizeZ = pixelSizeZ.value(UNITS.MICROM).doubleValue();
+    pixelSizeZ = pixelSizeZ.value(UNITS.NM).doubleValue();
     if pixelSizeZ ~= 1000  % Metamorph fix
         movieArgs = horzcat(movieArgs, 'pixelSizeZ_', pixelSizeZ);
     end
