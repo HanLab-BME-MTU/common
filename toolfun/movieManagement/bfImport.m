@@ -181,7 +181,8 @@ if ~isempty(timeInterval)
 end
 
 % Lens numerical aperture
-try % Use a try-catch statement because property is not always defined
+if metadataStore.getInstrumentCount() > 0 &&...
+        metadataStore.getObjectiveCount(0) > 0
     lensNA = metadataStore.getObjectiveLensNA(0,0);
     if ~isempty(lensNA)
         movieArgs=horzcat(movieArgs,'numAperture_',double(lensNA));
