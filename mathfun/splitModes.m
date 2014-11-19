@@ -88,7 +88,7 @@ if verbose
     if iscell(data)
         bar(data{2},data{1})
     else
-    histogram(ah,data,1,0);
+    optimalHistogram(ah,data,1,0);
     end
     hold on
     plot(ah,[cutVal;cutVal],[0,maxVal],':r')

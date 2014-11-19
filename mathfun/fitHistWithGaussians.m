@@ -316,7 +316,7 @@ switch isR
                 numObservations = length(find(~isnan(observations)));
                 
                 %calculate the histogram
-                [numObsPerBin,binCenter] = histogram(observations);
+                [numObsPerBin,binCenter] = optimalHistogram(observations);
                 numObsPerBin = numObsPerBin'*(binCenter(2)-binCenter(1));
                 binCenter = binCenter';
                 
@@ -751,10 +751,10 @@ end
 
 % make a histogram for plotting and output. Choose how to calculate bins
 if showPlot == 2
-    [numObsPerBinP,binCenterP] = histogram(observations,'smooth');
+    [numObsPerBinP,binCenterP] = optimalHistogram(observations,'smooth');
     numObsPerBinP = numObsPerBinP*(binCenterP(2)-binCenterP(1));
 elseif showPlot ~= 0
-    [numObsPerBinP,binCenterP] = histogram(observations);
+    [numObsPerBinP,binCenterP] = optimalHistogram(observations);
     if length(binCenterP)<20
         [numObsPerBinP,binCenterP] = hist(observations,20);
         numObsPerBinP = numObsPerBinP/(binCenterP(2)-binCenterP(1));
