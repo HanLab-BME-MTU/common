@@ -19,8 +19,8 @@ classdef  BioFormatsReader < Reader
             ip.addParamValue('reader', [], @(x) isa(x, 'loci.formats.IFormatReader'));
             ip.parse(varargin{:});
             
-            % Initialize Bio-Formats
-            bfCheckJavaPath();
+            % Initialize Bio-Formats and log4j
+            bfInitLogging();
             
             obj.id = ip.Results.id;
             if ~isempty(ip.Results.reader),
