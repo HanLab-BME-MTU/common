@@ -84,6 +84,15 @@ classdef Channel < hgsetget
         end
         
         %% Set / Get Methods
+        function set.name_(obj, value)
+            obj.checkPropertyValue('name_', value);
+            obj.name_=value;
+        end
+        
+        function setName(obj, value)
+            obj.name_ = value;
+        end
+        
         function set.excitationWavelength_(obj, value)
             obj.checkPropertyValue('excitationWavelength_',value);
             obj.excitationWavelength_=value;
@@ -361,7 +370,7 @@ classdef Channel < hgsetget
                     validator=@(x) isscalar(x) && x>=300 && x<=1200;
                 case 'exposureTime_'
                     validator=@(x) isscalar(x) && x>0;
-                case {'excitationType_','notes_','channelPath_','filterType_'}
+                case {'excitationType_','notes_','channelPath_','filterType_','name_'}
                     validator=@ischar;
                 case 'imageType_'
                     validator = @(x) ischar(x) && ismember(x,Channel.getImagingModes);

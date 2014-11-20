@@ -6,6 +6,7 @@ classdef TestChannel < TestLibrary & TestCase
         imageTypes = Channel.getImagingModes()
         exposureTime = 100
         fluorophores = Channel.getFluorophores()
+        name = 'channel 1'
     end
     
     methods
@@ -30,6 +31,21 @@ classdef TestChannel < TestLibrary & TestCase
         function testSetValidEmissionWavelength(self)
             self.channels(1).emissionWavelength_ = self.emissionWavelength;
             assertEqual(self.channels(1).emissionWavelength_, self.emissionWavelength);
+        end        
+                
+        function testSetInvalidName(self)
+            f= @() set(self.channels(1), 'name_', 0);
+            assertExceptionThrown(f,'lccb:set:invalid');
+            f= @() self.channels(1).setName(0);
+            assertExceptionThrown(f,'lccb:set:invalid');
+        end
+                           
+        function testSetValidName(self)
+            self.setUpChannels(2)
+            self.channels(1).setName(self.name);
+            assertEqual(self.channels(1).getName(), self.name);
+            self.channels(2).name_ = self.name;
+            assertEqual(self.channels(2).getName(), self.name);
         end
         
         function testSetInvalidEmissionWavelength(self)
