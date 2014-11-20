@@ -6,7 +6,6 @@ classdef TestChannel < TestLibrary & TestCase
         imageTypes = Channel.getImagingModes()
         exposureTime = 100
         fluorophores = Channel.getFluorophores()
-        name = 'channel 1'
     end
     
     methods
@@ -42,10 +41,10 @@ classdef TestChannel < TestLibrary & TestCase
                            
         function testSetValidName(self)
             self.setUpChannels(2)
-            self.channels(1).setName(self.name);
-            assertEqual(self.channels(1).getName(), self.name);
-            self.channels(2).name_ = self.name;
-            assertEqual(self.channels(2).getName(), self.name);
+            self.channels(1).setName('channel 1');
+            assertEqual(self.channels(1).getName(), 'channel 1');
+            self.channels(2).name_ = 'channel 2';
+            assertEqual(self.channels(2).getName(),'channel 2');
         end
         
         function testSetInvalidEmissionWavelength(self)
