@@ -7,7 +7,7 @@ classdef Channel < hgsetget
         exposureTime_               % Exposure time (ms)
         imageType_                  % e.g. Widefield, TIRF, Confocal etc.
         fluorophore_=''             % Fluorophore / Dye (e.g. CFP, Alexa, mCherry etc.)
-        name_                       % Name of the channel
+        name_ = ''                  % Name of the channel
 
         % ---- Un-used params ---- %
         excitationType_             % Excitation type (e.g. Xenon or Mercury Lamp, Laser, etc)
