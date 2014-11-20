@@ -6,8 +6,9 @@ classdef Channel < hgsetget
         emissionWavelength_         % Emission wavelength (nm)
         exposureTime_               % Exposure time (ms)
         imageType_                  % e.g. Widefield, TIRF, Confocal etc.
-        fluorophore_=''               % Fluorophore / Dye (e.g. CFP, Alexa, mCherry etc.)
-        
+        fluorophore_=''             % Fluorophore / Dye (e.g. CFP, Alexa, mCherry etc.)
+        name_                       % Name of the channel
+
         % ---- Un-used params ---- %
         excitationType_             % Excitation type (e.g. Xenon or Mercury Lamp, Laser, etc)
         neutralDensityFilter_       % Neutral Density Filter
@@ -209,6 +210,14 @@ classdef Channel < hgsetget
         function fileNames = getImageFileNames(obj,varargin)
             % See Reader.getImageFileNames
             fileNames = obj.getReader.getImageFileNames(obj.getChannelIndex(),varargin{:});
+        end
+
+        function name = getPath(obj)
+            name = obj.channelPath_;
+        end
+
+        function name = getName(obj)
+            name = obj.name_;
         end
         
         function Gname = getGenericName(obj, oFileName, flag) %oFileName is either from getImagesFiles or from hcsplatestack
