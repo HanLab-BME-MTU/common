@@ -188,6 +188,15 @@ classdef  MovieData < MovieObject
             chanPaths = obj.getReader().getChannelNames(iChan);
         end
         
+        function chanNames = getChannelNames(obj,iChan)
+            % Returns the directories for the selected channels
+            if nargin < 2 || isempty(iChan), iChan = 1:numel(obj.channels_); end
+            assert(all(ismember(iChan,1:numel(obj.channels_))),...
+                'Invalid channel index specified!');
+            chanNames = arrayfun(@(x) obj.getChannel(x).getName(), iChan,...
+                'UniformOutput', false);
+        end
+        
         %% ROI methods
         function roiMovie = addROI(obj, roiMaskPathOrId, outputDirectory, varargin)
             
