@@ -6,8 +6,9 @@ classdef Channel < hgsetget
         emissionWavelength_         % Emission wavelength (nm)
         exposureTime_               % Exposure time (ms)
         imageType_                  % e.g. Widefield, TIRF, Confocal etc.
-        fluorophore_=''               % Fluorophore / Dye (e.g. CFP, Alexa, mCherry etc.)
-        
+        fluorophore_=''             % Fluorophore / Dye (e.g. CFP, Alexa, mCherry etc.)
+        name_ = ''                  % Name of the channel
+
         % ---- Un-used params ---- %
         excitationType_             % Excitation type (e.g. Xenon or Mercury Lamp, Laser, etc)
         neutralDensityFilter_       % Neutral Density Filter
@@ -83,6 +84,15 @@ classdef Channel < hgsetget
         end
         
         %% Set / Get Methods
+        function set.name_(obj, value)
+            obj.checkPropertyValue('name_', value);
+            obj.name_=value;
+        end
+        
+        function setName(obj, value)
+            obj.name_ = value;
+        end
+        
         function set.excitationWavelength_(obj, value)
             obj.checkPropertyValue('excitationWavelength_',value);
             obj.excitationWavelength_=value;
@@ -209,6 +219,14 @@ classdef Channel < hgsetget
         function fileNames = getImageFileNames(obj,varargin)
             % See Reader.getImageFileNames
             fileNames = obj.getReader.getImageFileNames(obj.getChannelIndex(),varargin{:});
+        end
+
+        function name = getPath(obj)
+            name = obj.channelPath_;
+        end
+
+        function name = getName(obj)
+            name = obj.name_;
         end
         
         function Gname = getGenericName(obj, oFileName, flag) %oFileName is either from getImagesFiles or from hcsplatestack
@@ -352,7 +370,7 @@ classdef Channel < hgsetget
                     validator=@(x) isscalar(x) && x>=300 && x<=1200;
                 case 'exposureTime_'
                     validator=@(x) isscalar(x) && x>0;
-                case {'excitationType_','notes_','channelPath_','filterType_'}
+                case {'excitationType_','notes_','channelPath_','filterType_','name_'}
                     validator=@ischar;
                 case 'imageType_'
                     validator = @(x) ischar(x) && ismember(x,Channel.getImagingModes);

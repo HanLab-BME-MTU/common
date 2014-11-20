@@ -30,6 +30,21 @@ classdef TestChannel < TestLibrary & TestCase
         function testSetValidEmissionWavelength(self)
             self.channels(1).emissionWavelength_ = self.emissionWavelength;
             assertEqual(self.channels(1).emissionWavelength_, self.emissionWavelength);
+        end        
+                
+        function testSetInvalidName(self)
+            f= @() set(self.channels(1), 'name_', 0);
+            assertExceptionThrown(f,'lccb:set:invalid');
+            f= @() self.channels(1).setName(0);
+            assertExceptionThrown(f,'lccb:set:invalid');
+        end
+                           
+        function testSetValidName(self)
+            self.setUpChannels(2)
+            self.channels(1).setName('channel 1');
+            assertEqual(self.channels(1).getName(), 'channel 1');
+            self.channels(2).name_ = 'channel 2';
+            assertEqual(self.channels(2).getName(),'channel 2');
         end
         
         function testSetInvalidEmissionWavelength(self)
