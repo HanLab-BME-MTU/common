@@ -8,17 +8,14 @@
 branchNb=2;
 branches(branchNb) = struct();
 
+branches(1).name='iu-track';
+branches(1).path='/home2/proudot/repo/iu-track-branch/';
 
-branches(1).name='master'
-branches(1).path='/home2/proudot/repo/danuser-utsw/'
-
-branches(2).name='iu-track'
-branches(2).path='/home2/proudot/repo/iu-track-branch/'
-
+branches(2).name='master';
+branches(2).path='/home2/proudot/repo/danuser-utsw/';
 
 
 arrayfun(@(x) (rmpath(genpath(x.path))),branches);
-addpath(genpath(branches(1).path));
 
 % simulation type
 % 1 for classic simulation (brownian or confined ordirected)
@@ -34,7 +31,7 @@ renderSimulation=false;
 
 % Varying param for simulation
 % density in spots/1 microm^2 (20 px window)
-speed_transition_range=1:2:10;
+speed_transition_range=1:10;
 
 % Results for each method, each parameter
 for i=1:length(branches)
@@ -48,14 +45,15 @@ end
 
 simuParamIdx=1;
 for speed_transition=speed_transition_range
-    
+    addpath(genpath(branches(1).path));
+
     %% TracksSim parametrization and computation
     detectionParam.bitDepth = 16; %Camera bit depth
-    imSize=[200 200];
-    density=1;
+    imSize=[100 100];
+    density=5;
     numP=density*(imSize(1)*imSize(2))/400
     %numP=50;
-    numF=500;
+    numF=100;
     sigmaLft=20;
     meanLft=50;
     x =1:numF;
@@ -71,7 +69,7 @@ for speed_transition=speed_transition_range
         motionParam.probMS=[];
         motionParam.fracType=[0.5 0.4 0.1];
         [simMPM,tracksSim] = simulateRandomPlusLinearMotion(imSize,numP,lftDist,numF,intVec,motionParam);
-        trackDiffCoef=1;  % FIX : get from simu
+        trackDiffCoef=ones(1,length(tracksSim));  % FIX : get from simu
       case 2 
         motionParam.diffCoef2D=[0.1 2];
         motionParam.confRad2D=[0.5 2];
@@ -124,9 +122,9 @@ for speed_transition=speed_transition_range
     probDim=2;
     verbose =1;
 
-
+    saveFolder='/tmp/';
     %% Tracker parametrization and computation
-    movieParam.imageDir = '/tmp/';
+    movieParam.imageDir = saveFolder;
     movieParam.filenameBase = 'simulImage'; %image file name base
     movieParam.firstImageNum = 1; %number of first image in movie
     movieParam.lastImageNum =numF; %number of last image in movie
@@ -208,86 +206,63 @@ save('branches-performance.mat','branches')
 
 %% plotting results
 figure(1);
+cc=hsv(branchNb);
 
 subplot(2,2,1);
 for i=1:length(branches)
-plot(speed_transition_range,branches(i).percentageGoodLink(:,:,1)','+-');
+plot(speed_transition_range,branches(i).percentageGoodLink(:,:,1)','+-','color',cc(i,:));
 hold on
 end
 hold off
-axis([min(speed_transition_range),max(speed_transition_range),70,100])
+axis([min(speed_transition_range),max(speed_transition_range),0,100])
 title('U-track linking percentage')
-legend('U-track','U-track online process','Indep. KF','Iter. KF');
+legend(branches(:).name)
 xlabel('transition speed')
 ylabel('correct link percentage')
 
 subplot(2,2,2);
 for i=1:length(branches)
-    plot(speed_transition_range,branches(i).percentageBadLink(:,:,1)','+-');
+    plot(speed_transition_range,branches(i).percentageBadLink(:,:,1)','+-','color',cc(i,:));
     hold on
 end
 hold off
-axis([min(speed_transition_range),max(speed_transition_range),0,30])
+axis([min(speed_transition_range),max(speed_transition_range),0,100])
 title('U-track wrong linking percentage')
-legend('U-track','U-track online process','Indep. KF','Iter. KF');
+legend(branches(:).name)
 xlabel('transition speed')
 ylabel('wrong link percentage')
 
 subplot(2,2,4);
 for i=1:length(branches)
-    plot(speed_transition_range,branches(i).percentageBadLink(:,:,1)','+-');
+    plot(speed_transition_range,branches(i).percentageBadLink(:,:,1)','+-','color',cc(i,:));
 hold on
 end
 hold off
-axis([min(speed_transition_range),max(speed_transition_range),70,100])
+axis([min(speed_transition_range),max(speed_transition_range),0,100])
 title('U-track linking percentage')
-legend('U-track','U-track online process','Indep. KF','Iter. KF');
+legend(branches(:).name)
 xlabel('Motion type switching probability')
 ylabel('Good link type 4 ???')
 title('linking percentage on direct motion') 
 
 subplot(2,2,3);
 for i=1:length(branches)
-    plot(speed_transition_range,sqrt(noise_var_MSE)','+-');
+    plot(speed_transition_range,sqrt(branches(i).noise_var_MSE)','+-','color',cc(i,:));
 hold on
 end
 hold off
 title('U-track process noise RMSE')
-legend('U-track','U-track online process','Indep. KF','Iter. KF');
+legend(branches(:).name)
 xlabel('transition speed')
 ylabel('Process noise error (px)')
-
-%% final fig
-% figure(2)
-% semilogx(speed_transition_range,percentageGoodLink(:,:,4)','+');
-% smoothedPercentageGoodLink=nan(size(percentageGoodLink(:,:,4)));  
-% for iMethod=1:method_nb
-%     smoothedPercentageGoodLink(iMethod,:)= smooth(percentageGoodLink(iMethod,:,4),10,'rlowess');
-% end
-% hold on 
-% semilogx(speed_transition_range,smoothedPercentageGoodLink','-');
-% hold off
-% axis([min(speed_transition_range),max(speed_transition_range),75,100])
-% title('U-track linking percentage on direct motion')
-% legend('U-track','U-track online process','Indep. KF','Iter. KF');
-% xlabel('Motion type switching probability')
-% ylabel('missing link percentage') 
-% 
-% figure(2)
-% plot(speed_transition_range,cpuTimeUtrack,'b.',speed_transition_range,cpuTimeUtrackIndKF,'r.')
-% title('Computation performances')
-% legend('U-track','Ind KF')
-% xlabel('density (spot/ \mu m^2)')
-% ylabel('Computation time')
-% 
 
 %% Results summary
 figure(3)
 for i=1:length(branches)
-    plot(speed_transition_range,branches(i).percentageGoodLink(:,:,1)','+-');
+    plot(speed_transition_range,branches(i).percentageGoodLink(:,:,1)','+-','color',cc(i,:));
 end
-axis([min(speed_transition_range),max(speed_transition_range),70,100])
-legend('U-track','IMM','our method');
+axis([min(speed_transition_range),max(speed_transition_range),0,100])
+legend(branches(:).name)
 xlabel('transition speed')
 ylabel('correct link percentage')
 
@@ -295,22 +270,40 @@ ylabel('correct link percentage')
 %% FP to
 subplot(1,2,1);
 for i=1:length(branches)
-    plot(speed_transition_range,branches(i).percentageGoodLink(:,:,1)','+-');
+    plot(speed_transition_range,branches(i).percentageGoodLink(:,:,1)','+-','color',cc(i,:));
 hold on
 end
 hold off
-axis([min(speed_transition_range),max(speed_transition_range),68,100])
-legend('U-track','IMM','our method');
+axis([min(speed_transition_range),max(speed_transition_range),0,100])
+legend(branches(:).name)
 xlabel('transition speed')
 ylabel('correct link percentage')
 
 subplot(1,2,2);
 for i=1:length(branches)
-    plot(speed_transition_range,branches(i).percentageBadLink(:,:,1)','+-');
+    plot(speed_transition_range,branches(i).percentageBadLink(:,:,1)','+-','color',cc(i,:));
 hold on
 end
 hold off
-axis([min(speed_transition_range),max(speed_transition_range),0,30])
-legend('U-track','IMM','our method');
+axis([min(speed_transition_range),max(speed_transition_range),0,100])
+legend(branches(:).name)
 xlabel('transition speed')
 ylabel('wrong link percentage')
+
+
+%% check diff
+resDiff(branchNb-1)=struct();
+for i=1:(branchNb-1)
+    resDiff(i).percentageGoodLink=branches(1).percentageGoodLink - branches(i+1).percentageGoodLink;
+    resDiff(i).percentageBadLink=branches(1).percentageBadLink - branches(i+1).percentageBadLink;
+end
+
+if ( all(arrayfun(@(x) (~any(x.percentageGoodLink(:))),resDiff)) && all(arrayfun(@(x) (~any(x.percentageBadLink(:))),resDiff)) ) 
+    disp('No regression detected');
+else 
+    disp('ERROR: please check resDiff');
+end 
+
+
+
+
