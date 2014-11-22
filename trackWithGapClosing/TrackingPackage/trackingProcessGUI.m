@@ -51,6 +51,8 @@ processGUI_OpeningFcn(hObject, eventdata, handles, varargin{:},'initChannel',1);
 
 % Parameter Setup
 userData = get(handles.figure1, 'UserData');
+if(isempty(userData)), userData = struct(); end;
+
 funParams = userData.crtProc.funParams_;
 
 set(handles.popupmenu_probDim,'String',{'2','3'},'UserData',[2 3],...
@@ -142,6 +144,8 @@ varargout{1} = handles.output;
 function pushbutton_done_Callback(hObject, eventdata, handles)
 
 userData = get(handles.figure1, 'UserData');
+if(isempty(userData)), userData = struct(); end;
+
 
 % Check User Input
 if isempty(get(handles.listbox_selectedChannels, 'String'))
@@ -238,6 +242,8 @@ function pushbutton_set_linking_Callback(hObject, eventdata, handles)
 %       userData.kalmanFig
 
 userData = get(handles.figure1, 'UserData');
+if(isempty(userData)), userData = struct(); end;
+
 parent = handles.popupmenu_linking;
 procID = get(parent, 'Value');
 if procID > length(userData.fun_cost_linking)
@@ -255,6 +261,8 @@ function pushbutton_set_gapclosing_Callback(hObject, eventdata, handles)
 %       userData.gapclosingFig - the handle of setting panel for gap closing set-up
 %       userData.kalmanFig
 userData = get(handles.figure1, 'UserData');
+if(isempty(userData)), userData = struct(); end;
+
 parent = handles.popupmenu_gapclosing;
 procID = get(parent, 'Value');
 if procID > length(userData.fun_cost_gap)
@@ -321,6 +329,8 @@ guidata(hObject,handles);
 function pushbutton_kalman_initialize_Callback(hObject, eventdata, handles)
 
 userData = get(handles.figure1, 'UserData');
+if(isempty(userData)), userData = struct(); end;
+
 parent = handles.popupmenu_kalmanFunctions;
 id = get(parent, 'Value');
 
@@ -341,6 +351,7 @@ end
 function figure1_DeleteFcn(hObject, eventdata, handles)
 
 userData = get(handles.figure1, 'UserData');
+if(isempty(userData)), userData = struct(); end;
 
 % Delete setting panels
 if ishandle(userData.linkingFig), delete(userData.linkingFig);end

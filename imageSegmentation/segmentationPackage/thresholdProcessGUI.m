@@ -51,6 +51,7 @@ processGUI_OpeningFcn(hObject, eventdata, handles, varargin{:},'initChannel',0);
 
 % ---------------------- Channel Setup -------------------------
 userData = get(handles.figure1, 'UserData');
+if isempty(userData), userData = struct(); end
 funParams = userData.crtProc.funParams_;
 
 % Set up available input channels
@@ -158,6 +159,7 @@ delete(handles.figure1);
 function pushbutton_done_Callback(hObject, eventdata, handles)
 % Call back function of 'Apply' button
 userData = get(handles.figure1, 'UserData');
+if isempty(userData), userData = struct(); end
 
 % -------- Check user input --------
 if isempty(get(handles.listbox_selectedChannels, 'String'))
@@ -333,6 +335,7 @@ update_data(hObject,eventdata,handles);
 function figure1_DeleteFcn(hObject, eventdata, handles)
 % Notify the package GUI that the setting panel is closed
 userData = get(handles.figure1, 'UserData');
+if isempty(userData), userData = struct(); end
 
 if ishandle(userData.helpFig), delete(userData.helpFig); end
 if ishandle(userData.previewFig), delete(userData.previewFig); end
@@ -391,6 +394,7 @@ end
 function threshold_edition(hObject,eventdata, handles)
 
 userData = get(handles.figure1, 'UserData');
+if isempty(userData), userData = struct(); end
 
 % Retrieve the valuye of the selected threshold
 if strcmp(get(hObject,'Tag'),'edit_threshold')
@@ -441,6 +445,7 @@ update_data(hObject,eventdata,handles);
 function update_data(hObject,eventdata, handles)
 
 userData = get(handles.figure1, 'UserData');
+if isempty(userData), userData = struct(); end
 
 if strcmp(get(get(hObject,'Parent'),'Tag'),'uipanel_channels') ||...
         strcmp(get(hObject,'Tag'),'listbox_thresholdValues')

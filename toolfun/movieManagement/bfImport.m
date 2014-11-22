@@ -46,6 +46,8 @@ assert(~f.directory, '%s is a directory', dataPath);
 dataPath = f.Name;
 
 try
+    % autoload java path and configure log4j
+    bfInitLogging();
     % Retrieve movie reader and metadata
     r = bfGetReader(dataPath);
     r.setSeries(0);

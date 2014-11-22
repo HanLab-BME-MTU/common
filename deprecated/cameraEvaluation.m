@@ -103,9 +103,9 @@ imshow(sdImageC,[]);
 colormap('jet')
 
 figure('Name',sprintf('Average background (no hot pixels) %s',imgName)),
-histogram(averageImageC(~hotImage));
+optimalHistogram(averageImageC(~hotImage));
 figure('Name',sprintf('Std background (no hot pixels) %s',imgName));
-histogram(sdImageC(~hotImage));
+optimalHistogram(sdImageC(~hotImage));
 
 % subtract static pattern, divide by sd
 darkFrames = darkFrames - repmat(averageImage,[1,1,movieSize(3)]);
@@ -122,10 +122,10 @@ darkFrames = darkFrames ./ repmat(sdImage,[1,1,movieSize(3)]);
 % colormap('jet')
 % 
 % figure('Name','Average corrected background')
-% histogram(correctedAverageImage(:));
+% optimalHistogram(correctedAverageImage(:));
 % 
 % figure('Name','Std corrected background')
-% histogram(correctedSdImage(:));
+% optimalHistogram(correctedSdImage(:));
 
 if ~testDynamicPattern
     

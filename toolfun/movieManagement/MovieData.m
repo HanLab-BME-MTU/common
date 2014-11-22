@@ -286,8 +286,8 @@ classdef  MovieData < MovieObject
             roiService = obj.getOmeroSession().getRoiService();
             roi = toMatlabList(roiService.findByRoi(obj.roiOmeroId_,...
                 omero.api.RoiOptions()).rois);
-            assert(isscalar(roi))
-            mask = false([obj.imSize_ obj.nFrames_]);
+            mask = true([obj.imSize_ obj.nFrames_]);
+            if isempty(roi) || ~isscalar(roi), return; end
             for i = 1: roi.sizeOfShapes
                 shape = roi.getShape(i-1);
                 t = shape.getTheT.getValue + 1;
@@ -638,6 +638,38 @@ classdef  MovieData < MovieObject
         
     end
     methods(Static)
+        function obj = load(varargin)
+            % Load or re-load a movie object
+            
+            assert(nargin > 0);
+            assert(MovieData.isOmeroSession(varargin{1}) || ...
+                exist(varargin{1}, 'file') == 2)
+            
+            if MovieObject.isOmeroSession(varargin{1}),
+                obj = MovieData.loadOmero(varargin{:});
+            else
+                isMatFile = strcmpi(varargin{1}(end-3:end), '.mat');
+                if isMatFile,
+                    obj = MovieData.loadMatFile(varargin{1});
+                    [moviePath,movieName,movieExt]= fileparts(varargin{1});
+                    obj.sanityCheck(moviePath,[movieName movieExt], varargin{2:end});
+                else
+                    % Backward-compatibility - call the constructor
+                    obj = MovieData(varargin{:});
+                end
+            end
+        end
+
+        function obj = loadOmero(session, varargin)
+            % Load a movie from an image stored onto an OMERO server
+            obj = getOmeroMovies(session, varargin{:});
+        end
+        
+        function obj = loadMatFile(filepath)
+            % Load a movie data from a local MAT file
+            obj = MovieObject.loadMatFile('MovieData', filepath);
+        end
+        
         function status=checkValue(property,value)
             % Return true/false if the value for a given property is valid
             

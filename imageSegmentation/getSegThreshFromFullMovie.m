@@ -77,7 +77,7 @@ end
 %START COPY-PASTE FROM THRESHOLDFLUORESCENCEIMAGE
 
 %Get histogram, using Jonas' automatic bin number selection & smoothing
-[~,~,histSpline] = histogram(imageStack(:),'smooth');
+[~,~,histSpline] = optimalHistogram(imageStack(:),'smooth');
 
 %Find the location of extrema in the histogram
 histExtrema = fnzeros(fnder(histSpline));
@@ -115,7 +115,7 @@ end
 
 if showPlot
     figure, hold on
-    histogram(imageStack(:))
+    optimalHistogram(imageStack(:))
     fnplt(histSpline,'r')        
     plot(histExtrema,histExtVals,'oc')
     plot(thresholdValue,minVal,'xg')

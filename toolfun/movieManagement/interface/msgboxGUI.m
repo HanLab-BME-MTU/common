@@ -81,6 +81,8 @@ set(handles.text_title, 'string',ip.Results.title)
 
 if ~isempty(ip.Results.extendedText),
     userData = get(handles.figure1,'UserData');
+
+    if isempty(userData), userData = struct(); end
     set(handles.pushbutton_extendedText,'Visible','on');
     userData.text = ip.Results.text;
     userData.extendedText=ip.Results.extendedText;
@@ -126,6 +128,9 @@ function pushbutton_extendedText_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 userData=get(handles.figure1,'UserData');
+
+if isempty(userData), userData = struct(); end
+
 if strcmp(userData.type,'basic')
     userData.type='extended';
     set(handles.edit_text, 'String',userData.extendedText);

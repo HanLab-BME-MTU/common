@@ -206,8 +206,8 @@ if plotRes
         thresholdMethod '_noise' num2str(filterNoise) ...
         '_background' num2str(filterBackground)]);
     
-    n = histogram(imageDilatedNorm(nzInd),[],0);
-    histogram(imageDilatedNorm(nzInd),[],0);
+    n = optimalHistogram(imageDilatedNorm(nzInd),[],0);
+    optimalHistogram(imageDilatedNorm(nzInd),[],0);
     if threshSuccess
         hold on
         plot(level*[1 1],[0 max(n)],'r','LineWidth',2)

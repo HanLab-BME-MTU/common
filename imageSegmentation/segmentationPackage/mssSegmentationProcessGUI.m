@@ -52,6 +52,7 @@ processGUI_OpeningFcn(hObject, eventdata, handles, varargin{:},'initChannel',1);
 
 % Parameter setup
 userData = get(handles.figure1, 'UserData');
+if isempty(userData), userData = struct(); end
 funParams = userData.crtProc.funParams_;
 
 set(handles.listbox_Scales,'String',funParams.Scales);
@@ -95,6 +96,7 @@ end
 
 %  Process Sanity check ( only check underlying data )
 userData = get(handles.figure1, 'UserData');
+if isempty(userData), userData = struct(); end
 try
     userData.crtProc.sanityCheck;
 catch ME
@@ -116,6 +118,7 @@ processGUI_ApplyFcn(hObject, eventdata, handles,funParams);
 % --- Executes during object deletion, before destroying properties.
 function figure1_DeleteFcn(hObject, eventdata, handles)
 userData = get(handles.figure1, 'UserData');
+if isempty(userData), userData = struct(); end
 
 if isfield(userData, 'helpFig') && ishandle(userData.helpFig)
    delete(userData.helpFig) 

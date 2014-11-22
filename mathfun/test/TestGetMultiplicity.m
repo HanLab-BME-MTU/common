@@ -26,6 +26,14 @@ classdef TestGetMultiplicity < TestCase
                 assertEqual(sdata, self.sdata);
             end
         end
+	function testEmpty(self)
+		[rep, udata, sdata] = self.fcn([]); 
+		assert(isempty(rep));
+		assert(isempty(udata));
+		assert(isempty(sdata));
+		rep = self.fcn([]);
+		assert(isempty(rep));
+	end
         function testSingleOutput(self)
             self.checkOutput(self.fcn(self.M));
         end

@@ -71,7 +71,7 @@ classdef TracksDisplay < MovieDataDisplay
             end
             
             % Initialize matrix for split events
-            hasSplitEvents = arrayfun(@(x) ~isempty(find(x.events=='s',1)), tracks);
+            hasSplitEvents = arrayfun(@(x) isfield(x, 'events') && ~isempty(find(x.events=='s',1)), tracks);
             xSplitData = NaN(dLength, nTracks);
             ySplitData = NaN(dLength, nTracks);
             for i = find(hasSplitEvents)'
@@ -84,7 +84,7 @@ classdef TracksDisplay < MovieDataDisplay
             end
             
             % Initialize matrix for split events
-            hasMergeEvents = arrayfun(@(x) ~isempty(find(x.events=='m',1)), tracks);
+            hasMergeEvents = arrayfun(@(x) isfield(x, 'events') && ~isempty(find(x.events=='m',1)), tracks);
             xMergeData = NaN(dLength, nTracks);
             yMergeData = NaN(dLength, nTracks);
             for i = find(hasMergeEvents)'

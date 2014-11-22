@@ -55,7 +55,7 @@ end
 numObservations = length(find(~isnan(observations)));
 
 %calculate the histogram
-[numObsPerBin,binCenter] = histogram(observations);
+[numObsPerBin,binCenter] = optimalHistogram(observations);
 numObsPerBin = numObsPerBin';
 binCenter = binCenter';
 

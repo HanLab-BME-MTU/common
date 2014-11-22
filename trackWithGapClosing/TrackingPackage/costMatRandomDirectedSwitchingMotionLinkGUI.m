@@ -49,6 +49,7 @@ function costMatRandomDirectedSwitchingMotionLinkGUI_OpeningFcn(hObject, eventda
 
 costMat_OpeningFcn(hObject, eventdata, handles, varargin{:})
 userData = get(handles.figure1, 'UserData');
+if(isempty(userData)), userData = struct(); end;
 parameters = userData.parameters;
 
 % Parameter Setup
@@ -104,6 +105,7 @@ delete(handles.figure1)
 function pushbutton_done_Callback(hObject, eventdata, handles)
 
 userData = get(handles.figure1, 'UserData');
+if(isempty(userData)), userData = struct(); end;
 lower = str2double(get(handles.edit_lower, 'String'));
 upper = str2double(get(handles.edit_upper, 'String'));
 brownStdMult = str2double(get(handles.edit_brownStdMult, 'String'));

@@ -9,7 +9,7 @@ function packageGUI_RunFcn(hObject,eventdata,handles)
 
 ip = inputParser;
 ip.addRequired('hObject',@ishandle);
-ip.addRequired('eventdata',@(x) isstruct(x) || isempty(x));
+ip.addRequired('eventdata',@(x) isstruct(x) || isempty(x) || isa(x, 'event.EventData'));
 ip.addRequired('handles',@isstruct);
 ip.parse(hObject,eventdata,handles);
 

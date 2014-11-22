@@ -468,7 +468,7 @@ guidata.isDone(guidata.sliceno) = ~guidata.isDone(guidata.sliceno);
 
 function imRGB = genImageMaskOverlay_loc(im, mask, maskColor, maskAlpha, displayRange)
 
-imr = im2uint8( mat2gray( im ,displayRange) );
+imr = im2uint8( mat2gray( im ,double(displayRange)) );
 img = imr;
 imb = imr;
 mask = mask > 0;

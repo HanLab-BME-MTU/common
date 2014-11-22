@@ -35,6 +35,9 @@ ip.parse(imageIDs, varargin{:});
 nMovies = numel(imageIDs);
 MD(nMovies) = MovieData();
 
+% Make sure the target directory existis
+if ~isdir(ip.Results.path), mkdir(ip.Results.path); end
+
 % Set temporary file to extract file annotations
 namespace = getLCCBOmeroNamespace;
 zipPath = fullfile(ip.Results.path, 'tmp.zip');
@@ -69,7 +72,10 @@ for i = 1 : nMovies
             if ~hasMovie, continue; end
             
             % Load MovieData object
-            MD(i) = MovieData.load(matFiles{j}, session, false);
+            MD(i) = MovieData.loadMatFile(matFiles{j});
+            MD(i).setOmeroSession(session);
+            [moviePath,movieName,movieExt]= fileparts(matFiles{j});
+            MD(i).sanityCheck(moviePath,[movieName movieExt], false);
         end
     end
 end

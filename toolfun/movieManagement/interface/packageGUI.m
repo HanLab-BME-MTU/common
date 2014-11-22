@@ -151,7 +151,7 @@ isFig = ~cellfun(@isempty,regexp(userDataFields,'Fig$'));
 userDataFigs = userDataFields(isFig);
 for i=1:numel(userDataFigs)
      figHandles = userData.(userDataFigs{i});
-     validFigHandles = figHandles(ishandle(figHandles)&logical(figHandles));     
+     validFigHandles = figHandles(ishandle(figHandles)&figHandles ~= 0);
      delete(validFigHandles);
 end
 
