@@ -2,6 +2,11 @@ classdef MotionAnalysisProcess < PostTrackingProcess
     % A concrete class for analyzing tracks diffusion
     
     % Sebastien Besson, March 2012
+    % Mark Kittisopikul, Nov 2014, Added channelOutput cache
+    
+    properties (Transient = true)
+        cache = {};
+    end
     
     methods (Access = public)
         function obj = MotionAnalysisProcess(owner, varargin)
@@ -43,7 +48,20 @@ classdef MotionAnalysisProcess < PostTrackingProcess
             nOutput = numel(output);
             
             % Data loading
-            s = load(obj.outFilePaths_{1,iChan},output{:});
+
+            % Create cache if it does not exist
+            if(isempty(obj.cache))
+                obj.cache = cell( length(obj.getOwner().channels_) );
+            end
+
+            % Use cache if possible to avoid excess disk I/O
+            if(~isempty(obj.cache{iChan}) && ...
+               all(isfield(obj.cache{iChan},output)) )
+                s = obj.cache{iChan};
+            else
+                s = load(obj.outFilePaths_{1,iChan},output{:});
+                obj.cache{iChan} = s;
+            end
             
             varargout = cell(nOutput);
             for i = 1:nOutput
