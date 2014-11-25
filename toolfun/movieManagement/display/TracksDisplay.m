@@ -124,9 +124,9 @@ classdef TracksDisplay < MovieDataDisplay
                 h(2) = plotFast(h(2),xGapData, yGapData, 'Linestyle', obj.GapLinestyle',...
                     'Linewidth', obj.Linewidth, 'Color',[1 1 1] - obj.Color, varargin{:});
                 h(3) = plotFast(h(3),xSplitData, ySplitData, 'Linestyle', obj.Linestyle,...
-                    'Linewidth', obj.Linewidth, 'Color','y', varargin{:});
+                    'Linewidth', obj.Linewidth, 'Color','y', 'Marker', 's', varargin{:});
                 h(4) = plotFast(h(4),xMergeData, yMergeData, 'Linestyle', obj.Linestyle,...
-                    'Linewidth', obj.Linewidth, 'Color','g', varargin{:});
+                    'Linewidth', obj.Linewidth, 'Color','g', 'Marker', 's', varargin{:});
             end
             
             % Display track numbers if option is selected
