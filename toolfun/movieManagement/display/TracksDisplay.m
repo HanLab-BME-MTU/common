@@ -81,7 +81,7 @@ classdef TracksDisplay < MovieDataDisplay
             for i = find(hasSplitEvents)'
                 eventTimes = tracks(i).events == 's';
                 eventTimes = find([ eventTimes false ] | [false eventTimes]);
-                dragtailWindow = [trackLengths(i) -displayLength + 1 trackLengths(i)];
+                dragtailWindow = [trackLengths(i) - displayLength(i) + 1 trackLengths(i)];
                 eventTimes = eventTimes(eventTimes >= dragtailWindow(1) & eventTimes <= dragtailWindow(2));
                 xSplitData(eventTimes - dragtailWindow(1) +1, i) = tracks(i).xCoord(eventTimes);
                 ySplitData(eventTimes - dragtailWindow(1) +1, i) = tracks(i).yCoord(eventTimes);
@@ -99,7 +99,7 @@ classdef TracksDisplay < MovieDataDisplay
             for i = find(hasMergeEvents)'
                 eventTimes = tracks(i).events == 'm';
                 eventTimes = find([ eventTimes false ] | [false eventTimes])-1;
-                dragtailWindow = [trackLengths(i) -displayLength + 1 trackLengths(i)];
+                dragtailWindow = [trackLengths(i) - displayLength(i) + 1 trackLengths(i)];
                 eventTimes = eventTimes(eventTimes >= dragtailWindow(1) & eventTimes <= dragtailWindow(2));
                 xMergeData(eventTimes - dragtailWindow(1) +1, i) = tracks(i).xCoord(eventTimes);
                 yMergeData(eventTimes - dragtailWindow(1) +1, i) = tracks(i).yCoord(eventTimes);
