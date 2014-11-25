@@ -3,10 +3,7 @@ classdef TrackingProcess < DataProcessingProcess
     %
     % Chuangang Ren, 11/2010
     % Sebastien Besson (last modified Dec 2011)
-    % Mark Kittisopikul, Nov 2014, Added channelOutput cache
-    properties (Transient = true)
-        cache = {};
-    end
+    
     
     methods(Access = public)
         
@@ -50,20 +47,8 @@ classdef TrackingProcess < DataProcessingProcess
             if ischar(output),output={output}; end
             
             % Data loading
-
-            % Create cache if it does not exist
-            if(isempty(obj.cache))
-                obj.cache = cell( length(obj.getOwner().channels_) );
-            end
-
-            % Use cache if possible to avoid excess disk I/O
-            if(~isempty(obj.cache{iChan}))
-                tracksFinal = obj.cache{iChan};
-            else
-                s = load(obj.outFilePaths_{iChan}, 'tracksFinal');
-                obj.cache{iChan} = s.tracksFinal;
-                tracksFinal=s.tracksFinal;
-            end
+            s = load(obj.outFilePaths_{iChan}, 'tracksFinal');
+            tracksFinal=s.tracksFinal;
             
             varargout = cell(numel(output), 1);
             for i = 1:numel(output)

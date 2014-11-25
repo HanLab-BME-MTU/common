@@ -4,12 +4,7 @@ classdef DetectionProcess < ImageAnalysisProcess
     
     % Chuangang Ren, 11/2010
     % Sebastien Besson (last modified May 2012)
-    % Mark Kittisopikul, Nov 2014, Added channelOutput cache
     
-    properties (Transient = true)
-        cache = {};
-    end
-
     methods(Access = public)
         
         function obj = DetectionProcess(owner, name, funName, funParams )
@@ -55,19 +50,7 @@ classdef DetectionProcess < ImageAnalysisProcess
             if ischar(output),output={output}; end
             
             % Data loading
-            % Create cache if it does not exist
-            if(isempty(obj.cache))
-                obj.cache = cell( length(obj.getOwner().channels_) );
-            end
-
-            % Use cache if possible to avoid excess disk I/O
-            if(~isempty(obj.cache{iChan}) && ...
-               all(isfield(obj.cache{iChan},output)) )
-                s = obj.cache{iChan};
-            else
-                s = load(obj.outFilePaths_{1,iChan},output{:});
-                obj.cache{iChan} = s;
-            end
+            s = load(obj.outFilePaths_{1,iChan},output{:});
            
             if numel(ip.Results.iFrame)>1,
                 varargout{1}=s.(output{1});
