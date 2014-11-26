@@ -161,15 +161,19 @@ if isstruct(trackedFeatureInfo)
         
     else
         
-        %find track start times
-        for i=1:numTracks
-            trackSEL(i,1) = trackedFeatureInfo(i).seqOfEvents(1,1);
-        end
+        
+        % vertically concatenate the r x 4 seqOfEvents
+        seqOfEventsMatrix = vertcat(trackedFeatureInfo.seqOfEvents);
         
         %find track end times
-        for i=1:numTracks
-            trackSEL(i,2) = trackedFeatureInfo(i).seqOfEvents(end,1);
-        end
+        % find the indices of the last row of each compound track
+        seqEndIdx = cumsum(cellfun('size',{trackedFeatureInfo.seqOfEvents},1));
+        
+        %find track start times
+        % the first row comes after each last row except the last
+        seqBegIdx = [1 seqEndIdx(1:end-1)+1];
+        trackSEL(:,1:2) = [seqOfEventsMatrix(seqBegIdx,1) ...
+                           seqOfEventsMatrix(seqEndIdx,1)];
         
     end
     

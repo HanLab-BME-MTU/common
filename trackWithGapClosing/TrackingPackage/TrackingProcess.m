@@ -268,19 +268,17 @@ classdef TrackingProcess < DataProcessingProcess
             % purposes
             
             % Determine the number of compound tracks
-            nCompoundTracks = zeros(numel(tracks), 1);
-            for i = 1:numel(tracks)
-                nCompoundTracks(i) =  size(tracks(i).tracksCoordAmpCG,1);
-            end
+            nCompoundTracks = cellfun('size',{tracks.tracksCoordAmpCG},1)';
             nTracksTot = [0 cumsum(nCompoundTracks(:))'];
+            nTracks = nTracksTot(end);
             
             % Fail fast if no track
-            if sum(nCompoundTracks) == 0
+            if nTracks == 0
                 displayTracks = struct.empty(1,0);
                 return
             end
             
-            displayTracks(sum(nCompoundTracks),1) = struct('xCoord', [], 'yCoord', [], 'events' ,[]);
+            displayTracks(sum(nCompoundTracks),1) = struct('xCoord', [], 'yCoord', [], 'events' ,[], 'number', []);
             for i = find(nCompoundTracks)'
                 % Get the x and y coordinate of all compound tracks
                 for  j = 1 : nCompoundTracks(i)

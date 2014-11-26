@@ -22,7 +22,6 @@ classdef TracksDisplay < MovieDataDisplay
             end
         end
         function h=initDraw(obj, tracks, tag, varargin)
-            
             if isempty(tracks), h = -1; return; end
             % Get track length and filter valid tracks
             trackLengths = cellfun(@numel,{tracks.xCoord});
@@ -31,7 +30,6 @@ classdef TracksDisplay < MovieDataDisplay
             trackLengths = trackLengths(validTracks);
             
             nTracks = numel(validTracks);
-            h=-ones(nTracks,3);
             
             % Constraing the dragtail length between 2 and the maximum
             % track length
@@ -44,10 +42,11 @@ classdef TracksDisplay < MovieDataDisplay
             % Concatenate data in a matrix of size dragtailLength x nTracks
             xData = NaN(dLength, nTracks);
             yData = NaN(dLength, nTracks);
+            displayLength = trackLengths;
+            displayLength(trackLengths > dLength) = dLength;
             for i = 1 : nTracks
-                displayLength = trackLengths(i) - max(0,trackLengths(i)-dLength);
-                xData(1:displayLength, i) = tracks(i).xCoord(end-displayLength+1:end);
-                yData(1:displayLength, i) = tracks(i).yCoord(end-displayLength+1:end);
+                xData(1:displayLength(i), i) = tracks(i).xCoord(end-displayLength(i)+1:end);
+                yData(1:displayLength(i), i) = tracks(i).yCoord(end-displayLength(i)+1:end);
             end
             
             % Initialize matrix for gaps
@@ -59,7 +58,8 @@ classdef TracksDisplay < MovieDataDisplay
             I = [I; zeros(size(I))];
             I = reshape(I, size(I,1)/2, size(I,2)*2);
             I = [zeros(size(I,1), 1) I];
-            I = bwlabel(imclearborder(I));
+            I = imclearborder(I);
+            I = bwlabel(I);
             I = I(:, 2:2:end);
             
             % Fill gaps x and y data
@@ -69,29 +69,38 @@ classdef TracksDisplay < MovieDataDisplay
                 xGapData(iFirst:iLast) = linspace(xData(iFirst), xData(iLast), iLast - iFirst +1);
                 yGapData(iFirst:iLast) = linspace(yData(iFirst), yData(iLast), iLast - iFirst +1);
             end
-            
+
             % Initialize matrix for split events
-            hasSplitEvents = arrayfun(@(x) isfield(x, 'events') && ~isempty(find(x.events=='s',1)), tracks);
+            if(isfield(tracks,'events'))
+                hasSplitEvents = arrayfun(@(x) ~isempty(strfind(x.events,'s')),tracks);
+            else
+                hasSplitEvents = false(size(tracks));
+            end
             xSplitData = NaN(dLength, nTracks);
             ySplitData = NaN(dLength, nTracks);
             for i = find(hasSplitEvents)'
-                eventTimes = find(tracks(i).events == 's');
-                eventTimes = unique([eventTimes, eventTimes+1]);
-                dragtailWindow = trackLengths(i)-displayLength+1:trackLengths(i);
-                eventTimes = intersect(eventTimes, dragtailWindow);
+                eventTimes = tracks(i).events == 's';
+                eventTimes = find([ eventTimes false ] | [false eventTimes]);
+                dragtailWindow = [trackLengths(i) - displayLength(i) + 1 trackLengths(i)];
+                eventTimes = eventTimes(eventTimes >= dragtailWindow(1) & eventTimes <= dragtailWindow(2));
                 xSplitData(eventTimes - dragtailWindow(1) +1, i) = tracks(i).xCoord(eventTimes);
                 ySplitData(eventTimes - dragtailWindow(1) +1, i) = tracks(i).yCoord(eventTimes);
             end
             
             % Initialize matrix for split events
-            hasMergeEvents = arrayfun(@(x) isfield(x, 'events') && ~isempty(find(x.events=='m',1)), tracks);
+
+            if(isfield(tracks,'events'))
+                hasMergeEvents = arrayfun(@(x) ~isempty(strfind(x.events,'m')),tracks);
+            else
+                hasMergeEvents = false(size(tracks));
+            end
             xMergeData = NaN(dLength, nTracks);
             yMergeData = NaN(dLength, nTracks);
             for i = find(hasMergeEvents)'
-                eventTimes = find(tracks(i).events == 'm');
-                eventTimes = unique([eventTimes, eventTimes - 1]);
-                dragtailWindow = trackLengths(i)-displayLength+1:trackLengths(i);
-                eventTimes = intersect(eventTimes, dragtailWindow);
+                eventTimes = tracks(i).events == 'm';
+                eventTimes = find([ eventTimes false ] | [false eventTimes])-1;
+                dragtailWindow = [trackLengths(i) - displayLength(i) + 1 trackLengths(i)];
+                eventTimes = eventTimes(eventTimes >= dragtailWindow(1) & eventTimes <= dragtailWindow(2));
                 xMergeData(eventTimes - dragtailWindow(1) +1, i) = tracks(i).xCoord(eventTimes);
                 yMergeData(eventTimes - dragtailWindow(1) +1, i) = tracks(i).yCoord(eventTimes);
             end
@@ -99,45 +108,48 @@ classdef TracksDisplay < MovieDataDisplay
             % Plot tracks
             if isfield(tracks,'label') % If track is classified
                 nColors = size(obj.Color,1);
+                h = -ones(nColors,2);
                 for iColor = 1:nColors
                     iTracks = mod([tracks.label]-1, nColors) +1 == iColor;
-                    h(iTracks,1)=plot(xData(:,iTracks),yData(:,iTracks),'Linestyle',obj.Linestyle,...
+                    h(iColor,1)=plotFast(h(iColor,1),xData(:,iTracks),yData(:,iTracks),'Linestyle',obj.Linestyle,...
                         'Linewidth', obj.Linewidth, 'Color',obj.Color(iColor,:),varargin{:});
-                    h(iTracks,2)=plot(xGapData(:,iTracks),yGapData(:,iTracks),'Linestyle',obj.GapLinestyle,...
+                    h(iColor,2)=plotFast(h(iColor,2),xGapData(:,iTracks),yGapData(:,iTracks),'Linestyle',obj.GapLinestyle,...
                         'Linewidth', obj.Linewidth, 'Color', obj.Color(iColor,:),varargin{:});
                 end
             else
                 % Plot links and gaps
-                h(:,1) = plot(xData, yData, 'Linestyle', obj.Linestyle,...
+                h=-ones(4,1);
+                h(1) = plotFast(h(1),xData, yData, 'Linestyle', obj.Linestyle,...
                     'Linewidth', obj.Linewidth, 'Color',obj.Color,varargin{:});
-                h(:,2) = plot(xGapData, yGapData, 'Linestyle', obj.GapLinestyle',...
+                h(2) = plotFast(h(2),xGapData, yGapData, 'Linestyle', obj.GapLinestyle',...
                     'Linewidth', obj.Linewidth, 'Color',[1 1 1] - obj.Color, varargin{:});
-                h(:,3) = plot(xSplitData, ySplitData, 'Linestyle', obj.Linestyle,...
+                h(3) = plotFast(h(3),xSplitData, ySplitData, 'Linestyle', obj.Linestyle,...
                     'Linewidth', obj.Linewidth, 'Color','y', varargin{:});
-                h(:,4) = plot(xMergeData, yMergeData, 'Linestyle', obj.Linestyle,...
+                h(4) = plotFast(h(4),xMergeData, yMergeData, 'Linestyle', obj.Linestyle,...
                     'Linewidth', obj.Linewidth, 'Color','g', varargin{:});
             end
             
             % Display track numbers if option is selected
             if obj.showLabel
+                hlabels = -ones(nTracks,1);
                 for i = find(~all(isnan(xData),1))
                     trackNr = num2str(tracks(i).number);
                     % Find last non-NaN coordinate
                     index = find(~isnan(xData(:,i)),1,'last');
                     if isfield(tracks,'label')
                         iColor = mod(tracks(i).label, nColors) + 1;
-                        h(i,3) = text(xData(index,i)+2, yData(index,i)+2, trackNr,...
+                        hlabels(i) = text(xData(index,i)+2, yData(index,i)+2, trackNr,...
                             'Color', obj.Color(iColor,:));
                     else
-                        h(i,3) = text(xData(index,i)+2, yData(index,i)+2, trackNr,...
+                        hlabels(i) = text(xData(index,i)+2, yData(index,i)+2, trackNr,...
                             'Color', obj.Color);
                     end
                 end
+                h = [h(:) ; hlabels ];
             end
             
             % Set tag
             set(h(ishandle(h)), 'Tag', tag, 'ButtonDownFcn', obj.ButtonDownFcn);
-            
         end
         
         function updateDraw(obj, h, data)
@@ -173,6 +185,37 @@ classdef TracksDisplay < MovieDataDisplay
         
         function f=getDataValidator()
             f=@isstruct;
+        end
+    end
+end
+function h = plotFast(h,xData,yData,varargin)
+%plotFast Uses the low-level plotting function line to plot matrices by
+%separate lines into a single line with gaps while also trying to avoid
+%creating a new object.
+%
+% INPUT
+% h - handle to update if valid
+% xData - same as given to plot, can be a matrix where columns are separate
+% lines
+% yData - same as given to plot, can be a matrix where columns are separate
+% lines
+% varargin - passes through extra parameters to the line function
+%
+% OUTPUT
+%
+% h - handle to the line object created or used
+%
+
+% Mark Kittisopikul, 2014/11/24
+
+    xData(end+1,:) = NaN;
+    yData(end+1,:) = NaN;
+    if(ishandle(h))
+        set(h,'XData',xData(:),'YData',yData(:),varargin{:});
+    else
+        h = line(xData(:),yData(:),varargin{:});
+        if(isempty(h))
+            h = -1;
         end
     end
 end
