@@ -5,11 +5,14 @@ classdef TracksDisplay < MovieDataDisplay
         Linewidth=1;
         GapLinestyle='--';
         Color = 'r';
-        MergeColor = 'g';
-        SplitColor = 'y';
+        MergeColor = 'y';
+        MergeMarker = 's';
+        SplitColor = 'g';
+        SplitMarker = 's';
         useDragtail=true;
         dragtailLength=10;
         showLabel=false;
+        markMergeSplit=false;
         ButtonDownFcn=[];
     end
     methods
@@ -119,14 +122,20 @@ classdef TracksDisplay < MovieDataDisplay
             else
                 % Plot links and gaps
                 h=-ones(4,1);
+                splitMarker = 'none';
+                mergeMarker = 'none';
+                if(obj.markMergeSplit)
+                    splitMarker = obj.SplitMarker;
+                    mergeMarker = obj.MergeMarker;
+                end
                 h(1) = plotFast(h(1),xData, yData, 'Linestyle', obj.Linestyle,...
                     'Linewidth', obj.Linewidth, 'Color',obj.Color,varargin{:});
                 h(2) = plotFast(h(2),xGapData, yGapData, 'Linestyle', obj.GapLinestyle',...
                     'Linewidth', obj.Linewidth, 'Color',[1 1 1] - obj.Color, varargin{:});
                 h(3) = plotFast(h(3),xSplitData, ySplitData, 'Linestyle', obj.Linestyle,...
-                    'Linewidth', obj.Linewidth, 'Color','y', varargin{:});
+                    'Linewidth', obj.Linewidth, 'Color', obj.SplitColor , 'Marker', splitMarker , varargin{:});
                 h(4) = plotFast(h(4),xMergeData, yMergeData, 'Linestyle', obj.Linestyle,...
-                    'Linewidth', obj.Linewidth, 'Color','g', varargin{:});
+                    'Linewidth', obj.Linewidth, 'Color', obj.MergeColor, 'Marker', mergeMarker , varargin{:});
             end
             
             % Display track numbers if option is selected
@@ -181,6 +190,8 @@ classdef TracksDisplay < MovieDataDisplay
             params(8).validator=@(x)ischar(x) ||isvector(x);
             params(9).name='ButtonDownFcn';
             params(9).validator=@(x) isempty(x) || isa(x, 'function_handle');
+            params(10).name='markMergeSplit';
+            params(10).validator=@isscalar;
         end
         
         function f=getDataValidator()
