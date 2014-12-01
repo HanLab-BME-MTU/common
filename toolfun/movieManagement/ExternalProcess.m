@@ -1,9 +1,9 @@
-classdef DummyProcess < Process
+classdef ExternalProcess < Process
     % A concrete class
     
     methods(Access = public)
         
-        function obj = DummyProcess(owner, varargin)
+        function obj = ExternalProcess(owner, varargin)
             % Input check
             ip = inputParser;
             ip.addRequired('owner',@(x) isa(x,'MovieData'));
