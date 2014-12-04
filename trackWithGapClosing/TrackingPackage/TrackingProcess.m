@@ -48,29 +48,24 @@ classdef TrackingProcess < DataProcessingProcess
             
             % Data loading
             s = load(obj.outFilePaths_{iChan}, 'tracksFinal');
-            tracksFinal=s.tracksFinal;
             
             varargout = cell(numel(output), 1);
             for i = 1:numel(output)
                 switch output{i}
-                    case 'tracksFinal'
-                        if ~isempty(iFrame),
-                            % Filter tracks existing in input frame
-                            trackSEL=getTrackSEL(tracksFinal);
-                            validTracks = (iFrame>=trackSEL(:,1) &iFrame<=trackSEL(:,2));
-                            [tracksFinal(~validTracks).tracksCoordAmpCG]=deal([]);
-                            
-                            for j=find(validTracks)'
-                                tracksFinal(j).tracksCoordAmpCG = tracksFinal(j).tracksCoordAmpCG(:,1:8*(iFrame-trackSEL(j,1)+1));
-                            end
-                            varargout{i} = tracksFinal;
-                        else
-                            varargout{i} = tracksFinal;
-                        end
-                    case 'staticTracks'
-                        varargout{i} = tracksFinal;
+                    case {'tracksFinal', 'staticTracks'}
+                        varargout{i} = s.tracksFinal;
                     case 'gapInfo'
-                        varargout{1} = findTrackGaps(tracksFinal);
+                        varargout{i} = findTrackGaps(s.tracksFinal);
+                end
+                if strcmp(output{i}, 'tracksFinal') && ~isempty(iFrame),
+                    % Filter tracks existing in input frame
+                    trackSEL=getTrackSEL(s.tracksFinal);
+                    validTracks = (iFrame>=trackSEL(:,1) &iFrame<=trackSEL(:,2));
+                    [varargout{i}(~validTracks).tracksCoordAmpCG]=deal([]);
+                    
+                    for j=find(validTracks)'
+                        varargout{i}(j).tracksCoordAmpCG = varargout{i}(j).tracksCoordAmpCG(:,1:8*(iFrame-trackSEL(j,1)+1));
+                    end
                 end
             end
         end
