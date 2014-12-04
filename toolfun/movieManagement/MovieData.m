@@ -61,7 +61,7 @@ classdef  MovieData < MovieObject
                 else
                     % Parse options
                     ip = inputParser();
-                    ip.addParamValue('outputDirectory', '', @ischar);
+                    ip.addOptional('outputDirectory', '', @ischar);
                     ip.KeepUnmatched = true;
                     ip.parse(varargin{:});
                     
