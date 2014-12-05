@@ -11,10 +11,10 @@ classdef ExternalProcess < Process
             
             % Constructor of the DummyDetectionProcess
             super_args{1} = owner;
-            super_args{2} = DummyProcess.getName();
+            super_args{2} = ExternalProcess.getName();
             obj = obj@Process(super_args{:});
             obj.funName_ = @(x) x;
-            obj.funParams_ = DummyProcess.getDefaultParams(varargin);
+            obj.funParams_ = ExternalProcess.getDefaultParams(varargin);
             
         end
     end
