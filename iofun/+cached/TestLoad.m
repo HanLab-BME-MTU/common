@@ -135,5 +135,9 @@ classdef TestLoad < TestCase
             [~, wasCached] = cached.load(self.ascii_file);
             assert(~wasCached);
         end
+        function testAssignInCaller(self)
+            cached.load(self.matfile);
+            cached.load(self.ascii_file,'-ascii');
+        end
     end
 end

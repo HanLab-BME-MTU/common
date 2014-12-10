@@ -69,6 +69,7 @@ end
 forwarded = varargin;
 
 for ii=1:length(varargin)
+    % break out of the loop once we find one of these exclusive options
     switch(varargin{ii})
         case '-reset'
         % Second argument can be an optional reset flag which will clear the cache
@@ -77,6 +78,7 @@ for ii=1:length(varargin)
         % remove the -reset option since we do not want to forward it to load
             forwarded = varargin([1:ii-1 ii+1:end]);
             reset = true;
+            break;
         case '-useCache'
         % Second argument can also be a -useCache parameter followed by a boolean
             assert(islogical(varargin{ii+1}),'-useCache must be followed by a logical');
@@ -84,11 +86,13 @@ for ii=1:length(varargin)
             reset = ~varargin{ii+1};
             % remove the name/value since we do not want to forward it to load
             forwarded = varargin([1:ii-1 ii+2:end]);
+            break;
         case '-clear'
         % The -clear option with a filename will clear that specific
         % cache
             clearKey = true;
             forwarded = varargin([1:ii-1 ii+1:end]);
+            break;
     end
 end
 
@@ -147,9 +151,14 @@ if(cache.isKey(key))
             if(any(~isfield(S,variables)))
                 % if any of the requested variables are not present,
                 % then update the cache
-                newVariables = setdiff(variables,fields(S));
+                S_fields = fieldnames(S);
+                newVariables = setdiff(variables,S_fields);
                 newS = load(filename,options{:},newVariables{:});
-                S = mergestruct(S,newS);
+                newS_fields = fieldnames(newS);
+                % NB: Documented tip in struct2cell:
+                % Order is preserved between fieldnames and struct2cell
+                S = cell2struct([ struct2cell(S) ; struct2cell(newS)], ...
+                                [ S_fields       ; newS_fields]      , 1);
                 % all variables were not loaded
                 setData(key,S,false,D.datenum,D.bytes);
             end
@@ -179,9 +188,12 @@ end
 
 %% 5. If no output is requested, assign values in the caller like builtin
 if(nargout == 0)
-    S_fields = fields(S);
-    for f = 1:length(S_fields)
-        assignin('caller',S_fields{f},S.(S_fields{f}));
+    % if we loaded in ascii mode, then S may not be a struct
+    if(isstruct(S))
+        S_fields = fieldnames(S);
+        for f = 1:length(S_fields)
+            assignin('caller',S_fields{f},S.(S_fields{f}));
+        end
     end
 end
 
