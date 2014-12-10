@@ -268,9 +268,7 @@ classdef Process < hgsetget
             
             % Create graphic tag and delegate drawing to the display class
             tag = ['process' num2str(obj.getIndex()) '_channel' num2str(iChan) '_output' num2str(iOutput)];
-            drawArgs=reshape([fieldnames(ip.Unmatched) struct2cell(ip.Unmatched)]',...
-                2*numel(fieldnames(ip.Unmatched)),1);
-            h=obj.getDisplayMethod(iOutput, iChan).draw(data,tag,drawArgs{:});
+            h=obj.getDisplayMethod(iOutput, iChan).draw(data,tag,ip.Unmatched);
         end
         
         function index = getIndex(obj)
