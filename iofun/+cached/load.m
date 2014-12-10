@@ -147,9 +147,14 @@ if(cache.isKey(key))
             if(any(~isfield(S,variables)))
                 % if any of the requested variables are not present,
                 % then update the cache
-                newVariables = setdiff(variables,fields(S));
+                S_fields = fieldnames(S);
+                newVariables = setdiff(variables,S_fields);
                 newS = load(filename,options{:},newVariables{:});
-                S = mergestruct(S,newS);
+                newS_fields = fieldnames(newS);
+                % NB: Documented tip in struct2cell:
+                % Order is preserved between fieldnames and struct2cell
+                S = cell2struct([ struct2cell(S) ; struct2cell(newS)], ...
+                                [ S_fields       ; newS_fields]      , 1);
                 % all variables were not loaded
                 setData(key,S,false,D.datenum,D.bytes);
             end
