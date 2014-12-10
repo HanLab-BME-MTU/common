@@ -7,7 +7,7 @@ function processGUI_ApplyFcn(hObject, eventdata, handles,funParams,varargin)
 % Check input
 ip = inputParser;
 ip.addRequired('hObject',@ishandle);
-ip.addRequired('eventdata',@(x) isstruct(x) || isempty(x));
+ip.addRequired('eventdata',@(x) isstruct(x) || isempty(x) || isa(x, 'event.EventData'));
 ip.addRequired('handles',@isstruct);
 ip.addRequired('funParams',@(x) isstruct(x) || isempty(x))
 ip.addOptional('settingFcn',{},@iscell);
@@ -18,7 +18,7 @@ settingFcn=ip.Results.settingFcn;
 %     confirmApplytoAll = questdlg(...
 %         ['You are about to copy the current process settings to all movies.'...
 %         ' Previous settings will be lost. Do you want to continue?'],...
-%         'Apply settings to all movies','Yes','No','Yes'); 
+%         'Apply settings to all movies','Yes','No','Yes');
 %     if ~strcmp(confirmApplytoAll,'Yes'),
 %         set(handles.checkbox_applytoall,'Value',0);
 %         return
@@ -27,23 +27,30 @@ settingFcn=ip.Results.settingFcn;
 
 % Get the main figure userData
 userData = get(handles.figure1, 'UserData');
-if isfield(userData,'MD'), field='MD'; else field = 'ML'; end
+if isfield(userData,'MD'),
+    field = 'MD';
+elseif isfield(userData,'MD');
+    field = 'ML';
+else
+    error('Missing movie');
+end
 
 % Check if the current process is equal to the package process (to cover
 % empty processes as well as new subclass processes)
-if ~isequal(userData.crtPackage.processes_{userData.procID},userData.crtProc)
-    
-    if isempty(userData.crtPackage.processes_{userData.procID})
-        % Create a new process and set it in the package
+oldProcess = userData.crtPackage.getProcess(userData.procID);
+if ~isequal(oldProcess, userData.crtProc)
+    if isempty(oldProcess)
+        % Create a new process and associate it to the package
         userData.(field).addProcess(userData.crtProc);
         userData.crtPackage.setProcess(userData.procID,userData.crtProc);
     else
-        userData.(field).replaceProcess(userData.crtPackage.processes_{userData.procID},userData.crtProc);
+        % Replace the process
+        userData.(field).replaceProcess(oldProcess, userData.crtProc);
     end
-       
+    
 end
 
- % Override the parameters with the GUI set-up ones
+% Override the parameters with the GUI set-up ones
 parseProcessParams(userData.crtProc,funParams);
 
 userData_main = get(userData.mainFig, 'UserData');
@@ -58,27 +65,29 @@ end
 % Apply setting to all movies
 for i = moviesId
     
-    % if process classes differ, create a new process with default parameters
-    if ~strcmp(class(userData_main.package(i).processes_{userData.procID}),...
-            class(userData.crtProc))
+    % Check process can
+    oldProcess = userData_main.package(i).getProcess(userData.procID);
+    if ~strcmp(class(oldProcess), class(userData.crtProc))
+        % Create a new process for the ith move
         newProcess = userData.procConstr(userData_main.(field)(i), ...
             userData_main.package(i).outputDirectory_);
         
-        % if package process is empty, add new process and associate it
-        if isempty(userData_main.package(i).processes_{userData.procID})
+        if isempty(oldProcess)
+            % Create a new process and associate it to the package
             userData_main.(field)(i).addProcess(newProcess);
             userData_main.package(i).setProcess(userData.procID, newProcess);
         else
-            userData_main.(field)(i).replaceProcess(userData_main.package(i).processes_{userData.procID},newProcess);
+            % Replace the process of the ith movie
+            userData_main.(field)(i).replaceProcess(oldProcess, newProcess);
         end
     end
     
     % Override the parameters with the GUI defeined
-    parseProcessParams(userData_main.package(i).processes_{userData.procID},...
+    parseProcessParams(userData_main.package(i).getProcess(userData.procID),...
         funParams);
     
     for j=1:numel(settingFcn)
-        settingFcn{j}(userData_main.package(i).processes_{userData.procID});
+        settingFcn{j}(userData_main.package(i).getProcess(userData.procID));
     end
 end
 

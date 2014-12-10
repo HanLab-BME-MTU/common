@@ -188,6 +188,15 @@ classdef  MovieData < MovieObject
             chanPaths = obj.getReader().getChannelNames(iChan);
         end
         
+        function chanNames = getChannelNames(obj,iChan)
+            % Returns the directories for the selected channels
+            if nargin < 2 || isempty(iChan), iChan = 1:numel(obj.channels_); end
+            assert(all(ismember(iChan,1:numel(obj.channels_))),...
+                'Invalid channel index specified!');
+            chanNames = arrayfun(@(x) obj.getChannel(x).getName(), iChan,...
+                'UniformOutput', false);
+        end
+        
         %% ROI methods
         function roiMovie = addROI(obj, roiMaskPathOrId, outputDirectory, varargin)
             
@@ -286,8 +295,8 @@ classdef  MovieData < MovieObject
             roiService = obj.getOmeroSession().getRoiService();
             roi = toMatlabList(roiService.findByRoi(obj.roiOmeroId_,...
                 omero.api.RoiOptions()).rois);
-            assert(isscalar(roi))
-            mask = false([obj.imSize_ obj.nFrames_]);
+            mask = true([obj.imSize_ obj.nFrames_]);
+            if isempty(roi) || ~isscalar(roi), return; end
             for i = 1: roi.sizeOfShapes
                 shape = roi.getShape(i-1);
                 t = shape.getTheT.getValue + 1;
@@ -334,45 +343,38 @@ classdef  MovieData < MovieObject
             % Call the superclass sanityCheck
             if nargin>1, sanityCheck@MovieObject(obj,varargin{:}); end
             
-            % Initialize channels dimensions
-            width = zeros(1, length(obj.channels_));
-            height = zeros(1, length(obj.channels_));
-            nFrames = zeros(1, length(obj.channels_));
-            
             % Call subcomponents sanityCheck
             disp('Checking channels');
             for i = 1: length(obj.channels_)
-                [width(i), height(i), nFrames(i), zSize(i)] = obj.channels_(i).sanityCheck(obj);
+                obj.getChannel(i).sanityCheck(obj);
             end
             
-            assert(max(nFrames) == min(nFrames), 'MovieData:sanityCheck:nFrames',...
-                'Different number of frames are detected in different channels. Please make sure all channels have same number of frames.')
-            assert(max(zSize) == min(zSize), 'MovieData:sanityCheck:zSize',...
-                'Different number of Z sections are detected in different channels. Please make sure all channels have same number of frames.')
-            assert(max(width)==min(width) && max(height)==min(height), ...
-                'MovieData:sanityCheck:imSize',...
-                'Image sizes are inconsistent in different channels.\n\n')
+            % Read raw data dimensions
+            width = obj.getReader().getSizeX();
+            height = obj.getReader().getSizeY();
+            nFrames = obj.getReader().getSizeT();
+            zSize = obj.getReader().getSizeZ();
             
             % Define imSize_ and nFrames_;
             if ~isempty(obj.nFrames_) && ~isMock(obj)
                 assert(obj.nFrames_ == nFrames(1), 'MovieData:sanityCheck:nFrames',...
                     'Record shows the number of frames has changed in this movie.')
             else
-                obj.nFrames_ = nFrames(1);
+                obj.nFrames_ = nFrames;
             end
             if ~isempty(obj.imSize_)
-                assert(obj.imSize_(2) == width(1) && obj.imSize_(1) ==height(1),...
+                assert(obj.imSize_(2) == width && obj.imSize_(1) == height,...
                     'MovieData:sanityCheck:imSize',...
                     'Record shows image size has changed in this movie.')
             else
-                obj.imSize_ = [height(1) width(1)];
+                obj.imSize_ = [height width];
             end
             
             if ~isempty(obj.zSize_)
-                assert(obj.zSize_ == zSize(1), 'MovieData:sanityCheck:nFrames',...
+                assert(obj.zSize_ == zSize, 'MovieData:sanityCheck:nFrames',...
                     'Record shows the number of frames has changed in this movie.')
             else
-                obj.zSize_ = zSize(1);
+                obj.zSize_ = zSize;
             end
             
             % Fix roi/parent initialization
@@ -645,6 +647,38 @@ classdef  MovieData < MovieObject
         
     end
     methods(Static)
+        function obj = load(varargin)
+            % Load or re-load a movie object
+            
+            assert(nargin > 0);
+            assert(MovieData.isOmeroSession(varargin{1}) || ...
+                exist(varargin{1}, 'file') == 2)
+            
+            if MovieObject.isOmeroSession(varargin{1}),
+                obj = MovieData.loadOmero(varargin{:});
+            else
+                isMatFile = strcmpi(varargin{1}(end-3:end), '.mat');
+                if isMatFile,
+                    obj = MovieData.loadMatFile(varargin{1});
+                    [moviePath,movieName,movieExt]= fileparts(varargin{1});
+                    obj.sanityCheck(moviePath,[movieName movieExt], varargin{2:end});
+                else
+                    % Backward-compatibility - call the constructor
+                    obj = MovieData(varargin{:});
+                end
+            end
+        end
+
+        function obj = loadOmero(session, varargin)
+            % Load a movie from an image stored onto an OMERO server
+            obj = getOmeroMovies(session, varargin{:});
+        end
+        
+        function obj = loadMatFile(filepath)
+            % Load a movie data from a local MAT file
+            obj = MovieObject.loadMatFile('MovieData', filepath);
+        end
+        
         function status=checkValue(property,value)
             % Return true/false if the value for a given property is valid
             

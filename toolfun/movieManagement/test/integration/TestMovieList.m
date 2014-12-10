@@ -73,7 +73,7 @@ classdef TestMovieList < TestMovieObject & TestCase
         function testLoad(self)
             self.setUpMovieList();
             
-            self.movieList = MovieData.load(self.movieList.getFullPath());
+            self.movieList = MovieList.load(self.movieList.getFullPath());
             self.checkMovieList;
         end
         

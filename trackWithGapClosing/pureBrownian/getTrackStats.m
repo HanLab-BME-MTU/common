@@ -121,7 +121,7 @@ if ~isempty(goodTracks) %if there are tracks to use ...
         if problem2D
 
             %obtain the histogram of the squared displacement
-            [n,x] = histogram(dispSq(:));
+            [n,x] = optimalHistogram(dispSq(:));
 
             %fit the histogram with an exponential function
             expParam = lsqcurvefit(@expFun,[100 1]',x,n,[],[],options);

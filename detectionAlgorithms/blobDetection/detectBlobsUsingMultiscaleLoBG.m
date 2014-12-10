@@ -98,7 +98,7 @@ function [ imBlobLocations, varargout ] = detectBlobsUsingMultiscaleLoBG( im, bl
                 hold off;
                 
                 
-                figure, histogram( pixelScaleMap(seedInd) );
+                figure, optimalHistogram( pixelScaleMap(seedInd) );
                 title( 'Histogram of the cell scales (diameter) found in the image' );
                 
             end

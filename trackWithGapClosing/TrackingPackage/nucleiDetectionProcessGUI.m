@@ -51,6 +51,8 @@ processGUI_OpeningFcn(hObject, eventdata, handles, varargin{:},'initChannel',1);
 
 % ---------------------- Channel Setup -------------------------
 userData = get(handles.figure1, 'UserData');
+if(isempty(userData)), userData = struct(); end;
+
 funParams = userData.crtProc.funParams_;
 
 % Set parameters
@@ -87,6 +89,7 @@ delete(handles.figure1);
 function pushbutton_done_Callback(hObject, eventdata, handles)
 % Call back function of 'Apply' button
 userData = get(handles.figure1, 'UserData');
+if(isempty(userData)), userData = struct(); end;
 
 % -------- Check user input --------
 if isempty(get(handles.listbox_selectedChannels, 'String'))
@@ -136,6 +139,7 @@ processGUI_ApplyFcn(hObject, eventdata, handles,funParams,{setLastFrame});
 function figure1_DeleteFcn(hObject, eventdata, handles)
 % Notify the package GUI that the setting panel is closed
 userData = get(handles.figure1, 'UserData');
+if(isempty(userData)), userData = struct(); end;
 
 if ishandle(userData.helpFig), delete(userData.helpFig); end
 

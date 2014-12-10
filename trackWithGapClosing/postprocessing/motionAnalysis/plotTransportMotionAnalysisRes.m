@@ -27,10 +27,10 @@ for iMC = 1 : numMotionChar
         distrAll = [distrAll; distrPause]; %#ok<AGROW>
     end
     
-    %use the function "histogram" to get an estimate of the number of bins to
+    %use the function "optimalHistogram" to get an estimate of the number of bins to
     %use in making the histogram
-    n1 = histogram(distrAway,[],0);
-    n2 = histogram(distrToward,[],0);
+    n1 = optimalHistogram(distrAway,[],0);
+    n2 = optimalHistogram(distrToward,[],0);
     numBins = mean([length(n1) length(n2)]);
     
     %find the minimum and maximum values and determine the bin locations

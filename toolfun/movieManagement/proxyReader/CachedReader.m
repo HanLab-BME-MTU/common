@@ -26,13 +26,7 @@ classdef CachedReader < ProxyReader
             % return the old cache in case anyone wants it
             oldCache = obj.cache;
             % use a cell array for the cache
-            obj.cache = cell(1,obj.getSizeC(varargin{:}));
-            for c = 1:length(obj.cache)
-                obj.cache{c} = cell(1,obj.getSizeT(c));
-                for t = 1:length(obj.cache{c})
-                    obj.cache{c}{t} = cell(1,obj.getSizeZ(c,t));
-                end
-            end
+            obj.cache = cell(obj.getSizeC,obj.getSizeT,obj.getSizeZ);
         end
     
         function [oldReader, oldCache] = setReader(obj,reader)
@@ -48,9 +42,9 @@ classdef CachedReader < ProxyReader
                 %
                 % but we have not merged that yet!
                 ip = inputParser;
-                ip.addRequired('c', @(x) isscalar(x) && ismember(x, 1 : obj.getSizeC()));
-                ip.addRequired('t', @(x) isscalar(x) && ismember(x, 1 : obj.getSizeT(c)));
-                ip.addOptional('z', 1, @(x) isscalar(x) && ismember(x, 1 : obj.getSizeZ(c)));
+                ip.addRequired('c', @(x) isscalar(x) && ismember(x, 1 : obj.getSizeC));
+                ip.addRequired('t', @(x) isscalar(x) && ismember(x, 1 : obj.getSizeT));
+                ip.addOptional('z', 1, @(x) isscalar(x) && ismember(x, 1 : obj.getSizeZ));
                 ip.parse(c, t, varargin{:});
                 
                 %c = ip.Results.c;
@@ -76,26 +70,26 @@ classdef CachedReader < ProxyReader
     methods ( Access = protected )
         function I = loadImage_(obj,c,t,z)
             % check if cached
-            if(isempty(obj.cache{c}{t}{z}))
+            if(isempty(obj.cache{c,t,z}))
                 % no cache, so proxy and cache
-                obj.cache{c}{t}{z} = obj.reader.loadImage_(c,t,z);
+                obj.cache{c,t,z} = obj.reader.loadImage_(c,t,z);
             end
             % return from cache
-            I = obj.cache{c}{t}{z};
+            I = obj.cache{c,t,z};
         end
         function I = loadStack_(obj,c,t,Z)
             % Z is a vector
-            if(any(cellfun(@isempty,obj.cache{c}{t}(Z))))
+            if(any(cellfun(@isempty,obj.cache(c,t,Z))))
                 % if we are missing z-planes, proxy the call 
                 % use generic loadStack which uses loadImage_ 
                 I = obj.reader.loadStack_(c,t, Z );
                 % save it into cache
                 for zz = 1:length(Z)
-                    obj.cache{c}{t}{Z(zz)} = I(:,:,zz );
+                    obj.cache{c,t,Z(zz)} = I(:,:,zz );
                 end
             else
                 % we have cached the entire stack, so return it
-                I = cat(3, obj.cache{c}{t}{Z});
+                I = cat(3, obj.cache{c,t,Z});
             end
         end
     end

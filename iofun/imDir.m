@@ -93,9 +93,17 @@ fileNames = vertcat(fileNames{:});
 fNums = arrayfun(@(x)(str2double(...
     x.name(max(regexp(x.name(1:end-4),'\D'))+1:end-4))),fileNames);
 
-%The sort function handles NaNs, and will not re-order if the images are
-%not numbered.
-[sNums,iX] = sort(fNums);
+count = getMultiplicity(fNums);
 
-fileNames = fileNames(iX);
+if(all(count == 1))
+    % Only sort by the number at the end if the numbers are unique
+
+    %The sort function handles NaNs, and will not re-order if the images are
+    %not numbered.
+    [sNums,iX] = sort(fNums);
+
+    fileNames = fileNames(iX);
+else
+    warning('imDir:non-unique-numbers','The numbers at the end of the filenames are not unique. Not sorting.');
+end
 

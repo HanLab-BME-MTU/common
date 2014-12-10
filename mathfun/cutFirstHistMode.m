@@ -111,7 +111,7 @@ end
 % BUILD HISTOGRAM
 %==========================
 if doHistogram
-    %     [counts,bins] = histogram(data);
+    %     [counts,bins] = optimalHistogram(data);
     %     counts = counts(:);
     %     bins = bins(:);
     % instead of a histogram, make a cumulative histogram and flip it along the
@@ -120,7 +120,7 @@ if doHistogram
     % we still need a histogram to find the maximum!
 
     %     [bins,sortIdx] = sort(data(:));
-    %     [counts] = histogram(bins);
+    %     [counts] = optimalHistogram(bins);
     %     [maxVal, maxIdx] = max(counts);
     %     bins = bins(maxIdx:end);
     %     nBins = length(bins);
@@ -131,7 +131,7 @@ if doHistogram
     % Do discrete histogram first, find max-bin, and then look for the
     % maximum in the continuous histogram only up to the end of the
     % maxBin+0.5
-    [counts, bins] = histogram(data);
+    [counts, bins] = optimalHistogram(data);
     % if there is only one bin, we have a problem. Therefore, force at
     % least 3 bins.
     if length(bins)<3
@@ -143,7 +143,7 @@ if doHistogram
 
 
     % continuous histogram
-    [counts,bins,sp] = histogram(data,'smooth');
+    [counts,bins,sp] = optimalHistogram(data,'smooth');
     nBins = length(bins);
 
     % find maximum between bin 1 and the one with maxBinValue
@@ -202,12 +202,12 @@ if doHistogram
         
         % check for axes (and figure!) to plot into
         if ~isempty(axesH)
-            histogram(axesH,data)
+            optimalHistogram(axesH,data)
             fig = get(axesH,'Parent');
         else
             fig =figure;
             set(fig,'NextPlot','add')
-            histogram(data)
+            optimalHistogram(data)
             axesH = gca;
         end
         ax(1) = axesH;

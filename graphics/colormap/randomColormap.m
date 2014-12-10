@@ -1,15 +1,22 @@
-function cMap = randomColormap(n,seed)
+function cMap = randomColormap(n,seed,otherColormap)
 %RANDOMCOLORMAP produes a random colormap which does not contain grays/white/black
 %
 % colorMap = randomColormap
 % colorMap = randomColormap(n)
-% colorMap = randomColormap(n,seed,saturation)
+% colorMap = randomColormap(n,seed)
+% colorMap = randomColormap(n,seed,otherColormap)
 %
 % Produces a colormap (an nx3 matrix containing RGB values) for a specified
 % number of colors. The colors are of random hue, but always always of
 % saturation=1 and value=1 so there are no grays or white or black. By
 % specifying an integer seed for the random number generation you can make
 % sure you always get the same colormap.
+%
+% Random permutations of other colormaps are possible by giving a 3rd
+% parameter. Another colormap may be a Nx3 matrix or a string for a
+% colormap function such as 'jet' or 'hsv'. In the case of 'hsv', the
+% distribution of hues will be even, which may not be the case with two
+% parameters. A scalar saturation value may also specified.
 %   
 % Input:
 %
@@ -22,7 +29,8 @@ function cMap = randomColormap(n,seed)
 %   prior to generating the colormap so other processes will not be
 %   affected)
 %
-%   saturation - Amount of saturation to use
+%   otherColormap - other colormap to use specified as a string, function
+%   handle, a nx3 matrix, or a scalar saturation value.
 %
 % Output:
 %
@@ -47,8 +55,28 @@ else
     rng(seed)
 end
 
-
-cMap = hsv2rgb([rand(n,1) ones(n,2)]);
+if(nargin < 3 || isnumeric(otherColormap) && isscalar(otherColormap))
+    saturation = 1;
+    value = 1;
+    if(nargin == 3)
+        % if the third parameter is scalar, use it as saturation
+        saturation = otherColormap;
+    end
+    % hue may not be evenly spaced
+    cMap = hsv2rgb([rand(n,1) repmat([saturation value],n,1)]);
+else
+    % convert otherColormap to a nx3 matrix if it's a string or function
+    if(ischar(otherColormap))
+        otherColormap = str2func(otherColormap);
+    end
+    if(isa(otherColormap,'function_handle'))
+        otherColormap = otherColormap(n);
+    end
+    % other colormap should be a nx3 matrix now
+    assert(all(size(otherColormap) == [n 3]), ...
+        'randomColormap: Incorrect dimensions for other colormap')
+    cMap = otherColormap(randperm(n),:);
+end
 
 %Restore random number generator state
 rng(currState);

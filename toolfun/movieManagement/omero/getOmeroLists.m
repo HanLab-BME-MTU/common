@@ -38,6 +38,9 @@ if isempty(datasets), return; end
 nLists = numel(datasets);
 ML(nLists) = MovieList();
 
+% Make sure the target directory existis
+if ~isdir(ip.Results.path), mkdir(ip.Results.path); end
+
 % Set temporary file to extract file annotations
 namespace = getLCCBOmeroNamespace;
 zipPath = fullfile(ip.Results.path, 'tmp.zip');
@@ -45,15 +48,15 @@ zipPath = fullfile(ip.Results.path, 'tmp.zip');
 for i = 1 : nLists
     datasetID = datasets(i).getId().getValue();
     
-    % Make sure the movies are loaded locally
-    images = toMatlabList(datasets(i).linkedImageList());
-    imageIds = sort(arrayfun(@(x) x.getId().getValue(), images));
-    MD = getOmeroMovies(session, imageIds);
-    
     % Retrieve file annotation attached to the dataset
     fas = getDatasetFileAnnotations(session, datasetID, 'include', namespace);
     
     if isempty(fas)
+        % Make sure the movies are loaded locally
+        images = toMatlabList(datasets(i).linkedImageList());
+        imageIds = sort(arrayfun(@(x) x.getId().getValue(), images));
+        MD = getOmeroMovies(session, imageIds);
+    
         path = fullfile(ip.Results.path, num2str(datasetID));
         if ~isdir(path), mkdir(path); end
         
@@ -85,7 +88,10 @@ for i = 1 : nLists
             if ~hasMovie, continue; end
             
             % Load MovieList object
-            ML(i) = MovieList.load(matFiles{j}, session, false);
+            ML(i) = MovieList.loadMatFile(matFiles{j});
+            ML(i).setOmeroSession(session);
+            [moviePath,movieName,movieExt]= fileparts(matFiles{j});
+            ML(i).sanityCheck(moviePath,[movieName movieExt], false);
         end
     end
 end

@@ -84,14 +84,22 @@ for i=1:nChan
 end
 
 % Create movie object
-movie=MovieData(movieChannels,outputDir,movieArgs{:});
+movie = MovieData(movieChannels, outputDir, movieArgs{:});
 movie.setPath(outputDir);
 movie.setFilename(movieFileName);
 movie.setOmeroId(imageID);
 movie.setOmeroSession(session);
 movie.setOmeroSave(true);
 
-movie.sanityCheck;
+% Register single ROIs associated with the image
+roiResult = session.getRoiService().findByImage(imageID, []);
+rois = toMatlabList(roiResult.rois);
+if ~isempty(rois) && isscalar(rois),
+    movie.roiOmeroId_ = rois.getId().getValue();
+end
+
+% Save the movie
+movie.sanityCheck();
 
 function movieArgs = getMovieMetadata(metadataService, image)
 

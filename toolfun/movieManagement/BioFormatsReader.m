@@ -19,8 +19,8 @@ classdef  BioFormatsReader < Reader
             ip.addParamValue('reader', [], @(x) isa(x, 'loci.formats.IFormatReader'));
             ip.parse(varargin{:});
             
-            % Initialize Bio-Formats
-            bfCheckJavaPath();
+            % Initialize Bio-Formats and log4j
+            bfInitLogging();
             
             obj.id = ip.Results.id;
             if ~isempty(ip.Results.reader),
@@ -47,27 +47,27 @@ classdef  BioFormatsReader < Reader
             series = obj.series;
         end
         
-        function sizeX = getSizeX(obj, varargin)
+        function sizeX = getSizeX(obj)
             sizeX = obj.getMetadataStore().getPixelsSizeX(obj.getSeries()).getValue();
         end
         
-        function sizeY = getSizeY(obj, varargin)
+        function sizeY = getSizeY(obj)
             sizeY = obj.getMetadataStore().getPixelsSizeY(obj.getSeries()).getValue();
         end
         
-        function sizeZ = getSizeZ(obj, varargin)
+        function sizeZ = getSizeZ(obj)
             sizeZ = obj.getMetadataStore().getPixelsSizeZ(obj.getSeries()).getValue();
         end
         
-        function sizeT = getSizeT(obj, varargin)
+        function sizeT = getSizeT(obj)
             sizeT = obj.getMetadataStore().getPixelsSizeT(obj.getSeries()).getValue();
         end
         
-        function sizeC = getSizeC(obj, varargin)
+        function sizeC = getSizeC(obj)
             sizeC = obj.getMetadataStore().getPixelsSizeC(obj.getSeries()).getValue();
         end
         
-        function bitDepth = getBitDepth(obj, varargin)
+        function bitDepth = getBitDepth(obj)
             pixelType = obj.getReader().getPixelType();
             bpp = loci.formats.FormatTools.getBytesPerPixel(pixelType);
             bitDepth = 8 * bpp;
@@ -102,10 +102,6 @@ classdef  BioFormatsReader < Reader
             channelNames = arrayfun(@(x) [base num2str(x)], iChan, 'Unif',false);
         end
         
-        function index = getIndex(obj, z, c, t)
-            index = loci.formats.FormatTools.getIndex(obj.getReader(), z, c, t);
-        end
-        
         function I = loadImage(obj, c, t, varargin)
             % Retrieve single plane specified by its (c, t, z) coordinates
             
@@ -125,7 +121,7 @@ classdef  BioFormatsReader < Reader
     end
     methods ( Access = protected )
         function I = loadImage_(obj, c, t, z, varargin)
-            javaIndex =  obj.getIndex(z - 1, c - 1, t - 1);
+            javaIndex =  obj.getReader().getIndex(z - 1, c - 1, t - 1);
             I = bfGetPlane(obj.getReader(), javaIndex + 1);
         end
     end

@@ -439,26 +439,8 @@ classdef  MovieObject < hgsetget
     end
     
     methods(Static)
-        function obj = load(varargin)
-            % Load or re-load a movie object
-            
-            assert(nargin > 0);
-            assert(MovieObject.isOmeroSession(varargin{1}) || ...
-                exist(varargin{1}, 'file') == 2)
-            
-            if MovieObject.isOmeroSession(varargin{1}),
-                obj = MovieObject.loadOmero(varargin{:});
-            else
-                isMatFile = strcmpi(varargin{1}(end-3:end), '.mat');
-                if isMatFile,
-                    obj = MovieObject.loadMatFile(varargin{:});
-                else
-                    obj = MovieData(varargin{:});
-                end
-            end
-        end
-        
-        function obj = loadMatFile(filepath, varargin)
+
+        function obj = loadMatFile(class, filepath)
             % Load a movie object saves as a MAT file on disk
             
             % Retrieve the absolute path
@@ -476,30 +458,18 @@ classdef  MovieObject < hgsetget
             end
             
             % Check if a single movie object is in the variables
-            isMovie = cellfun(@(x) any(strcmp(superclasses(x),'MovieObject')),{vars.class});
+            isMovie = cellfun(@(x) strcmp(x, class) || ...
+                any(strcmp(superclasses(x), class)),{vars.class});
             assert(any(isMovie),'lccb:movieObject:load', ...
-                'No movie object is found in selected MAT file.');
+                'No object of type %s is found in selected MAT file.', class);
             assert(sum(isMovie)==1,'lccb:movieObject:load', ...
-                'Multiple movie objects are found in selected MAT file.');
+                'Multiple objects are found in selected MAT file.');
+            assert(isequal(prod(vars(isMovie).size), 1),'lccb:movieObject:load', ...
+                'Multiple objects are found in selected MAT file.');
             
             % Load movie object
             data = load(filepath, '-mat', vars(isMovie).name);
             obj= data.(vars(isMovie).name);
-            
-            % Perform sanityCheck using the input path
-            [moviePath,movieName,movieExt]=fileparts(filepath);
-            if nargin>1 &&  MovieObject.isOmeroSession(varargin{1}),
-                obj.setOmeroSession(varargin{1});
-                obj.sanityCheck(moviePath,[movieName movieExt], varargin{2:end});
-            else
-                obj.sanityCheck(moviePath,[movieName movieExt], varargin{:});
-            end
-        end
-        
-        
-        function obj = loadOmero(session, varargin)
-            % Load a movie object stored onto an OMERO server
-            obj = getOmeroMovies(session, varargin{:});
         end
         
         function validator = getPropertyValidator(property)

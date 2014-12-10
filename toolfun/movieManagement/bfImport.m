@@ -46,6 +46,8 @@ assert(~f.directory, '%s is a directory', dataPath);
 dataPath = f.Name;
 
 try
+    % autoload java path and configure log4j
+    bfInitLogging();
     % Retrieve movie reader and metadata
     r = bfGetReader(dataPath);
     r.setSeries(0);
@@ -196,6 +198,12 @@ end
 function channelArgs = getChannelMetadata(r, iSeries, iChan)
 
 channelArgs={};
+
+% Read channel name
+channelName = r.getMetadataStore().getChannelName(iSeries, iChan);
+if ~isempty(channelName)
+    channelArgs=horzcat(channelArgs, 'name_', char(channelName));
+end
 
 % Read excitation wavelength
 exwlgth=r.getMetadataStore().getChannelExcitationWavelength(iSeries, iChan);

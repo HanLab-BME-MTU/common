@@ -117,9 +117,8 @@ uicontrol(imagePanel,'Style','checkbox',...
     'Position',[10 hPosition 120 20],'Tag','checkbox_colorbar',...
     'String',' Colorbar','HorizontalAlignment','left',...
     'Callback',@(h,event) setColorbar(guidata(h)));
-findclass(findpackage('scribe'),'colorbar');
-locations = findtype('ColorbarLocationPreset');
-locations = locations.Strings;
+%findclass(findpackage('scribe'),'colorbar');
+locations = ImageDisplay.getColorBarLocations();
 uicontrol(imagePanel,'Style','popupmenu','String',locations,...
     'Position',[130 hPosition 120 20],'Tag','popupmenu_colorbarLocation',...
     'HorizontalAlignment','left','Callback',@(h,event) setColorbar(guidata(h)));
@@ -189,6 +188,12 @@ uicontrol(overlayPanel,'Style','text',...
     'String',' Dragtail length','HorizontalAlignment','left');
 uicontrol(overlayPanel,'Style','edit','Position',[120 hPosition 50 20],...
     'String','10','BackgroundColor','white','Tag','edit_dragtailLength',...
+    'Callback',@(h,event) userData.redrawOverlaysFcn());
+
+hPosition=hPosition+20;
+uicontrol(overlayPanel,'Style','checkbox',...
+    'Position',[20 hPosition 150 20],'Tag','checkbox_markMergeSplit',...
+    'String',' Mark merge/split','HorizontalAlignment','left',...
     'Callback',@(h,event) userData.redrawOverlaysFcn());
 
 hPosition=hPosition+20;
@@ -324,7 +329,7 @@ h = findobj(0, '-regexp', 'Name', '^Movie$');
 if isempty(h), userData.redrawImageFcn(handles); end
 
 % Retrieve the handle of the axes containing the image
-hImage = findobj(h, 'Type', 'image', '-and', '-regexp', 'Tag', 'process');
+hImage = findobj(h, 'Type', 'image', '-and', '-regexp', 'Tag', 'process','-or','Tag','channels');
 hAxes = get(hImage, 'Parent');
 
 % Allow use to draw polygon and retrieve mask once it is double-clicked
@@ -424,10 +429,12 @@ function options = getOverlayOptions(handles)
 vectorScale = str2double(get(handles.edit_vectorFieldScale,'String'));
 dragtailLength = str2double(get(handles.edit_dragtailLength,'String'));    
 showLabel = get(handles.checkbox_showLabel,'Value');
+markMergeSplit = get(handles.checkbox_markMergeSplit,'Value');
 faceAlpha = str2double(get(handles.edit_faceAlpha,'String'));
 clim=[str2double(get(handles.edit_vectorCmin,'String')) ...
     str2double(get(handles.edit_vectorCmax,'String'))];
 
 if ~isempty(clim) && all(~isnan(clim)), cLimArgs={'CLim',clim}; else cLimArgs={}; end
 options ={'vectorScale',vectorScale,'dragtailLength',dragtailLength,...
-        'faceAlpha',faceAlpha,'showLabel',showLabel,cLimArgs{:}};
+        'faceAlpha',faceAlpha,'showLabel',showLabel, ...
+        'markMergeSplit',markMergeSplit,cLimArgs{:}};

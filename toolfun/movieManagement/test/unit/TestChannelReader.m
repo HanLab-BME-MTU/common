@@ -12,7 +12,7 @@ classdef TestChannelReader < TestProxyReader
                 fcnReader = fcnProxy;
             end
                 assertEqual( fcnProxy(self.proxy) , ... 
-                             fcnReader(self.reader,1) ) ;
+                             fcnReader(self.reader) ) ;
         end
 
     end

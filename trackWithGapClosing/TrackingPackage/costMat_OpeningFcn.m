@@ -28,6 +28,7 @@ set(handles.text_copyright, 'String', getLCCBCopyright());
 
 handles.output = hObject;
 userData = get(handles.figure1, 'UserData');
+if(isempty(userData)), userData = struct(); end;
 
 % Get main figure handle and process id
 userData.procID = ip.Results.ID;

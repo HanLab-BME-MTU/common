@@ -20,23 +20,23 @@ classdef  OmeroReader < Reader
         
         
         %% Dimensions functions
-        function sizeX = getSizeX(obj, varargin)
+        function sizeX = getSizeX(obj)
             sizeX = obj.getPixels().getSizeX.getValue;
         end
         
-        function sizeY = getSizeY(obj, varargin)
+        function sizeY = getSizeY(obj)
             sizeY = obj.getPixels().getSizeY.getValue;
         end
         
-        function sizeC = getSizeC(obj, varargin)
+        function sizeC = getSizeC(obj)
             sizeC = obj.getPixels().getSizeC.getValue;
         end
         
-        function sizeZ = getSizeZ(obj, varargin)
+        function sizeZ = getSizeZ(obj)
             sizeZ = obj.getPixels().getSizeZ.getValue;
         end
         
-        function sizeT = getSizeT(obj, varargin)
+        function sizeT = getSizeT(obj)
             sizeT = obj.getPixels().getSizeT.getValue;
         end
         
@@ -55,7 +55,7 @@ classdef  OmeroReader < Reader
             obj.session = session;
         end
         
-        function bitDepth = getBitDepth(obj, varargin)
+        function bitDepth = getBitDepth(obj)
             pixelType = obj.getPixels().getPixelsType();
             pixelsService = obj.getSession().getPixelsService();
             bitDepth = pixelsService.getBitDepth(pixelType);

@@ -135,7 +135,7 @@ switch binStrategy
     case 1 %use "histogram"
         
         %calculate the histogram
-        [numObsPerBin,binCenter] = histogram(observations,[],0);
+        [numObsPerBin,binCenter] = optimalHistogram(observations,[],0);
         %         numObsPerBin = numObsPerBin'*(binCenter(2)-binCenter(1));
         numObsPerBin = numObsPerBin';
         binCenter = binCenter';
@@ -369,10 +369,10 @@ expParam(1,end+1) = numBins*log(sum(residuals.^2)/numBins) + 2*numExpT*log(numBi
 
 % make a histogram for plotting and output. Choose how to calculate bins
 if showPlot == 2
-    [numObsPerBinP,binCenterP] = histogram(observations,'smooth');
+    [numObsPerBinP,binCenterP] = optimalHistogram(observations,'smooth');
     numObsPerBinP = numObsPerBinP*(binCenterP(2)-binCenterP(1));
 elseif showPlot ~= 0
-    [numObsPerBinP,binCenterP] = histogram(observations);
+    [numObsPerBinP,binCenterP] = optimalHistogram(observations);
     numObsPerBinP = numObsPerBinP*(binCenterP(2)-binCenterP(1));
 end
 

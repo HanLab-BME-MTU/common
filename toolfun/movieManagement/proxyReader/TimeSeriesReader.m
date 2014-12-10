@@ -11,8 +11,8 @@ classdef TimeSeriesReader < CellReader
             obj = obj@CellReader(varargin{:});
         end
         function s = getSize(obj)
-            s = [obj.reader.getSizeC(obj.sizeParam)
-                 obj.reader.getSizeZ(obj.sizeParam)]';
+            s = [obj.reader.getSizeC
+                 obj.reader.getSizeZ]';
         end
         function subIndices = getLinSub(obj,varargin)
             % linearize c z
@@ -38,7 +38,7 @@ classdef TimeSeriesReader < CellReader
             varargin(nargin :3) = {NaN};
             [cv,zv tv] = deal(varargin{:});
             if(isnan(tv))
-                tv = 1 : obj.getSizeT(obj.sizeParam);
+                tv = 1 : obj.getSizeT;
             end
             ndim = nargin - 1;
 

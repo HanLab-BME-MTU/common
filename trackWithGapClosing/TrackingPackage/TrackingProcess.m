@@ -48,29 +48,24 @@ classdef TrackingProcess < DataProcessingProcess
             
             % Data loading
             s = load(obj.outFilePaths_{iChan}, 'tracksFinal');
-            tracksFinal=s.tracksFinal;
             
             varargout = cell(numel(output), 1);
             for i = 1:numel(output)
                 switch output{i}
-                    case 'tracksFinal'
-                        if ~isempty(iFrame),
-                            % Filter tracks existing in input frame
-                            trackSEL=getTrackSEL(tracksFinal);
-                            validTracks = (iFrame>=trackSEL(:,1) &iFrame<=trackSEL(:,2));
-                            [tracksFinal(~validTracks).tracksCoordAmpCG]=deal([]);
-                            
-                            for j=find(validTracks)'
-                                tracksFinal(j).tracksCoordAmpCG = tracksFinal(j).tracksCoordAmpCG(:,1:8*(iFrame-trackSEL(j,1)+1));
-                            end
-                            varargout{i} = tracksFinal;
-                        else
-                            varargout{i} = tracksFinal;
-                        end
-                    case 'staticTracks'
-                        varargout{i} = tracksFinal;
+                    case {'tracksFinal', 'staticTracks'}
+                        varargout{i} = s.tracksFinal;
                     case 'gapInfo'
-                        varargout{1} = findTrackGaps(tracksFinal);
+                        varargout{i} = findTrackGaps(s.tracksFinal);
+                end
+                if strcmp(output{i}, 'tracksFinal') && ~isempty(iFrame),
+                    % Filter tracks existing in input frame
+                    trackSEL=getTrackSEL(s.tracksFinal);
+                    validTracks = (iFrame>=trackSEL(:,1) &iFrame<=trackSEL(:,2));
+                    [varargout{i}(~validTracks).tracksCoordAmpCG]=deal([]);
+                    
+                    for j=find(validTracks)'
+                        varargout{i}(j).tracksCoordAmpCG = varargout{i}(j).tracksCoordAmpCG(:,1:8*(iFrame-trackSEL(j,1)+1));
+                    end
                 end
             end
         end
@@ -268,19 +263,17 @@ classdef TrackingProcess < DataProcessingProcess
             % purposes
             
             % Determine the number of compound tracks
-            nCompoundTracks = zeros(numel(tracks), 1);
-            for i = 1:numel(tracks)
-                nCompoundTracks(i) =  size(tracks(i).tracksCoordAmpCG,1);
-            end
+            nCompoundTracks = cellfun('size',{tracks.tracksCoordAmpCG},1)';
             nTracksTot = [0 cumsum(nCompoundTracks(:))'];
+            nTracks = nTracksTot(end);
             
             % Fail fast if no track
-            if sum(nCompoundTracks) == 0
+            if nTracks == 0
                 displayTracks = struct.empty(1,0);
                 return
             end
             
-            displayTracks(sum(nCompoundTracks),1) = struct('xCoord', [], 'yCoord', [], 'events' ,[]);
+            displayTracks(sum(nCompoundTracks),1) = struct('xCoord', [], 'yCoord', [], 'events' ,[], 'number', []);
             for i = find(nCompoundTracks)'
                 % Get the x and y coordinate of all compound tracks
                 for  j = 1 : nCompoundTracks(i)

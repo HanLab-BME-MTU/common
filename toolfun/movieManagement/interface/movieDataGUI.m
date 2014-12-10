@@ -78,6 +78,7 @@ ip.parse(hObject,eventdata,handles,varargin{:})
 
 % Store inpu
 userData = get(handles.figure1, 'UserData');
+if isempty(userData), userData = struct(); end
 userData.MD=ip.Results.MD;
 userData.mainFig=ip.Results.mainFig;
 
@@ -180,8 +181,11 @@ end
 
 % Concatenate numerical parameters as movie options
 propNames={'pixelSize_','timeInterval_','numAperture_','camBitdepth_'};
-propHandles = cellfun(@(x) handles.(['edit_' x(1:end-1)]),propNames);
-propStrings =get(propHandles,'String');
+propStrings = cell(numel(propNames), 1);
+for i = 1 : numel(propNames)
+    propStrings{i} =get(handles.(['edit_' propNames{i}(1:end-1)]), 'String');
+end
+
 validProps = ~cellfun(@isempty,propStrings);
 if ~isempty(userData.MD),
     validProps=validProps & cellfun(@(x)isempty(userData.MD.(x)),propNames');

@@ -6,8 +6,9 @@ classdef Channel < hgsetget
         emissionWavelength_         % Emission wavelength (nm)
         exposureTime_               % Exposure time (ms)
         imageType_                  % e.g. Widefield, TIRF, Confocal etc.
-        fluorophore_=''               % Fluorophore / Dye (e.g. CFP, Alexa, mCherry etc.)
-        
+        fluorophore_=''             % Fluorophore / Dye (e.g. CFP, Alexa, mCherry etc.)
+        name_ = ''                  % Name of the channel
+
         % ---- Un-used params ---- %
         excitationType_             % Excitation type (e.g. Xenon or Mercury Lamp, Laser, etc)
         neutralDensityFilter_       % Neutral Density Filter
@@ -83,6 +84,15 @@ classdef Channel < hgsetget
         end
         
         %% Set / Get Methods
+        function set.name_(obj, value)
+            obj.checkPropertyValue('name_', value);
+            obj.name_=value;
+        end
+        
+        function setName(obj, value)
+            obj.name_ = value;
+        end
+        
         function set.excitationWavelength_(obj, value)
             obj.checkPropertyValue('excitationWavelength_',value);
             obj.excitationWavelength_=value;
@@ -172,7 +182,7 @@ classdef Channel < hgsetget
         %Verifies that the channel specification is valid, and returns
         %properties of the channel
         
-        function [width, height, nFrames, zSize] = sanityCheck(obj,varargin)
+        function sanityCheck(obj,varargin)
             % Check the sanity of the channels
             %
             % Check the validity of each channel and return pixel size and time
@@ -188,12 +198,6 @@ classdef Channel < hgsetget
             assert(isequal(obj.owner_,ip.Results.owner) ||...
                 isequal(obj.owner_,ip.Results.owner.parent_),...
                 'The channel''s owner is not the movie neither its parent')
-            
-            % Get the size along the X,Y and T dimensions
-            width = obj.getReader().getSizeX(obj.getChannelIndex());
-            height = obj.getReader().getSizeY(obj.getChannelIndex());
-            nFrames = obj.getReader().getSizeT(obj.getChannelIndex());
-            zSize = obj.getReader().getSizeZ(obj.getChannelIndex());
             
             if isempty(obj.psfSigma_) && ~isempty(obj.owner_), obj.calculatePSFSigma(); end
         end
@@ -215,6 +219,14 @@ classdef Channel < hgsetget
         function fileNames = getImageFileNames(obj,varargin)
             % See Reader.getImageFileNames
             fileNames = obj.getReader.getImageFileNames(obj.getChannelIndex(),varargin{:});
+        end
+
+        function name = getPath(obj)
+            name = obj.channelPath_;
+        end
+
+        function name = getName(obj)
+            name = obj.name_;
         end
         
         function Gname = getGenericName(obj, oFileName, flag) %oFileName is either from getImagesFiles or from hcsplatestack
@@ -358,7 +370,7 @@ classdef Channel < hgsetget
                     validator=@(x) isscalar(x) && x>=300 && x<=1200;
                 case 'exposureTime_'
                     validator=@(x) isscalar(x) && x>0;
-                case {'excitationType_','notes_','channelPath_','filterType_'}
+                case {'excitationType_','notes_','channelPath_','filterType_','name_'}
                     validator=@ischar;
                 case 'imageType_'
                     validator = @(x) ischar(x) && ismember(x,Channel.getImagingModes);

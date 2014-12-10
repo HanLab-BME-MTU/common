@@ -74,6 +74,7 @@ ip.parse(hObject,eventdata,handles,varargin{:})
 
 % Store input
 userData = get(handles.figure1, 'UserData');
+if isempty(userData), userData = struct(); end
 userData.recyclableProc =ip.Results.process  ; 
 userData.package = ip.Results.package;
 userData.mainFig=ip.Results.mainFig;

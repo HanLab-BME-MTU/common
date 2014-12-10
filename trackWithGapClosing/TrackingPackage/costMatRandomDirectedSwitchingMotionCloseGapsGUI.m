@@ -50,6 +50,7 @@ function costMatRandomDirectedSwitchingMotionCloseGapsGUI_OpeningFcn(hObject, ev
 
 costMat_OpeningFcn(hObject, eventdata, handles, varargin{:})
 userData = get(handles.figure1, 'UserData');
+if(isempty(userData)), userData = struct(); end;
 parameters = userData.parameters;
 
 % Brownian motion parameters
@@ -131,6 +132,7 @@ function pushbutton_done_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 userData = get(handles.figure1, 'UserData');
+if(isempty(userData)), userData = struct(); end;
 parameters = userData.parameters;
 
 % Brownian motion parameters

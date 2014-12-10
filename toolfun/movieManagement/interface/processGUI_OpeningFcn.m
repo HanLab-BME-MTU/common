@@ -37,6 +37,7 @@ ip.parse(hObject,eventdata,handles,string,varargin{:});
 
 % Retrieve userData and read function input 
 userData = get(handles.figure1, 'UserData');
+if isempty(userData), userData = struct(); end
 userData.mainFig=ip.Results.mainFig;
 userData.procID = ip.Results.procID;
 userData.procConstr=ip.Results.procConstr;

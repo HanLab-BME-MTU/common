@@ -50,9 +50,12 @@ function kalmanInitializationGUI_OpeningFcn(hObject, eventdata, handles, varargi
 
 costMat_OpeningFcn(hObject, eventdata, handles, varargin{:})
 userData = get(handles.figure1, 'UserData');
+if(isempty(userData)), userData = struct(); end;
 parameters = userData.parameters;
 
+% mkitti 2014/11/28 Why do we do this again?
 userData = get(handles.figure1, 'UserData');
+if(isempty(userData)), userData = struct(); end;
 
 % Get main figure handle and process id
 props = get(userData.handles_main.popupmenu_probDim, {'UserData','Value'});
@@ -116,6 +119,7 @@ function pushbutton_done_Callback(hObject, eventdata, handles)
 
 
 userData = get(handles.figure1, 'UserData');
+if(isempty(userData)), userData = struct(); end;
 parameters = userData.parameters;
 
 initVelFlag=get(handles.radiobutton_initVelocity, 'Value');
@@ -177,6 +181,7 @@ function uipanel5_SelectionChangeFcn(hObject, eventdata, handles)
 handles = guidata(hObject); 
 
 userData = get(handles.figure1, 'UserData');
+if(isempty(userData)), userData = struct(); end;
 % Highlight the content under new radiobuttonfunction uipanel5_SelectionChangeFcn(hObject, eventdata, handles)
 selectedButton = get(get(handles.uipanel5,'SelectedObject'),'Tag');
 if strcmpi(selectedButton,'radiobutton_initVelocity');

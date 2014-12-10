@@ -12,9 +12,12 @@ classdef RectangleDisplay < MovieDataDisplay
             obj@MovieDataDisplay(varargin{:})
         end
         function h=initDraw(obj,data,tag,varargin)
-            h = arrayfun(@(i) rectangle('Position', [data(i,2)-data(i,4) data(i,1)-data(i,3) 2*data(i,4) 2*data(i,3)],...
-                'Curvature', obj.Curvature, 'LineWidth',obj.LineWidth, 'EdgeColor',obj.Color,...
-                'LineStyle', obj.LineStyle,varargin{:}), 1:size(data,1));
+            h(size(data, 1), 1) = rectangle();
+            for i = 1 : size(data,1)
+                h(i) = rectangle('Position', [data(i,2)-data(i,4) data(i,1)-data(i,3) 2*data(i,4) 2*data(i,3)],...
+                    'Curvature', obj.Curvature, 'LineWidth',obj.LineWidth, 'EdgeColor',obj.Color,...
+                    'LineStyle', obj.LineStyle,varargin{:});
+            end
             set(h,'Tag',tag);
         end
         function updateDraw(obj,h,data)
@@ -32,10 +35,11 @@ classdef RectangleDisplay < MovieDataDisplay
             
             % Plot additional circles
             addIndx= min(numel(h),size(data,1))+1:size(data,1);
-            h(addIndx) = arrayfun(@(i) rectangle('Position', [data(i,2)-data(i,4) data(i,1)-data(i,3) 2*data(i,4) 2*data(i,3)],...
-                'Curvature', obj.Curvature, 'LineWidth',obj.LineWidth, 'EdgeColor',obj.Color,...
-                'LineStyle', obj.LineStyle), addIndx);
-
+            for i = addIndx
+                h(i) = rectangle('Position', [data(i,2)-data(i,4) data(i,1)-data(i,3) 2*data(i,4) 2*data(i,3)],...
+                    'Curvature', obj.Curvature, 'LineWidth',obj.LineWidth, 'EdgeColor',obj.Color,...
+                    'LineStyle', obj.LineStyle);
+            end
             % Set tag
             set(h,'Tag',tag);
         end
