@@ -234,7 +234,7 @@ classdef Process < hgsetget
             if obj.owner_.is3D()
                 ip.addOptional('iZ',@(x) ismember(x,1:obj.owner_.zSize_));
             end
-            ip.parse(obj,iChan,varargin{:})
+            ip.parse(obj,iChan,varargin{:});
             
             % Load data
             loadArgs{1} = iChan;
@@ -249,7 +249,7 @@ classdef Process < hgsetget
                 loadParams.iZ = ip.Results.iZ;
             end
             if ip.Results.useCache
-                loadParams.useCache = true
+                loadParams.useCache = true;
             end
             loadArgs = [ loadArgs loadParams];
             
