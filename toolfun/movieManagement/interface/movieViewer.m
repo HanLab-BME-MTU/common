@@ -530,6 +530,10 @@ for i=intersect(procId,validProcId)
         '-not','Style','text');
     set(h,'Value',1);
 end
+
+% Clear cache when initializing movieViewer
+cached.load('-clear');
+
 if isa(MO, 'MovieData')
     if userData.MO.isMock()
         redrawScene(handles.figure1, handles);
