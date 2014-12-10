@@ -47,11 +47,13 @@ function [ S , cached] = load( filename, varargin )
 % 2. Attempt to load from the cache
 % 3. If cache is invalid, then load the file
 % 4. Remove variables in the matfile that were not requested
+% 5. If no output is requested, assign values in the caller like load
 
 persistent cache;
 
 % reset is false by default
 reset = false;
+clearKey = false;
 % S is empty as a flag if successfully loaded the cache
 S = [];
 cached = false;
@@ -83,7 +85,10 @@ for ii=1:length(varargin)
             % remove the name/value since we do not want to forward it to load
             forwarded = varargin([1:ii-1 ii+2:end]);
         case '-clear'
-            error('Argument -clear must be the first and only argument');
+        % The -clear option with a filename will clear that specific
+        % cache
+            clearKey = true;
+            forwarded = varargin([1:ii-1 ii+1:end]);
     end
 end
 
@@ -118,29 +123,51 @@ if(~isempty(options))
     key = strjoin( [filename options], ',');
 end
 
-if(reset && cache.isKey(key))
+if(reset || clearKey && cache.isKey(key))
     cache.remove(key);
 end
 
+if(clearKey)
+    return;
+end
+
+D = dir(filename);
 
 %% 2. Attempt to retrieve from the cache
 if(cache.isKey(key))
-    S = cache(key);
-    cached = true;
-    if(~isempty(variables) && any(~isfield(S,variables)))
-        % if any of the requested variables are not present,
-        % then update the cache
-        newVariables = setdiff(variables,fields(S));
-        newS = load(filename,options{:},newVariables{:});
-        S = mergestruct(S,newS);
-        cache(key) = S;
+    [S, R] = getData(key);
+    % The cached data is valid if
+    % 1. The modification times are the same AND
+    % 2a. Variables to retrieve were specified OR
+    % 2b. All variables were loaded when cached
+
+    if(R.last_modified == D.datenum && R.bytes == D.bytes)
+        cached = true;
+        if(~isempty(variables))
+            if(any(~isfield(S,variables)))
+                % if any of the requested variables are not present,
+                % then update the cache
+                newVariables = setdiff(variables,fields(S));
+                newS = load(filename,options{:},newVariables{:});
+                S = mergestruct(S,newS);
+                % all variables were not loaded
+                setData(key,S,false,D.datenum,D.bytes);
+            end
+        elseif(~R.all_variables)
+            % 2. No variables were specified AND all variables were not cached
+            S = [];
+        end
+    else
+        % 1. The modification time is different 
+        S = [];
     end
 end
 
 %% 3. Cache is invalid so load it normally
 if(isempty(S))
     S = load(filename,forwarded{:});
-    cache(key) = S;
+    % all variables will be loaded 
+    setData(key, S, isempty(variables), D.datenum, D.bytes);
     cached = false;
 end
 
@@ -150,5 +177,25 @@ if(~isempty(variables))
     S = rmfield(S,notRequested);
 end
 
+%% 5. If no output is requested, assign values in the caller like builtin
+if(nargout == 0)
+    S_fields = fields(S);
+    for f = 1:length(S_fields)
+        assignin('caller',S_fields{f},S.(S_fields{f}));
+    end
+end
+
+    function [S, record ] = getData(key)
+        record = cache(key);
+        S = record.data;
+    end
+    
+    function setData(key,S,all_variables,last_modified,bytes)
+        record.data = S;
+        record.all_variables = all_variables;
+        record.last_modified = last_modified;
+        record.bytes = bytes;
+        cache(key) = record;
+    end
 end
 

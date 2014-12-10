@@ -17,8 +17,10 @@ function [ fullFileName ] = whichMatFile( filename )
 % December 2014
 
 % check if file exists in pwd or is absolute 
-fullFileName = GetFullPath(filename);
-if(~exist(fullFileName,'file'))
+[s,attrib] = fileattrib(filename);
+if(s)
+    fullFileName = attrib.Name;
+else
     % this is a potentially expensive operation
     matObj = matfile(filename);
     fullFileName = [];

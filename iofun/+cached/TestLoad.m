@@ -45,6 +45,24 @@ classdef TestLoad < TestCase
             self.testMatFileName('psfSigma','movieInfo');
             self.testMatFileName;
         end
+        function testModification(self,varargin)
+            [S, wasCached] = cached.load(self.matfile,varargin{:});
+            assert(~wasCached);
+            [S, wasCached] = cached.load(self.matfile,varargin{:});
+            assert(wasCached);
+            
+            S.newVar = struct('a',5,'b',10);
+            save(self.matfile,'-struct','S');
+            [S, wasCached] = cached.load(self.matfile,varargin{:},'newVar');
+            assert(~wasCached);
+            assert(isfield(S,'newVar'));
+
+            % check modification after one second
+            pause(1);
+            save(self.matfile,'-struct','S');
+            [S, wasCached] = cached.load(self.matfile,varargin{:},'newVar');
+            assert(~wasCached);
+        end
         function testReset(self,varargin)
             [S, wasCached] = cached.load(self.matfile,varargin{:});
             assert(~wasCached);
@@ -52,13 +70,6 @@ classdef TestLoad < TestCase
             assert(wasCached);
             [S, wasCached] = cached.load(self.matfile,varargin{:},'-reset');
             assert(~wasCached);
-            
-            S.newVar = struct('a',5,'b',10);
-            save(self.matfile,'-struct','S');
-            [S, wasCached] = cached.load(self.matfile,varargin{:});
-            assert(~isfield(S,'newVar'));
-            [S, wasCached] = cached.load(self.matfile,varargin{:},'-reset','newVar');
-            assert(isfield(S,'newVar'));
         end
         function testUseCache(self,varargin)
             [~, wasCached] = cached.load(self.matfile,varargin{:},'-useCache',true);
@@ -67,21 +78,46 @@ classdef TestLoad < TestCase
             assert(wasCached);
             [S, wasCached] = cached.load(self.matfile,varargin{:},'-useCache',false);
             assert(~wasCached);
-            
-            S.newVar = struct('a',5,'b',10);
-            save(self.matfile,'-struct','S');
-            [S, wasCached] = cached.load(self.matfile,varargin{:},'-useCache',true);
-            assert(~isfield(S,'newVar'));
-            [S, wasCached] = cached.load(self.matfile,varargin{:},'-useCache',false,'newVar');
-            assert(isfield(S,'newVar'));
         end
-        function testTerminalUseCache(self)
-            self.testUseCache('psfSigma','movieInfo');
+        function testClear(self,varargin)
+            [S, wasCached] = cached.load(self.matfile,varargin{:});
+            assert(~wasCached);
+            [S, wasCached] = cached.load(self.matfile,varargin{:});
+            assert(wasCached);
+            cached.load(self.matfile,varargin{:},'-clear');
+            [S, wasCached] = cached.load(self.matfile,varargin{:});
+            assert(~wasCached);
+        end
+        function testSave(self)
+            [S, wasCached] = cached.load(self.matfile);
+            assert(~wasCached);
+            [S, wasCached] = cached.load(self.matfile);
+            assert(wasCached);
+
+            S.asdf = pi;
+            cached.save(self.matfile,'-struct','S');
+
+            [S, wasCached] = cached.load(self.matfile);
+            assert(~wasCached);
+
+            % make this works when the contents do not actually change
+            cached.save(self.matfile,'-struct','S');
+            [S, wasCached] = cached.load(self.matfile);
+            assert(~wasCached);
         end
         function testTerminalReset(self)
             self.testReset('background');
         end
-        function testClear(self)
+        function testTerminalUseCache(self)
+            self.testUseCache('psfSigma','movieInfo');
+        end
+        function testTerminalClear(self)
+            self.testClear('background');
+        end
+        function testTerminalModification(self)
+            self.testModification('background','psfSigma','movieInfo');
+        end
+        function testClearAll(self)
             [~, wasCached] = cached.load(self.matfile);
             assert(~wasCached);
             [~, wasCached] = cached.load(self.ascii_file);
@@ -98,16 +134,6 @@ classdef TestLoad < TestCase
             assert(~wasCached);
             [~, wasCached] = cached.load(self.ascii_file);
             assert(~wasCached);
-        end
-        function testClearException(self)
-            try
-                [~, wasCached] = cached.load(self.matfile,'background','-clear');
-                % an exception should have been thrown since -clear must be
-                % the only argument
-                assert(false);
-            catch
-                % exception thrown
-            end
         end
     end
 end
