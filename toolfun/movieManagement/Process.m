@@ -229,6 +229,7 @@ classdef Process < hgsetget
             ip.addRequired('iChan',@isnumeric);
             ip.addOptional('iFrame',[],@isnumeric);
             ip.addParamValue('output',outputList(1).var,@(x) any(cellfun(@(y) isequal(x,y),{outputList.var})));
+            ip.addParamValue('useCache',false,@islogical);
             ip.KeepUnmatched = true;
             if obj.owner_.is3D()
                 ip.addOptional('iZ',@(x) ismember(x,1:obj.owner_.zSize_));
@@ -236,15 +237,24 @@ classdef Process < hgsetget
             ip.parse(obj,iChan,varargin{:})
             
             % Load data
+            loadArgs{1} = iChan;
             if ~isempty(ip.Results.iFrame)
-                if obj.owner_.is3D()
-                data=obj.loadChannelOutput(iChan,ip.Results.iFrame,'output',ip.Results.output, 'iZ',ip.Results.iZ);
-                else
-                    data=obj.loadChannelOutput(iChan,ip.Results.iFrame,'output',ip.Results.output);
-                end
-            else
-                data=obj.loadChannelOutput(iChan,'output',ip.Results.output);
+                loadArgs{2} = ip.Results.iFrame;
             end
+
+            % use inputParser structExpand
+            loadParams.output = ip.Results.output;
+            if obj.owner_.is3D()
+                % could owner be 3D without having an iFrame ?
+                loadParams.iZ = ip.Results.iZ;
+            end
+            if ip.Results.useCache
+                loadParams.useCache = true
+            end
+            loadArgs = [ loadArgs loadParams];
+            
+            data = obj.loadChannelOutput(loadArgs{:});
+                
             iOutput= find(cellfun(@(y) isequal(ip.Results.output,y),{outputList.var}));
             if ~isempty(outputList(iOutput).formatData),
                 data=outputList(iOutput).formatData(data);
