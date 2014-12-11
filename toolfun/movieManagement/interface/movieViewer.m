@@ -465,7 +465,7 @@ Img = image(icons.questIconData);
 set(hAxes, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'), 'visible','off','YDir','reverse');
 set(Img,'ButtonDownFcn',@icon_ButtonDownFcn, 'UserData', struct('class','movieViewer'));
 
-% Add copyrigth
+% Add copyright
 hPosition = hPosition+30;
 uicontrol(moviePanel,'Style','text','Position',[10 hPosition panelsLength-100 20],...
     'String',getLCCBCopyright(),'Tag','text_copyright',...
@@ -539,7 +539,9 @@ end
 % Update the image and overlays
 if isa(userData.MO,'MovieData') && ~userData.MO.isHCS()
     redrawScene(handles.figure1, handles);
+    addMovieViewerKeyboardShortcuts(mainFig, getFigure(handles,'Movie'));
 end
+
 
 
 % function slider_callback(src,eventdata,panel)
@@ -789,6 +791,8 @@ if strcmp(figName,'Movie')
     hPan=pan(h);
     set(hZoom,'ActionPostCallback',@(h,event)panZoomCallback(h));
     set(hPan,'ActionPostCallback',@(h,event)panZoomCallback(h));
+    
+    addMovieViewerKeyboardShortcuts(0,h);
 else
     h = figure('Name',figName,'NumberTitle','off','Tag','viewerFig');
 end
