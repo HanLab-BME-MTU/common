@@ -4,6 +4,7 @@ classdef DetectionProcess < ImageAnalysisProcess
     
     % Chuangang Ren, 11/2010
     % Sebastien Besson (last modified May 2012)
+    % Mark Kittisopikul, Nov 2014, Added channelOutput cache
     
     methods(Access = public)
         
@@ -35,6 +36,10 @@ classdef DetectionProcess < ImageAnalysisProcess
             status=  ismember(iChan,1:nChan) & ....
                 arrayfun(@(x) exist(obj.outFilePaths_{1,x},'file'),iChan);
         end
+
+        function h=draw(obj,iChan,varargin)
+            h = obj.draw@ImageAnalysisProcess(iChan,varargin{:},'useCache',true);
+        end
         
         function varargout = loadChannelOutput(obj,iChan,varargin)
             
@@ -43,6 +48,7 @@ classdef DetectionProcess < ImageAnalysisProcess
             ip =inputParser;
             ip.addRequired('iChan',@(x) isscalar(x) && obj.checkChanNum(x));
             ip.addOptional('iFrame',1:obj.owner_.nFrames_,@(x) all(obj.checkFrameNum(x)));
+            ip.addParamValue('useCache',false,@islogical);
             ip.addParamValue('output',outputList,@(x) all(ismember(x,outputList)));
             ip.parse(iChan,varargin{:})
             iFrame = ip.Results.iFrame;
@@ -50,7 +56,9 @@ classdef DetectionProcess < ImageAnalysisProcess
             if ischar(output),output={output}; end
             
             % Data loading
-            s = load(obj.outFilePaths_{1,iChan},output{:});
+            % load outFilePaths_{1,iChan}
+            %
+            s = cached.load(obj.outFilePaths_{1,iChan}, '-useCache', ip.Results.useCache, output{:});
            
             if numel(ip.Results.iFrame)>1,
                 varargout{1}=s.(output{1});

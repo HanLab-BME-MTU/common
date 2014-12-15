@@ -182,8 +182,11 @@ end
 
 %% 4. Limit output structure to only the variables requested
 if(~isempty(variables))
-    notRequested = setdiff(fields(S),variables);
-    S = rmfield(S,notRequested);
+    bigS = S;
+    S = struct();
+    for f = length(variables)
+        S.(variables{f}) = bigS.(variables{f});
+    end
 end
 
 %% 5. If no output is requested, assign values in the caller like builtin

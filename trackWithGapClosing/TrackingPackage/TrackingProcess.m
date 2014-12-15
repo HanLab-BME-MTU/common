@@ -3,7 +3,7 @@ classdef TrackingProcess < DataProcessingProcess
     %
     % Chuangang Ren, 11/2010
     % Sebastien Besson (last modified Dec 2011)
-    
+    % Mark Kittisopikul, Nov 2014, Added channelOutput cache
     
     methods(Access = public)
         
@@ -31,6 +31,10 @@ classdef TrackingProcess < DataProcessingProcess
             end
             obj = obj@DataProcessingProcess(super_args{:});
         end
+
+        function h=draw(obj,iChan,varargin)
+            h = obj.draw@DataProcessingProcess(iChan,varargin{:},'useCache',true);
+        end
         
         function varargout = loadChannelOutput(obj,iChan,varargin)
             
@@ -40,6 +44,7 @@ classdef TrackingProcess < DataProcessingProcess
             ip.addRequired('obj');
             ip.addRequired('iChan', @(x) obj.checkChanNum(x));
             ip.addOptional('iFrame', [] ,@(x) obj.checkFrameNum(x));
+            ip.addParamValue('useCache',false,@islogical);
             ip.addParamValue('output', outputList{1}, @(x) all(ismember(x,outputList)));
             ip.parse(obj,iChan,varargin{:})
             output = ip.Results.output;
@@ -47,8 +52,10 @@ classdef TrackingProcess < DataProcessingProcess
             if ischar(output),output={output}; end
             
             % Data loading
-            s = load(obj.outFilePaths_{iChan}, 'tracksFinal');
-            
+
+            % load outFilePaths_{1,iChan}
+            s = cached.load(obj.outFilePaths_{1,iChan}, '-useCache', ip.Results.useCache, 'tracksFinal');
+
             varargout = cell(numel(output), 1);
             for i = 1:numel(output)
                 switch output{i}
