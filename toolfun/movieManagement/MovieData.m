@@ -657,10 +657,14 @@ classdef  MovieData < MovieObject
             if MovieObject.isOmeroSession(varargin{1}),
                 obj = MovieData.loadOmero(varargin{:});
             else
-                isMatFile = strcmpi(varargin{1}(end-3:end), '.mat');
+                % Retrieve the absolute path
+                [~, f] = fileattrib(varargin{1});
+                filepath = f.Name;
+
+                isMatFile = strcmpi(filepath(end-3:end), '.mat');
                 if isMatFile,
-                    obj = MovieData.loadMatFile(varargin{1});
-                    [moviePath,movieName,movieExt]= fileparts(varargin{1});
+                    obj = MovieData.loadMatFile(filepath);
+                    [moviePath,movieName,movieExt]= fileparts(filepath);
                     obj.sanityCheck(moviePath,[movieName movieExt], varargin{2:end});
                 else
                     % Backward-compatibility - call the constructor

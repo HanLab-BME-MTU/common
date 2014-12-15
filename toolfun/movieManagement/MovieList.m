@@ -174,12 +174,16 @@ classdef MovieList < MovieObject
             if MovieList.isOmeroSession(varargin{1}),
                 obj = MovieList.loadOmero(varargin{:});
             else
-                assert(strcmpi(varargin{1}(end-3:end), '.mat'),...
+                % Retrieve the absolute path
+                [~, f] = fileattrib(varargin{1});
+                filepath = f.Name;
+
+                assert(strcmpi(filepath(end-3:end), '.mat'),...
                     'Input must be a MAT file');
-                obj = MovieList.loadMatFile(varargin{1});
+                obj = MovieList.loadMatFile(filepath);
                 
                 % Perform sanityCheck using the input path
-                [moviePath,movieName,movieExt]=fileparts(varargin{1});
+                [moviePath,movieName,movieExt]=fileparts(filepath);
                 obj.sanityCheck(moviePath,[movieName movieExt], varargin{2:end});
             end
         end
