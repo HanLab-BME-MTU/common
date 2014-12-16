@@ -85,10 +85,37 @@ classdef TestMovieData < TestMovieObject
             assertEqual(self.movie.getPath, newPath);
         end
         
-        function testLoad(self)
+        function testLoadAbsolutePath(self)
+            % Test MovieData loading from absolute path
             self.setUpMovie();
             self.movie = MovieData.load(self.movie.getFullPath());
             self.checkMovie();
+        end
+        
+        function testLoadRelativePath(self)
+            % Test MovieData loading from relative path
+            here = pwd;
+            self.setUpMovie();
+            absolutePath = self.movie.getPath();
+            cd(self.movie.getPath());
+            relativePath = fullfile('.', self.movie.getFilename());
+            self.movie = MovieData.load(relativePath);
+            self.checkMovie();
+            assertEqual(self.movie.getPath(), absolutePath);
+            cd(here);
+        end
+        
+        function testLoadSymlink(self)
+            % Test MovieData loading from a symlink
+            
+            if ispc, return; end
+            self.setUpMovie();
+            absolutePath = self.movie.getPath();
+            symlinkPath = self.createSymlink(absolutePath);
+            symlinkFullPath = fullfile(symlinkPath, self.movie.getFilename());
+            self.movie = MovieData.load(symlinkFullPath);
+            self.checkMovie();
+            assertEqual(self.movie.getPath(), absolutePath);            
         end
         
         %% ROI
