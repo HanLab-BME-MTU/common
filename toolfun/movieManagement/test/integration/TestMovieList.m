@@ -90,5 +90,18 @@ classdef TestMovieList < TestMovieObject & TestCase
             assertEqual(self.movieList.getPath(), absolutePath);
             cd(here);
         end
+        
+        function testLoadSymlink(self)
+            % Test MovieList loading from a symlink
+            
+            if ispc, return; end
+            self.setUpMovieList();
+            absolutePath = self.movieList.getPath();
+            symlinkPath = self.createSymlink(absolutePath);
+            symlinkFullPath = fullfile(symlinkPath, self.movieList.getFilename());
+            self.movieList = MovieList.load(symlinkFullPath);
+            self.checkMovieList();
+            assertEqual(self.movieList.getPath(), absolutePath);            
+        end
     end
 end
