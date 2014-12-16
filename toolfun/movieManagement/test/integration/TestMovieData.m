@@ -105,6 +105,19 @@ classdef TestMovieData < TestMovieObject
             cd(here);
         end
         
+        function testLoadSymlink(self)
+            % Test MovieData loading from a symlink
+            
+            if ispc, return; end
+            self.setUpMovie();
+            absolutePath = self.movie.getPath();
+            symlinkPath = self.createSymlink(absolutePath);
+            symlinkFullPath = fullfile(symlinkPath, self.movie.getFilename());
+            self.movie = MovieData.load(symlinkFullPath);
+            self.checkMovie();
+            assertEqual(self.movie.getPath(), absolutePath);            
+        end
+        
         %% ROI
         function testSimpleROI(self)
             self.setUpMovie();
