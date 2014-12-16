@@ -441,7 +441,11 @@ classdef  MovieObject < hgsetget
     methods(Static)
 
         function obj = loadMatFile(class, filepath)
-            % Load a movie object saved as a MAT file on disk
+            % Load a movie object saves as a MAT file on disk
+            
+            % Retrieve the absolute path
+            [~, f] = fileattrib(filepath);
+            filepath = f.Name;
             
             % Import movie object from MAT file
             try
