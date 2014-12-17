@@ -184,7 +184,7 @@ end
 if(~isempty(variables))
     bigS = S;
     S = struct();
-    for f = length(variables)
+    for f = 1:length(variables)
         S.(variables{f}) = bigS.(variables{f});
     end
 end
