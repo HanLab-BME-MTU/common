@@ -1,5 +1,6 @@
-function h=plotTracks2D(trackedFeatureInfo,timeRange,colorTime,markerType,...
-    indicateSE,newFigure,image,flipXY,ask4sel,offset,minLength)
+function h=plotTracks2D(trackedFeatureInfo, varargin)
+%function h=plotTracks2D(trackedFeatureInfo,timeRange,colorTime,markerType,...
+%    indicateSE,newFigure,image,flipXY,ask4sel,offset,minLength)
 %PLOTTRACKS2D plots a group of tracks in 2D and allows user to click on them and extract track information
 %
 %SYNOPSIS plotTracks2D(trackedFeatureInfo,timeRange,colorTime,markerType,...
@@ -86,22 +87,6 @@ function h=plotTracks2D(trackedFeatureInfo,timeRange,colorTime,markerType,...
 %Input
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%check whether correct number of input arguments was used
-if nargin < 1
-    disp('--plotTracks2D: Incorrect number of input arguments!');
-    return
-end
-
-%keep only tracks with minimum requested length
-if nargin < 11 || isempty(minLength)
-    minLength = 1;
-end
-if minLength > 1
-    criteria.lifeTime.min = minLength;
-    indx = chooseTracks(trackedFeatureInfo,criteria);
-    trackedFeatureInfo = trackedFeatureInfo(indx,:);
-end
-
 %get number of tracks and number of time points
 if isstruct(trackedFeatureInfo) %if tracks are in structure format
     numTracks = length(trackedFeatureInfo);
@@ -113,51 +98,51 @@ else %if tracks are in matrix format
     numTimePoints = numTimePoints/8;
 end
 
-errFlag = 0;
+ip = inputParserRetrofit;
+ip.addRequired('trackedFeatureInfo', ...
+    @(s) isstruct(s) || isnumeric(s));
+ip.addArgument('timeRange',[1 numTimePoints], ...
+    @(t) all(size(t) == [1 2]) && ...
+    t(1) >= 1 && t(2) <= numTimePoints );
+ip.addArgument('colorTime','k', ...
+    @isscalar);
+ip.addArgument('markerType','none', ...
+    @ischar);
+ip.addArgument('indicateSE',1, ...
+    @(x) ismember(x,[ 0 1 ]));
+ip.addArgument('newFigure',1, ...
+    @(x) ismember(x,[0 1]) || ...
+    ishandle(x) && strncmp(get(x,'Type'),'axes',4));
+ip.addArgument('image',[], ...
+    @isnumeric);
+ip.addArgument('flipXY',false, ...
+    @(x) ismember(x,[0 1]) );
+ip.addArgument('ask4sel',true, ...
+    @(x) ismember(x,[0 1]));
+ip.addArgument('offset',[ 0 0 ], ...
+    @(x) isnumeric(x) && all(size(x) == [1 2]));
+ip.addArgument('minLength',1, ...
+    @(x) isnumeric(x) && isscalar(x));
+ip.parse(trackedFeatureInfo,varargin{:});
 
-%check whether a time range for plotting was input
-if nargin < 2 || isempty(timeRange)
-    timeRange = [1 numTimePoints];
-else
-    if timeRange(1) < 1 || timeRange(2) > numTimePoints
-        disp('--plotTracks2D: Wrong time range for plotting!');
-        errFlag = 1;
-    end
+assignFieldsHere(ip.Results);
+
+image = ip.Results.image;
+
+
+%keep only tracks with minimum requested length
+if minLength > 1
+    criteria.lifeTime.min = minLength;
+    indx = chooseTracks(trackedFeatureInfo,criteria);
+    trackedFeatureInfo = trackedFeatureInfo(indx,:);
 end
 
-%check whether colorTime was input
-if nargin < 3 || isempty(colorTime)
-    colorTime = 'k';
-end
+
 % make sure colorTime 1,2 are strings
 if isnumeric(colorTime) && isscalar(colorTime)
     colorTime = num2str(colorTime);
 end
 
-%check whether markerType was input
-if nargin < 4 || isempty(markerType)
-    markerType = 'none';
-end
-
-%check whether indicateSE was input
-if nargin < 5 || isempty(indicateSE)
-    indicateSE = 1;
-else
-    if indicateSE ~= 0 && indicateSE ~= 1
-        disp('plotTracks2D: indicateSE should be 0 or 1!');
-        errFlag = 1;
-    end
-end
-
-%check whether newFigure was input
-if nargin < 6 || isempty(newFigure)
-    newFigure = 1;
-else
-    if newFigure ~= 0 && newFigure ~= 1 && ~(ishandle(newFigure) && strmatch(get(newFigure,'Type'),'axes'))
-        disp('--plotTracks2D: newFigure should be 0 or 1 or an axes handle!');
-        errFlag = 1;
-    end
-end
 % check for axes handle
 if ishandle(newFigure) && strcmp(get(newFigure,'Type'),'axes')
     axH = newFigure;
@@ -166,26 +151,8 @@ elseif newFigure == 0
     axH = gca;
 end
 
-%check whether user supplied an image
-if nargin < 7 || isempty(image)
-    image = [];
-end
 
-if nargin < 8 || isempty(flipXY)
-    flipXY = false;
-end
-if nargin < 9 || isempty(ask4sel)
-    ask4sel = true;
-end
-if nargin < 10 || isempty(offset)
-    offset = [0,0];
-end
 
-%exit if there are problems in input variables
-if errFlag
-    disp('--plotTracks2D: Please fix input data!');
-    return
-end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Pre-processing
