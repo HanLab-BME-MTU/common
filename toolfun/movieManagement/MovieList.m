@@ -176,10 +176,10 @@ classdef MovieList < MovieObject
             else
                 assert(strcmpi(varargin{1}(end-3:end), '.mat'),...
                     'Input must be a MAT file');
-                obj = MovieList.loadMatFile(varargin{1});
+                [obj, filepath] = MovieList.loadMatFile(varargin{1});
                 
                 % Perform sanityCheck using the input path
-                [moviePath,movieName,movieExt]=fileparts(varargin{1});
+                [moviePath,movieName,movieExt]=fileparts(filepath);
                 obj.sanityCheck(moviePath,[movieName movieExt], varargin{2:end});
             end
         end
@@ -189,9 +189,9 @@ classdef MovieList < MovieObject
             obj = getOmeroLists(session, varargin{:});
         end
         
-        function obj = loadMatFile(filepath)
+        function [obj, filepath] = loadMatFile(filepath)
             % Load a movie list from a local MAT file
-            obj = MovieObject.loadMatFile('MovieList', filepath);
+            [obj, filepath] = MovieObject.loadMatFile('MovieList', filepath);
         end
         
         function status=checkValue(property,value)

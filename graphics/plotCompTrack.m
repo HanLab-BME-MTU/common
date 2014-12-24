@@ -1,9 +1,9 @@
 function plotCompTrack(trackedFeatureInfo,plotX,plotY,plotA,inOneFigure,...
-    plotAggregState)
+    plotAS,timeStep,markMS)
 %PLOTCOMPTRACK plots the x-coordinates, y-coordinates and/or intensities along a compound track, indicating merges, splits and gaps
 %
 %SYNOPSIS plotCompTrackAmp(trackedFeatureInfo,plotX,plotY,plotA,inOneFigure,...
-%    plotAggregState)
+%    plotAS,timeStep,markMS)
 %
 %INPUT  trackedFeatureInfo: Output of trackCloseGapsKalman for one track:
 %                           Contains the fields:
@@ -38,13 +38,24 @@ function plotCompTrack(trackedFeatureInfo,plotX,plotY,plotA,inOneFigure,...
 %       inOneFigure       : 1 if all plots appear in one figure window (one
 %                           above the other), 0 if each figure is in its
 %                           own window. Optional. Default: 1.
-%       plotAggregState   : 1 to plot particle aggregation state (if
+%       plotAS   : 1 to plot particle aggregation state (if
 %                           supplied), 0 otherwise. Optional. Default: 1.
+%       timeStep          : Time step for x-axis. Can be whatever units are
+%                           relevant. Optional. Default: 1.
+%                           NOTE: If timeStep is supplie, x-axis starts at
+%                                 0. If not supplied, x-axis starts at 1.
+%       markMS            : 1 to mark merges and splits, 0 otherwise.
+%                           Optional. Default: 0.
 %
 %OUTPUT The plot(s).
 %
-%REMARKS gaps are dotted black lines, splits are dash-dotted black lines
-%and merges are dashed lines
+%REMARKS Gaps are dotted black lines, splits are dash-dotted black lines
+%        and merges are dashed lines. If requested, splits and merges are
+%        also marked as black "+" and red "x" symbols, respectively.
+%
+%        KJ: Made a few changes on 16 Dec 2014. Not sure how these changes
+%        will affect display in case of "double frequency" time. Will test
+%        when case arises again.
 %
 %Khuloud Jaqaman, May 2007
 
@@ -69,8 +80,17 @@ end
 if nargin < 5 || isempty(inOneFigure)
     inOneFigure = 1;
 end
-if nargin < 6 || isempty(plotAggregState)
-    plotAggregState = 1;
+if nargin < 6 || isempty(plotAS)
+    plotAS = 1;
+end
+if nargin < 7 || isempty(timeStep)
+    timeStep = 1;
+    axisOffset = 0;
+else
+    axisOffset = 1;
+end
+if nargin < 8 || isempty(markMS)
+    markMS = 0;
 end
 
 %extract information from input
@@ -79,7 +99,20 @@ tracksCoordAmpCG = trackedFeatureInfo.tracksCoordAmpCG;
 if isfield(trackedFeatureInfo,'aggregState')
     aggregState = trackedFeatureInfo.aggregState;
 else
-    plotAggregState = 0;
+    plotAS = 0;
+end
+
+%convert sparse to full if necessary
+%code below is a copy-paste from trackCloseGapsKalmanSparse
+if issparse(tracksCoordAmpCG)
+    tracksCoordAmpCG = full(tracksCoordAmpCG);
+    for iRow = 1 : size(tracksCoordAmpCG,1)
+        colZero = find(tracksCoordAmpCG(iRow,:)==0);
+        colZero = colZero(:)';
+        xCoordCol = colZero - mod(colZero-1,8*ones(size(colZero)));
+        colZero = colZero(tracksCoordAmpCG(iRow,xCoordCol)==0);
+        tracksCoordAmpCG(iRow,colZero) = NaN;
+    end
 end
 
 %determine whether track is sampled regularly or with doubled frequency
@@ -87,6 +120,12 @@ doubleFreq = mod(seqOfEvents(1,1)*2,2)==1;
 
 %% Plotting
 
+%find merge and split times if to be marked
+if markMS
+    splitTimes = seqOfEvents(seqOfEvents(:,2)==1&~isnan(seqOfEvents(:,4)),1);
+    mergeTimes = seqOfEvents(seqOfEvents(:,2)==2&~isnan(seqOfEvents(:,4)),1);
+end
+    
 %x-coordinates
 if plotX
 
@@ -95,24 +134,39 @@ if plotX
 
     %if all figures will be in the same window, specify subplot
     if inOneFigure
-        subplot(plotX+plotY+plotA+plotAggregState,1,1)
+        subplot(plotX+plotY+plotA+plotAS,1,1)
         hold on
     end
 
     %extract x-coordinates from input
     xCoordSequence = tracksCoordAmpCG(:,1:8:end);
+        
+    %mark merges and splits
+    if markMS
+        yaxisMin = min(xCoordSequence(:));
+        yaxisMax = max(xCoordSequence(:));
+        plot((splitTimes-axisOffset)*timeStep,(yaxisMin-0.1*(yaxisMax-yaxisMin))*ones(size(splitTimes)),'k+');
+        plot((mergeTimes-axisOffset)*timeStep,(yaxisMin-0.1*(yaxisMax-yaxisMin))*ones(size(mergeTimes)),'rx');
+        legend({'Splits','Merges'})
+    end
     
     %plot the x-coordinate, taking into account closed gaps, merges and
     %splits and sampling frequency doubling
-    plotCompTrackCore(xCoordSequence,seqOfEvents,doubleFreq);
-
+    plotCompTrackCore(xCoordSequence,seqOfEvents,doubleFreq,timeStep,axisOffset);
+    
     %put axes labels
-    xlabel('Frame number');
+    if ~inOneFigure
+        if axisOffset
+            xlabel('Time');
+        else
+            xlabel('Frame number');
+        end
+    end
     ylabel('X-coordinate (pixels)');
 
     %hold off of figure if each plot is in a separate figure window or if
     %this is the last plot
-    if ~inOneFigure || (~plotY && ~plotA && ~plotAggregState)
+    if ~inOneFigure || (~plotY && ~plotA && ~plotAS)
         hold off
     end
 
@@ -128,24 +182,39 @@ if plotY
 
     %if all figures will be in the same window, specify subplot
     if inOneFigure
-        subplot(plotX+plotY+plotA+plotAggregState,1,plotX+1)
+        subplot(plotX+plotY+plotA+plotAS,1,plotX+1)
         hold on
     end
 
     %extract y-coordinates from input
     yCoordSequence = tracksCoordAmpCG(:,2:8:end);
 
+    %mark merges and splits
+    if markMS
+        yaxisMin = min(yCoordSequence(:));
+        yaxisMax = max(yCoordSequence(:));
+        plot((splitTimes-axisOffset)*timeStep,(yaxisMin-0.1*(yaxisMax-yaxisMin))*ones(size(splitTimes)),'k+');
+        plot((mergeTimes-axisOffset)*timeStep,(yaxisMin-0.1*(yaxisMax-yaxisMin))*ones(size(mergeTimes)),'rx');
+        legend({'Splits','Merges'})
+    end
+    
     %plot the y-coordinate, taking into account closed gaps, merges and
     %splits and sampling frequency doubling
-    plotCompTrackCore(yCoordSequence,seqOfEvents,doubleFreq);
+    plotCompTrackCore(yCoordSequence,seqOfEvents,doubleFreq,timeStep,axisOffset);
 
     %put axes labels
-    xlabel('Frame number');
+    if ~inOneFigure
+        if axisOffset
+            xlabel('Time');
+        else
+            xlabel('Frame number');
+        end
+    end
     ylabel('Y-coordinate (pixels)');
 
     %hold off of figure if each plot is in a separate figure window or if
     %this is the last plot
-    if ~inOneFigure || (~plotA && ~plotAggregState)
+    if ~inOneFigure || (~plotA && ~plotAS)
         hold off
     end
 
@@ -161,31 +230,46 @@ if plotA
 
     %if all figures will be in the same window, specify subplot
     if inOneFigure
-        subplot(plotX+plotY+plotA+plotAggregState,1,plotX+plotY+1)
+        subplot(plotX+plotY+plotA+plotAS,1,plotX+plotY+1)
         hold on
     end
 
     %extract amplitudes from input
     ampSequence = tracksCoordAmpCG(:,4:8:end);
 
+    %mark merges and splits
+    if markMS
+        yaxisMin = min(ampSequence(:));
+        yaxisMax = max(ampSequence(:));
+        plot((splitTimes-axisOffset)*timeStep,(yaxisMin-0.1*(yaxisMax-yaxisMin))*ones(size(splitTimes)),'k+');
+        plot((mergeTimes-axisOffset)*timeStep,(yaxisMin-0.1*(yaxisMax-yaxisMin))*ones(size(mergeTimes)),'rx');
+        legend({'Splits','Merges'})
+    end
+    
     %plot the amplitudes, taking into account closed gaps, merges and
     %splits and sampling frequency doubling
-    plotCompTrackCore(ampSequence,seqOfEvents,doubleFreq);
+    plotCompTrackCore(ampSequence,seqOfEvents,doubleFreq,timeStep,axisOffset);
 
     %put axes labels
-    xlabel('Frame number');
+    if ~inOneFigure
+        if axisOffset
+            xlabel('Time');
+        else
+            xlabel('Frame number');
+        end
+    end
     ylabel('Amplitude (a.u.)');
 
     %hold off of figure if each plot is in a separate figure window or if
     %this is the last plot
-    if ~inOneFigure || (~plotAggregState)
+    if ~inOneFigure || (~plotAS)
         hold off
     end
 
 end %(if plotA)
 
 %aggregation state
-if plotAggregState
+if plotAS
 
     %open new figure window if needed and hold on to it
     if ~inOneFigure || (~plotX && ~plotY && ~plotA)
@@ -194,29 +278,61 @@ if plotAggregState
 
     %if all figures will be in the same window, specify subplot
     if inOneFigure
-        subplot(plotX+plotY+plotA+plotAggregState,1,plotX+plotY+plotA+1)
+        subplot(plotX+plotY+plotA+plotAS,1,plotX+plotY+plotA+1)
         hold on
     end
 
     %replace zeros with NaNs in aggregation state matrix
     aggregState(aggregState==0) = NaN;
     
+    %mark merges and splits
+    if markMS
+        yaxisMin = min(aggregState(:));
+        yaxisMax = max(aggregState(:));
+        plot((splitTimes-axisOffset)*timeStep,(yaxisMin-0.1*(yaxisMax-yaxisMin))*ones(size(splitTimes)),'k+');
+        plot((mergeTimes-axisOffset)*timeStep,(yaxisMin-0.1*(yaxisMax-yaxisMin))*ones(size(mergeTimes)),'rx');
+        legend({'Splits','Merges'})
+    end
+    
     %plot the aggregation states, taking into account closed gaps, merges and
     %splits and sampling frequency doubling
-    plotCompTrackCore(aggregState,seqOfEvents,doubleFreq);
+    plotCompTrackCore(aggregState,seqOfEvents,doubleFreq,timeStep,axisOffset);
 
     %put axes labels
-    xlabel('Frame number');
+    if ~inOneFigure
+        if axisOffset
+            xlabel('Time');
+        else
+            xlabel('Frame number');
+        end
+    end
     ylabel('Aggregation state');
 
     %hold off of figure
     hold off
+    
+end %(if plotAS)
 
-end %(if plotAggregState)
+%put x-axis label at bottom in case of everything in one figure
+if inOneFigure
+    if axisOffset
+        xlabel('Time');
+    else
+        xlabel('Frame number');
+    end
+end
+
 
 %% Subfunction
 
-function plotCompTrackCore(valuesMatrix,seqOfEvents,doubleFreq)
+function plotCompTrackCore(valuesMatrix,seqOfEvents,doubleFreq,timeStep,axisOffset)
+
+if nargin < 4 || isempty(timeStep)
+    timeStep = 1;
+end
+if nargin < 5 || isempty(axisOffset)
+    axisOffset = 0;
+end
 
 %get first frame, last frame and number of frames
 firstFrame = seqOfEvents(1,1);
@@ -231,12 +347,12 @@ numSegments = size(valuesMatrix,1);
 %plot values as dotted black lines, closing gaps
 for i = 1 : numSegments
     indx = find(~isnan(valuesMatrix(i,:)));
-    plot((indx-1)*samplingFreq+firstFrame,valuesMatrix(i,indx),'k:');
+    plot(((indx-1)*samplingFreq+firstFrame-axisOffset)*timeStep,valuesMatrix(i,indx),'k:');
 end
 
 %plot values in color, leaving gaps as blank (so that they appear as
 %dotted lines in the final figure)
-plot((firstFrame:samplingFreq:lastFrame)',valuesMatrix','marker','.');
+plot(((firstFrame:samplingFreq:lastFrame)'-axisOffset)*timeStep,valuesMatrix','marker','.');
 
 %find merges and splits
 indxSplit = (find(seqOfEvents(:,2) == 1 & ~isnan(seqOfEvents(:,4))))';
@@ -244,44 +360,44 @@ indxMerge = (find(seqOfEvents(:,2) == 2 & ~isnan(seqOfEvents(:,4))))';
 
 %go over all splits
 for iSplit = indxSplit
-
+    
     %get time of splitting
     timeSplit = seqOfEvents(iSplit,1);
-
+    
     %determine location in valuesMatrix
     splitLoc = (timeSplit - firstFrame) / samplingFreq + 1;
-
+    
     %determine index of starting track
     rowS = seqOfEvents(iSplit,3);
-
+    
     %determine index of splitting track
     rowSp = seqOfEvents(iSplit,4);
-
+    
     %plot split as a black dash-dotted line
-    plot([timeSplit-samplingFreq timeSplit],[valuesMatrix(rowSp,splitLoc-1) ...
+    plot(([timeSplit-samplingFreq timeSplit]-axisOffset)*timeStep,[valuesMatrix(rowSp,splitLoc-1) ...
         valuesMatrix(rowS,splitLoc)],'k-.')
-
+    
 end
 
 %go over all merges
 for iMerge = indxMerge
-
+    
     %get time of merging
     timeMerge = seqOfEvents(iMerge,1);
-
+    
     %determine location in valuesMatrix
     mergeLoc = (timeMerge - firstFrame) / samplingFreq + 1;
-
+    
     %determine index of ending track
     rowE = seqOfEvents(iMerge,3);
-
+    
     %determine index of merging track
     rowM = seqOfEvents(iMerge,4);
-
+    
     %plot merge as a black dashed line
-    plot([timeMerge-samplingFreq timeMerge],[valuesMatrix(rowE,mergeLoc-1) ...
+    plot(([timeMerge-samplingFreq timeMerge]-axisOffset)*timeStep,[valuesMatrix(rowE,mergeLoc-1) ...
         valuesMatrix(rowM,mergeLoc)],'k--')
-
+    
 end
 
 

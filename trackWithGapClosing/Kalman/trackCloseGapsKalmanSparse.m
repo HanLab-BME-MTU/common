@@ -711,12 +711,6 @@ if any(trackStartTime > 1) && any(trackEndTime < numFramesEff)
                     
                 end
                 
-                %                 tracksCoordAmpCG(tracksCoordAmpCG==0) = NaN;
-                %                 if probDim == 2
-                %                     tracksCoordAmpCG(:,3:8:end) = 0;
-                %                     tracksCoordAmpCG(:,7:8:end) = 0;
-                %                 end
-                
             end
 
             %perform all gap closing links and modify connectivity accordingly

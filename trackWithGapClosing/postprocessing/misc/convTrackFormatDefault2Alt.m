@@ -82,6 +82,13 @@ for iTrack = 1 : numTracks
         tracksFeatIndxAlt(:,1:2:end) = tracksFeatIndx;
         tracksFeatIndxAlt(:,2:2:end) = tracksFeatIndx;
         tracksCoordAmpAlt = NaN(numRows,16*numCols);
+        
+        %090214 - Robel Yirdaw
+        %Convert sparse matrix back to full form to avoid bottleneck at
+        %lines 169 - 172.        
+        if (issparse(tracksCoordAmp))
+            tracksCoordAmp = full(tracksCoordAmp);
+        end
         tracksCoordAmpAlt(:,1:16:end)  = tracksCoordAmp(:,1:8:end);
         tracksCoordAmpAlt(:,2:16:end)  = tracksCoordAmp(:,2:8:end);
         tracksCoordAmpAlt(:,3:16:end)  = tracksCoordAmp(:,3:8:end);
@@ -104,7 +111,11 @@ for iTrack = 1 : numTracks
         %082114 - Robel Yirdaw
         %Convert sparse matrix back to full form to avoid bottleneck at
         %lines 169 - 172.
-        tracksCoordAmpAlt = full(tracksCoordAmp);
+        if (issparse(tracksCoordAmp))
+            tracksCoordAmpAlt = full(tracksCoordAmp);
+        else
+            tracksCoordAmpAlt = tracksCoordAmp;
+        end
     end
     
     %shift time in seqOfEventsAlt to make the track start at frame 1 or 0.5
@@ -279,11 +290,15 @@ for iTrack = 1 : numTracks
     
     %store in output structure
     %082014 - Robel Yirdaw
-    %Save tracksCoordAmpCG as a sparse matrix
+    %Save tracksCoordAmpCG as a sparse matrix if originally sparse    
     compTracksAlt(iTrack).seqOfEvents = seqOfEventsAlt;
     compTracksAlt(iTrack).tracksFeatIndxCG = tracksFeatIndxAlt;
-    tracksCoordAmpAlt(isnan(tracksCoordAmpAlt)) = 0;
-    compTracksAlt(iTrack).tracksCoordAmpCG = sparse(tracksCoordAmpAlt);
+    if (issparse(tracksCoordAmp))
+        tracksCoordAmpAlt(isnan(tracksCoordAmpAlt)) = 0;
+        compTracksAlt(iTrack).tracksCoordAmpCG = sparse(tracksCoordAmpAlt);
+    else
+        compTracksAlt(iTrack).tracksCoordAmpCG = tracksCoordAmpAlt;
+    end
     compTracksAlt(iTrack).alt2defSegmentCorrespond = alt2defSegCorr;
     
 end

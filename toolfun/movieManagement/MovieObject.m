@@ -440,7 +440,7 @@ classdef  MovieObject < hgsetget
     
     methods(Static)
 
-        function obj = loadMatFile(class, filepath)
+        function [obj, filepath] = loadMatFile(class, filepath)
             % Load a movie object saves as a MAT file on disk
             
             % Retrieve the absolute path
