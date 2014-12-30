@@ -185,8 +185,23 @@ classdef HCSReader < Reader
         end
         
         function I = loadImage(obj, c, iN, varargin) %temporary fix for iZ input.
-
-            % perform no validation, drop extra input
+            ip = inputParser;
+            ip.addRequired('c', ...
+                @(c) isscalar(c) && ismember(c, 1 : obj.getSizeC()));
+            ip.addRequired('iN', ...
+                @(iN) all(ismember(iN, 1 : obj.getSizeT())));
+            ip.parse(c, iN, varargin{:});
+            ip.addOptional('z', 1, ...
+                @(z) isscalar(z) && ismember(z, 1 : obj.getSizeZ()) || ...
+                    isempty(z));
+            ip.parse(c, iN, varargin{:});
+            
+            % no need to process z further since it is not used
+%             z = ip.Results.z;
+%             if(isempty(z))
+%                 z = 1;
+%             end
+            
             I = obj.loadImage_(c,iN);
         end
              
