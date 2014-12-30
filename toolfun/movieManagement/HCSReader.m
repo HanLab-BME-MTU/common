@@ -1,4 +1,8 @@
 classdef HCSReader < Reader
+    % HCSReader reads High Content Screening image data
+    %
+    % See also Reader
+    
     properties
         paths
         filenames
@@ -179,10 +183,17 @@ classdef HCSReader < Reader
                 Gname = oFileName(starti:starti+2);
             end           
         end
-             
-            
         
-        function I = loadImage(obj, iChan, iN, varargin) %temporary fix for iZ input.
+        function I = loadImage(obj, c, iN, varargin) %temporary fix for iZ input.
+
+            % perform no validation, drop extra input
+            I = obj.loadImage_(c,iN);
+        end
+             
+    end
+    methods ( Access = protected )
+        
+        function I = loadImage_(obj, iChan, iN)
             % Initialize array
             sizeX = obj.getSizeX();
             sizeY = obj.getSizeY();

@@ -1,5 +1,7 @@
 classdef  TiffSeriesReader < Reader
-    % Concrete implementation of MovieObject for a single movie
+    % TiffSeriesReader reads tiff stacks containing a single channel each
+    %
+    % See also Reader, BioFormatsReader
     
     properties
         paths
@@ -116,10 +118,49 @@ classdef  TiffSeriesReader < Reader
             chanNames = obj.paths(iChan);
         end
         
-        function I = loadImage(obj, iChan, iFrame, iZ)
-            if nargin<4 || isempty(iZ)
-                iZ = 1;
+        function I = loadImage(obj, c, t, varargin)
+        % loadImage reads a single image plane as a 2D, YX Matrix
+        %
+        % loadImage(c,t,z) reads the YX plane at (c,t,z)
+        %
+        % loadImage(c,t) reads the YX plane at (c,t,1)
+        %
+        % Note: Override if you need to overload or change how the input is
+        % checked. Otherwise override loadImage_.
+        %
+        % Example:
+        %   reader = movieData.getReader();
+        %   I = reader.loadImage(1,1);
+        %   imshow(I,[]);
+        %
+        
+        % Backwards compatability before 2015/01/01:
+        % Previously this function was abstract and therefore should be
+        % overridden by all subclasses written prior to 2015/01/01
+         
+            ip = inputParser;
+            ip.addRequired('c', ...
+                @(c) isscalar(c) && ismember(c, 1 : obj.getSizeC()));
+            % TiffSeriesReader allows for multiple t values
+            ip.addRequired('t', ... 
+                @(t) all(ismember(t, 1 : obj.getSizeT())));
+            ip.addOptional('z', 1, ...
+                @(z) isscalar(z) && ismember(z, 1 : obj.getSizeZ()) || ...
+                    isempty(z));
+            ip.parse(c, t, varargin{:});
+                     
+            z = ip.Results.z;
+            if(isempty(z))
+                z = 1;
             end
+                      
+            I = obj.loadImage_(c , t , z);
+        end
+
+    end
+    methods ( Access = protected )
+        
+        function I = loadImage_(obj, iChan, iFrame, iZ)
             
             if ~obj.isSingleMultiPageTiff(iChan)
                 % Read individual files
@@ -139,20 +180,13 @@ classdef  TiffSeriesReader < Reader
             end
         end
         
-        function I = loadStack(obj, iChan, iFrame, iZ)
-            assert(isscalar(iChan) && iChan <= obj.getSizeC());
-            assert(isscalar(iFrame) && iFrame <= obj.getSizeT());
-            if nargin < 4 || isempty(iZ)
-                iZ = 1 : obj.getSizeZ();
-            else
-                assert(all(ismember(iZ, 1:obj.getSizeZ())));
-            end
-            
+        function I = loadStack_(obj, iChan, iFrame, iZ)         
             if obj.getSizeZ() > 1
                 I = readtiff(fullfile(obj.paths{iChan}, obj.filenames{iChan}{iFrame}), iZ);
             else
-                I = obj.loadImage(iChan, iFrame, 1);
+                I = obj.loadImage_(iChan, iFrame, 1);
             end
         end
+
     end
 end
