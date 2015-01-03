@@ -296,11 +296,11 @@ classdef TrackingProcess < DataProcessingProcess
                 % Fill split events NaNs in compound tracks
                 nTimes = numel(displayTracks(iTrack).xCoord);
                 splitEvents = find(tracks(i).seqOfEvents(:,2)==1 & ~isnan(tracks(i).seqOfEvents(:,4)))';
-                eventTimes = tracks(i).seqOfEvents(splitEvents,1)-1;
+                eventTimes = tracks(i).seqOfEvents(splitEvents,1)-tracks(i).seqOfEvents(1);
                 for iEvent = splitEvents(eventTimes < nTimes)
                     iTrack1 = nTracksTot(i)+ tracks(i).seqOfEvents(iEvent,3);
                     iTrack2 = nTracksTot(i)+ tracks(i).seqOfEvents(iEvent,4);
-                    t = tracks(i).seqOfEvents(iEvent,1)-1;
+                    t = tracks(i).seqOfEvents(iEvent,1)-tracks(i).seqOfEvents(1);
                     displayTracks(iTrack1).xCoord(t) = displayTracks(iTrack2).xCoord(t);
                     displayTracks(iTrack1).yCoord(t) = displayTracks(iTrack2).yCoord(t);
                     displayTracks(iTrack1).events(t) = 's';
@@ -309,11 +309,11 @@ classdef TrackingProcess < DataProcessingProcess
                 
                 % Fill merge events NaNs in compound tracks
                 mergeEvents = find(tracks(i).seqOfEvents(:,2)==2 & ~isnan(tracks(i).seqOfEvents(:,4)))';
-                eventTimes = tracks(i).seqOfEvents(mergeEvents,1)-1;
+                eventTimes = tracks(i).seqOfEvents(mergeEvents,1)-tracks(i).seqOfEvents(1);
                 for iEvent = mergeEvents(eventTimes < nTimes)
                     iTrack1 = nTracksTot(i)+ tracks(i).seqOfEvents(iEvent,3);
                     iTrack2 = nTracksTot(i)+ tracks(i).seqOfEvents(iEvent,4);
-                    t = tracks(i).seqOfEvents(iEvent,1);
+                    t = tracks(i).seqOfEvents(iEvent,1) - tracks(i).seqOfEvents(1) + 1;
                     displayTracks(iTrack1).xCoord(t) = displayTracks(iTrack2).xCoord(t);
                     displayTracks(iTrack1).yCoord(t) = displayTracks(iTrack2).yCoord(t);
                     displayTracks(iTrack1).events(t) = 'm';
