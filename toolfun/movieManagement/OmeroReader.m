@@ -79,16 +79,6 @@ classdef  OmeroReader < Reader
         
         
         %% Image loading function
-        function I = loadImage(obj, c, t, varargin)
-            
-            ip = inputParser;
-            ip.addRequired('c', @(x) isscalar(x) && ismember(x, 1 : obj.getSizeC()));
-            ip.addRequired('t', @(x) isscalar(x) && ismember(x, 1 : obj.getSizeT()));
-            ip.addOptional('z', 1, @(x) isscalar(x) && ismember(x, 1 : obj.getSizeZ()));
-            ip.parse(c, t, varargin{:});
-            
-            I = obj.loadImage_(c, t, ip.Results.z);
-        end
         
         function delete(obj)
             % Delete stateful services
