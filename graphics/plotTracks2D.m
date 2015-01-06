@@ -533,12 +533,14 @@ if indicateSE %if user wants to indicate starts and ends
 end %(if indicateSE)
 
 if ask4sel
-
-    %ask the user whether to click on figure and get frame information
-    userEntry = input('select points in figure? y/n ','s');
-
-    while strcmp(userEntry,'y')
-
+    hSelectButton = uicontrol('Style','pushbutton','String','Select Track','Callback',@selectPoint);
+    pos = get(hSelectButton,'Position');
+    pos(3) = 120;
+    set(hSelectButton,'Position',pos);
+end
+function selectPoint(h,e)
+    disp('Select multiple points using the mouse. Double click on the last point to finish.');
+    
         %let the user choose the points of interest
         [x,y] = getpts;
 
@@ -567,12 +569,6 @@ if ask4sel
             end
 
         end
-
-        %ask the user again whether to click on figure and get frame information
-        userEntry = input('select points again? y/n ','s');
-
-    end
-
 end
 function h = plotFastWithoutGaps(xData,yData,varargin)
     xData(end+1,:) = Inf;
