@@ -450,6 +450,8 @@ end %(if mergeSplit)
 
 if indicateSE %if user wants to indicate starts and ends
 
+    allStartInfo = []
+    allEndInfo = [];
     %if there are merges and splits
     if mergeSplit
 
@@ -497,28 +499,9 @@ if indicateSE %if user wants to indicate starts and ends
                 endInfo(i,:) = [tracksX(timeEnd,rowE) tracksY(timeEnd,rowE) timeEnd];
 
             end
-
-            %place circles at track starts and squares at track ends
-            switch colorTime
-                case {'1','2','3'}
-                    if ~isempty(startInfo)
-                        plot(axH,startInfo(:,1),startInfo(:,2),'k',...
-                            'LineStyle','none','marker','o');
-                    end
-                    if ~isempty(endInfo)
-                        plot(axH,endInfo(:,1),endInfo(:,2),'k',...
-                            'LineStyle','none','marker','square');
-                    end
-                otherwise
-                    if ~isempty(startInfo)
-                        plot(axH,startInfo(:,1),startInfo(:,2),colorTime,...
-                            'LineStyle','none','marker','o');
-                    end
-                    if ~isempty(endInfo)
-                        plot(axH,endInfo(:,1),endInfo(:,2),colorTime,...
-                            'LineStyle','none','marker','square');
-                    end
-            end
+            
+            allStartInfo = [ allStartInfo ; startInfo ];
+            allEndInfo = [ allEndInfo ; endInfo ];
 
         end %(for iTrack = 1 : numTracks)
 
@@ -533,24 +516,19 @@ if indicateSE %if user wants to indicate starts and ends
                 tracksY(timePoint(end),i) timePoint(end)];
         end
 
-        %place circles at track starts and squares at track ends if they happen to
-        %be in the plotting region of interest
-        switch colorTime
-            case {'1','2','3'}
-                indx = find(startInfo(:,3)>=timeRange(1) & startInfo(:,3)<=timeRange(2));
-                plot(axH,startInfo(indx,1),startInfo(indx,2),'k','LineStyle','none','marker','o');
-                indx = find(endInfo(:,3)>=timeRange(1) & endInfo(:,3)<=timeRange(2));
-                plot(axH,endInfo(indx,1),endInfo(indx,2),'k','LineStyle','none','marker','square');
-            otherwise
-                indx = find(startInfo(:,3)>=timeRange(1) & startInfo(:,3)<=timeRange(2));
-                plot(axH,startInfo(indx,1),startInfo(indx,2),colorTime,...
-                    'LineStyle','none','marker','o');
-                indx = find(endInfo(:,3)>=timeRange(1) & endInfo(:,3)<=timeRange(2));
-                plot(axH,endInfo(indx,1),endInfo(indx,2),colorTime,...
-                    'LineStyle','none','marker','square');
-        end
-
+        allStartInfo = [ allStartInfo ; startInfo(startInfo(:,3)>=timeRange(1) & startInfo(:,3)<=timeRange(2),:) ];
+        allEndInfo = [ allEndInfo ; endInfo(endInfo(:,3)>=timeRange(1) & endInfo(:,3)<=timeRange(2),:) ];
+        
     end %(if mergeSplit)
+    
+    switch colorTime
+        case {'1','2','3'}
+            scatterColor = 'k';
+        otherwise
+            scatterColor = colorTime;
+    end
+    scatter(axH,allStartInfo(:,1),allStartInfo(:,2),[],scatterColor,'o');
+    scatter(axH,allEndInfo(:,1),allEndInfo(:,2),[],scatterColor,'square');
 
 end %(if indicateSE)
 
