@@ -120,7 +120,7 @@ if ~isempty(pixelSize)
 end
 
 % Read camera bit depth
-camBitdepth = pixels.getPixelsType.getBitSize.getValue/2;
+camBitdepth = pixels.getSignificantBits().getValue();
 if ~isempty(camBitdepth)
     movieArgs=horzcat(movieArgs,'camBitdepth_',camBitdepth);
 end
