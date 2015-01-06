@@ -72,7 +72,9 @@ classdef TestLoad < TestCase
             assert(~wasCached);
         end
         function testUseCache(self,varargin)
-            [~, wasCached] = cached.load(self.matfile,varargin{:},'-useCache',true);
+            lastwarn('');
+            [~, wasCached] = cached.load(self.matfile,varargin{:},'-useCache',false);
+            assert(isempty(lastwarn));
             assert(~wasCached);
             [~, wasCached] = cached.load(self.matfile,varargin{:},'-useCache',true);
             assert(wasCached);
