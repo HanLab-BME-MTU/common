@@ -219,8 +219,7 @@ function h = plotFast(h,xData,yData,varargin)
 
 % Mark Kittisopikul, 2014/11/24
 
-    xData(end+1,:) = NaN;
-    yData(end+1,:) = NaN;
+    [xData,yData] = joinColumns(NaN,xData,yData);
     if(ishandle(h))
         set(h,'XData',xData(:),'YData',yData(:),varargin{:});
     else
