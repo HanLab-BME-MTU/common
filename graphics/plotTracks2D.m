@@ -450,7 +450,7 @@ end %(if mergeSplit)
 
 if indicateSE %if user wants to indicate starts and ends
 
-    allStartInfo = []
+    allStartInfo = [];
     allEndInfo = [];
     %if there are merges and splits
     if mergeSplit
@@ -467,7 +467,7 @@ if indicateSE %if user wants to indicate starts and ends
                 & seqOfEvents(:,1) >= timeRange(1) & seqOfEvents(:,1) <= timeRange(2)))';
 
             %get the information of the starts
-            startInfo = [];
+            startInfo = zeros(length(indxStart),3);
             for i = 1 : length(indxStart)
                 iStart = indxStart(i);
 
@@ -484,7 +484,7 @@ if indicateSE %if user wants to indicate starts and ends
             end
 
             %get the information of the ends
-            endInfo = [];
+            endInfo = zeros(length(indxEnd),3);
             for i = 1 : length(indxEnd)
                 iEnd = indxEnd(i);
 
