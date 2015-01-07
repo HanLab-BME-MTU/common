@@ -538,17 +538,17 @@ if ask4sel
     pos(3) = 120;
     set(hSelectButton,'Position',pos);
 end
-function selectPoint(h,e)
+function selectPoint(~,~)
     disp('Select multiple points using the mouse. Double click on the last point to finish.');
     
         %let the user choose the points of interest
         [x,y] = getpts;
 
         %find the time points of the indicated points
-        for i=1:length(x)
+        for npt=1:length(x)
 
             %find the distances between those points and the tracks
-            distTrack2Point = (tracksXP-x(i)).^2+(tracksYP-y(i)).^2;
+            distTrack2Point = (tracksXP-x(npt)).^2+(tracksYP-y(npt)).^2;
 
             %determine the minimum distance for each chosen point
             [frameChosen,rowChosen] = find(distTrack2Point==min(distTrack2Point(:)));
@@ -571,18 +571,12 @@ function selectPoint(h,e)
         end
 end
 function h = plotFastWithoutGaps(xData,yData,varargin)
-    xData(end+1,:) = Inf;
-    yData(end+1,:) = Inf;
-    xData = xData(~isnan(xData));
-    yData = yData(~isnan(yData));
-    xData(isinf(xData)) = NaN;
-    yData(isinf(yData)) = NaN;
-    h = line(xData(:),yData(:),varargin{:});
+    [xData,yData] = joinColumns(Inf,xData,yData);
+    h = line(xData(~isnan(xData)),yData(~isnan(xData)),varargin{:});
 end
 function h = plotFast(xData,yData,varargin)
-    xData(end+1,:) = NaN;
-    yData(end+1,:) = NaN;
-    h = line(xData(:),yData(:),varargin{:});
+    [xData,yData] = joinColumns(NaN,xData,yData);
+    h = line(xData,yData,varargin{:});
 end
 %%%%% ~~ the end ~~ %%%%%
 
