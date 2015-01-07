@@ -302,7 +302,7 @@ end
 if newFigure
 
     %open new figure window
-    figure
+    figure;
 
     if ~isempty(image) %if user supplied an image
         tmpImage = image(image~=0);
@@ -334,6 +334,11 @@ end
 %hold on axes
 set(axH,'NextPlot','add');
 
+removeGapParams.Delimeter = Inf;
+removeGapParams.RemoveOtherGaps = true;
+removeGapParams.Color = 'k';
+removeGapParams.LineStyle = ':';
+
 %extract the portion of tracksX and tracksY that is of interest
 tracksXP = tracksX(timeRange(1):timeRange(2),:);
 tracksYP = tracksY(timeRange(1):timeRange(2),:);
@@ -344,7 +349,7 @@ switch colorTime
 
     case '1' %if user wants to color-code time
 
-        plotFastWithoutGaps(tracksXP,tracksYP,'Color','k','LineStyle',':');
+        lineWithGaps(tracksXP,tracksYP,removeGapParams);
         
         %get the overall color per time interval
         colorOverTime = timeColormap(numTimePlot);
@@ -352,35 +357,35 @@ switch colorTime
         %overlay tracks with color coding wherever a feature has been detected
         for i=1:numTimePlot-1
             validData=~all(isnan(tracksXP(i:i+1,:)),1);
-            plotFast(tracksXP(i:i+1,validData), ...
-                     tracksYP(i:i+1,validData), ...
-                     'Color',colorOverTime(i,:));
+            lineWithGaps(tracksXP(i:i+1,validData), ...
+                         tracksYP(i:i+1,validData), ...
+                         'Color',colorOverTime(i,:));
         end
 
     case '2' %no time color-coding, loop through series of colors to color tracks
 
         %plot tracks by looping through colors
         %missing intervals are indicated by a dotted line
-        plotFastWithoutGaps(tracksXP,tracksYP,'Color','k','LineStyle',':');
+        lineWithGaps(tracksXP,tracksYP,removeGapParams);
         for i=1:7
-            plotFast(tracksXP(:,i:7:end),tracksYP(:,i:7:end),'Color',colorLoop(i,:),'Marker',markerType);
+            lineWithGaps(tracksXP(:,i:7:end),tracksYP(:,i:7:end),'Color',colorLoop(i,:),'Marker',markerType);
         end
         
     case '3' % no time color-coding, use extendedColors
         
         %plot tracks by looping through colors
         %missing intervals are indicated by a dotted line
-        plotFastWithoutGaps(tracksXP,tracksYP,'Color','k','LineStyle',':');
+        lineWithGaps(tracksXP,tracksYP,removeGapParams);
         for i=1:23
-            plotFast(tracksXP(:,i:23:end),tracksYP(:,i:23:end),'Color',extendedColors(i),'Marker',markerType);
+            lineWithGaps(tracksXP(:,i:23:end),tracksYP(:,i:23:end),'Color',extendedColors(i),'Marker',markerType);
         end
 
     otherwise %no time color-coding, all tracks same color
 
         %plot tracks with the line color indicated
         %missing intervals are indicated by a dotted line
-        plotFastWithoutGaps(tracksXP,tracksYP,'Color','k','LineStyle',':');
-        plotFast(tracksXP,tracksYP,'Color',colorTime,'Marker',markerType);
+        lineWithGaps(tracksXP,tracksYP,removeGapParams);
+        lineWithGaps(tracksXP,tracksYP,'Color',colorTime,'Marker',markerType);
 
 end %(switch colorTime)
 
@@ -569,14 +574,6 @@ function selectPoint(~,~)
             end
 
         end
-end
-function h = plotFastWithoutGaps(xData,yData,varargin)
-    [xData,yData] = joinColumns(Inf,xData,yData);
-    h = line(xData(~isnan(xData)),yData(~isnan(xData)),varargin{:});
-end
-function h = plotFast(xData,yData,varargin)
-    [xData,yData] = joinColumns(NaN,xData,yData);
-    h = line(xData,yData,varargin{:});
 end
 %%%%% ~~ the end ~~ %%%%%
 

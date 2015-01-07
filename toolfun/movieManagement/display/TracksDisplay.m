@@ -216,6 +216,7 @@ function h = plotFast(h,xData,yData,varargin)
 %
 % h - handle to the line object created or used
 %
+% See also lineWithGaps
 
 % Mark Kittisopikul, 2014/11/24
 
