@@ -1,5 +1,6 @@
-function h=plotTracks2D(trackedFeatureInfo,timeRange,colorTime,markerType,...
-    indicateSE,newFigure,image,flipXY,ask4sel,offset,minLength)
+function plotTracks2D(trackedFeatureInfo, varargin)
+%function plotTracks2D(trackedFeatureInfo,timeRange,colorTime,markerType,...
+%    indicateSE,newFigure,image,flipXY,ask4sel,offset,minLength)
 %PLOTTRACKS2D plots a group of tracks in 2D and allows user to click on them and extract track information
 %
 %SYNOPSIS plotTracks2D(trackedFeatureInfo,timeRange,colorTime,markerType,...
@@ -86,22 +87,6 @@ function h=plotTracks2D(trackedFeatureInfo,timeRange,colorTime,markerType,...
 %Input
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%check whether correct number of input arguments was used
-if nargin < 1
-    disp('--plotTracks2D: Incorrect number of input arguments!');
-    return
-end
-
-%keep only tracks with minimum requested length
-if nargin < 11 || isempty(minLength)
-    minLength = 1;
-end
-if minLength > 1
-    criteria.lifeTime.min = minLength;
-    indx = chooseTracks(trackedFeatureInfo,criteria);
-    trackedFeatureInfo = trackedFeatureInfo(indx,:);
-end
-
 %get number of tracks and number of time points
 if isstruct(trackedFeatureInfo) %if tracks are in structure format
     numTracks = length(trackedFeatureInfo);
@@ -113,51 +98,51 @@ else %if tracks are in matrix format
     numTimePoints = numTimePoints/8;
 end
 
-errFlag = 0;
+ip = inputParserRetrofit;
+ip.addRequired('trackedFeatureInfo', ...
+    @(s) isstruct(s) || isnumeric(s));
+ip.addArgument('timeRange',[1 numTimePoints], ...
+    @(t) all(size(t) == [1 2]) && ...
+    t(1) >= 1 && t(2) <= numTimePoints );
+ip.addArgument('colorTime','k', ...
+    @isscalar);
+ip.addArgument('markerType','none', ...
+    @ischar);
+ip.addArgument('indicateSE',1, ...
+    @(x) ismember(x,[ 0 1 ]));
+ip.addArgument('newFigure',1, ...
+    @(x) ismember(x,[0 1]) || ...
+    ishandle(x) && strncmp(get(x,'Type'),'axes',4));
+ip.addArgument('image',[], ...
+    @isnumeric);
+ip.addArgument('flipXY',false, ...
+    @(x) ismember(x,[0 1]) );
+ip.addArgument('ask4sel',true, ...
+    @(x) ismember(x,[0 1]));
+ip.addArgument('offset',[ 0 0 ], ...
+    @(x) isnumeric(x) && all(size(x) == [1 2]));
+ip.addArgument('minLength',1, ...
+    @(x) isnumeric(x) && isscalar(x));
+ip.parse(trackedFeatureInfo,varargin{:});
 
-%check whether a time range for plotting was input
-if nargin < 2 || isempty(timeRange)
-    timeRange = [1 numTimePoints];
-else
-    if timeRange(1) < 1 || timeRange(2) > numTimePoints
-        disp('--plotTracks2D: Wrong time range for plotting!');
-        errFlag = 1;
-    end
+assignFieldsHere(ip.Results);
+
+image = ip.Results.image;
+
+
+%keep only tracks with minimum requested length
+if minLength > 1
+    criteria.lifeTime.min = minLength;
+    indx = chooseTracks(trackedFeatureInfo,criteria);
+    trackedFeatureInfo = trackedFeatureInfo(indx,:);
 end
 
-%check whether colorTime was input
-if nargin < 3 || isempty(colorTime)
-    colorTime = 'k';
-end
+
 % make sure colorTime 1,2 are strings
 if isnumeric(colorTime) && isscalar(colorTime)
     colorTime = num2str(colorTime);
 end
 
-%check whether markerType was input
-if nargin < 4 || isempty(markerType)
-    markerType = 'none';
-end
-
-%check whether indicateSE was input
-if nargin < 5 || isempty(indicateSE)
-    indicateSE = 1;
-else
-    if indicateSE ~= 0 && indicateSE ~= 1
-        disp('plotTracks2D: indicateSE should be 0 or 1!');
-        errFlag = 1;
-    end
-end
-
-%check whether newFigure was input
-if nargin < 6 || isempty(newFigure)
-    newFigure = 1;
-else
-    if newFigure ~= 0 && newFigure ~= 1 && ~(ishandle(newFigure) && strmatch(get(newFigure,'Type'),'axes'))
-        disp('--plotTracks2D: newFigure should be 0 or 1 or an axes handle!');
-        errFlag = 1;
-    end
-end
 % check for axes handle
 if ishandle(newFigure) && strcmp(get(newFigure,'Type'),'axes')
     axH = newFigure;
@@ -166,26 +151,8 @@ elseif newFigure == 0
     axH = gca;
 end
 
-%check whether user supplied an image
-if nargin < 7 || isempty(image)
-    image = [];
-end
 
-if nargin < 8 || isempty(flipXY)
-    flipXY = false;
-end
-if nargin < 9 || isempty(ask4sel)
-    ask4sel = true;
-end
-if nargin < 10 || isempty(offset)
-    offset = [0,0];
-end
 
-%exit if there are problems in input variables
-if errFlag
-    disp('--plotTracks2D: Please fix input data!');
-    return
-end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Pre-processing
@@ -302,7 +269,7 @@ end
 if newFigure
 
     %open new figure window
-    figure
+    figure;
 
     if ~isempty(image) %if user supplied an image
         tmpImage = image(image~=0);
@@ -334,17 +301,22 @@ end
 %hold on axes
 set(axH,'NextPlot','add');
 
+removeGapParams.Delimeter = Inf;
+removeGapParams.RemoveOtherGaps = true;
+removeGapParams.Color = 'k';
+removeGapParams.LineStyle = ':';
+
 %extract the portion of tracksX and tracksY that is of interest
 tracksXP = tracksX(timeRange(1):timeRange(2),:);
 tracksYP = tracksY(timeRange(1):timeRange(2),:);
+
+axes(axH);
 
 switch colorTime
 
     case '1' %if user wants to color-code time
 
-        xData=arrayfun(@(x)[tracksXP(~isnan(tracksXP(:,x)),x); NaN],1:size(tracksXP,2),'Unif',false);
-        yData=arrayfun(@(x)[tracksYP(~isnan(tracksYP(:,x)),x); NaN],1:size(tracksYP,2),'Unif',false);
-        plot(axH,vertcat(xData{:}),vertcat(yData{:}),'k:');
+        lineWithGaps(tracksXP,tracksYP,removeGapParams);
         
         %get the overall color per time interval
         colorOverTime = timeColormap(numTimePlot);
@@ -352,50 +324,45 @@ switch colorTime
         %overlay tracks with color coding wherever a feature has been detected
         for i=1:numTimePlot-1
             validData=~all(isnan(tracksXP(i:i+1,:)),1);
-            xData=vertcat(tracksXP(i:i+1,validData),NaN(1,sum(validData)));
-            yData=vertcat(tracksYP(i:i+1,validData),NaN(1,sum(validData)));
-            plot(axH,xData(:),yData(:),'color',colorOverTime(i,:));
+            lineWithGaps(tracksXP(i:i+1,validData), ...
+                         tracksYP(i:i+1,validData), ...
+                         'Color',colorOverTime(i,:));
         end
 
     case '2' %no time color-coding, loop through series of colors to color tracks
 
         %plot tracks by looping through colors
         %missing intervals are indicated by a dotted line
-        for i = 1 : trackStartRow(end) + numSegments(end) - 1
-            obsAvail = find(~isnan(tracksXP(:,i)));
-            plot(axH,tracksXP(obsAvail,i),tracksYP(obsAvail,i),'k:');
-            plot(axH,tracksXP(:,i),tracksYP(:,i),'color',colorLoop(mod(i-1,7)+1,:),...
-                'marker',markerType);
+        lineWithGaps(tracksXP,tracksYP,removeGapParams);
+        for i=1:7
+            lineWithGaps(tracksXP(:,i:7:end),tracksYP(:,i:7:end),'Color',colorLoop(i,:),'Marker',markerType);
         end
         
     case '3' % no time color-coding, use extendedColors
         
         %plot tracks by looping through colors
         %missing intervals are indicated by a dotted line
-        for i = 1 : trackStartRow(end) + numSegments(end) - 1
-            obsAvail = find(~isnan(tracksXP(:,i)));
-            plot(axH,tracksXP(obsAvail,i),tracksYP(obsAvail,i),'k:');
-            plot(axH,tracksXP(:,i),tracksYP(:,i),'color',extendedColors(mod(i-1,23)+1),...
-                'marker',markerType);
+        lineWithGaps(tracksXP,tracksYP,removeGapParams);
+        for i=1:23
+            lineWithGaps(tracksXP(:,i:23:end),tracksYP(:,i:23:end),'Color',extendedColors(i),'Marker',markerType);
         end
 
     otherwise %no time color-coding, all tracks same color
 
         %plot tracks with the line color indicated
         %missing intervals are indicated by a dotted line
-        for i = 1 : trackStartRow(end) + numSegments(end) - 1
-            obsAvail = find(~isnan(tracksXP(:,i)));
-            plot(axH,tracksXP(obsAvail,i),tracksYP(obsAvail,i),'k:');
-            plot(axH,tracksXP(:,i),tracksYP(:,i),colorTime,'marker',markerType);
-            %             plot(axH,tracksXP(obsAvail,i),tracksYP(obsAvail,i),':','Color',[0.7 0.7 0.7]);
-            %             plot(axH,tracksXP(:,i),tracksYP(:,i),'marker',markerType,'Color',[0.7 0.7 0.7]);
-        end
+        lineWithGaps(tracksXP,tracksYP,removeGapParams);
+        lineWithGaps(tracksXP,tracksYP,'Color',colorTime,'Marker',markerType);
 
 end %(switch colorTime)
 
 %show merges and splits
 if mergeSplit
 
+    split.X = [];
+    split.Y = [];
+    merge.X = [];
+    merge.Y = [];
     %go over all tracks
     for iTrack = 1 : numTracks
 
@@ -420,10 +387,9 @@ if mergeSplit
             rowSp = trackStartRow(iTrack) + seqOfEvents(iSplit,4) - 1;
 
             %plot split as a dash-dotted line
-            plot(axH,[tracksX(timeSplit,rowS) tracksX(timeSplit-1,rowSp)], ...
-                [tracksY(timeSplit,rowS) tracksY(timeSplit-1,rowSp)],'k-.');
-            %             plot(axH,[tracksX(timeSplit,rowS) tracksX(timeSplit-1,rowSp)], ...
-            %                 [tracksY(timeSplit,rowS) tracksY(timeSplit-1,rowSp)],'-.','Color',[0.7 0.7 0.7]);
+
+            split.X = [split.X tracksX(timeSplit,rowS) tracksX(timeSplit-1,rowSp) NaN];
+            split.Y = [split.Y tracksY(timeSplit,rowS) tracksY(timeSplit-1,rowSp) NaN];
 
         end
 
@@ -440,19 +406,24 @@ if mergeSplit
             rowM = trackStartRow(iTrack) + seqOfEvents(iMerge,4) - 1;
 
             %plot merge as a dashed line
-            plot(axH,[tracksX(timeMerge-1,rowE) tracksX(timeMerge,rowM)], ...
-                [tracksY(timeMerge-1,rowE) tracksY(timeMerge,rowM)],'k--');
-            %             plot(axH,[tracksX(timeMerge-1,rowE) tracksX(timeMerge,rowM)], ...
-            %                 [tracksY(timeMerge-1,rowE) tracksY(timeMerge,rowM)],'--','Color',[0.7 0.7 0.7]);
+            merge.X = [merge.X tracksX(timeMerge-1,rowE) tracksX(timeMerge,rowM) NaN];
+            merge.Y = [merge.Y tracksY(timeMerge-1,rowE) tracksY(timeMerge,rowM) NaN];
 
         end
 
     end %(for iTrack = 1 : numTracks)
 
+    %plot split as a dash-dotted line
+    plot(axH,split.X, split.Y,'k-.');
+    %plot merge as a dashed line
+    plot(axH,merge.X, merge.Y,'k--');
+
 end %(if mergeSplit)
 
 if indicateSE %if user wants to indicate starts and ends
 
+    allStartInfo = [];
+    allEndInfo = [];
     %if there are merges and splits
     if mergeSplit
 
@@ -468,7 +439,7 @@ if indicateSE %if user wants to indicate starts and ends
                 & seqOfEvents(:,1) >= timeRange(1) & seqOfEvents(:,1) <= timeRange(2)))';
 
             %get the information of the starts
-            startInfo = [];
+            startInfo = zeros(length(indxStart),3);
             for i = 1 : length(indxStart)
                 iStart = indxStart(i);
 
@@ -485,7 +456,7 @@ if indicateSE %if user wants to indicate starts and ends
             end
 
             %get the information of the ends
-            endInfo = [];
+            endInfo = zeros(length(indxEnd),3);
             for i = 1 : length(indxEnd)
                 iEnd = indxEnd(i);
 
@@ -500,38 +471,9 @@ if indicateSE %if user wants to indicate starts and ends
                 endInfo(i,:) = [tracksX(timeEnd,rowE) tracksY(timeEnd,rowE) timeEnd];
 
             end
-
-            %place circles at track starts and squares at track ends
-            switch colorTime
-                case {'1','2','3'}
-                    if ~isempty(startInfo)
-                        plot(axH,startInfo(:,1),startInfo(:,2),'k',...
-                            'LineStyle','none','marker','o');
-                    end
-                    if ~isempty(endInfo)
-                        plot(axH,endInfo(:,1),endInfo(:,2),'k',...
-                            'LineStyle','none','marker','square');
-                    end
-                    % JD 2/09: case 2 is identical to case 1
-%                 case '2'
-%                     if ~isempty(startInfo)
-%                         plot(axH,startInfo(:,1),startInfo(:,2),'k',...
-%                             'LineStyle','none','marker','o');
-%                     end
-%                     if ~isempty(endInfo)
-%                         plot(axH,endInfo(:,1),endInfo(:,2),'k',...
-%                             'LineStyle','none','marker','square');
-%                     end
-                otherwise
-                    if ~isempty(startInfo)
-                        plot(axH,startInfo(:,1),startInfo(:,2),colorTime,...
-                            'LineStyle','none','marker','o');
-                    end
-                    if ~isempty(endInfo)
-                        plot(axH,endInfo(:,1),endInfo(:,2),colorTime,...
-                            'LineStyle','none','marker','square');
-                    end
-            end
+            
+            allStartInfo = [ allStartInfo ; startInfo ];
+            allEndInfo = [ allEndInfo ; endInfo ];
 
         end %(for iTrack = 1 : numTracks)
 
@@ -546,47 +488,39 @@ if indicateSE %if user wants to indicate starts and ends
                 tracksY(timePoint(end),i) timePoint(end)];
         end
 
-        %place circles at track starts and squares at track ends if they happen to
-        %be in the plotting region of interest
-        switch colorTime
-            case {'1','2','3'}
-                indx = find(startInfo(:,3)>=timeRange(1) & startInfo(:,3)<=timeRange(2));
-                plot(axH,startInfo(indx,1),startInfo(indx,2),'k','LineStyle','none','marker','o');
-                indx = find(endInfo(:,3)>=timeRange(1) & endInfo(:,3)<=timeRange(2));
-                plot(axH,endInfo(indx,1),endInfo(indx,2),'k','LineStyle','none','marker','square');
-                %             case '2'
-                %                 indx = find(startInfo(:,3)>=timeRange(1) & startInfo(:,3)<=timeRange(2));
-                %                 plot(axH,startInfo(indx,1),startInfo(indx,2),'k','LineStyle','none','marker','o');
-                %                 indx = find(endInfo(:,3)>=timeRange(1) & endInfo(:,3)<=timeRange(2));
-                %                 plot(axH,endInfo(indx,1),endInfo(indx,2),'k','LineStyle','none','marker','square');
-            otherwise
-                indx = find(startInfo(:,3)>=timeRange(1) & startInfo(:,3)<=timeRange(2));
-                plot(axH,startInfo(indx,1),startInfo(indx,2),colorTime,...
-                    'LineStyle','none','marker','o');
-                indx = find(endInfo(:,3)>=timeRange(1) & endInfo(:,3)<=timeRange(2));
-                plot(axH,endInfo(indx,1),endInfo(indx,2),colorTime,...
-                    'LineStyle','none','marker','square');
-        end
-
+        allStartInfo = [ allStartInfo ; startInfo(startInfo(:,3)>=timeRange(1) & startInfo(:,3)<=timeRange(2),:) ];
+        allEndInfo = [ allEndInfo ; endInfo(endInfo(:,3)>=timeRange(1) & endInfo(:,3)<=timeRange(2),:) ];
+        
     end %(if mergeSplit)
+    
+    switch colorTime
+        case {'1','2','3'}
+            scatterColor = 'k';
+        otherwise
+            scatterColor = colorTime;
+    end
+    scatter(axH,allStartInfo(:,1),allStartInfo(:,2),[],scatterColor,'o');
+    scatter(axH,allEndInfo(:,1),allEndInfo(:,2),[],scatterColor,'square');
 
 end %(if indicateSE)
 
 if ask4sel
-
-    %ask the user whether to click on figure and get frame information
-    userEntry = input('select points in figure? y/n ','s');
-
-    while strcmp(userEntry,'y')
-
+    hSelectButton = uicontrol('Style','pushbutton','String','Select Track','Callback',@selectPoint);
+    pos = get(hSelectButton,'Position');
+    pos(3) = 120;
+    set(hSelectButton,'Position',pos);
+end
+function selectPoint(~,~)
+    disp('Select multiple points using the mouse. Double click on the last point to finish.');
+    
         %let the user choose the points of interest
         [x,y] = getpts;
 
         %find the time points of the indicated points
-        for i=1:length(x)
+        for npt=1:length(x)
 
             %find the distances between those points and the tracks
-            distTrack2Point = (tracksXP-x(i)).^2+(tracksYP-y(i)).^2;
+            distTrack2Point = (tracksXP-x(npt)).^2+(tracksYP-y(npt)).^2;
 
             %determine the minimum distance for each chosen point
             [frameChosen,rowChosen] = find(distTrack2Point==min(distTrack2Point(:)));
@@ -607,13 +541,7 @@ if ask4sel
             end
 
         end
-
-        %ask the user again whether to click on figure and get frame information
-        userEntry = input('select points again? y/n ','s');
-
-    end
-
 end
-
 %%%%% ~~ the end ~~ %%%%%
 
+end
