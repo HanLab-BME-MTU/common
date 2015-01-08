@@ -1,5 +1,5 @@
-function h=plotTracks2D(trackedFeatureInfo, varargin)
-%function h=plotTracks2D(trackedFeatureInfo,timeRange,colorTime,markerType,...
+function plotTracks2D(trackedFeatureInfo, varargin)
+%function plotTracks2D(trackedFeatureInfo,timeRange,colorTime,markerType,...
 %    indicateSE,newFigure,image,flipXY,ask4sel,offset,minLength)
 %PLOTTRACKS2D plots a group of tracks in 2D and allows user to click on them and extract track information
 %
