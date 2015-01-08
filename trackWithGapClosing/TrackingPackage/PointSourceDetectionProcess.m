@@ -26,6 +26,7 @@ classdef PointSourceDetectionProcess < DetectionProcess
             ip.addOptional('iFrame',1:obj.owner_.nFrames_,...
                 @(x) ismember(x,1:obj.owner_.nFrames_));
             ip.addParamValue('output', 'movieInfo',@(x) strcmp(x, 'movieInfo'));
+            ip.KeepUnmatched = true;
             ip.parse(iChan,varargin{:})
             
             % Data loading
