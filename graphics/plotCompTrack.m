@@ -1,5 +1,6 @@
-function plotCompTrack(trackedFeatureInfo,plotX,plotY,plotA,inOneFigure,...
-    plotAS,timeStep,markMS)
+function plotCompTrack(trackedFeatureInfo,varargin)
+% function plotCompTrack(trackedFeatureInfo,plotX,plotY,plotA,inOneFigure,...
+%     plotAS,timeStep,markMS)
 %PLOTCOMPTRACK plots the x-coordinates, y-coordinates and/or intensities along a compound track, indicating merges, splits and gaps
 %
 %SYNOPSIS plotCompTrackAmp(trackedFeatureInfo,plotX,plotY,plotA,inOneFigure,...
@@ -61,36 +62,32 @@ function plotCompTrack(trackedFeatureInfo,plotX,plotY,plotA,inOneFigure,...
 
 %% Input
 
-%check whether correct number of input arguments was used
-if nargin < 1
-    disp('--plotCompTrack: Incorrect number of input arguments!');
-    return
-end
+ip = inputParserRetrofit;
+ip.addRequired('trackedFeatureInfo', ...
+    @(s) isstruct(s) || isnumeric(s));
+ip.addArgument('plotX',1, ...
+    @(x) islogical(x) || ismember(x,[0 1]));
+ip.addArgument('plotY',1, ...
+    @(x) islogical(x) || ismember(x,[0 1]));
+ip.addArgument('plotA',1, ...
+    @(x) islogical(x) || ismember(x,[0 1]));
+ip.addArgument('inOneFigure',1, ...
+    @(x) islogical(x) || ismember(x,[0 1]));
+ip.addArgument('plotAS',1, ...
+    @(x) islogical(x) || ismember(x,[0 1]));
+ip.addArgument('timeStep',[], ...
+    @(x) isnumeric(x) || isempty(x));
+ip.addArgument('markMS',0, ...
+    @(x) islogical(x) || ismember(x,[0 1]));
+ip.parse(trackedFeatureInfo, varargin{:});
 
-%assign defaults if parameters were not input
-if nargin < 2 || isempty(plotX)
-    plotX = 1;
-end
-if nargin < 3 || isempty(plotY)
-    plotY = 1;
-end
-if nargin < 4 || isempty(plotA)
-    plotA = 1;
-end
-if nargin < 5 || isempty(inOneFigure)
-    inOneFigure = 1;
-end
-if nargin < 6 || isempty(plotAS)
-    plotAS = 1;
-end
-if nargin < 7 || isempty(timeStep)
+assignFieldsHere(ip.Results);
+
+if(isempty(ip.Results.timeStep))
     timeStep = 1;
     axisOffset = 0;
 else
     axisOffset = 1;
-end
-if nargin < 8 || isempty(markMS)
-    markMS = 0;
 end
 
 %extract information from input
