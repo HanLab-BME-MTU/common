@@ -125,10 +125,17 @@ ip.addArgument('minLength',1, ...
     @(x) isnumeric(x) && isscalar(x));
 ip.parse(trackedFeatureInfo,varargin{:});
 
-assignFieldsHere(ip.Results);
-
+trackedFeatureInfo = ip.Results.trackedFeatureInfo;
+timeRange = ip.Results.timeRange;
+colorTime = ip.Results.colorTime;
+markerType = ip.Results.markerType;
+indicateSE = ip.Results.indicateSE;
+newFigure = ip.Results.newFigure;
 image = ip.Results.image;
-
+flipXY = ip.Results.flipXY;
+ask4sel = ip.Results.ask4sel;
+offset = ip.Results.offset;
+minLength = ip.Results.minLength;
 
 %keep only tracks with minimum requested length
 if minLength > 1
