@@ -199,6 +199,12 @@ function channelArgs = getChannelMetadata(r, iSeries, iChan)
 
 channelArgs={};
 
+% Read channel name
+channelName = r.getMetadataStore().getChannelName(iSeries, iChan);
+if ~isempty(channelName)
+    channelArgs=horzcat(channelArgs, 'name_', char(channelName));
+end
+
 % Read excitation wavelength
 exwlgth=r.getMetadataStore().getChannelExcitationWavelength(iSeries, iChan);
 if ~isempty(exwlgth)
