@@ -40,7 +40,7 @@ classdef MotionAnalysisProcess < PostTrackingProcess
             outputList = {'diffAnalysisRes', 'tracks'};
             ip =inputParser;
             ip.addRequired('iChan',@(x) isscalar(x) && obj.checkChanNum(x));
-            ip.addOptional('iFrame',1:obj.owner_.nFrames_,@(x) all(obj.checkFrameNum(x)));
+            ip.addOptional('iFrame',[],@(x) isempty(x) || isscalar(x) && obj.checkFrameNum(x));
             ip.addParamValue('useCache',false,@islogical);
             ip.addParamValue('output',outputList,@(x) all(ismember(x,outputList)));
             ip.parse(iChan,varargin{:})
