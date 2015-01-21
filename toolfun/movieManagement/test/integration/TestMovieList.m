@@ -127,5 +127,17 @@ classdef TestMovieList < TestMovieObject & TestCase
             assertEqual(self.movieList.getMovie(1).getAncestor(),...
                 self.movieList.getMovie(3).getAncestor());
         end
+        
+        function testAttachMovies(self)
+            % Test movie list composed of multiple ROIs
+            self.movie = self.setUpMovie();
+            self.setUpMovieList(self.movie);
+            assertTrue(isequal(self.movieList.getMovie(1), self.movie));
+            
+            self.movie = MovieData.load(self.movie.getFullPath());
+            assertFalse(isequal(self.movieList.getMovie(1), self.movie));
+            self.movieList.attachMovies(self.movie);
+            assertTrue(isequal(self.movieList.getMovie(1), self.movie));
+        end
     end
 end
