@@ -78,6 +78,11 @@ classdef MovieList < MovieObject
             movie = obj.movies_{i};
         end
         
+        function size = getSize(obj)
+            % Get the movies from a movie list
+            
+            size = numel(obj.movieDataFile_);
+        end
         %% Sanity check/relocation
         function movieException = sanityCheck(obj, varargin)
             % Check the sanity of the MovieData objects
@@ -94,22 +99,25 @@ classdef MovieList < MovieObject
             end
             
             % Load movie components (run sanityCheck on each of them)
-            nMovies = numel(obj.movieDataFile_);
-            nLoadedMovies = numel(obj.movies_);
-            movieException = cell(1,nMovies);
-            for i = 1 : nMovies
+            movieException = cell(1, obj.getSize());
+            for i = 1 : obj.getSize()
                 try
-                    if i <= nLoadedMovies && ~isempty(obj.getMovie(i))
+                    if i <= numel(obj.movies_) && ~isempty(obj.getMovie(i))
                         [moviePath,movieName,movieExt] = fileparts(obj.movieDataFile_{i});
                         obj.getMovie(i).sanityCheck(moviePath,[movieName movieExt], askUser);
                     else
-                        fprintf(1,'Loading movie %g/%g\n',i,nMovies);
+                        fprintf(1,'Loading movie %g/%g\n',i,obj.getSize());
                         if obj.isOmero() && obj.canUpload()
                             [~, id] =fileparts(fileparts(obj.movieDataFile_{i}));
                             obj.movies_{i} = MovieData.load(obj.getOmeroSession(),...
                                 str2double(id), askUser);
                         else
                             obj.movies_{i} = MovieData.load(obj.movieDataFile_{i}, askUser);
+                        end
+                        
+                        otherROIs = obj.movies_{i}.getAncestor().getDescendants();
+                        if ~isempty(otherROIs),
+                            obj.attachMovies(otherROIs, i + 1 : obj.getSize());
                         end
                     end
                 catch ME
@@ -129,6 +137,26 @@ classdef MovieList < MovieObject
             
             disp('Saving movie list');
             obj.save();
+        end
+        
+        function attachMovies(obj, movies, varargin)
+            
+            % Input check
+            fullrange = 1:obj.getSize();
+            ip = inputParser;
+            ip.addRequired('movies', @(x) isa(x, 'MovieData'));
+            ip.addOptional('range', fullrange, @(x) all(ismember(x, fullrange)));
+            ip.parse(movies, varargin{:});
+            
+            for movie = movies
+                canAttach = strcmp(movie.getFullPath(),...
+                    obj.movieDataFile_(ip.Results.range));
+                if any(canAttach)
+                    j = ip.Results.range(find(canAttach, 1));
+                    fprintf(1,'Attaching movie %g/%g\n',j,obj.getSize());
+                    obj.movies_{j} = movie;
+                end
+            end
         end
         
         function relocate(obj,oldRootDir,newRootDir,full)

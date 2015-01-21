@@ -114,15 +114,18 @@ classdef TestMovieList < TestMovieObject & TestCase
         function testROILists(self)
             % Test movie list composed of multiple ROIs
             self.movie = self.setUpMovie();
-            rois = self.setUpROIs(2);
+            rois = self.setUpROIs(3);
             self.setUpMovieList(rois);
             assertEqual(self.movieList.getMovie(1).getAncestor(),...
-                self.movieList.getMovie(2).getAncestor());
-            
+                self.movieList.getMovie(2).getAncestor());            
+            assertEqual(self.movieList.getMovie(1).getAncestor(),...
+                self.movieList.getMovie(3).getAncestor());
             
             self.movieList = MovieList.load(self.movieList.getFullPath(), false);
             assertEqual(self.movieList.getMovie(1).getAncestor(),...
                 self.movieList.getMovie(2).getAncestor());
+            assertEqual(self.movieList.getMovie(1).getAncestor(),...
+                self.movieList.getMovie(3).getAncestor());
         end
     end
 end
