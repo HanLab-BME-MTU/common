@@ -63,7 +63,7 @@ classdef MovieList < MovieObject
             % Get the movies from a movie list
             
             ip =inputParser;
-            allIndex = 1:numel(obj.movieDataFile_);
+            allIndex = 1 : obj.getSize();
             ip.addOptional('index',allIndex,@(x) all(ismember(x,allIndex)));
             ip.parse(varargin{:});
             
@@ -74,7 +74,7 @@ classdef MovieList < MovieObject
         function movie = getMovie(obj, i)
             % Get the movies from a movie list
             
-            assert(isscalar(i) && ismember(i,1:numel(obj.movieDataFile_)));
+            assert(isscalar(i) && ismember(i, 1 : obj.getSize()));
             movie = obj.movies_{i};
         end
         
@@ -115,6 +115,7 @@ classdef MovieList < MovieObject
                             obj.movies_{i} = MovieData.load(obj.movieDataFile_{i}, askUser);
                         end
                         
+                        % Check for other movies in the graph
                         otherROIs = obj.movies_{i}.getAncestor().getDescendants();
                         if ~isempty(otherROIs),
                             obj.attachMovies(otherROIs, i + 1 : obj.getSize());
@@ -140,7 +141,8 @@ classdef MovieList < MovieObject
         end
         
         function attachMovies(obj, movies, varargin)
-            
+            % attachMovies attaches one or several movies to a list
+
             % Input check
             fullrange = 1:obj.getSize();
             ip = inputParser;
@@ -166,7 +168,7 @@ classdef MovieList < MovieObject
             
             % Relocate the movie paths
             fprintf(1,'Relocating movies from %s to %s\n',oldRootDir,newRootDir);
-            for i=1:numel(obj.movieDataFile_);
+            for i = 1 : obj.getSize()
                 obj.movieDataFile_{i} = relocatePath(obj.movieDataFile_{i},oldRootDir,newRootDir);
             end
         end
