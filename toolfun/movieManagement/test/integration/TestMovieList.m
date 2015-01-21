@@ -15,13 +15,20 @@ classdef TestMovieList < TestMovieObject & TestCase
             self.setUp@TestMovieObject();
         end
         
-        function setUpMovieList(self)
+        function movie = setUpMovie(self)
             filename = fullfile(self.path, 'test.fake');
             fid = fopen(filename, 'w');
             fclose(fid);
             movie = MovieData.load(filename);
+        end
+        
+        function setUpMovieList(self, movies)
+
+            if nargin < 2
+                movies = self.setUpMovie();
+            end
             
-            self.movieList = MovieList(movie, self.path);
+            self.movieList = MovieList(movies, self.path);
             self.movieList.setPath(self.path);
             self.movieList.setFilename('movieList.mat');
             self.movieList.sanityCheck();
@@ -102,6 +109,15 @@ classdef TestMovieList < TestMovieObject & TestCase
             self.movieList = MovieList.load(symlinkFullPath);
             self.checkMovieList();
             assertEqual(self.movieList.getPath(), absolutePath);            
+        end
+        
+        function testROILists(self)
+            % Test movie list composed of multiple ROIs
+            self.movie = self.setUpMovie();
+            rois = self.setUpROIs(2);
+            self.setUpMovieList(rois);
+            assertEqual(self.movieList.getMovie(1).getAncestor(),...
+                self.movieList.getMovie(2).getAncestor());
         end
     end
 end
