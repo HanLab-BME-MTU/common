@@ -118,6 +118,11 @@ classdef TestMovieList < TestMovieObject & TestCase
             self.setUpMovieList(rois);
             assertEqual(self.movieList.getMovie(1).getAncestor(),...
                 self.movieList.getMovie(2).getAncestor());
+            
+            
+            self.movieList = MovieList.load(self.movieList.getFullPath(), false);
+            assertEqual(self.movieList.getMovie(1).getAncestor(),...
+                self.movieList.getMovie(2).getAncestor());
         end
     end
 end
