@@ -31,7 +31,7 @@ function matrix = getMatrix(obj,frames)
 % dZ: n = 7
 % dA: n = 8
 %
-% See also plotTracks2D, plotTracks3D
+% See also convStruct2MatNoMS, convStruct2MatIgnoreMS
 
 % Mark Kittisopikul, January 2015
 
@@ -66,7 +66,4 @@ function matrix = getMatrix(obj,frames)
     end
     % make 2D totalSegments x (8 * numTimePoints)
     matrix = matrix(:,:);
-    if(nargin < 2)
-        obj.cache.getMatrix = matrix;
-    end
 end

@@ -1,4 +1,4 @@
-classdef Tracks < handle &  matlab.mixin.Copyable
+classdef (Abstract = true) Tracks < handle  & matlab.mixin.Copyable
 % Tracks is a class that encapsulates the tracksFinal output of
 % TrackingProcess. Each individual Tracks object consists of multiple
 % segments that may merge and split. An array of Tracks objects represents
@@ -60,15 +60,13 @@ classdef Tracks < handle &  matlab.mixin.Copyable
 %                              NaN if the segment never merged
 
 % Mark Kittisopikul, January 2015
-    properties
+    properties (Abstract = true)
         % numSegments x numFrames matrix of indices. See class description.
         tracksFeatIndxCG
         % numSegments x 8 x numFrames matrix of coordinates and amplitudes. See class description.
         tracksCoordAmpCG3D
         % numEvents x 4 matrix. See class description.
         seqOfEvents
-    end
-    properties (Dependent = true)
         % 2D matrix, corresponds to tracksCoordAmpCG3D(:,:)
         tracksCoordAmpCG
         % X coordinates as nSeg x nFrame matrix = tracksCoordAmpCG3D(:,1:8:end)
@@ -107,118 +105,19 @@ classdef Tracks < handle &  matlab.mixin.Copyable
         startFrame
         % Scalar absolute at which the compound track ends
         endFrame
-    end
-    properties (Access = protected, Transient)
-        cache
+        % Number of segments in each compound track
+        % see also getNumSegments
+        numSegments
+        % Number of frames in which each compound track exists
+        numFrames
     end
     methods
-        function obj = Tracks(s)
-            % Takes a tracksFinal structure from trackCloseGapsKalman
-            if(nargin ~= 0)
-                if(~isstruct(s))
-                    s = convertMat2Struct2(s);
-                end
-                obj(numel(s)) = Tracks();
-                [obj.tracksFeatIndxCG] = deal(s.tracksFeatIndxCG);
-
-                threeD = cellfun(@(c) reshape(c,size(c,1),8,[]), ...
-                    {s.tracksCoordAmpCG},'UniformOutput',false);
-                
-                [obj.tracksCoordAmpCG3D] = deal(threeD{:});
-                [obj.seqOfEvents] = deal(s.seqOfEvents);
-            end
-        end
-        function resetCache(obj)
-            c = struct();
-            obj.cache = c;
-        end
-        function set.tracksFeatIndxCG(obj,tracksFeatIndxCG)
-            obj.tracksFeatIndxCG = tracksFeatIndxCG;
-            obj.resetCache();
-        end
-        function set.tracksCoordAmpCG3D(obj,tracksCoordAmpCG3D)
-            obj.tracksCoordAmpCG3D = tracksCoordAmpCG3D;
-            obj.resetCache();
-        end
-        function set.seqOfEvents(obj,seqOfEvents)
-            obj.seqOfEvents = seqOfEvents;
-            obj.resetCache();
-        end
-        function tracksCoordAmpCG = get.tracksCoordAmpCG(obj)
-%             tracksCoordAmpCG = obj.tracksCoordAmpCG3D(:,:);
-            tracksCoordAmpCG = reshape(obj.tracksCoordAmpCG3D,size(obj.tracksCoordAmpCG3D,1),[]);;
-        end
-        function set.tracksCoordAmpCG(obj,tracksCoordAmpCG)
-            obj.tracksCoordAmpCG3D = ... 
-                reshape(tracksCoordAmpCG,size(tracksCoordAmpCG,1),8,[]);
-        end
-        function X = get.X(obj)
-            X = obj.tracksCoordAmpCG3D(:,1,:);
-            X = X(:,:);
-        end
-        function Y = get.Y(obj)
-            Y = obj.tracksCoordAmpCG3D(:,2,:);
-            Y = Y(:,:);
-        end
-        function Z = get.Z(obj)
-            Z = obj.tracksCoordAmpCG3D(:,3,:);
-            Z = Z(:,:);
-        end
-        function A = get.A(obj)
-            A = obj.tracksCoordAmpCG3D(:,4,:);
-            A = A(:,:);
-        end
-        function dX = get.dX(obj)
-            dX = obj.tracksCoordAmpCG3D(:,5,:);
-            dX = dX(:,:);
-        end
-        function dY = get.dY(obj)
-            dY = obj.tracksCoordAmpCG3D(:,6,:);
-            dY = dY(:,:);
-        end
-        function dZ = get.dZ(obj)
-            dZ = obj.tracksCoordAmpCG3D(:,7,:);
-            dZ = dZ(:,:);
-        end
-        function dA = get.dA(obj)
-            dA = obj.tracksCoordAmpCG3D(:,8,:);
-            dA = dA(:,:);
-        end
-        function S = get.segmentStartFrame(obj)
-            S = zeros(obj.numSegments,1);
-            startIdx = obj.seqOfEvents(:,2) == 1;
-            S(obj.seqOfEvents(startIdx,3)) = obj.seqOfEvents(startIdx,1);
-        end
-        function E = get.segmentEndFrame(obj)
-            E = zeros(obj.numSegments,1);
-            endIdx = obj.seqOfEvents(:,2) == 2;
-            E(obj.seqOfEvents(endIdx,3)) = obj.seqOfEvents(endIdx,1);
-            endIdx = endIdx & ~isnan(obj.seqOfEvents(:,4));
-            E(obj.seqOfEvents(endIdx,3)) = obj.seqOfEvents(endIdx,1) - 1;
-        end
-        function O = get.parentSegment(obj)
-            O = zeros(obj.numSegments,1);
-            idx = obj.seqOfEvents(:,2) == 1;
-            O(obj.seqOfEvents(idx,3)) = obj.seqOfEvents(idx,4);
-        end
-        function D = get.spouseSegment(obj)
-            D = zeros(obj.numSegments,1);
-            idx = obj.seqOfEvents(:,2) == 2;
-            D(obj.seqOfEvents(idx,3)) = obj.seqOfEvents(idx,4);
-        end
-        function startTime = get.startFrame(obj)
-            startTime = obj.seqOfEvents(1,1);
-        end
-        function endTime = get.endFrame(obj)
-            endTime = obj.seqOfEvents(end,1);
-        end
         out = textGraph(obj)
         disp(obj)
         plot(obj,varargin)
         m = getMatrix(obj,varargin)
         s = getSparse(obj,varargin)
         n = numTimePoints(obj);
-        n = numSegments(obj,idx);
         t = totalSegments(obj)
         b = isstruct(obj)
         s = getStruct(obj)
