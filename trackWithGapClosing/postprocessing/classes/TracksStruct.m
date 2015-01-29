@@ -62,16 +62,19 @@ classdef TracksStruct < Tracks
         numFrames
     end
     methods
-        function obj = TracksStruct(s)
+        function obj = TracksStruct(tracks,movieInfo)
             % Takes a tracksFinal structure from trackCloseGapsKalman
             if(nargin ~= 0)
-                if(~isstruct(s))
-                    s = convertMat2Struct2(s);
+                if(~isstruct(tracks))
+                    tracks = convertMat2Struct2(tracks);
                 end
-                obj(numel(s)) = TracksStruct();
-                [obj.tracksFeatIndxCG] = deal(s.tracksFeatIndxCG);
-                [obj.tracksCoordAmpCG] = deal(s.tracksCoordAmpCG);
-                [obj.seqOfEvents] = deal(s.seqOfEvents);
+                if(nargin > 1)
+                    tracks = normalizeTracks(tracks,movieInfo);
+                end
+                obj(numel(tracks)) = TracksHandle();
+                [obj.tracksFeatIndxCG] = deal(tracks.tracksFeatIndxCG);
+                [obj.seqOfEvents] = deal(tracks.seqOfEvents);
+                [obj.tracksCoordAmpCG] = deal(tracks.tracksCoordAmpCG);
             end
         end
         function tracksCoordAmpCG = get.tracksCoordAmpCG(obj)

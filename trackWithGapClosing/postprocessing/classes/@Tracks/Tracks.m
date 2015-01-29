@@ -111,7 +111,13 @@ classdef (Abstract = true) Tracks < handle  & matlab.mixin.Copyable
         % Number of frames in which each compound track exists
         numFrames
     end
+    properties ( Dependent = true )
+        lifetime
+    end
     methods
+        function l = get.lifetime(obj)
+            l = obj.endFrame - obj.startFrame + 1;
+        end
         out = textGraph(obj)
         disp(obj)
         plot(obj,varargin)
