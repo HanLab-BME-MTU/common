@@ -126,10 +126,23 @@ packageIcons = arrayfun(@(x) [iconsPath filesep x.name],icons,'Unif',false);
 % Concatenate all matlab files but the documentation
 packageFiles=vertcat(packageFuns,packageFigs);
 
+% Handle namespace packages separately
+pattern = sprintf('(.*%s\\+.*)%s.*', filesep, filesep);
+hasNs = ~cellfun(@isempty, regexp(packageFiles, pattern));
+if any(hasNs)
+    nsFiles = packageFiles(hasNs);
+    packageFiles(hasNs) = [];
+    tokens = regexp(nsFiles, pattern, 'tokens');
+    nsDirs = unique(cellfun(@(x) x{1}{1},tokens, 'Unif',0));
+else
+    nsDirs = {};
+end
+
 %% Export package files
 % Create package output directory if non-existing
 disp('Creating release directory...')
 if ~isdir(outDir), mkdir(outDir); end
+
 
 % Copy function files
 nFiles = numel(packageFiles);
@@ -137,6 +150,16 @@ disp(['Copying all '  num2str(nFiles) ' files ...'])
 for j = 1:nFiles
     iLFS = max(regexp(packageFiles{j},filesep));
     copyfile(packageFiles{j},[outDir filesep packageFiles{j}(iLFS+1:end)]);
+end
+
+% Copy namespace packages
+if ~isempty(nsDirs)
+    nNsDirs = numel(nsDirs);
+    disp(['Copying all package '  num2str(nNsDirs) ' files ...'])
+    for j = 1:nNsDirs
+        iLFS = max(regexp(nsDirs{j},filesep));
+        copyfile(nsDirs{j},[outDir filesep nsDirs{j}(iLFS+1:end)]);
+    end
 end
 
 % Create icons output directory if non-existing

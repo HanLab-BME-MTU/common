@@ -659,8 +659,8 @@ classdef  MovieData < MovieObject
             else
                 isMatFile = strcmpi(varargin{1}(end-3:end), '.mat');
                 if isMatFile,
-                    obj = MovieData.loadMatFile(varargin{1});
-                    [moviePath,movieName,movieExt]= fileparts(varargin{1});
+                    [obj, absolutePath] = MovieData.loadMatFile(varargin{1});
+                    [moviePath,movieName,movieExt]= fileparts(absolutePath);
                     obj.sanityCheck(moviePath,[movieName movieExt], varargin{2:end});
                 else
                     % Backward-compatibility - call the constructor
@@ -674,9 +674,9 @@ classdef  MovieData < MovieObject
             obj = getOmeroMovies(session, varargin{:});
         end
         
-        function obj = loadMatFile(filepath)
+        function [obj, absolutePath] = loadMatFile(filepath)
             % Load a movie data from a local MAT file
-            obj = MovieObject.loadMatFile('MovieData', filepath);
+            [obj, absolutePath] = MovieObject.loadMatFile('MovieData', filepath);
         end
         
         function status=checkValue(property,value)

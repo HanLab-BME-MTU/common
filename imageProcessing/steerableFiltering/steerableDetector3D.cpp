@@ -307,6 +307,9 @@ void Filter::run() {
         orientation_[i][0] = gsl_matrix_get(evec, 0, 2);
         orientation_[i][1] = gsl_matrix_get(evec, 1, 2);
         orientation_[i][2] = gsl_matrix_get(evec, 2, 2);
+        
+        gsl_matrix_free(evec);
+        gsl_vector_free(eval);
     }
 }
 
@@ -598,7 +601,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 
 
 // compiled with:
-// export DYLD_LIBRARY_PATH=/Applications/MATLAB_R2012a.app/bin/maci64 && g++ -Wall -g -DARRAY_ACCESS_INLINING -I. -L/Applications/MATLAB_R2012a.app/bin/maci64 -I../../mex/include/ -I/Applications/MATLAB_R2012a.app/extern/include steerableDetector3D.cpp -lmx -lmex -lgsl
+// export DYLD_LIBRARY_PATH=/Applications/MATLAB_R2014b.app/bin/maci64
+// g++ -Wall -g -DARRAY_ACCESS_INLINING -I. -L/Applications/MATLAB_R2014b.app/bin/maci64 -I../../mex/include/ -I/Applications/MATLAB_R2014b.app/extern/include steerableDetector3D.cpp -lmx -lmex -lgsl
 // tested with:
 // valgrind --tool=memcheck --leak-check=full --show-reachable=yes ./a.out 2>&1 | grep steerable
 
@@ -616,4 +620,3 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     
     delete[] voxels;
 }*/
-

@@ -101,7 +101,7 @@ end
 if ~isempty(image)
     imshow(image,[]);
 else
-    imshow(ones(maxYCoord,maxXCoord),[]);
+    imshow(ones(ceil(maxYCoord),ceil(maxXCoord)),[]);
 end
 hold on
 
@@ -139,22 +139,6 @@ indxTracksNoMS = setdiff(1:numTracks,indxTracksMS);
 %plot the no M/S center positions
 plot(centerPosAllTracks(indxTracksNoMS,1),centerPosAllTracks(indxTracksNoMS,2),'.','Color',[0.7 0.7 0.7])
 
-%then plot the coordinates of merging events
-
-%get coordinates of merges
-xCoord = mergesInfoSpace(:,1:2:end);
-xCoord = xCoord(:);
-yCoord = mergesInfoSpace(:,2:2:end);
-yCoord = yCoord(:);
-
-%keep only non-zero entries
-indxKeep = find( xCoord~=0 & yCoord~=0 );
-xCoord = xCoord(indxKeep);
-yCoord = yCoord(indxKeep);
-
-%plot the merge locations
-plot(xCoord,yCoord,'b.')
-
 %then plot the coordinates of splitting events
 
 %get coordinates of splits
@@ -169,9 +153,24 @@ xCoord = xCoord(indxKeep);
 yCoord = yCoord(indxKeep);
 
 %plot the split locations
-plot(xCoord,yCoord,'r.')
+plot(xCoord,yCoord,'k+')
 
+%then plot the coordinates of merging events
+
+%get coordinates of merges
+xCoord = mergesInfoSpace(:,1:2:end);
+xCoord = xCoord(:);
+yCoord = mergesInfoSpace(:,2:2:end);
+yCoord = yCoord(:);
+
+%keep only non-zero entries
+indxKeep = find( xCoord~=0 & yCoord~=0 );
+xCoord = xCoord(indxKeep);
+yCoord = yCoord(indxKeep);
+
+%plot the merge locations
+plot(xCoord,yCoord,'rx')
 %make figure legend
-legend('no merges/splits','merges','splits')
+legend('no merges/splits','splits','merges')
 
 

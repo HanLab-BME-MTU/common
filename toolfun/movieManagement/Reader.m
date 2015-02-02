@@ -1,5 +1,59 @@
 classdef  Reader < handle
-    % Concrete implementation of MovieObject for a single movie
+    % Reader is an abstract class for reading image data in a plane-wise
+    % fashion
+    %
+    % Arguments are generally in the order C, T, Z
+    %
+    % Properties
+    % ----------
+    % (use the get methods rather than these properties)
+    % sizeX, sizeY, sizeZ, sizeC, sizeT, bitDepth
+    %
+    % Reader methods:
+    %
+    % Public Methods
+    % --------------
+    % loadImage(c, t, [z], ...) - loads an image plane at channel c, time
+    % point t, and optionally at z-plane z (default: 1)
+    % 
+    % loadStack(c, t, [Z], ...) -  loads a stack of images in channel c and
+    % timepoint t. Z is optional and is an array of integers indicating a
+    % subset of Z planes (default: 1:getSizeZ).
+    %
+    % Public Abstract Methods
+    % -----------------------
+    % (see subclasses, generally require no arguments unless indicated)
+    % getSizeX - length of the x, horizontal,  dimension as an integer
+    % getSizeY - length of the y, vertical, dimension as an integer
+    % getSizeZ - length of the z dimension as an integer
+    % getSizeC - the number of channels as an integer
+    % getSizeT - the number of time points as an integer
+    % getBitDepth - the bitdepth as an integer
+    % getImageFileNames(c,t) - the filenames of the underlying images as a cell
+    % array of character strings
+    % getChannelNames(c) - the names of the channels from metadata as a cell
+    % array of character strings; c is an array of the channels of interest
+    % 
+    % Known subclasses
+    % ----------------
+    %
+    % BioFormatsReader
+    % TiffSeriesReader
+    % HCSReader
+    % ProxyReader and subclasses (CellReader, etc.)
+    % 
+    % See also BioFormatsReader, TiffSeriesReader, HCSReader, ProxyReader,
+    % CellReader
+    
+    % Notes for Implementing Subclasses
+    %
+    % Subclasses should consider consider overloading
+    % protected methods ending with an underscore, '_'
+    % such as loadImage_ and loadStack_.
+    %
+    % The public loadImage and loadStack methods contain
+    % input validation and default parameters which should
+    % be changed minimally.
     
     properties
         sizeX
@@ -9,7 +63,7 @@ classdef  Reader < handle
         sizeT
         bitDepth
     end
-    
+       
     methods(Abstract)
         getSizeX(obj)
         getSizeY(obj)
@@ -19,10 +73,49 @@ classdef  Reader < handle
         getBitDepth(obj)
         getImageFileNames(obj)
         getChannelNames(obj)
-        loadImage(obj)
     end
     
     methods ( Access = public )
+        function I = loadImage(obj, c, t, varargin)
+        % loadImage reads a single image plane as a 2D, YX Matrix
+        %
+        % loadImage(c,t,z) reads the YX plane at (c,t,z)
+        %
+        % loadImage(c,t) reads the YX plane at (c,t,1)
+        %
+        % Note: Override if you need to overload or change how the input is
+        % checked. Otherwise override loadImage_.
+        %
+        % Example:
+        %   reader = movieData.getReader();
+        %   I = reader.loadImage(1,1);
+        %   imshow(I,[]);
+        %
+        
+        % Backwards compatability before 2015/01/01:
+        % Previously this function was abstract and therefore should be
+        % overridden by all subclasses written prior to 2015/01/01
+         
+            ip = inputParser;
+            ip.addRequired('c', ...
+                @(c) isscalar(c) && ismember(c, 1 : obj.getSizeC()));
+            ip.addRequired('t', ... 
+                @(t) isscalar(t) && ismember(t, 1 : obj.getSizeT()));
+            ip.addOptional('z', 1, ...
+                @(z) isscalar(z) && ismember(z, 1 : obj.getSizeZ()) || ...
+                    isempty(z));
+            ip.parse(c, t, varargin{:});
+            
+            z = ip.Results.z;
+            if(isempty(z))
+                z = 1;
+            end
+            
+            % Flag to avoid infinite loops
+            readerLoadImageFlag = true;
+            
+            I = obj.loadImage_(c , t , z);
+        end
         
         function I = loadStack(obj, c, t, varargin)
         % loadStack reads a Z-stack and returns a YXZ Matrix
@@ -49,16 +142,18 @@ classdef  Reader < handle
             ip = inputParser;
             ip.addRequired('c', ...
                 @(x) isscalar(x) && ismember(x, 1 : obj.getSizeC() ) );
-            % Parse c first for validation check
-            %  since getSizeT and getSizeZ may depend on a valid c.
-            ip.parse(c);
             ip.addRequired('t', ...
                 @(x) isscalar(x) && ismember(x, 1 : obj.getSizeT() ) );
-            ip.addOptional('z', 1 : obj.getSizeZ(), ...
-                @(x) all(ismember(x, 1 : obj.getSizeZ() ) ) );
+            ip.addOptional('z', [] , ...
+                @(x) all(ismember(x, 1 : obj.getSizeZ() ) ) || ...
+                    isempty(x));
             ip.parse(c, t, varargin{:});
-            t = ip.Results.t;
+
             z = ip.Results.z;
+            
+            if(isempty(z))
+                z = 1 : obj.getSizeZ();
+            end
             
             I = obj.loadStack_(c,t,z);
         end
@@ -95,12 +190,20 @@ classdef  Reader < handle
         % I = loadImage_(obj, c, t, z )
         function I = loadImage_(obj, c, t, z )
             % loadImage_ is a validation-free implementation called by
-            %   loadImage (or will be in the near future)
+            %   loadImage
             %
-            % Forward to validation version for now.
-            % This WILL be an abstract method in the future.
-
-            I = obj.loadImage(c,t,z);
+            % Forward to validation version.
+            % Either loadImage_ (recommended) or loadImage must be
+            %   overloaded by subclasses
+            
+            % Avoid infinite loop
+            if(evalin('caller','readerLoadImageFlag'))
+                error('Reader::loadImage_', ...
+                    ['Reader subclasses must either overload' ... 
+                    'loadImage or loadImage_']);
+            else
+                I = obj.loadImage(c,t,z);
+            end
         end
     end
     

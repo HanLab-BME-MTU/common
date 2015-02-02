@@ -7,8 +7,18 @@ classdef ExampleProcess < Process
         end
         
         
-        function output = loadChannelOutput(obj, iChan)
-            s = load(obj.outFilePaths_{iChan});
+        function output = loadChannelOutput(obj, iChan, varargin)
+            outputList = {};
+            nOutput = length(outputList);
+
+            ip.addRequired('iChan',@(x) obj.checkChanNum(x));
+            ip.addOptional('iOutput',1,@(x) ismember(x,1:nOutput));
+            ip.addParamValue('output','',@(x) all(ismember(x,outputList)));
+            ip.addParamValue('useCache',false,@islogical);
+            ip.parse(iChan,varargin{:})
+    
+            s = cached.load(obj.outFilePaths_{iChan},'-useCache',ip.Results.useCache);
+
             output = s.Imean;          
         end
     end

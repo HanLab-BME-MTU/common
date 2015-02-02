@@ -2,6 +2,7 @@ classdef MotionAnalysisProcess < PostTrackingProcess
     % A concrete class for analyzing tracks diffusion
     
     % Sebastien Besson, March 2012
+    % Mark Kittisopikul, Nov 2014, Added channelOutput cache
     
     methods (Access = public)
         function obj = MotionAnalysisProcess(owner, varargin)
@@ -28,13 +29,19 @@ classdef MotionAnalysisProcess < PostTrackingProcess
             
             obj = obj@PostTrackingProcess(super_args{:});
         end
+
+        function h=draw(obj,iChan,varargin)
+            h = obj.draw@PostTrackingProcess(iChan,varargin{:},'useCache',true);
+        end
+
         function varargout = loadChannelOutput(obj,iChan,varargin)
             
             % Input check
             outputList = {'diffAnalysisRes', 'tracks'};
             ip =inputParser;
             ip.addRequired('iChan',@(x) isscalar(x) && obj.checkChanNum(x));
-            ip.addOptional('iFrame',1:obj.owner_.nFrames_,@(x) all(obj.checkFrameNum(x)));
+            ip.addOptional('iFrame',[],@(x) isempty(x) || isscalar(x) && obj.checkFrameNum(x));
+            ip.addParamValue('useCache',false,@islogical);
             ip.addParamValue('output',outputList,@(x) all(ismember(x,outputList)));
             ip.parse(iChan,varargin{:})
             iFrame = ip.Results.iFrame;
@@ -43,7 +50,9 @@ classdef MotionAnalysisProcess < PostTrackingProcess
             nOutput = numel(output);
             
             % Data loading
-            s = load(obj.outFilePaths_{1,iChan},output{:});
+
+            % load outFilePaths_{1,iChan}
+            s = cached.load(obj.outFilePaths_{1,iChan}, '-useCache', ip.Results.useCache, output{:});
             
             varargout = cell(nOutput);
             for i = 1:nOutput

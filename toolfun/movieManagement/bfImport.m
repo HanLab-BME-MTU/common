@@ -166,10 +166,10 @@ if hasValidPixelSizeZ
 end
 
 % Camera bit depth
-camBitdepth = r.getBitsPerPixel();
-hasValidCamBitDepth = ~isempty(camBitdepth) && mod(camBitdepth, 2) == 0;
+camBitdepth = metadataStore.getPixelsSignificantBits(iSeries);
+hasValidCamBitDepth = ~isempty(camBitdepth) && mod(camBitdepth.getValue(), 2) == 0;
 if hasValidCamBitDepth
-    movieArgs=horzcat(movieArgs,'camBitdepth_',camBitdepth);
+    movieArgs=horzcat(movieArgs,'camBitdepth_',camBitdepth.getValue());
 end
 
 % Time interval

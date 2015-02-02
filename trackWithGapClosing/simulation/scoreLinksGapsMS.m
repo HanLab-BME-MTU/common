@@ -10,7 +10,7 @@ function [linkStats,gapStats,mergeSplitStats] = scoreLinksGapsMS(tracksFinal,tra
 %       tracksSim   : Simulated tracks as obtained from
 %                     simulateMimickCD36_MS (structure format).
 %
-%OUTPUT linkStats   : (Number of frames - 1) - by - 5 array. Row i 
+%OUTPUT linkStats   : (Number of frames - 1) - by - 5 array. Row i
 %                     corresponds to the links from frame i to frame i+1.
 %                     The columns show the number of:
 %                     (1) ground truth links;
@@ -38,26 +38,26 @@ function [linkStats,gapStats,mergeSplitStats] = scoreLinksGapsMS(tracksFinal,tra
 %                        positives, i.e. they simply count toward wrong
 %                        merges/splits, just like real features if wrongly
 %                        assigned a merge/split.
-%       
+%
 %Khuloud Jaqaman, October 2007
+%                 December 2014: modified to handle non-identical coordinates.
 
 %% process input variables
 
 %extract track information out of tracksSim
 [xyCoordAll0,xyCoordM0,xyCoordS0] = trackInfoFromStruct(tracksSim);
 
+%extract track information out of tracksFinal
 if isstruct(tracksFinal)
-
-    %extract track information out of tracksFinal
+    
     [xyCoordAll1,xyCoordM1,xyCoordS1,trackStartRow1] = ...
         trackInfoFromStruct(tracksFinal);
-
+    
     %look at merges and splits
     mergeSplit = 1;
-
+    
 else
-
-    %directly extract track information out of tracksFinal
+    
     xyCoordAll1 = zeros(size(tracksFinal,1),size(tracksFinal,2)/4);
     xyCoordAll1(:,1:2:end) = tracksFinal(:,1:8:end);
     xyCoordAll1(:,2:2:end) = tracksFinal(:,2:8:end);
@@ -66,7 +66,7 @@ else
     
     %do not look at merges and splits
     mergeSplit = 0;
-
+    
 end
 
 %get number of frames in ground truth and in tracking results
@@ -75,6 +75,65 @@ numFrames1 = size(xyCoordAll1,2)/2;
 if numFrames0 ~= numFrames1
     numFrames0 = min(numFrames0,numFrames1);
     disp('ATTENTION: different number of frames in ground truth and simulation results!')
+end
+
+%convert coordinates in tracker output to coordinates in ground truth for
+%later matching
+for iFrame = 1 : numFrames1
+    
+    %get ground truth coordinates, remove zeros/NaNs
+    coord0 = xyCoordAll0(:,iFrame*2-1:iFrame*2);
+    coord0 = coord0(coord0(:,1)~=0&~isnan(coord0(:,1)),:);
+
+    %get tracking results coordinates
+    coord1 = xyCoordAll1(:,iFrame*2-1:iFrame*2);
+    
+    %find matching using LAP
+    costMat = createDistanceMatrix(coord1,coord0);
+    posStd = 1;
+    costMat(costMat>3*posStd) = -1;
+    link1to0 = lap(costMat,-1,0,1);
+    link1to0 = link1to0(1:size(coord1,1));
+    
+    %replace coordinates with ground truth values
+    indx = find(link1to0<=size(coord0,1));
+    coord1(indx,:) = coord0(link1to0(indx),:);
+    xyCoordAll1(:,iFrame*2-1:iFrame*2) = coord1;
+    
+    %repeat for merges
+    indxM1 = find(xyCoordM1(:,1)==iFrame);
+    indxM2 = find(xyCoordM1(:,1)==iFrame+1);
+    coord1 = [xyCoordM1(indxM1,2:3); xyCoordM1(indxM2,4:5); xyCoordM1(indxM2,6:7)];
+    if ~isempty(coord1)
+        costMat = createDistanceMatrix(coord1,coord0);
+        posStd = 1;
+        costMat(costMat>3*posStd) = -1;
+        link1to0 = lap(costMat,-1,0,1);
+        link1to0 = link1to0(1:size(coord1,1));
+        indx = find(link1to0<=size(coord0,1));
+        coord1(indx,:) = coord0(link1to0(indx),:);
+        xyCoordM1(indxM1,2:3) = coord1(1:length(indxM1),:);
+        xyCoordM1(indxM2,4:5) = coord1(length(indxM1)+1:length([indxM1;indxM2]),:);
+        xyCoordM1(indxM2,6:7) = coord1(length([indxM1;indxM2])+1:end,:);
+    end
+    
+    %repeat for splits
+    indxS1 = find(xyCoordS1(:,1)==iFrame);
+    indxS2 = find(xyCoordS1(:,1)==iFrame+1);
+    coord1 = [xyCoordS1(indxS1,4:5); xyCoordS1(indxS1,6:7); xyCoordS1(indxS2,2:3)];
+    if ~isempty(coord1)
+        costMat = createDistanceMatrix(coord1,coord0);
+        posStd = 1;
+        costMat(costMat>3*posStd) = -1;
+        link1to0 = lap(costMat,-1,0,1);
+        link1to0 = link1to0(1:size(coord1,1));
+        indx = find(link1to0<=size(coord0,1));
+        coord1(indx,:) = coord0(link1to0(indx),:);
+        xyCoordS1(indxS1,4:5) = coord1(1:length(indxS1),:);
+        xyCoordS1(indxS1,6:7) = coord1(length(indxS1)+1:length([indxS1;indxS1]),:);
+        xyCoordS1(indxS2,2:3) = coord1(length([indxS1;indxS1])+1:end,:);
+    end
+    
 end
 
 %% compare links (implicitly including merges and splits)
@@ -102,7 +161,7 @@ for iFrame = 1 : numFrames0 - 1
     
     %get number of links in tracking results
     numLinksTrackCode12 = length(find( tracksCode12(:,1)~=0 & tracksCode12(:,3)~=0 ));
-            
+    
     %% number of correct links from tracking code ...
     
     %get common links between ground truth and tracking results
@@ -125,7 +184,7 @@ for iFrame = 1 : numFrames0 - 1
     
     %% number of links from tracking code involving false detection
     %% positives ...
-        
+    
     %get number of all links in tracking results that involve a false
     %positive (which are obviously wrong)
     numLinksFalse12 = length(find( ...
@@ -174,17 +233,17 @@ for iGap = 1 : numGaps
             (xyCoordBef1(2) == xyCoordAll0(:,(frameBef-1)*2+2)));
         
         xyCoordAft0 = xyCoordAll0(indx,(frameAft-1)*2+1:(frameAft-1)*2+2); %#ok<FNDSB>
-
+        
         %store wether gap is correctly closed (0) or not (1)
         gapStats(iGap,:) = [gapLength ~ismember(xyCoordAft1,xyCoordAft0,'rows')];
-
+        
     else
-
+        
         %indicate that gap involves detection artifacts
         gapStats(iGap,:) = [gapLength 2];
         
     end
-        
+    
 end
 
 %% check merges and splits
@@ -197,7 +256,7 @@ if mergeSplit
     %get number of merges in ground truth and tracking results
     numMerge0 = size(xyCoordM0,1);
     numMerge1 = size(xyCoordM1,1);
-        
+    
     %go over all merges in tracking results ...
     for iMerge = 1 : numMerge1
         
@@ -210,38 +269,40 @@ if mergeSplit
         xyCoordMBef12 = xyCoordM1(iMerge,6:7);
         
         %check if this merge exists in the ground truth
-        [~,indxGT] = ismember([timeMerge xyCoordMAft1],xyCoordM0(:,1:3),'rows');
+        xyCoordM0tmp = xyCoordM0;
+        [~,indxGTtmp] = ismember([timeMerge xyCoordMAft1],xyCoordM0tmp(:,1:3),'rows');
+        indxGT = [];
+        i = -1;
+        while indxGTtmp > 0
+            i = i + 1;
+            indxGT = [indxGT; indxGTtmp+i]; %#ok<AGROW>
+            xyCoordM0tmp(indxGTtmp,:) = [];
+            [~,indxGTtmp] = ismember([timeMerge xyCoordMAft1],xyCoordM0tmp(:,1:3),'rows');
+        end
         
         %if merge exists in ground truth ...
-        if indxGT > 0
-            
-            %get coordinates of merging features in ground truth
-            xyCoordMBef01 = xyCoordM0(indxGT,4:5);
-            xyCoordMBef02 = xyCoordM0(indxGT,6:7);
-            
-            %find how many tracking and ground truth coordinates are equivalent
-            numEquiv = sum( ismember([xyCoordMBef11; xyCoordMBef12],...
-                [xyCoordMBef01; xyCoordMBef02],'rows') );
-            
-            %update number of correct merges based on numEquiv
-            switch numEquiv
+        if ~isempty(indxGT)
+            numCorrectMergesTmp = zeros(size(indxGT));
+            for iLoop = 1 : length(indxGT)
                 
-                case 2 %if both coordinates have equivalents
-                    
-                    %add one to number of correct merges
-                    numCorrectMerges = numCorrectMerges + 1;
-                    
-                case 1 %if only one coordinate has an equivalent
-                    
-                    %add 1/2 to number of correct merges
-                    numCorrectMerges = numCorrectMerges + 0.5;
-                    
-                case 0 %if neither coordinate has an equivalent
-                    
-                    %don't add anything to number of correct merges
-                    
-            end %(switch numEquiv)
+                %get merge index in ground truth list
+                iGT = indxGT(iLoop);
+                
+                %get coordinates of merging features in ground truth
+                xyCoordMBef01 = xyCoordM0(iGT,4:5);
+                xyCoordMBef02 = xyCoordM0(iGT,6:7);
+                
+                %find how many tracking and ground truth coordinates are equivalent
+                numEquiv = sum( ismember([xyCoordMBef11; xyCoordMBef12],...
+                    [xyCoordMBef01; xyCoordMBef02],'rows') );
+                
+                %update number of correct merges based on numEquiv
+                %1 = both correct; 0.5 = 1 is correct; 0 = both not correct
+                numCorrectMergesTmp(iLoop) = numEquiv / 2;
+                
+            end %(for iLoop = 1 : length(indxGT))
             
+            numCorrectMerges = numCorrectMerges + max(numCorrectMergesTmp);
         end %(if ~isempty(indxGT))
         
     end %(for iMerge = 1 : numMerge1)
@@ -252,7 +313,7 @@ if mergeSplit
     %get number of splits in ground truth and tracking results
     numSplit0 = size(xyCoordS0,1);
     numSplit1 = size(xyCoordS1,1);
-        
+    
     %go over all splits in tracking results ...
     for iSplit = 1 : numSplit1
         
@@ -265,38 +326,40 @@ if mergeSplit
         xyCoordSAft12 = xyCoordS1(iSplit,6:7);
         
         %check if this split exists in the ground truth
-        [~,indxGT] = ismember([timeSplit xyCoordSBef1],xyCoordS0(:,1:3),'rows');
+        xyCoordS0tmp = xyCoordS0;
+        [~,indxGTtmp] = ismember([timeSplit xyCoordSBef1],xyCoordS0tmp(:,1:3),'rows');
+        indxGT = [];
+        i = -1;
+        while indxGTtmp > 0
+            i = i + 1;
+            indxGT = [indxGT; indxGTtmp+i]; %#ok<AGROW>
+            xyCoordS0tmp(indxGTtmp,:) = [];
+            [~,indxGTtmp] = ismember([timeSplit xyCoordSBef1],xyCoordS0tmp(:,1:3),'rows');
+        end
         
         %if split exists in ground truth ...
-        if indxGT > 0
-            
-            %get coordinates of splitting features in ground truth
-            xyCoordSAft01 = xyCoordS0(indxGT,4:5);
-            xyCoordSAft02 = xyCoordS0(indxGT,6:7);
-            
-            %find how many tracking and ground truth coordinates are equivalent
-            numEquiv = sum( ismember([xyCoordSAft11; xyCoordSAft12],...
-                [xyCoordSAft01; xyCoordSAft02],'rows') );
-            
-            %update number of correct splits based on numEquiv
-            switch numEquiv
+        if ~isempty(indxGT)
+            numCorrectSplitsTmp = zeros(size(indxGT));
+            for iLoop = 1 : length(indxGT)
                 
-                case 2 %if both coordinates have equivalents
-                    
-                    %add one to number of correct splits
-                    numCorrectSplits = numCorrectSplits + 1;
-                    
-                case 1 %if only one coordinate has an equivalent
-                    
-                    %add 1/2 to number of correct splits
-                    numCorrectSplits = numCorrectSplits + 0.5;
-                    
-                case 0 %if neither coordinate has an equivalent
-                    
-                    %don't add anything to number of correct splits
-                    
-            end %(switch numEquiv)
+                %get split index in ground truth list
+                iGT = indxGT(iLoop);
+                
+                %get coordinates of splitting features in ground truth
+                xyCoordSAft01 = xyCoordS0(iGT,4:5);
+                xyCoordSAft02 = xyCoordS0(iGT,6:7);
+                
+                %find how many tracking and ground truth coordinates are equivalent
+                numEquiv = sum( ismember([xyCoordSAft11; xyCoordSAft12],...
+                    [xyCoordSAft01; xyCoordSAft02],'rows') );
+                
+                %update number of correct splits based on numEquiv
+                %1 = both correct; 0.5 = 1 is correct; 0 = both not correct
+                numCorrectSplitsTmp(iLoop) = numEquiv / 2;
+                
+            end %(for iLoop = 1 : length(indxGT))
             
+            numCorrectSplits = numCorrectSplits + max(numCorrectSplitsTmp);
         end %(if ~isempty(indxGT))
         
     end %(for iSplit = 1 : numSplit1)
@@ -329,7 +392,7 @@ trackStartRow = zeros(numTracks,1);
 
 %go over all tracks ...
 for i = 1 : numTracks
-
+    
     %get sequence of events of track
     seqOfEvents = tracks(i).seqOfEvents;
     
@@ -342,19 +405,19 @@ for i = 1 : numTracks
     xyCoordTmp = zeros(size(tracksCoordAmpCG,1),numFrames*2);
     xyCoordTmp(:,2*(startTime-1)+1:2:2*(endTime-1)+1) = tracksCoordAmpCG(:,1:8:end);
     xyCoordTmp(:,2*(startTime-1)+2:2:2*(endTime-1)+2) = tracksCoordAmpCG(:,2:8:end);
-
+    
     %determine row where this compound track starts in xyCoordAll
     trackStartRow(i) = size(xyCoordAll,1) + 1;
-
+    
     %get merge events
     mergeIndx = find(seqOfEvents(:,2)==2 & ~isnan(seqOfEvents(:,4)));
-
+    
     %go over all merges
     for iMerge = mergeIndx'
-
+        
         %get merge time
         timeMerge = seqOfEvents(iMerge,1);
-
+        
         %store coordinates belonging to this merge in xyCoordM
         xyCoordM = [xyCoordM; [timeMerge ...
             xyCoordTmp(seqOfEvents(iMerge,4),2*(timeMerge-1)+1:2*(timeMerge-1)+2) ...
@@ -366,7 +429,7 @@ for i = 1 : numTracks
             xyCoordTmp(seqOfEvents(iMerge,4),2*(timeMerge-1)+1:2*(timeMerge-1)+2);
         
     end
-
+    
     %get split events
     splitIndx = find(seqOfEvents(:,2)==1 & ~isnan(seqOfEvents(:,4)));
     
@@ -385,12 +448,12 @@ for i = 1 : numTracks
         %add coordinates before split to splitting track in xyCoordTmp
         xyCoordTmp(seqOfEvents(iSplit,3),2*(timeSplit-2)+1:2*(timeSplit-2)+2) = ...
             xyCoordTmp(seqOfEvents(iSplit,4),2*(timeSplit-2)+1:2*(timeSplit-2)+2);
-
+        
     end
-
+    
     %store coordinates in xyCoordAll
     xyCoordAll = [xyCoordAll; xyCoordTmp]; %#ok<AGROW>
-
+    
 end
 
 %replace NaNs by zero
