@@ -101,37 +101,41 @@ for iFrame = 1 : numFrames1
     xyCoordAll1(:,iFrame*2-1:iFrame*2) = coord1;
     
     %repeat for merges
-    indxM1 = find(xyCoordM1(:,1)==iFrame);
-    indxM2 = find(xyCoordM1(:,1)==iFrame+1);
-    coord1 = [xyCoordM1(indxM1,2:3); xyCoordM1(indxM2,4:5); xyCoordM1(indxM2,6:7)];
-    if ~isempty(coord1)
-        costMat = createDistanceMatrix(coord1,coord0);
-        posStd = 1;
-        costMat(costMat>3*posStd) = -1;
-        link1to0 = lap(costMat,-1,0,1);
-        link1to0 = link1to0(1:size(coord1,1));
-        indx = find(link1to0<=size(coord0,1));
-        coord1(indx,:) = coord0(link1to0(indx),:);
-        xyCoordM1(indxM1,2:3) = coord1(1:length(indxM1),:);
-        xyCoordM1(indxM2,4:5) = coord1(length(indxM1)+1:length([indxM1;indxM2]),:);
-        xyCoordM1(indxM2,6:7) = coord1(length([indxM1;indxM2])+1:end,:);
+    if ~isempty(xyCoordM1)
+        indxM1 = find(xyCoordM1(:,1)==iFrame);
+        indxM2 = find(xyCoordM1(:,1)==iFrame+1);
+        coord1 = [xyCoordM1(indxM1,2:3); xyCoordM1(indxM2,4:5); xyCoordM1(indxM2,6:7)];
+        if ~isempty(coord1)
+            costMat = createDistanceMatrix(coord1,coord0);
+            posStd = 1;
+            costMat(costMat>3*posStd) = -1;
+            link1to0 = lap(costMat,-1,0,1);
+            link1to0 = link1to0(1:size(coord1,1));
+            indx = find(link1to0<=size(coord0,1));
+            coord1(indx,:) = coord0(link1to0(indx),:);
+            xyCoordM1(indxM1,2:3) = coord1(1:length(indxM1),:);
+            xyCoordM1(indxM2,4:5) = coord1(length(indxM1)+1:length([indxM1;indxM2]),:);
+            xyCoordM1(indxM2,6:7) = coord1(length([indxM1;indxM2])+1:end,:);
+        end
     end
     
     %repeat for splits
-    indxS1 = find(xyCoordS1(:,1)==iFrame);
-    indxS2 = find(xyCoordS1(:,1)==iFrame+1);
-    coord1 = [xyCoordS1(indxS1,4:5); xyCoordS1(indxS1,6:7); xyCoordS1(indxS2,2:3)];
-    if ~isempty(coord1)
-        costMat = createDistanceMatrix(coord1,coord0);
-        posStd = 1;
-        costMat(costMat>3*posStd) = -1;
-        link1to0 = lap(costMat,-1,0,1);
-        link1to0 = link1to0(1:size(coord1,1));
-        indx = find(link1to0<=size(coord0,1));
-        coord1(indx,:) = coord0(link1to0(indx),:);
-        xyCoordS1(indxS1,4:5) = coord1(1:length(indxS1),:);
-        xyCoordS1(indxS1,6:7) = coord1(length(indxS1)+1:length([indxS1;indxS1]),:);
-        xyCoordS1(indxS2,2:3) = coord1(length([indxS1;indxS1])+1:end,:);
+    if ~isempty(xyCoordS1)
+        indxS1 = find(xyCoordS1(:,1)==iFrame);
+        indxS2 = find(xyCoordS1(:,1)==iFrame+1);
+        coord1 = [xyCoordS1(indxS1,4:5); xyCoordS1(indxS1,6:7); xyCoordS1(indxS2,2:3)];
+        if ~isempty(coord1)
+            costMat = createDistanceMatrix(coord1,coord0);
+            posStd = 1;
+            costMat(costMat>3*posStd) = -1;
+            link1to0 = lap(costMat,-1,0,1);
+            link1to0 = link1to0(1:size(coord1,1));
+            indx = find(link1to0<=size(coord0,1));
+            coord1(indx,:) = coord0(link1to0(indx),:);
+            xyCoordS1(indxS1,4:5) = coord1(1:length(indxS1),:);
+            xyCoordS1(indxS1,6:7) = coord1(length(indxS1)+1:length([indxS1;indxS1]),:);
+            xyCoordS1(indxS2,2:3) = coord1(length([indxS1;indxS1])+1:end,:);
+        end
     end
     
 end

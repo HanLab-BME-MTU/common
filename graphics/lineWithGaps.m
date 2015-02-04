@@ -8,10 +8,11 @@ function [ h ] = lineWithGaps( varargin )
 % -----------
 % Handle - Line handle to reuse instead of creating a new line
 %
-% Delimeter - Delimeter to use between columns. Default: Nan
+% Delimeter - Delimeter to use between columns. Default: NaN.
 %   Possible gap Delimeters are NaN, +Inf, or -Inf.
 %
-% RemoveOtherGaps - logical value whether to remove other gaps
+% RemoveOtherGaps - logical value whether to remove other gaps. 
+%                   Default: 'false'.
 % 
 % LineSpec parameters are forwarded to the built-in line function.
 %
