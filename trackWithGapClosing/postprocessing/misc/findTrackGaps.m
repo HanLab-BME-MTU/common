@@ -1,7 +1,7 @@
-function gapInfo = findTrackGaps(trackedFeatureInfo)
+function [gapInfo,gapInfoSpace] = findTrackGaps(trackedFeatureInfo)
 %FINDTRACKGAPS finds the gaps in each track and gives back their location and length
 %
-%SYNOPSIS gapInfo = findTrackGaps(trackedFeatureInfo)
+%SYNOPSIS [gapInfo,gapInfoSpace] = findTrackGaps(trackedFeatureInfo)
 %
 %INPUT  trackedFeatureInfo: -- EITHER -- 
 %                           Output of trackWithGapClosing:
@@ -51,6 +51,8 @@ function gapInfo = findTrackGaps(trackedFeatureInfo)
 %                           segment before it.
 %                           6th column: ratio of gap length to length of
 %                           segment after it.
+%       gapInfoSpace      : An array with 1 column, continuing gapInfo,
+%                           storing net displacement during each gap.
 %
 %Khuloud Jaqaman, February 2007
 
@@ -138,10 +140,12 @@ end
 trackSEL = getTrackSEL(trackedFeatureInfo);
 
 %make new matrix which contains only one column per time point
+trackedFeatureInfoOrig = trackedFeatureInfo;
 trackedFeatureInfo = trackedFeatureInfo(:,1:8:end);
 
 %alocate memory for output (assume that each track will have 10 gaps on average)
 gapInfo = zeros(10*numTracks,6);
+gapInfoSpace = zeros(10*numTracks,1);
 
 %assign value of index showing last stored position in gapInfo.
 indxLast = 0;
@@ -194,7 +198,14 @@ for i = 1 : numTracks
             %place the gaps of current track in gapInfo
             gapInfo(indxLast+1:indxLast+numGaps,:) = [i*ones(numGaps,1) ...
                 j*ones(numGaps,1) gapStart gapLength lengthRatio];
-
+            
+            %output displacement during each gap
+            xCoord = trackedFeatureInfoOrig(iBig,1:8:end);
+            yCoord = trackedFeatureInfoOrig(iBig,2:8:end);
+            dispGap = sqrt((xCoord(gapEnd+1)-xCoord(gapStart-1)).^2 + ...
+                (yCoord(gapEnd+1)-yCoord(gapStart-1)).^2);
+            gapInfoSpace(indxLast+1:indxLast+numGaps,:) = dispGap;
+            
             %update indxLast
             indxLast = indxLast + numGaps;
 
@@ -204,7 +215,9 @@ for i = 1 : numTracks
 end %(for i = 1 : numTracks)
 
 %remove any unused entries in gapInfo
-gapInfo = gapInfo(gapInfo(:,1)~=0,:);
+indxKeep = find(gapInfo(:,1)~=0);
+gapInfo = gapInfo(indxKeep,:);
+gapInfoSpace = gapInfoSpace(indxKeep,:);
 
 
 %%%%% ~~ the end ~~ %%%%%

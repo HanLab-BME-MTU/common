@@ -201,7 +201,7 @@ end
 %% evaluate gaps
 
 %find gaps in tracks from tracking code
-gapInfo = findTrackGaps(tracksFinal);
+[gapInfo,gapInfoSpace] = findTrackGaps(tracksFinal);
 numGaps = size(gapInfo,1);
 
 %allocate memory for gapStats
