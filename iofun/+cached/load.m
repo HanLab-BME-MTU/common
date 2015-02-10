@@ -127,7 +127,7 @@ if(~isempty(options))
     key = strjoin( [filename options], ',');
 end
 
-if(reset || clearKey && cache.isKey(key))
+if((reset || clearKey) && cache.isKey(key))
     cache.remove(key);
 end
 

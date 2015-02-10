@@ -7,11 +7,12 @@ classdef ExternalProcess < Process
             % Input check
             ip = inputParser;
             ip.addRequired('owner',@(x) isa(x,'MovieData'));
+            ip.addOptional('name',ExternalProcess.getName(),@ischar);
             ip.parse(owner,varargin{:});
             
             % Constructor of the DummyDetectionProcess
             super_args{1} = owner;
-            super_args{2} = ExternalProcess.getName();
+            super_args{2} = ip.Results.name;
             obj = obj@Process(super_args{:});
             obj.funName_ = @(x) x;
             obj.funParams_ = ExternalProcess.getDefaultParams(varargin);
