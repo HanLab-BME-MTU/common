@@ -77,39 +77,23 @@ classdef MatFileCache < cached.FileCache
                 S = evalin('caller',variables{1});
                 if(regexpFlag)
                     % if struct and regexp, filter the fields
-                    filters = variables;
-                    filter = ['(' strjoin(filters,')|(') ')'];
-                    variables  = fieldnames(S);
-                    values = struct2cell(S);
-                    startIdx = regexp(variables,filter,'once');
-                    filter = ~cellfun('isempty',startIdx);
-                    variables = variables(filter);
-                    values = values(filter);
-                    S = cell2struct(values,variables);
+                    S = regexpfields(S,variables{:});
                 end
             elseif(regexpFlag)
                 % if not struct and regexp, filter the caller workspace
-                varList = strjoin(variables,',');
-                variables = evalin('caller',['who(''-regexp'',' varList ')']);
+                argList = strjoin(['caller' '-regexp' variables],''',''');
+                S = evalin('caller',['workspace2struct(''' argList ''')']);
             elseif(isempty(variables))
-                variables = evalin('caller','who');
-            end
-
-            if(~exist('S','var'))
-                % if we have not constructed the struct yet, do so from the caller
-                varList = strjoin(variables,',');
-                [values{1:length(variables)}] = evalin('caller',['deal(' varList ');']);
-                S = cell2struct(values(:),variables(:));
+                S = evalin('caller','worksapce2struct');
+            else
+                argList = strjoin(['caller' variables],''',''');
+                S = evalin('caller',['workspace2struct(''' argList ''')']);
             end
 
             if(appendFlag)
                 % if appendFlag, then merge the old struct and the new struct
-                variables = fieldnames(S);
-                values = struct2cell(S);
-                [oldFields,oldFieldsIdx] = setdiff(fieldnames(oldS),variables);
-                oldValues = struct2cell(oldS);
-                oldValues = oldValues(oldFieldsIdx);
-                S = cell2struct( [oldValues(:) ; values(:) ], [oldFields(:) ; variables(:)] );
+                % new fields take precedence
+                S = merge(S,oldS);
             end
 
             
@@ -151,6 +135,7 @@ classdef MatFileCache < cached.FileCache
                 end
                 
             elseif(~R.all_variables)
+                % no variables specified and all variables were not cached
                 S = load(key);
                 R.all_variables = true;
                 obj.setData(key,S,R);
