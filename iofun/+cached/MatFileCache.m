@@ -90,7 +90,9 @@ classdef MatFileCache < cached.FileCache
             elseif(regexpFlag)
                 % if not struct and regexp, filter the caller workspace
                 varList = strjoin(variables,',');
-                variables = evalin('caller',['whos(''-regexp'',' varList ')']);
+                variables = evalin('caller',['who(''-regexp'',' varList ')']);
+            elseif(isempty(variables))
+                variables = evalin('caller','who');
             end
 
             if(~exist('S','var'))
@@ -161,7 +163,8 @@ classdef MatFileCache < cached.FileCache
                 if(isstruct(S))
                     S_fields = fieldnames(S);
                     for f = 1:length(S_fields)
-                    assignin('caller',S_fields{f},S.(S_fields{f}));
+                        assignin('caller',S_fields{f},S.(S_fields{f}));
+                    end
                 end
             end
         end
