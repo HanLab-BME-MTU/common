@@ -10,7 +10,7 @@ function [ varargout ] = aliveMask( obj )
         end
         varargout{1} = mask;
     else
-        varargout = cellfun(@aliveMask,num2cell(obj(1:nargout)),'UniformOutput',false);
+        [varargout{1:nargout}] = cellfun(@aliveMask,num2cell(obj(1:nargout)),'UniformOutput',false);
     end
 
 end

@@ -13,6 +13,7 @@ function tracksCoordAmpCG = getFeatFromIdx(tracks,movieInfo)
     end
     clear movieInfo;
     trackSEL = getTrackSEL(tracks);
+    tracksCoordAmpCG = cell(1,length(tracks));
     for iTrack = 1:length(tracks)
         frames = trackSEL(iTrack,1):trackSEL(iTrack,2);
         idx = tracks(iTrack).tracksFeatIndxCG;

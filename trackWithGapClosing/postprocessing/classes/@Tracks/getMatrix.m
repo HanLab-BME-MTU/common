@@ -20,15 +20,15 @@ function matrix = getMatrix(obj,frames)
 % matrix3D = reshape(matrix,size(matrix,1),8,[]);
 %
 % For matrix(:,n:8:end) or matrix3D(:,n,:)
-% X: n = 1
-% Y: n = 2
-% Z: n = 3
+% x: n = 1
+% y: n = 2
+% z: n = 3
 % A: n = 4
 %
 % Uncertainties:
-% dX: n = 5
-% dY: n = 6
-% dZ: n = 7
+% dx: n = 5
+% dy: n = 6
+% dz: n = 7
 % dA: n = 8
 %
 % See also convStruct2MatNoMS, convStruct2MatIgnoreMS

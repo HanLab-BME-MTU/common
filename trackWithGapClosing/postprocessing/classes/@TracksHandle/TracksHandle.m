@@ -7,28 +7,28 @@ classdef TracksHandle < Tracks
 %
 % Mark Kittisopikul, January 2015
     properties
-        % X coordinates as nSeg x nFrame matrix = tracksCoordAmpCG3D(:,1:8:end)
+        % x coordinates as nSeg by nFrame matrix = tracksCoordAmpCG3D(:,1:8:end)
         % Column is relative to the startFrame
-        X
-        % Y coordinates as nSeg x nFrame matrix = tracksCoordAmpCG3D(:,2:8:end)
+        x
+        % Y coordinates as nSeg by nFrame matrix = tracksCoordAmpCG3D(:,2:8:end)
         % Column is relative to the startFrame
-        Y
-        % Z coordinates as nSeg x nFrame matrix = tracksCoordAmpCG3D(:,3:8:end)
+        y
+        % Z coordinates as nSeg by nFrame matrix = tracksCoordAmpCG3D(:,3:8:end)
         % Column is relative to the startFrame
-        Z
-        % Amplitude as nSeg x nFrame matrix = tracksCoordAmpCG3D(:,4:8:end)
+        z
+        % Amplitude as nSeg by nFrame matrix = tracksCoordAmpCG3D(:,4:8:end)
         % Column is relative to the startFrame
         A
-        % X uncertainty as nSeg x nFrame matrix = tracksCoordAmpCG3D(:,5:8:end)
+        % X uncertainty as nSeg by nFrame matrix = tracksCoordAmpCG3D(:,5:8:end)
         % Column is relative to the startFrame
-        dX
-        % Y uncertainty as nSeg x nFrame matrix = tracksCoordAmpCG3D(:,6:8:end)
+        dx
+        % Y uncertainty as nSeg by nFrame matrix = tracksCoordAmpCG3D(:,6:8:end)
         % Column is relative to the startFrame
-        dY
-        % Z uncertainty as nSeg x nFrame matrix = tracksCoordAmpCG3D(:,7:8:end)
+        dy
+        % Z uncertainty as nSeg by nFrame matrix = tracksCoordAmpCG3D(:,7:8:end)
         % Column is relative to the startFrame
-        dZ
-        % A uncertainty as nSeg x nFrame matrix = tracksCoordAmpCG3D(:,8:8:end)
+        dz
+        % A uncertainty as nSeg by nFrame matrix = tracksCoordAmpCG3D(:,8:8:end)
         % Column is relative to the startFrame
         dA
         % Column vector for the absolute time point each segment started
@@ -89,33 +89,33 @@ classdef TracksHandle < Tracks
             tracksCoordAmpCG = obj.tracksCoordAmpCG3D(:,:);
         end
         function set.tracksCoordAmpCG3D(obj,tracksCoordAmpCG3D)
-            obj.X  = tracksCoordAmpCG3D(:,1,:);
-            obj.Y  = tracksCoordAmpCG3D(:,2,:);
-            obj.Z  = tracksCoordAmpCG3D(:,3,:);
+            obj.x  = tracksCoordAmpCG3D(:,1,:);
+            obj.y  = tracksCoordAmpCG3D(:,2,:);
+            obj.z  = tracksCoordAmpCG3D(:,3,:);
             obj.A  = tracksCoordAmpCG3D(:,4,:);
-            obj.dX = tracksCoordAmpCG3D(:,5,:);
-            obj.dY = tracksCoordAmpCG3D(:,6,:);
-            obj.dZ = tracksCoordAmpCG3D(:,7,:);
+            obj.dx = tracksCoordAmpCG3D(:,5,:);
+            obj.dy = tracksCoordAmpCG3D(:,6,:);
+            obj.dz = tracksCoordAmpCG3D(:,7,:);
             obj.dA = tracksCoordAmpCG3D(:,8,:);
             
-            obj.X  = obj.X(:,:);
-            obj.Y  = obj.Y(:,:);
-            obj.Z  = obj.Z(:,:);
+            obj.x  = obj.x(:,:);
+            obj.y  = obj.y(:,:);
+            obj.z  = obj.z(:,:);
             obj.A  = obj.A(:,:);
-            obj.dX = obj.dX(:,:);
-            obj.dY = obj.dY(:,:);
-            obj.dZ = obj.dZ(:,:);
+            obj.dx = obj.dx(:,:);
+            obj.dy = obj.dy(:,:);
+            obj.dz = obj.dz(:,:);
             obj.dA = obj.dA(:,:);
         end
         function tracksCoordAmpCG3D = get.tracksCoordAmpCG3D(obj)
             tracksCoordAmpCG3D = zeros(obj.numSegments,8,obj.numFrames);
-            tracksCoordAmpCG3D(:,1,:) = obj.X;
-            tracksCoordAmpCG3D(:,2,:) = obj.Y;
-            tracksCoordAmpCG3D(:,3,:) = obj.Z;
+            tracksCoordAmpCG3D(:,1,:) = obj.x;
+            tracksCoordAmpCG3D(:,2,:) = obj.y;
+            tracksCoordAmpCG3D(:,3,:) = obj.z;
             tracksCoordAmpCG3D(:,4,:) = obj.A;
-            tracksCoordAmpCG3D(:,5,:) = obj.dX;
-            tracksCoordAmpCG3D(:,6,:) = obj.dY;
-            tracksCoordAmpCG3D(:,7,:) = obj.dZ;
+            tracksCoordAmpCG3D(:,5,:) = obj.dx;
+            tracksCoordAmpCG3D(:,6,:) = obj.dy;
+            tracksCoordAmpCG3D(:,7,:) = obj.dz;
             tracksCoordAmpCG3D(:,8,:) = obj.dA;
         end
         function set.seqOfEvents(obj,seqOfEvents)
@@ -170,10 +170,10 @@ classdef TracksHandle < Tracks
             obj.cache = c;
         end
         function N = get.numSegments(obj)
-            N = size(obj.X,1);
+            N = size(obj.x,1);
         end
         function N = get.numFrames(obj)
-            N = size(obj.X,2);
+            N = size(obj.x,2);
         end
     end
 end

@@ -69,28 +69,28 @@ classdef (Abstract = true) Tracks < handle  & matlab.mixin.Copyable
         seqOfEvents
         % 2D matrix, corresponds to tracksCoordAmpCG3D(:,:)
         tracksCoordAmpCG
-        % X coordinates as nSeg x nFrame matrix = tracksCoordAmpCG3D(:,1:8:end)
+        % x coordinates as nSeg by nFrame matrix = tracksCoordAmpCG3D(:,1:8:end)
         % Column is relative to the startFrame
-        X
-        % Y coordinates as nSeg x nFrame matrix = tracksCoordAmpCG3D(:,2:8:end)
+        x
+        % Y coordinates as nSeg by nFrame matrix = tracksCoordAmpCG3D(:,2:8:end)
         % Column is relative to the startFrame
-        Y
-        % Z coordinates as nSeg x nFrame matrix = tracksCoordAmpCG3D(:,3:8:end)
+        y
+        % Z coordinates as nSeg by nFrame matrix = tracksCoordAmpCG3D(:,3:8:end)
         % Column is relative to the startFrame
-        Z
-        % Amplitude as nSeg x nFrame matrix = tracksCoordAmpCG3D(:,4:8:end)
+        z
+        % Amplitude as nSeg by nFrame matrix = tracksCoordAmpCG3D(:,4:8:end)
         % Column is relative to the startFrame
         A
-        % X uncertainty as nSeg x nFrame matrix = tracksCoordAmpCG3D(:,5:8:end)
+        % X uncertainty as nSeg by nFrame matrix = tracksCoordAmpCG3D(:,5:8:end)
         % Column is relative to the startFrame
-        dX
-        % Y uncertainty as nSeg x nFrame matrix = tracksCoordAmpCG3D(:,6:8:end)
+        dx
+        % Y uncertainty as nSeg by nFrame matrix = tracksCoordAmpCG3D(:,6:8:end)
         % Column is relative to the startFrame
-        dY
-        % Z uncertainty as nSeg x nFrame matrix = tracksCoordAmpCG3D(:,7:8:end)
+        dy
+        % Z uncertainty as nSeg by nFrame matrix = tracksCoordAmpCG3D(:,7:8:end)
         % Column is relative to the startFrame
-        dZ
-        % A uncertainty as nSeg x nFrame matrix = tracksCoordAmpCG3D(:,8:8:end)
+        dz
+        % A uncertainty as nSeg by nFrame matrix = tracksCoordAmpCG3D(:,8:8:end)
         % Column is relative to the startFrame
         dA
         % Column vector for the absolute time point each segment started
@@ -113,10 +113,37 @@ classdef (Abstract = true) Tracks < handle  & matlab.mixin.Copyable
     end
     properties ( Dependent = true )
         lifetime
+        nSeg
+        f
+        t
+        start
     end
     methods
         function l = get.lifetime(obj)
             l = obj.endFrame - obj.startFrame + 1;
+        end
+        function n = get.nSeg(obj)
+            n = obj.numSegments;
+        end
+        function f = get.f(obj)
+            f = obj.startFrame : obj.endFrame;
+        end
+        function t = get.t(obj)
+            t = obj.f - 1;
+        end
+        function s = get.start(obj)
+            s = obj.startFrame;
+            warning(['Tracks.end and Tracks.start are deprecated.' ...
+                    'Use Tracks.endFrame and Tracks.startFrame instead']);
+        end
+        function varargout = end(obj,k,n)
+            if(nargin == 1)
+                warning(['Tracks.end and Tracks.start are deprecated.' ...
+                    'Use Tracks.endFrame and Tracks.startFrame instead']);
+                [varargout{1:length(obj)}] = deal(obj.endFrame);
+            else
+                varargout{1} = builtin('end',obj,k,n);
+            end
         end
         out = textGraph(obj)
         disp(obj)

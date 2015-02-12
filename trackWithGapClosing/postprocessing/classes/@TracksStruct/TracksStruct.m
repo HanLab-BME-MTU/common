@@ -19,28 +19,28 @@ classdef TracksStruct < Tracks
     properties (Dependent = true)
         % 2D matrix, corresponds to tracksCoordAmpCG3D(:,:)
         tracksCoordAmpCG
-        % X coordinates as nSeg x nFrame matrix = tracksCoordAmpCG3D(:,1:8:end)
+        % x coordinates as nSeg by nFrame matrix = tracksCoordAmpCG3D(:,1:8:end)
         % Column is relative to the startFrame
-        X
-        % Y coordinates as nSeg x nFrame matrix = tracksCoordAmpCG3D(:,2:8:end)
+        x
+        % Y coordinates as nSeg by nFrame matrix = tracksCoordAmpCG3D(:,2:8:end)
         % Column is relative to the startFrame
-        Y
-        % Z coordinates as nSeg x nFrame matrix = tracksCoordAmpCG3D(:,3:8:end)
+        y
+        % Z coordinates as nSeg by nFrame matrix = tracksCoordAmpCG3D(:,3:8:end)
         % Column is relative to the startFrame
-        Z
-        % Amplitude as nSeg x nFrame matrix = tracksCoordAmpCG3D(:,4:8:end)
+        z
+        % Amplitude as nSeg by nFrame matrix = tracksCoordAmpCG3D(:,4:8:end)
         % Column is relative to the startFrame
         A
-        % X uncertainty as nSeg x nFrame matrix = tracksCoordAmpCG3D(:,5:8:end)
+        % X uncertainty as nSeg by nFrame matrix = tracksCoordAmpCG3D(:,5:8:end)
         % Column is relative to the startFrame
-        dX
-        % Y uncertainty as nSeg x nFrame matrix = tracksCoordAmpCG3D(:,6:8:end)
+        dx
+        % Y uncertainty as nSeg by nFrame matrix = tracksCoordAmpCG3D(:,6:8:end)
         % Column is relative to the startFrame
-        dY
-        % Z uncertainty as nSeg x nFrame matrix = tracksCoordAmpCG3D(:,7:8:end)
+        dy
+        % Z uncertainty as nSeg by nFrame matrix = tracksCoordAmpCG3D(:,7:8:end)
         % Column is relative to the startFrame
-        dZ
-        % A uncertainty as nSeg x nFrame matrix = tracksCoordAmpCG3D(:,8:8:end)
+        dz
+        % A uncertainty as nSeg by nFrame matrix = tracksCoordAmpCG3D(:,8:8:end)
         % Column is relative to the startFrame
         dA
         % Column vector for the absolute time point each segment started
@@ -71,52 +71,46 @@ classdef TracksStruct < Tracks
                 if(nargin > 1)
                     tracks = normalizeTracks(tracks,movieInfo);
                 end
-                obj(numel(tracks)) = TracksHandle();
+                obj(numel(tracks)) = TracksStruct();
                 [obj.tracksFeatIndxCG] = deal(tracks.tracksFeatIndxCG);
                 [obj.seqOfEvents] = deal(tracks.seqOfEvents);
                 [obj.tracksCoordAmpCG] = deal(tracks.tracksCoordAmpCG);
             end
         end
         function tracksCoordAmpCG = get.tracksCoordAmpCG(obj)
-            if(isempty(obj.cache.tracksCoordAmpCG))
             tracksCoordAmpCG = obj.tracksCoordAmpCG3D(:,:);
-%                 tracksCoordAmpCG = reshape(obj.tracksCoordAmpCG3D,size(obj.tracksCoordAmpCG3D,1),[]);
-                obj.cache.tracksCoordAmpCG = tracksCoordAmpCG;
-            else
-                tracksCoordAmpCG = obj.cache.tracksCoordAmpCG;
-            end
         end
         function set.tracksCoordAmpCG(obj,tracksCoordAmpCG)
             obj.tracksCoordAmpCG3D = ... 
                 reshape(tracksCoordAmpCG,size(tracksCoordAmpCG,1),8,[]);
         end
-        function X = get.X(obj)
-                X = obj.tracksCoordAmpCG3D(:,1,:);
-                X = X(:,:);
+        function x = get.x(obj)
+                x = obj.tracksCoordAmpCG3D(:,1,:);
+                x = x(:,:);
         end
-        function Y = get.Y(obj)
-                Y = obj.tracksCoordAmpCG3D(:,2,:);
-                Y = Y(:,:);
+        function y = get.y(obj)
+                y = obj.tracksCoordAmpCG3D(:,2,:);
+                y = y(:,:);
         end
-        function Z = get.Z(obj)
-                Z = obj.tracksCoordAmpCG3D(:,3,:);
-                Z = Z(:,:);
+        function z = get.z(obj)
+                z = obj.tracksCoordAmpCG3D(:,3,:);
+                z = z(:,:);
         end
         function A = get.A(obj)
                 A = obj.tracksCoordAmpCG3D(:,4,:);
                 A = A(:,:);
         end
-        function dX = get.dX(obj)
-                dX = obj.tracksCoordAmpCG3D(:,5,:);
-                dX = dX(:,:);
+        function dx = get.dx(obj)
+                dx = obj.tracksCoordAmpCG3D(:,5,:);
+                dx = dx(:,:);
         end
-        function dY = get.dY(obj)
-                dY = obj.tracksCoordAmpCG3D(:,6,:);
-                dY = dY(:,:);
+        function dy = get.dy(obj)
+                dy = obj.tracksCoordAmpCG3D(:,6,:);
+                dy = dy(:,:);
         end
-        function dZ = get.dZ(obj)
-                dZ = obj.tracksCoordAmpCG3D(:,7,:);
-                dZ = dZ(:,:);
+        function dz = get.dz(obj)
+                dz = obj.tracksCoordAmpCG3D(:,7,:);
+                dz = dz(:,:);
         end
         function dA = get.dA(obj)
                 dA = obj.tracksCoordAmpCG3D(:,8,:);

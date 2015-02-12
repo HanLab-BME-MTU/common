@@ -1,3 +1,3 @@
 function totalSegments = totalSegments(obj)
-     totalSegments = sum(obj.getNumSegments);
+     totalSegments = sum(obj.getNumSegmentsPerTrack);
 end
