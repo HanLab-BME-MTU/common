@@ -17,7 +17,7 @@ function trackedFeatureInfo = coordAmpMatFromIndicesSparse(trackedFeatureIndx,..
 %% Conversion
 
 %reserve space for matrix
-trackedFeatureInfo = sparse(zeros(size(trackedFeatureIndx,1),8*numFrames));
+trackedFeatureInfo = sparse(size(trackedFeatureIndx,1),8*numFrames);
 % trackedFeatureInfo = NaN(size(trackedFeatureIndx,1),8*numFrames);
 
 %for now, the matrix always has space for z, hence I have to treat 2D and
