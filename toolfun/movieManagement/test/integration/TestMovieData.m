@@ -6,10 +6,7 @@ classdef TestMovieData < TestMovieObject
         nChan = 1;
         zSize = 1;
         
-        % ROI properties
-        roiFolder = 'ROI';
-        roiName = 'roiMovie.mat';
-        roiMaskName = 'roiMask.tif';
+
     end
     
     methods
@@ -35,28 +32,6 @@ classdef TestMovieData < TestMovieObject
             assertTrue(isa(self.movie,'MovieData'));
             self.checkDimensions()
             self.checkChannelPaths();
-        end
-        
-        function rois = setUpROIs(self, nROIs, roiMask)
-            
-            if nargin < 3, roiMask = true(self.movie.imSize_); end
-            % Create ROI folder
-            rois(nROIs, 1) = MovieData();
-            for i = 1 : nROIs
-                roiPath = fullfile(self.movie.getPath(),...
-                    [self.roiFolder '_' num2str(i)]);
-                mkdir(roiPath);
-                
-                % Create ROI mask
-                roiMaskFullPath = fullfile(roiPath, self.roiMaskName);
-                imwrite(roiMask, roiMaskFullPath);
-                
-                % Create and save ROI
-                rois(i) = self.movie.addROI(roiMaskFullPath, roiPath);
-                rois(i).setPath(roiPath);
-                rois(i).setFilename(self.roiName);
-                rois(i).sanityCheck;
-            end
         end
         
         %% Tests

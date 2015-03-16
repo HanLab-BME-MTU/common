@@ -1,4 +1,4 @@
-function [imageStack]=makeAiryImageFromMPM(trackInfo,bgav,bgnoise,sigma,imsize,rad,saveVar,saveFolder)
+function [imageStack]=makeAiryImageFromMPM(trackInfo,bgav,bgnoise,sigma,imsize,rad,saveVar,saveFolder,saveDir)
 % makeAiryImageFromMPM makes an image from the point distribution specified
 % in the mpm file, using specified values for amplitudes and noise
 %
@@ -23,6 +23,12 @@ function [imageStack]=makeAiryImageFromMPM(trackInfo,bgav,bgnoise,sigma,imsize,r
 %               saveVar   = variable that indicates whether or not tif files
 %                           are saved to file (1/0)
 %               saveFolder  = (optional) folder name
+%               saveDir   = Top directory to save images. The double
+%                           "saveFolder" and "saveDir" are for historical
+%                           reasons, for backward compatibility. In
+%                           reality, saveFolder can be skipped and saveDir
+%                           is enough. -KJ
+%                           
 %
 % OUTPUT    :   imageStack
 %
@@ -32,12 +38,6 @@ function [imageStack]=makeAiryImageFromMPM(trackInfo,bgav,bgnoise,sigma,imsize,r
 %
 % created by: dloerke
 % DATE: 28-Feb-2006
-% last modified
-% DATE: 05-Oct-2007
-%
-%
-
-
 
 %% initialize parameters
 ordir = cd;
@@ -55,7 +55,9 @@ saveYN = 0;
 if nargin>6
     saveYN = saveVar;
     if saveYN == 1
-        saveDir = uigetdir(ordir,'specify directory for saving simulation images');
+        if nargin < 9 || isempty(saveDir)
+            saveDir = uigetdir(ordir,'specify directory for saving simulation images');
+        end
     end
 end
 
@@ -103,7 +105,7 @@ for t=1:nframes
         % if a specific folder name is specified, go to this folder or
         % create it
         
-        if nargin>7
+        if nargin > 7 && ~isempty(saveFolder)
             % if folder of specified name already exists, go there
             if exist(saveFolder)==7
                 cd(saveFolder);

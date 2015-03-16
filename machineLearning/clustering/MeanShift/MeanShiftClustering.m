@@ -46,7 +46,7 @@ function [clusterInfo, pointToClusterMap, pointTraj] = MeanShiftClustering( ptDa
 %                             0 - no kdtree
 %                             1 - matlab builtin kdtree
 %                             2 - external kdtree (Andrea)
-%                             Default: true (recommended)
+%                             Default: 1 (but recommended to use 2 if available, faster than matlab built-in but has problems in r2013b under windows)
 %                            
 %                  flagDebug: true/false
 %                             specifies whether or not to run in debug mode.
@@ -91,7 +91,7 @@ function [clusterInfo, pointToClusterMap, pointTraj] = MeanShiftClustering( ptDa
     p.addParamValue( 'maxIterations', 500, @(x) (isscalar(x)) );
     p.addParamValue('kernelSupport',[],@(x)(isscalar(x) && x > 0));
     p.addParamValue( 'minClusterDistance', 2 * bandwidth, @(x) (isscalar(x)) );
-    p.addParamValue( 'flagUseKDTree', 1, @(x) (isscalar(x)) );
+    p.addParamValue( 'flagUseKDTree', 1, @(x) (isscalar(x) && ismember(x,0:2)) );
     p.addParamValue( 'flagDebug', false, @(x) (isscalar(x) && islogical(x)) );
     p.parse( ptData, bandwidth, varargin{:} );
     
@@ -160,7 +160,7 @@ function [clusterInfo, pointToClusterMap] = OptimizedMeanShift( ptData, bandwidt
             end        
             if flagUseKDTree == 1            
                 kdtree_points = KDTreeSearcher( ptData );  
-            else
+            elseif flagUseKDTree == 2
                 kdtree_points = kdtree_build(ptData);
             end
             
@@ -287,7 +287,7 @@ function [clusterInfo, pointToClusterMap, pointTraj] = StandardMeanShift( ptData
             end        
             if flagUseKDTree == 1            
                 kdtree_points = KDTreeSearcher( ptData );  
-            else
+            elseif flagUseKDTree == 2
                 kdtree_points = kdtree_build(ptData);
             end
             

@@ -1,4 +1,4 @@
-function threshold = intensityBinnedGradientThreshold(im,binSize,sigma,smoothPar,force2D)
+function threshold = intensityBinnedGradientThreshold(im,binSize,sigma,smoothPar,force2D,method)
 %INTENSITYBINNEDGRADIENTTHRESH thresholds an image combining gradient and intensity information
 % 
 % threshold = intensityBinnedGradientThreshold(im)
@@ -33,6 +33,12 @@ function threshold = intensityBinnedGradientThreshold(im,binSize,sigma,smoothPar
 %
 %   force2D - If true and a 3D matrix is input, it is assumed to be a stack
 %   of 2D images, and the gradient is calculated in 2D along the first 2 dimensions.
+%
+%   method - LocalMaxima or Shoulder. LocalMaxima is as described above.
+%   "Shoulder" finds the threshold corresponding to the maximum value of
+%   the 2nd derivative of the int. vs. gradient histogram below the first
+%   local maxima. This is good for objects with mixed intensities - will
+%   tend to find threshold which matches the edge of the dimmest object.
 %
 % Output:
 % 
@@ -69,9 +75,18 @@ if nargin < 5 || isempty(force2D)
     force2D = false;
 end
 
+if nargin < 5 || isempty(method)
+    method = 'LocalMaxima';
+end
+
 im = double(im);
 nPlanes = size(im,3);
 intBins = min(im(:)):binSize:max(im(:))+1;
+if numel(intBins) < 3
+    threshold = NaN;
+    return
+end
+
 gradAtIntVal = zeros(1,numel(intBins)-1);
 
 if nPlanes == 1 || force2D
@@ -90,7 +105,7 @@ if nPlanes == 1 || force2D
         g = sqrt(gX .^2 + gY .^2);    
 
         %Get average gradient at each intensity level
-        tmp = arrayfun(@(x)(mean(mean(double(g(currIm >= intBins(x) & currIm < intBins(x+1)))))),1:numel(intBins)-1);
+        tmp = arrayfun(@(x)(nanmean(nanmean(double(g(currIm >= intBins(x) & currIm < intBins(x+1)))))),1:numel(intBins)-1);
         tmp(isnan(tmp)) = 0;
         %Add this to the cumulative average
         gradAtIntVal = gradAtIntVal + (tmp ./ nPlanes);
@@ -117,27 +132,65 @@ smGradInt = fnval(ssGradInt,binCenters);
 %Find maxima
 spDer = fnder(ssGradInt,1);
 spDer2 = fnder(ssGradInt,2);
-extrema = fnzeros(spDer);
-if ~isempty(extrema)
-    
-    extrema = extrema(1,:);
-    
-    %evaluate 2nd deriv at extrema
-    secDerExt = fnval(spDer2,extrema);
-    %Find the first maximum
-    iFirstMax = find(secDerExt < 0,1);        
-    extVals = fnval(ssGradInt,extrema);
-    threshold = extrema(iFirstMax);
-else
-    threshold = NaN;
-end
 
-if showPlots
-    fsFigure(.5);
-    plot(binCenters,gradAtIntVal);
-    hold on    
-    plot(binCenters,smGradInt,'r','LineWidth',2)    
-    if ~isempty(extrema)
-        plot(extrema,extVals,'om','MarkerSize',15);    
-    end    
-end
+extrema = fnzeros(spDer);
+extrema = extrema(1,:);
+
+%evaluate 2nd deriv at extrema
+secDerExt = fnval(spDer2,extrema);
+%Find the first maximum
+iFirstMax = find(secDerExt < 0,1);        
+extVals = fnval(ssGradInt,extrema);
+
+switch method
+
+    
+    case 'LocalMaxima'
+        
+        if ~isempty(iFirstMax)
+            threshold = extrema(iFirstMax);
+        else
+            threshold = NaN;
+        end
+        
+        if showPlots
+            fsFigure(.5);
+            plot(binCenters,gradAtIntVal);
+            hold on    
+            plot(binCenters,smGradInt,'r','LineWidth',2)    
+            if ~isempty(extrema)
+                plot(extrema,extVals,'om','MarkerSize',15);    
+            end    
+        end
+        
+    case 'Shoulder'
+        
+        %shoulders = binCenters(locmax1d(-fnval(spDer2,binCenters),3));                
+        
+        if isempty(iFirstMax)
+            threshold = NaN;
+        else
+            possBins = binCenters(binCenters<=extrema(iFirstMax));
+            secDerVal = fnval(spDer2,possBins);
+            [~,iMin2nd] = min(secDerVal);         
+            
+            threshold = possBins(iMin2nd);
+        end
+                  
+        if showPlots
+            fsFigure(.5);
+            subplot(2,1,1)
+            plot(binCenters,gradAtIntVal);
+            hold on    
+            plot(binCenters,smGradInt,'r','LineWidth',2)    
+            plot(threshold,fnval(ssGradInt,threshold),'go')
+            subplot(2,1,2)
+            plot(binCenters,fnval(spDer2,binCenters))
+            hold on
+            plot(xlim,[0 0],'--k')            
+            plot(threshold,fnval(spDer2,threshold),'go')
+        end
+        
+        
+end 
+            

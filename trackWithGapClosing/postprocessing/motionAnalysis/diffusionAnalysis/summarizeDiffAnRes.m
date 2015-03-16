@@ -4,6 +4,7 @@ function [probMotionType,motionChar,errFlag] = summarizeDiffAnRes(tracks,...
 %
 %SYNOPSIS [probMotionType,motionChar,errFlag] = summarizeDiffAnRes(tracks,...
 %    minTrackLen,probDim,diffAnalysisRes,extractType)
+%
 %INPUT  tracks     : Output of trackCloseGapsKalman.
 %       minTrackLen: Minimum length of a track to be used in getting
 %                    motion type statistics.
@@ -21,30 +22,35 @@ function [probMotionType,motionChar,errFlag] = summarizeDiffAnRes(tracks,...
 %                    Variable irrelevant if tracks are input as a matrix.
 %                    Optional. Default: 1.
 %
-%OUTPUT probMotionType: 9-by-2 array. Rows refer to:
-%                    (1) Linear & 1D confined,
-%                    (2) Linear & 1D Brownian,
-%                    (3) Linear & 1D directed,
-%                    (4) Linear & diffusion undetermined,
-%                    (5) Not linear/unclassied & 2D confined,
-%                    (6) Not linear/unclassified & 2D Brownian,
-%                    (7) Not linear/unclassified & 2D directed,
-%                    (8) Not linear & diffusion undetermined, and
-%                    (9) Completely undetermined.
+%OUTPUT probMotionType: 11-by-3 array. Rows refer to:
+%                    (1) Linear & 1D immobile,
+%                    (2) Linear & 1D confined,
+%                    (3) Linear & 1D Brownian,
+%                    (4) Linear & 1D directed,
+%                    (5) Linear & diffusion undetermined,
+%                    (6) Not linear/unclassified & 2D immobile,
+%                    (7) Not linear/unclassied & 2D confined,
+%                    (8) Not linear/unclassified & 2D Brownian,
+%                    (9) Not linear/unclassified & 2D directed,
+%                   (10) Not linear & diffusion undetermined, and
+%                   (11) Completely undetermined.
 %                    1st column: Each motion type's probability.
 %                    2nd column: Probability of a motion type within its
-%                    category, i.e. 1-4 are in the linear category, while
-%                    1-8 or 1-7&9 are in the not-linear category (1-8 are
-%                    used when asymmetry is checked for, 1-7&9 are used
+%                    category, i.e. 1-5 are in the linear category, while
+%                    6-10 or 6-9&11 are in the not-linear category (6-10 are
+%                    used when asymmetry is checked for, 6-9&11 are used
 %                    when asymmetry is not checked for).
+%                    3rd column: Number of features per frame in each
+%                    motion category, same rows as first column.
 %       motionChar : Structure summarizing motion characteristics.
 %                    Contains the fields "linear" and "notLinear". 
 %                       The field "linear" contains the sub-field "all"
 %                    (i.e. all trajectories classified as linear are lumped
 %                    together).
 %                       The field "notLinear" contains the sub-fields
-%                    "confined", "brownian" and "directed", showing the
-%                    characteristics of each of these motion categories.
+%                    "immobile","confined", "brownian" and "directed",
+%                    showing the characteristics of each of these motion
+%                    categories.
 %                       For each of these sub-fields, there are two
 %                    sub-sub-fields: 
 %           .distribution: Nx4 array. Each row belongs to a separate
@@ -137,10 +143,12 @@ aveFeatPerFrame = numFeatTot / numFrames;
 trackSegmentClass = vertcat(diffAnalysisRes.classification);
 
 %get indices of the different motion types
+indxLinImm      = find( trackSegmentClass(:,1) == 1   & trackSegmentClass(:,3) == 0   );
 indxLinConf     = find( trackSegmentClass(:,1) == 1   & trackSegmentClass(:,3) == 1   );
 indxLinBrown    = find( trackSegmentClass(:,1) == 1   & trackSegmentClass(:,3) == 2   );
 indxLinDir      = find( trackSegmentClass(:,1) == 1   & trackSegmentClass(:,3) == 3   );
 indxLinUndet    = find( trackSegmentClass(:,1) == 1   & isnan(trackSegmentClass(:,3)) );
+indxNonlinImm   = find( trackSegmentClass(:,1) ~= 1   & trackSegmentClass(:,2) == 0   );
 indxNonlinConf  = find( trackSegmentClass(:,1) ~= 1   & trackSegmentClass(:,2) == 1   );
 indxNonlinBrown = find( trackSegmentClass(:,1) ~= 1   & trackSegmentClass(:,2) == 2   );
 indxNonlinDir   = find( trackSegmentClass(:,1) ~= 1   & trackSegmentClass(:,2) == 3   );
@@ -148,19 +156,21 @@ indxNonlinUndet = find( trackSegmentClass(:,1) == 0   & isnan(trackSegmentClass(
 indxUndetUndet  = find( isnan(trackSegmentClass(:,1)) & isnan(trackSegmentClass(:,2)) );
 
 %calculate number of track segments per motion type
-numSegmentsType = [length(indxLinConf) length(indxLinBrown) ...
-    length(indxLinDir) length(indxLinUndet) ...
-    length(indxNonlinConf) length(indxNonlinBrown) ...
+numSegmentsType = [length(indxLinImm) length(indxLinConf) ...
+    length(indxLinBrown) length(indxLinDir) length(indxLinUndet) ...
+    length(indxNonlinImm) length(indxNonlinConf) length(indxNonlinBrown) ...
     length(indxNonlinDir) length(indxNonlinUndet) length(indxUndetUndet)]';
 
 %calculate fraction of track segments falling in each motion type
 fracSegmentsType = numSegmentsType / numTrackSegments;
 
 %calculate number of features in each motion type
-numFeatType = [length(find(tracksIndxMat(indxLinConf,:))) ...
+numFeatType = [length(find(tracksIndxMat(indxLinImm,:))) ...
+    length(find(tracksIndxMat(indxLinConf,:))) ...
     length(find(tracksIndxMat(indxLinBrown,:))) ...
     length(find(tracksIndxMat(indxLinDir,:))) ...
     length(find(tracksIndxMat(indxLinUndet,:))) ...
+    length(find(tracksIndxMat(indxNonlinImm,:))) ...
     length(find(tracksIndxMat(indxNonlinConf,:))) ...
     length(find(tracksIndxMat(indxNonlinBrown,:))) ...
     length(find(tracksIndxMat(indxNonlinDir,:))) ...
@@ -173,18 +183,18 @@ probFeatType = numFeatType / numFeatTot;
 
 %within the overall linear and non-linear motion types, calculate the
 %probabilities of the different sub-types
-probFeatLinSubType = probFeatType(1:4) / sum(probFeatType(1:4));
+probFeatLinSubType = probFeatType(1:5) / sum(probFeatType(1:5));
 if all(isnan(trackSegmentClass(:,1)))
-    probFeatNonlinSubType = probFeatType([5:7 9]) / sum(probFeatType([5:7 9]));
-    probFeatSubType = [probFeatLinSubType; probFeatNonlinSubType(1:3); NaN; ...
-        probFeatNonlinSubType(4)];
+    probFeatNonlinSubType = probFeatType([6:9 11]) / sum(probFeatType([6:9 11]));
+    probFeatSubType = [probFeatLinSubType; probFeatNonlinSubType(1:4); NaN; ...
+        probFeatNonlinSubType(5)];
 else
-    probFeatNonlinSubType = probFeatType(5:8) / sum(probFeatType(5:8));
+    probFeatNonlinSubType = probFeatType(6:10) / sum(probFeatType(6:10));
     probFeatSubType = [probFeatLinSubType; probFeatNonlinSubType; NaN];
 end
 
 %combine the motion type and sub-type probabilities
-probMotionType = [probFeatType probFeatSubType];
+probMotionType = [probFeatType probFeatSubType numFeatType/numFrames];
 
 %% motion characteristics
 
@@ -201,6 +211,13 @@ motionCharTmp = [diffCoefAll([indxLinConf;indxLinBrown;indxLinDir]) ...
 motionChar.linear.all.distribution = motionCharTmp;
 motionChar.linear.all.meanStd = [nanmean(motionCharTmp,1); nanstd(motionCharTmp,[],1)];
 motionChar.linear.all.median = nanmedian(motionCharTmp,1);
+
+%non-linear & immobile
+motionCharTmp = [diffCoefAll(indxNonlinImm) confRadAll(indxNonlinImm,:) ...
+    trackSegmentLft(indxNonlinImm)];
+motionChar.notLinear.immobile.distribution = motionCharTmp;
+motionChar.notLinear.immobile.meanStd = [nanmean(motionCharTmp,1); nanstd(motionCharTmp,[],1)];
+motionChar.notLinear.immobile.median = nanmedian(motionCharTmp,1);
 
 %non-linear & confined
 motionCharTmp = [diffCoefAll(indxNonlinConf) confRadAll(indxNonlinConf,:) ...

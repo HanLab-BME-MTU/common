@@ -28,7 +28,7 @@ ip.addParamValue('nH',20,@isposint);%Number of bandwidths to try within specifie
 ip.addParamValue('HTry',[],@(x)(all(x)>0 && all(diff(x))>0));%Optionally input a vector of bandwidths - this overrides the Hrange and nH inputs
 ip.addParamValue('w',3,@isposint);%Window size for calculating local jenson-shannon divergence. Higher values will decrease likelihood of spurious estimates, but may require a larger number of test bandwidths to obtain a reliable solution
 ip.addParamValue('NumParallel',6,@isposint);%Number of processors to use for parallel computing. Set to 1 to run serially.
-
+ip.addParamValue('flagUseKDTree', 2, @(x) (isempty(x) || (isscalar(x) && ismember(x,0:2))) );%KDtree flag to pass during clustering. See MeanShiftClustering.m for details. Deafult for this function is to use external, since it's faster. Default in sub-function is matlab internal because the external may not exist and may cause errors e.g. under windows7+r2013b
 ip.parse(varargin{:});
 
 p = ip.Results;
@@ -41,6 +41,11 @@ if nH == 1
     warning('ESTIMATEOPTIMALBANDWIDTH:numBandwidths','Only one bandwidth will be tested, JS stability criteria cannot be applied!');
 end
 
+if ~isempty(p.flagUseKDTree)
+    extraArgs = {'flagUseKDTree',p.flagUseKDTree};
+else
+    extraArgs = {};
+end
 
 %% ------------ Init ------------ %%
 
@@ -76,9 +81,9 @@ ppMu = nan(n,nH,d);%Mean for each point at each bandwidth
 
 ptInd = nan(n,nH);
 
-parfor ih = 1:nH
+for ih = 1:nH
     
-    [clInf,ptInd(:,ih),ptTraj] = MeanShiftClustering(X,Htry(ih),'method','standard','minClusterDistance',Htry(ih),'flagUseKDTree',2);
+    [clInf,ptInd(:,ih),ptTraj] = MeanShiftClustering(X,Htry(ih),'method','standard','minClusterDistance',Htry(ih),extraArgs{:});
     
     nC(ih) = numel(clInf);
     

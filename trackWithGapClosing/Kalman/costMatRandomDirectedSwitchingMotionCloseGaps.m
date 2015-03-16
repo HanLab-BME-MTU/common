@@ -746,6 +746,11 @@ if mergeSplit > 0
     maxDispAllowed = max( max( abs([xyzVelS(:);xyzVelE(:)]) ) * probDim * linStdMult(1), ...
         maxSearchRadius );
     maxDispAllowed = max(maxDispAllowed,resLimit);
+    
+    %define number of time points before/after current one to use in
+    %calculating mean amplitude to evaluate merges and splits (1 = this
+    %point + 1 before/after, 2 = this point + 2 before/after, etc.)
+    nTpMS = 2;
 
     %costs of merging
     if mergeSplit == 1 || mergeSplit == 2
@@ -823,17 +828,17 @@ if mergeSplit > 0
                 projEndShort = abs(dispVec * shortVecE) / shortVecMagE;
 
                 %get the amplitude of track iEnd before its end - take the
-                %last 5 points
-                indxBefore = 8*(endTime-1)+4 - 8*(0:4);
+                %last nTpMS+1 points
+                indxBefore = 8*(endTime-1)+4 - 8*(0:nTpMS);
                 indxBefore = indxBefore(indxBefore > 1);
                 ampE = full(trackedFeatInfo(iEnd,indxBefore));
                 ampE = mean(ampE(ampE~=0));
 
                 %get the amplitude of the merging track before and after
-                %merging - take 5 points on each side
+                %merging - take nTpMS+1 points on each side
                 ampM1 = full(trackedFeatInfo(iMerge,indxBefore)); %before merging
                 ampM1 = mean(ampM1(ampM1~=0));
-                indxAfter = 8*endTime+4 + 8*(0:4);
+                indxAfter = 8*endTime+4 + 8*(0:nTpMS);
                 indxAfter = indxAfter(indxAfter < 8*numFrames);
                 ampM = full(trackedFeatInfo(iMerge,indxAfter)); %after merging
                 ampM = mean(ampM(ampM~=0));
@@ -1111,17 +1116,17 @@ if mergeSplit > 0
                 projStartShort = abs(dispVec * shortVecS) / shortVecMagS;
                 
                 %get the amplitude of track iStart after its start - take
-                %the first 5 points
-                indxAfter = 8*(startTime-1)+4 + 8*(0:4);
+                %the first nTpMS+1 points
+                indxAfter = 8*(startTime-1)+4 + 8*(0:nTpMS);
                 indxAfter = indxAfter(indxAfter < 8*numFrames);
                 ampS = full(trackedFeatInfo(iStart,indxAfter));
                 ampS = mean(ampS(ampS~=0));
 
                 %get the amplitude of the splitting track after and before
-                %splitting - take 5 points on each side
+                %splitting - take nTpMS+1 points on each side
                 ampSp1 = full(trackedFeatInfo(iSplit,indxAfter)); %after splitting
                 ampSp1 = mean(ampSp1(ampSp1~=0));
-                indxBefore = 8*(startTime-2)+4 - 8*(0:4);
+                indxBefore = 8*(startTime-2)+4 - 8*(0:nTpMS);
                 indxBefore = indxBefore(indxBefore > 1);
                 ampSp = full(trackedFeatInfo(iSplit,indxBefore)); %before splitting
                 ampSp = mean(ampSp(ampSp~=0));
