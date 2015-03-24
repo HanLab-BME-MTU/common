@@ -81,7 +81,7 @@ ppMu = nan(n,nH,d);%Mean for each point at each bandwidth
 
 ptInd = nan(n,nH);
 
-for ih = 1:nH
+parfor ih = 1:nH
     
     [clInf,ptInd(:,ih),ptTraj] = MeanShiftClustering(X,Htry(ih),'method','standard','minClusterDistance',Htry(ih),extraArgs{:});
     
