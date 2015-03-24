@@ -22,7 +22,7 @@ function varargout = movieSelectorGUI(varargin)
 
 % Edit the above text to modify the response to help movieSelectorGUI
 
-% Last Modified by GUIDE v2.5 21-Oct-2014 12:46:50
+% Last Modified by GUIDE v2.5 24-Mar-2015 12:41:04
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -478,7 +478,7 @@ set(handles.figure1,'UserData',userData);
 
 
 % --------------------------------------------------------------------
-function menu_tools_addROI_Callback(hObject, eventdata, handles)
+function maticmenu_tools_addROIMask_Callback(hObject, eventdata, handles)
 
 % Return if no movie 
 props=get(handles.listbox_movie, {'String','Value'});
@@ -486,7 +486,7 @@ if isempty(props{1}), return; end
 
 userData = get(handles.figure1, 'UserData');
 if ishandle(userData.newFig), delete(userData.newFig); end
-userData.newFig = addMovieROIGUI(userData.MD(props{2}),'mainFig',handles.figure1);
+userData.newFig = addMovieROIMaskGUI(userData.MD(props{2}),'mainFig',handles.figure1);
 set(handles.figure1,'UserData',userData);
 
 % --- Executes on selection change in listbox_movie.
