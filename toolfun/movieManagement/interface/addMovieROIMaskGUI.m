@@ -62,7 +62,7 @@ ip.parse(hObject,eventdata,handles,varargin{:});
 
 userData.MD =ip.Results.MD;
 userData.mainFig =ip.Results.mainFig;
-        
+
 % Set up copyright statement
 set(handles.text_copyright, 'String', getLCCBCopyright());
 
@@ -236,21 +236,6 @@ set(handles.edit_frameNumber,'String',frameNumber);
 set(handles.figure1, 'UserData', userData);
 guidata(hObject, handles);
 update_data(hObject,eventdata,handles);
-
-
-% --- Executes on button press in pushbutton_outputDirectory.
-function pushbutton_outputDirectory_Callback(hObject, eventdata, handles)
-
-userData = get(handles.figure1, 'UserData');
-pathname = uigetdir(userData.MD.movieDataPath_,'Select output directory');
-
-% Test uigetdir output and store its results
-if isequal(pathname,0), return; end
-set(handles.edit_outputDirectory,'String',pathname);
-
-% Save data
-set(handles.figure1,'UserData',userData);
-guidata(hObject, handles);
 
 % --- Executes on button press in pushbutton_addROI.
 function pushbutton_addROI_Callback(hObject, eventdata, handles)
