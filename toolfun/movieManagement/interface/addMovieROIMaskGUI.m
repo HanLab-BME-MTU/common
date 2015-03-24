@@ -22,7 +22,7 @@ function varargout = addMovieROIMaskGUI(varargin)
 
 % Edit the above text to modify the response to help addMovieROIMaskGUI
 
-% Last Modified by GUIDE v2.5 24-Mar-2015 12:38:32
+% Last Modified by GUIDE v2.5 24-Mar-2015 13:16:14
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -89,6 +89,14 @@ userData.imData=mat2gray(userData.MD.channels_(userData.chanIndex).loadImage(use
     
 set(handles.listbox_selectedChannels,'Callback',@(h,event) update_data(h,event,guidata(h)));
 
+userData_main = get(ip.Results.mainFig, 'UserData');
+set(handles.figure1,'CurrentAxes',handles.axes_help);
+Img = image(userData_main.questIconData);
+set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'),...
+	'visible','off','YDir','reverse');
+set(Img,'ButtonDownFcn',@icon_ButtonDownFcn,...
+  	'UserData', struct('class', mfilename))
+    
 % Choose default command line output for addMovieROIMaskGUI
 handles.output = hObject;
 
@@ -127,18 +135,18 @@ if ~isempty(userData)
     guidata(hObject,handles);
 end
 
-% --- Executes on key press with focus on pushbutton_addROI and none of its controls.
-function pushbutton_addROI_KeyPressFcn(~, eventdata, handles)
+% --- Executes on key press with focus on pushbutton_save and none of its controls.
+function pushbutton_save_KeyPressFcn(~, eventdata, handles)
 
 if strcmp(eventdata.Key, 'return')
-    pushbutton_done_Callback(handles.pushbutton_addROI, [], handles);
+    pushbutton_done_Callback(handles.pushbutton_save, [], handles);
 end
 
 % --- Executes on key press with focus on figure1 and none of its controls.
 function figure1_KeyPressFcn(~, eventdata, handles)
 
 if strcmp(eventdata.Key, 'return')
-    pushbutton_done_Callback(handles.pushbutton_addROI, [], handles);
+    pushbutton_done_Callback(handles.pushbutton_save, [], handles);
 end
 
  % --- Executes on button press in checkbox_preview.
@@ -237,8 +245,8 @@ set(handles.figure1, 'UserData', userData);
 guidata(hObject, handles);
 update_data(hObject,eventdata,handles);
 
-% --- Executes on button press in pushbutton_addROI.
-function pushbutton_addROI_Callback(hObject, eventdata, handles)
+% --- Executes on button press in pushbutton_save.
+function pushbutton_save_Callback(hObject, eventdata, handles)
 
 userData = get(handles.figure1, 'UserData');
 
