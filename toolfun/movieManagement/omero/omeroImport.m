@@ -95,7 +95,7 @@ movie.setOmeroSave(true);
 roiResult = session.getRoiService().findByImage(imageID, []);
 rois = toMatlabList(roiResult.rois);
 if ~isempty(rois) && isscalar(rois),
-    movie.roiOmeroId_ = rois.getId().getValue();
+    movie.setROIOmeroId(rois.getId().getValue());
 end
 
 % Save the movie
