@@ -485,6 +485,14 @@ props=get(handles.listbox_movie, {'String','Value'});
 if isempty(props{1}), return; end
 
 userData = get(handles.figure1, 'UserData');
+if ~isempty(userData.MD(props{2}).roiMaskPath_),
+    errordlg(sprintf([
+        'A binary mask has already been assocatied to this movie.\n'...
+        'You need to recreate a new movie and associate a new mask.']),...
+        'Error','modal');
+    return
+end
+
 if ishandle(userData.newFig), delete(userData.newFig); end
 userData.newFig = addMovieROIMaskGUI(userData.MD(props{2}),'mainFig',handles.figure1);
 set(handles.figure1,'UserData',userData);
