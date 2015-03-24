@@ -73,9 +73,7 @@ set(handles.listbox_selectedChannels,'String',userData.MD.getChannelPaths(), ...
 % Save the image directories and names (for cropping preview)
 userData.nFrames = userData.MD.nFrames_;
 userData.imPolyHandle.isvalid=0;
-m=userData.MD.imSize_(2);
-n=userData.MD.imSize_(1);
-userData.ROI = [1 1; m 1; m n; 1 n;];
+userData.ROI = [];
 userData.previewFig=-1;
 userData.helpFig=-1;
 
@@ -203,7 +201,11 @@ if userData.imPolyHandle.isvalid
     setPosition(userData.imPolyHandle,userData.ROI)
 else
     % Create a new imPoly object and store the handle
-    userData.imPolyHandle = impoly(get(imHandle,'Parent'),userData.ROI);
+    if ~isempty(userData.ROI)
+        userData.imPolyHandle = impoly(get(imHandle,'Parent'));
+    else
+        userData.imPolyHandle = impoly(get(imHandle,'Parent'),userData.ROI);
+    end
     fcn = makeConstrainToRectFcn('impoly',get(imHandle,'XData'),get(imHandle,'YData'));
     setPositionConstraintFcn(userData.imPolyHandle,fcn);
 end
