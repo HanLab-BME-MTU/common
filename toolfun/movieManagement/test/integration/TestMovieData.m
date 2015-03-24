@@ -92,7 +92,47 @@ classdef TestMovieData < TestMovieObject
             self.checkMovie();
             assertEqual(self.movie.getPath(), absolutePath);            
         end
+       
+        %% ROI (binary mask)
+        function testGetROIMaskDefault(self)
+            self.setUpMovie();
+            
+            % Read the movie and check the roi mask is read and cached
+            roiMask = true([self.imSize self.nFrames]);
+            assertTrue(isempty(self.movie.roiMaskPath_));
+            assertTrue(isempty(self.movie.roiMask));
+            
+            % Read the mask and check the output and the cached property
+            mask = self.movie.getROIMask();
+            assertEqual(mask, roiMask);
+            assertEqual(self.movie.roiMask, roiMask);
+            
+            % Reload the movie and check the roimask is transient
+            self.movie = MovieData.load(self.movie.getFullPath());
+            assertTrue(isempty(self.movie.roiMask));
+        end
         
+        function testGetROIMask(self)
+            self.setUpMovie();
+            % Create a binary mask and associate it with setROIMaskPath
+            roiMask = true([self.imSize self.nFrames]);
+            roiMask(1:end/2, 1:end/2, :) = false;
+            roiMaskPath = fullfile(self.movie.getPath(), 'mask.tif');
+            imwrite(roiMask, roiMaskPath);
+            self.movie.setROIMaskPath(roiMaskPath);
+            assertEqual(self.movie.roiMaskPath_, roiMaskPath);
+            assertTrue(isempty(self.movie.roiMask));
+            
+            % Read the mask and check the output and the cached property
+            mask = self.movie.getROIMask();
+            assertEqual(mask, roiMask);
+            assertEqual(self.movie.roiMask, roiMask);
+            
+            % Reload the movie and check the roimask is transient
+            self.movie = MovieData.load(self.movie.getFullPath());
+            assertTrue(isempty(self.movie.roiMask));
+        end
+                
         %% ROI
         function testSimpleROI(self)
             self.setUpMovie();
@@ -103,36 +143,7 @@ classdef TestMovieData < TestMovieObject
             self.movie = MovieData.load(roiMovieFullPath);
             self.checkMovie();
         end
-        
-        function testGetROIMaskDefault(self)
-            self.setUpMovie();
-            
-            % Read the movie and check the roi mask is read and cached
-            roiMask = true([self.imSize self.nFrames]);
-            assertTrue(isempty(self.movie.roiMask));
-            assertEqual(self.movie.getROIMask(), roiMask);
-            assertEqual(self.movie.roiMask, roiMask);
-            
-            % Reload the movie and check the roimask is transient
-            self.movie = MovieData.load(self.movie.getFullPath());
-            assertTrue(isempty(self.movie.roiMask));
-        end
-        
-        function testGetROIMask(self)
-            self.setUpMovie();
-            roiMask = true([self.imSize self.nFrames]);
-            roiMask(1:end/2, 1:end/2, :) = false;
-            roi = self.setUpROIs(1, roiMask);
-            
-            % Read the movie and check the roi mask is read and cached
-            assertTrue(isempty(roi.roiMask));
-            assertEqual(roi.getROIMask(), roiMask);
-            assertEqual(roi.roiMask, roiMask);
-            
-            % Reload the movie and check the roimask is transient
-            roi = MovieData.load(roi.getFullPath());
-            assertTrue(isempty(roi.roiMask));
-        end
+       
         
         function testDeleteROI(self)
             % Create ROI movie

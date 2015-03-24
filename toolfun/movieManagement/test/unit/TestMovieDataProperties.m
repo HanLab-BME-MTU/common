@@ -94,6 +94,16 @@ classdef TestMovieDataProperties < TestCase & TestLibrary
             assertExceptionThrown(f,'lccb:set:invalid');
         end
         
+        function testSetInvalidROIMaskPath(self)
+            f= @() self.movie.setROIMaskPath(1);
+            assertExceptionThrown(f, 'lccb:set:invalid');
+        end
+        
+     	function testSetInvalidROIOmeroId(self)
+            f= @() self.movie.setROIOmeroId('/path/to/mask');
+            assertExceptionThrown(f, 'lccb:set:invalid');
+        end
+        
         %% Multi        
         function values = getValues(self)
             values = {self.timeInterval, self.numAperture, self.pixelSize,...
