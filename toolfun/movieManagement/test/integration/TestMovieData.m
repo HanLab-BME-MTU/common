@@ -5,8 +5,6 @@ classdef TestMovieData < TestMovieObject
         nFrames = 1;
         nChan = 1;
         zSize = 1;
-        
-
     end
     
     methods
@@ -129,11 +127,58 @@ classdef TestMovieData < TestMovieObject
             assertEqual(self.movie.roiMask, roiMask);
             
             % Reload the movie and check the roimask is transient
+            self.movie.save()
             self.movie = MovieData.load(self.movie.getFullPath());
             assertTrue(isempty(self.movie.roiMask));
+            mask = self.movie.getROIMask();
+            assertEqual(mask, roiMask);
+            assertEqual(self.movie.roiMask, roiMask);
+
+            %% Test relocation
+            moviePath = self.movie.getPath();
+            movieName = self.movie.getFilename();
+            oldPath = self.path;
+            self.relocate();
+            newPath = relocatePath(moviePath, oldPath, self.path);
+            newFullPath = fullfile(newPath, movieName);
+            self.movie = MovieData.load(newFullPath, false);
+
+            % Read the mask and check the output and the cached property
+            assertTrue(isempty(self.movie.roiMask));
+            assertEqual(self.movie.roiMaskPath_, fullfile(newPath, 'mask.tif'));
+            mask = self.movie.getROIMask();
+            assertEqual(mask, roiMask);
+            assertEqual(self.movie.roiMask, roiMask);
         end
-                
-        %% ROI
+        
+        function testRelocateROIMask(self)
+            % Add ROI & save
+            self.setUpMovie();
+            % Create a binary mask and associate it with setROIMaskPath
+            roiMask = true([self.imSize self.nFrames]);
+            roiMask(1:end/2, 1:end/2, :) = false;
+            roiMaskPath = fullfile(self.movie.getPath(), 'mask.tif');
+                        
+            % Perform movie relocation
+            moviePath = self.movie.getPath();
+            roiMaskPath = self.movie.roiMaskPath_;
+            oldPath = self.path;
+            self.relocate();
+            
+            % Load the relocated ROI
+            newPath = relocatePath(moviePath, oldPath, self.path);
+            newFullPath = fullfile(newPath, movieName);
+            self.movie = MovieData.load(newFullPath, false);
+            
+            % Test movie paths
+            self.checkMovie();
+            assertEqual(self.movie.outputDirectory_,...
+                relocatePath(roiOutputDirectory, oldPath, self.path));
+            assertEqual(self.movie.roiMaskPath_,...
+                relocatePath(roiMaskPath, oldPath, self.path));
+        end
+        
+        %% ROIs parent/child movie data relationships
         function testSimpleROI(self)
             self.setUpMovie();
             rois = self.setUpROIs(1);
