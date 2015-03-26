@@ -221,9 +221,9 @@ classdef  MovieData < MovieObject
             
             % Set ROI properties
             if ischar(roiMaskPathOrId);
-                roiMovie.roiMaskPath_ = roiMaskPathOrId;
+                roiMovie.setROIMaskPath(roiMaskPathOrId);
             else
-                roiMovie.roiOmeroId_ = roiMaskPathOrId;
+                roiMovie.setROIOmeroId(roiMaskPathOrId);
             end
             roiMovie.parent_ = obj;
             obj.rois_(end+1) = roiMovie;
@@ -268,6 +268,18 @@ classdef  MovieData < MovieObject
             end
             roiMask = obj.roiMask;
 
+        end
+        
+        function setROIMaskPath(obj, path)
+            % Asssociate the path to a binary mask to the MovieData object
+            obj.checkPropertyValue('roiMaskPath_', path);
+            obj.roiMaskPath_ = path;
+        end
+        
+        function setROIOmeroId(obj, id)
+            % Asssociate the ID of an OMERO ROI to a MovieData object
+            obj.checkPropertyValue('roiOmeroId_', id);
+            obj.roiOmeroId_ = id;
         end
         
         function loadLocalROIMask(obj)
@@ -708,7 +720,7 @@ classdef  MovieData < MovieObject
             switch property
                 case {'channels_'}
                     validator=@(x) isa(x,'Channel');
-                case {'movieDataPath_','movieDataFileName_'}
+                case {'movieDataPath_', 'movieDataFileName_', 'roiMaskPath_'}
                     validator=@ischar;
                 case {'pixelSize_', 'timeInterval_', 'numAperture_',...
                         'magnification_', 'binning_', 'pixelSizeZ_'}
@@ -717,6 +729,8 @@ classdef  MovieData < MovieObject
                     validator=@(x) isscalar(x) && x>0 && ~mod(x, 2);
                 case {'acquisitionDate_'}
                     validator=@(x) isnumeric(x) && length(x) == 6;
+                case {'roiOmeroId_'}
+                    validator = @(x) isnumeric(x) && isposint(x);
                 otherwise
                     validator=[];
             end

@@ -226,7 +226,7 @@ mergeSplit = gapCloseParam.mergeSplit;
 %calculating amplitude information (1 = this point + 1 before/after, 
 %2 = this point + 2 before/after, etc.)
 nTpGaps = 4;
-nTpMS = 2;
+nTpMS = 4;
 
 %make sure that timeReachConfB and timeReachConfL are <= timeWindow
 timeReachConfB = min(timeReachConfB,timeWindow);
@@ -683,17 +683,17 @@ for iPair = 1 : numPairs
         indxBefore = 8*(endTime-1)+4 - 8*(0:nTpGaps);
         indxBefore = indxBefore(indxBefore > 1);
         ampE = full(trackedFeatInfo(iEnd,indxBefore));
-        ampE = mean(ampE(ampE~=0));
+        ampEmean = mean(ampE(ampE~=0));
         
         %get the amplitude of track iStart after its start - take
         %the first nTpGaps+1 points
         indxAfter = 8*(startTime-1)+4 + 8*(0:nTpGaps);
         indxAfter = indxAfter(indxAfter < 8*numFrames);
         ampS = full(trackedFeatInfo(iStart,indxAfter));
-        ampS = mean(ampS(ampS~=0));
+        ampSmean = mean(ampS(ampS~=0));
         
         %calculate the ratio of the larger to the smaller amplitude
-        ampRatio = max([ampE ampS]) / min([ampE ampS]);
+        ampRatio = max([ampEmean ampSmean]) / min([ampEmean ampSmean]);
         
         %calculate the cost of linking
         %         dispVecMag2 = dispVecMag ^ 2;
@@ -860,34 +860,41 @@ if mergeSplit > 0
                 indxBefore = 8*(endTime-1)+4 - 8*(0:nTpMS);
                 indxBefore = indxBefore(indxBefore > 1);
                 ampE = full(trackedFeatInfo(iEnd,indxBefore));
-                ampE = mean(ampE(ampE~=0));
+                ampEmean = mean(ampE(ampE~=0));
 
                 %get the amplitude of the merging track before and after
                 %merging - take nTpMS+1 points on each side
                 ampM1 = full(trackedFeatInfo(iMerge,indxBefore)); %before merging
-                ampM1 = mean(ampM1(ampM1~=0));
+                ampM1 = ampM1(ampM1~=0);
+                ampM1mean = mean(ampM1);
                 indxAfter = 8*endTime+4 + 8*(0:nTpMS);
                 indxAfter = indxAfter(indxAfter < 8*numFrames);
                 ampM = full(trackedFeatInfo(iMerge,indxAfter)); %after merging
-                ampM = mean(ampM(ampM~=0));
+                ampM = ampM(ampM~=0);
+                ampMmean = mean(ampM);
 
                 %calculate the ratio of the amplitude after merging to the sum
                 %of the amplitudes before merging
-                ampRatio = ampM / (ampE + ampM1);
+                ampRatio = ampMmean / (ampEmean + ampM1mean);
                 
                 %calculate the individual ratios
-                ampRatioIndME = ampM / ampE;
-                ampRatioIndMM1 = ampM / ampM1;
+                ampRatioIndME = ampMmean / ampEmean;
+                ampRatioIndMM1 = ampMmean / ampM1mean;
+                
+                %get t-test p-values comparing amplitudes before and after
+                [~,pvalueM1] = ttest2(ampM1,ampM);
+                [~,pvalueE] = ttest2(ampE,ampM);
                 
                 %if amplitude is not to be used, give amplitude-related
                 %variables dummy values
                 if ~useAmp
-                    [ampRatio,ampM,ampM1] = deal(1);
+                    [ampRatio,ampMmean,ampM1mean] = deal(1);
                     [ampRatioIndME,ampRatioIndMM1] = deal(1.1);
+                    [pvalueM1,pvalueE] = deal(0);
                 end
 
-                %decide whether this is a possible link based on displacement,
-                %directionality and amplitude ratio
+                %decide whether this is a possible link based on
+                %displacement
                 if trackType(iEnd) == 1 %if ending track is linear
 
                     %get second short vector and project along it if problem is 3D
@@ -915,38 +922,44 @@ if mergeSplit > 0
                     %region of the end of track iEnd
                     %(2) the center-to-center vector is reasonably well
                     %aligned with the directionality of track iEnd
-                    %(3) the amplitudes satisfy the following: 
-                    %   (i) ampRatio is within acceptable limits,
-                    %   (ii) the intensity after merging is larger than
-                    %the individual intensities before merging,
-                    %   (iii) ampRatio is closer to 1 than ampRatioIndMM1
-                    %(i.e. the ratio were the track to be merged with left
-                    %alone)
                     possibleLink = projEndLong <= longVecMagE && ...
                         projEndShort <= shortVecMagE && ...
                         projEndShort3D <= shortVecMagE3D && ...
-                        sin2AngleE <= sin2AngleMaxVD && ...
-                        ampRatio >= minAmpRatio && ampRatio <= maxAmpRatio && ...
-                        ampRatioIndME > 1 && ampRatioIndMM1 > 1 && ...
-                        abs(ampRatio-1) < abs(ampRatioIndMM1-1);
+                        sin2AngleE <= sin2AngleMaxVD;
 
                 else %if ending track is Brownian or undetermined
 
                     %assign the dummy value of zero to sin2AngleE
                     sin2AngleE = 0;
-
-                    %look at displacement and amplitudes only (no
-                    %directionality)
-                    possibleLink = dispVecMag <= longVecMagE && ...
-                        ampRatio >= minAmpRatio && ampRatio <= maxAmpRatio && ...
-                        ampRatioIndME > 1 && ampRatioIndMM1 > 1 && ...
-                        abs(ampRatio-1) < abs(ampRatioIndMM1-1);
-
+                    
+                    %look at displacement magnitude only (no directionality)
+                    possibleLink = dispVecMag <= longVecMagE;
+                    
                 end
-
+                
+                %add amplitude conditions
+                %check whether ...
+                %the amplitudes satisfy the following:
+                %   (i) ampRatio is within acceptable limits,
+                %   (ii) the intensity after merging is larger than
+                %the individual intensities before merging,
+                %   (iii) ampRatio is closer to 1 than ampRatioIndMM1
+                %(i.e. the ratio were the track to be merged with left
+                %alone)
+                possibleLink = possibleLink && ...
+                    ampRatio >= minAmpRatio && ampRatio <= maxAmpRatio && ...
+                    ampRatioIndME > 1 && ampRatioIndMM1 > 1 && ...
+                    abs(ampRatio-1) < abs(ampRatioIndMM1-1) && ...
+                    pvalueM1 <= 1 && pvalueE <= 1;
+                %                 possibleLink = possibleLink && ...
+                %                     ampRatioIndME > 1 && ampRatioIndMM1 > 1 && ...
+                %                     pvalueM1 < 0.1 && pvalueE < 0.1;
+                
                 %if this is a possible link ...
                 if possibleLink
-
+                    
+                    %                     [ampRatio pvalueM1 pvalueE]
+                    
                     %calculate the cost of linking
                     %                     dispVecMag2 = dispVecMag ^ 2; %due to displacement
                     ampCost = ampRatio; %due to amplitude
@@ -1148,34 +1161,41 @@ if mergeSplit > 0
                 indxAfter = 8*(startTime-1)+4 + 8*(0:nTpMS);
                 indxAfter = indxAfter(indxAfter < 8*numFrames);
                 ampS = full(trackedFeatInfo(iStart,indxAfter));
-                ampS = mean(ampS(ampS~=0));
+                ampS = ampS(ampS~=0);
+                ampSmean = mean(ampS);
 
                 %get the amplitude of the splitting track after and before
                 %splitting - take nTpMS+1 points on each side
                 ampSp1 = full(trackedFeatInfo(iSplit,indxAfter)); %after splitting
-                ampSp1 = mean(ampSp1(ampSp1~=0));
+                ampSp1 = ampSp1(ampSp1~=0);
+                ampSp1mean = mean(ampSp1);
                 indxBefore = 8*(startTime-2)+4 - 8*(0:nTpMS);
                 indxBefore = indxBefore(indxBefore > 1);
                 ampSp = full(trackedFeatInfo(iSplit,indxBefore)); %before splitting
-                ampSp = mean(ampSp(ampSp~=0));
+                ampSp = ampSp(ampSp~=0);
+                ampSpmean = mean(ampSp);
 
                 %calculate the ratio of the amplitude before splitting to the sum
                 %of the amplitudes after splitting
-                ampRatio = ampSp / (ampS + ampSp1);
+                ampRatio = ampSpmean / (ampSmean + ampSp1mean);
 
                 %calculate the individual ratios
-                ampRatioIndSpS = ampSp / ampS;
-                ampRatioIndSpSp1 = ampSp / ampSp1;
+                ampRatioIndSpS = ampSpmean / ampSmean;
+                ampRatioIndSpSp1 = ampSpmean / ampSp1mean;
+                
+                %get t-test p-values comparing amplitudes before and after
+                [~,pvalueSp1] = ttest2(ampSp1,ampSp);
+                [~,pvalueS] = ttest2(ampS,ampSp);
                 
                 %if amplitude is not to be used, give amplitude-related
                 %variables dummy values
                 if ~useAmp
-                    [ampRatio,ampSp,ampSp1] = deal(1);
+                    [ampRatio,ampSpmean,ampSp1mean] = deal(1);
                     [ampRatioIndSpS,ampRatioIndSpSp1] = deal(1.1);
+                    [pvalueSp1,pvalueS] = deal(0);
                 end
 
-                %decide whether this is a possible link based on displacement,
-                %directionality and amplitude ratio
+                %decide whether this is a possible link based on displacement
                 if trackType(iStart) == 1
 
                     %get second short vector and project along it if problem is 3D
@@ -1203,38 +1223,43 @@ if mergeSplit > 0
                     %region of the start of track iStart
                     %(2) the center-to-center vector is reasonably well
                     %aligned with the directionality of track iStart
-                    %(3) the amplitudes satisfy the following: 
-                    %   (i) ampRatio is within acceptable limits,
-                    %   (ii) the intensity before splitting is larger than
-                    %the individual intensities after splitting,
-                    %   (iii) ampRatio is closer to 1 than ampRatioIndSpSp1
-                    %(i.e. the ratio were the track to be splitted from left
-                    %alone)
                     possibleLink = projStartLong <= longVecMagS && ...
                         projStartShort <= shortVecMagS && ...
                         projStartShort3D <= shortVecMagS3D && ...
-                        sin2AngleS <= sin2AngleMaxVD && ...
-                        ampRatio >= minAmpRatio && ampRatio <= maxAmpRatio && ...
-                        ampRatioIndSpS > 1 && ampRatioIndSpSp1 > 1 && ...
-                        abs(ampRatio-1) < abs(ampRatioIndSpSp1-1);
+                        sin2AngleS <= sin2AngleMaxVD; 
                     
                 else %if starting track is Brownian or undetermined
 
                     %assign the dummy value of zero to sin2AngleS
                     sin2AngleS = 0;
 
-                    %look at displacement and amplitude ratio only (no
-                    %directionality)
-                    possibleLink = dispVecMag <= longVecMagS && ...
-                        ampRatio >= minAmpRatio && ampRatio <= maxAmpRatio && ...
-                        ampRatioIndSpS > 1 && ampRatioIndSpSp1 > 1 && ...
-                        abs(ampRatio-1) < abs(ampRatioIndSpSp1-1);
-
+                    %look at displacement magnitude only (no directionality)
+                    possibleLink = dispVecMag <= longVecMagS;
+                    
                 end
-
+                
+                %check whether ...
+                %the amplitudes satisfy the following:
+                %   (i) ampRatio is within acceptable limits,
+                %   (ii) the intensity before splitting is larger than
+                %the individual intensities after splitting,
+                %   (iii) ampRatio is closer to 1 than ampRatioIndSpSp1
+                %(i.e. the ratio were the track to be splitted from left
+                %alone)
+                possibleLink = possibleLink && ...
+                    ampRatio >= minAmpRatio && ampRatio <= maxAmpRatio && ...
+                    ampRatioIndSpS > 1 && ampRatioIndSpSp1 > 1 && ...
+                    abs(ampRatio-1) < abs(ampRatioIndSpSp1-1) && ...
+                    pvalueSp1 <= 1 && pvalueS <= 1;
+                %                 possibleLink = possibleLink && ...
+                %                     ampRatioIndSpS > 1 && ampRatioIndSpSp1 > 1 && ...
+                %                     pvalueSp1 < 0.1 && pvalueS < 0.1;
+                
                 %if this is a possible link ...
                 if possibleLink
-
+                    
+                    %                     [ampRatio pvalueSp1 pvalueS]
+                    
                     %calculate the cost of linking
                     %                     dispVecMag2 = dispVecMag ^ 2; %due to displacement
                     ampCost = ampRatio; %due to amplitude
