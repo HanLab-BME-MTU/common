@@ -1,4 +1,4 @@
-classdef TracksStruct < Tracks
+classdef TracksStruct < Tracks & dynamicprops
 % TracksStruct is a Tracks implementation that is a close extension of the
 % original struct implementation for backwards compatibility while also
 % providing the properties and methods of the Tracks interface class.
@@ -72,6 +72,7 @@ classdef TracksStruct < Tracks
                     tracks = normalizeTracks(tracks,movieInfo);
                 end
                 obj(numel(tracks)) = TracksStruct();
+                obj = reshape(obj,size(tracks));
                 [obj.tracksFeatIndxCG] = deal(tracks.tracksFeatIndxCG);
                 [obj.seqOfEvents] = deal(tracks.seqOfEvents);
                 [obj.tracksCoordAmpCG] = deal(tracks.tracksCoordAmpCG);
@@ -149,6 +150,15 @@ classdef TracksStruct < Tracks
         end
         function N = get.numFrames(obj)
             N = size(obj.tracksCoordAmpCG3D,3);
+        end
+        function P = addprop(obj,propName)
+            if(~isscalar(obj))
+                P = arrayfun(@(x) addprop(x,propName),obj,'UniformOutput',false);
+                P = [P{:}];
+                P = reshape(P,size(obj));
+            else
+                P = addprop@dynamicprops(obj,propName);
+            end
         end
     end
 end

@@ -1,4 +1,4 @@
-classdef TracksHandle < Tracks
+classdef TracksHandle < Tracks & dynamicprops
 % TracksHandle is a Tracks implementation optimized for serving the new
 % properties such as X, Y, Z while also providing backwards-compatability
 % with the tracksFinal struct
@@ -73,6 +73,7 @@ classdef TracksHandle < Tracks
                     tracks = normalizeTracks(tracks,movieInfo);
                 end
                 obj(numel(tracks)) = TracksHandle();
+                obj = reshape(obj,size(tracks));
                 [obj.tracksFeatIndxCG] = deal(tracks.tracksFeatIndxCG);
                 [obj.seqOfEvents] = deal(tracks.seqOfEvents);
                 [obj.tracksCoordAmpCG] = deal(tracks.tracksCoordAmpCG);
@@ -174,6 +175,15 @@ classdef TracksHandle < Tracks
         end
         function N = get.numFrames(obj)
             N = size(obj.x,2);
+        end
+        function P = addprop(obj,propName)
+            if(~isscalar(obj))
+                P = arrayfun(@(x) addprop(x,propName),obj,'UniformOutput',false);
+                P = [P{:}];
+                P = reshape(P,size(obj));
+            else
+                P = addprop@dynamicprops(obj,propName);
+            end
         end
     end
 end
