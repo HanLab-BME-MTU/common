@@ -1,6 +1,5 @@
 classdef TestMovieDataTiffSeries < TestMovieData & TestCase
-    
-    
+
     methods
         function self = TestMovieDataTiffSeries(name)
             self = self@TestCase(name);
@@ -15,20 +14,22 @@ classdef TestMovieDataTiffSeries < TestMovieData & TestCase
             self.tearDown@TestMovieData();
         end
         
-        function channel = setUpChannel(self, format)
-            if nargin<2, format = 'double'; end
+        function channel = setUpChannel(self, channelPath, format)
+            if nargin<3, format = 'double'; end
             for i = 1 : self.nFrames
                 imwrite(zeros(self.imSize, format),...
-                    fullfile(self.path, ['test_' num2str(i) '.tif']));
+                    fullfile(channelPath, ['test_' num2str(i) '.tif']));
             end
-            channel = Channel(self.path);
+            channel = Channel(channelPath);
         end
         
         function setUpMovie(self, format)
             if nargin < 2,  format = 'uint8'; end
             channels(self.nChan, 1) = Channel();
             for i = 1 : self.nChan,
-                channels(i) = self.setUpChannel(format);
+                channelPath = fullfile(self.path, ['channel_' num2str(i)]);
+                mkdir(channelPath);
+                channels(i) = self.setUpChannel(channelPath, format);
             end
             self.movie = MovieData(channels, self.path);
             self.movie.setPath(self.path);
@@ -38,7 +39,8 @@ classdef TestMovieDataTiffSeries < TestMovieData & TestCase
         
         function checkChannelPaths(self)
             for i = 1 : self.nChan
-                assertEqual(self.movie.getChannel(i).channelPath_,self.path);
+                assertEqual(self.movie.getChannel(i).channelPath_,...
+                    fullfile(self.path, ['channel_' num2str(i)]));
             end
         end
         
@@ -94,7 +96,8 @@ classdef TestMovieDataTiffSeries < TestMovieData & TestCase
             self.setUpMovie();
             fullPath = self.movie.getFullPath();
             self.nFrames = self.nFrames + 1;
-            self.setUpChannel();
+
+            self.setUpChannel(fullfile(self.path, 'channel_1'));
             assertExceptionThrown(@() MovieData.load(fullPath), 'MovieData:sanityCheck:nFrames');
         end
         
@@ -102,7 +105,7 @@ classdef TestMovieDataTiffSeries < TestMovieData & TestCase
             self.setUpMovie();
             fullPath = self.movie.getFullPath();
             self.imSize = self.imSize / 2;
-            self.setUpChannel();
+            self.setUpChannel(fullfile(self.path, 'channel_1'));
             assertExceptionThrown(@() MovieData.load(fullPath), 'MovieData:sanityCheck:imSize');
         end
         
