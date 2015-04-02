@@ -29,7 +29,7 @@ function MD = bfImport(dataPath,varargin)
 %   MD - A single MovieData object or an array of MovieData objects
 %   depending on the number of series in the original images.
 
-% Sebastien Besson, Dec 2011 (last modifier May 2014)
+% Sebastien Besson, Dec 2011 (last modifier Apr 2015)
 
 % Input check
 ip=inputParser;
@@ -145,23 +145,33 @@ import ome.units.UNITS;
 movieArgs={};
 metadataStore = r.getMetadataStore();
 
-% Retrieve pixel size along the XY-axis
+% Retrieve pixel size along the X-axis
+pixelSize = [];
 pixelSizeX = metadataStore.getPixelsPhysicalSizeX(iSeries);
 if ~isempty(pixelSizeX)
-    pixelSizeY = metadataStore.getPixelsPhysicalSizeY(iSeries);
-    pixelSizeX = pixelSizeX.value(UNITS.NM).doubleValue();
-    pixelSizeY = pixelSizeY.value(UNITS.NM).doubleValue();
-    assert(isequal(pixelSizeX, pixelSizeY),...
-        'Pixel size different in x and y');
-    if pixelSizeX ~= 1000  % Metamorph fix
-        movieArgs = horzcat(movieArgs, 'pixelSize_', pixelSizeX);
+    pixelSize = pixelSizeX.value(ome.units.UNITS.NM).doubleValue();
+end
+
+% Retrieve pixel size along the Y-axis
+pixelSizeY = metadataStore.getPixelsPhysicalSizeY(iSeries);
+if ~isempty(pixelSizeY)
+    if ~isempty(pixelSizeX)
+        pixelSizeY = pixelSizeY.value(ome.units.UNITS.NM).doubleValue();
+        assert(isequal(pixelSizeX, pixelSizeY),...
+            'Pixel size different in x and y');
+    else
+        pixelSize = pixelSizeY.value(ome.units.UNITS.NM).doubleValue();
     end
+end
+
+if ~isempty(pixelSize) && pixelSize ~= 1000  % Metamorph fix
+    movieArgs = horzcat(movieArgs, 'pixelSize_', pixelSize);
 end
 
 % Retrieve pixel size along the Z-axis
 pixelSizeZ = metadataStore.getPixelsPhysicalSizeZ(iSeries);
 if ~isempty(pixelSizeZ)
-    pixelSizeZ = pixelSizeZ.value(UNITS.NM).doubleValue();
+    pixelSizeZ = pixelSizeZ.value(ome.units.UNITS.NM).doubleValue();
     if pixelSizeZ ~= 1000  % Metamorph fix
         movieArgs = horzcat(movieArgs, 'pixelSizeZ_', pixelSizeZ);
     end
