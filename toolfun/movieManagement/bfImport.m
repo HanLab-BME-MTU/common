@@ -139,7 +139,7 @@ end
 
 function movieArgs = getMovieMetadata(r, iSeries)
 
-import ome.units.UNITS;
+import ome.units.UNITS.*;
 
 % Create movie metadata cell array using read metadata
 movieArgs={};
@@ -219,7 +219,7 @@ end
 
 function channelArgs = getChannelMetadata(r, iSeries, iChan)
 
-import ome.units.UNITS;
+import ome.units.UNITS.*;
 
 channelArgs={};
 
@@ -232,14 +232,14 @@ end
 % Read excitation wavelength
 exwlgth=r.getMetadataStore().getChannelExcitationWavelength(iSeries, iChan);
 if ~isempty(exwlgth)
-    exwlgth = exwlgth.value(UNITS.NM).doubleValue();
+    exwlgth = exwlgth.value(ome.units.UNITS.NM).doubleValue();
     channelArgs=horzcat(channelArgs, 'excitationWavelength_', exwlgth);
 end
 
 % Fill emission wavelength
 emwlgth=r.getMetadataStore().getChannelEmissionWavelength(iSeries, iChan);
 if ~isempty(emwlgth)
-    emwlgth = emwlgth.value(UNITS.NM).doubleValue();
+    emwlgth = emwlgth.value(ome.units.UNITS.NM).doubleValue();
     channelArgs = horzcat(channelArgs, 'emissionWavelength_', emwlgth);
 end
 
