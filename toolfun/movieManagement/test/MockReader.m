@@ -55,10 +55,9 @@ classdef MockReader < Reader
             if(nargin < 2); c = 1; end;
             o = ['ch' num2str(c) ];
         end
-        function I = loadImage(obj,c,t,z)
-            if(nargin < 2); c = 1; end;
-            if(nargin < 3); t = 1; end;
-            if(nargin < 4); z = 1; end;
+    end
+    methods( Access = protected )
+        function I = loadImage_(obj,c,t,z)
             I = obj.images{c,t,z};
         end
     end

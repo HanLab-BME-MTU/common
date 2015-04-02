@@ -1,6 +1,8 @@
 classdef  BioFormatsReader < Reader
     % BioFormatsReader is a Reader subclass which reads metadata/pixels
     % from image files using the Bio-Formats library
+    %
+    % See also Reader
     
     properties (SetAccess=protected, Transient=true)
         id
@@ -101,19 +103,6 @@ classdef  BioFormatsReader < Reader
             base = [base ' Channel '];
             
             channelNames = arrayfun(@(x) [base num2str(x)], iChan, 'Unif',false);
-        end
-        
-        function I = loadImage(obj, c, t, varargin)
-            % Retrieve single plane specified by its (c, t, z) coordinates
-            
-            ip = inputParser;
-            ip.addRequired('c', @(x) isscalar(x) && ismember(x, 1 : obj.getSizeC()));
-            ip.addRequired('t', @(x) isscalar(x) && ismember(x, 1 : obj.getSizeT()));
-            ip.addOptional('z', 1, @(x) isscalar(x) && ismember(x, 1 : obj.getSizeZ()));
-            ip.parse(c, t, varargin{:});
-            
-            % Using bioformat tools, get the reader and retrieve dimension order
-            I = loadImage_(obj, c, t, ip.Results.z);
         end
         
         function delete(obj)

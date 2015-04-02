@@ -28,7 +28,7 @@ function [ S , cached] = load( filename, varargin )
 % S = cached.load(filename, '-useCache', false , ____ )
 %     resets the cache for filename
 % S = cached.load(filename, '-useCache', true , ____ )
-%     same as loadCached(filename, _____)
+%     same as cached.load(filename, _____)
 % cached.load('-clear') 
 %     clears the entire cache
 %
@@ -127,7 +127,7 @@ if(~isempty(options))
     key = strjoin( [filename options], ',');
 end
 
-if(reset || clearKey && cache.isKey(key))
+if((reset || clearKey) && cache.isKey(key))
     cache.remove(key);
 end
 

@@ -46,7 +46,7 @@ classdef TestLoad < TestCase
             self.testMatFileName;
         end
         function testModification(self,varargin)
-            [S, wasCached] = cached.load(self.matfile,varargin{:});
+            [~, wasCached] = cached.load(self.matfile,varargin{:});
             assert(~wasCached);
             [S, wasCached] = cached.load(self.matfile,varargin{:});
             assert(wasCached);
@@ -60,36 +60,38 @@ classdef TestLoad < TestCase
             % check modification after one second
             pause(1);
             save(self.matfile,'-struct','S');
-            [S, wasCached] = cached.load(self.matfile,varargin{:},'newVar');
+            [~, wasCached] = cached.load(self.matfile,varargin{:},'newVar');
             assert(~wasCached);
         end
         function testReset(self,varargin)
-            [S, wasCached] = cached.load(self.matfile,varargin{:});
+            [~, wasCached] = cached.load(self.matfile,varargin{:});
             assert(~wasCached);
-            [S, wasCached] = cached.load(self.matfile,varargin{:});
+            [~, wasCached] = cached.load(self.matfile,varargin{:});
             assert(wasCached);
-            [S, wasCached] = cached.load(self.matfile,varargin{:},'-reset');
+            [~, wasCached] = cached.load(self.matfile,varargin{:},'-reset');
             assert(~wasCached);
         end
         function testUseCache(self,varargin)
-            [~, wasCached] = cached.load(self.matfile,varargin{:},'-useCache',true);
+            lastwarn('');
+            [~, wasCached] = cached.load(self.matfile,varargin{:},'-useCache',false);
+            assert(isempty(lastwarn));
             assert(~wasCached);
             [~, wasCached] = cached.load(self.matfile,varargin{:},'-useCache',true);
             assert(wasCached);
-            [S, wasCached] = cached.load(self.matfile,varargin{:},'-useCache',false);
+            [~, wasCached] = cached.load(self.matfile,varargin{:},'-useCache',false);
             assert(~wasCached);
         end
         function testClear(self,varargin)
-            [S, wasCached] = cached.load(self.matfile,varargin{:});
+            [~, wasCached] = cached.load(self.matfile,varargin{:});
             assert(~wasCached);
-            [S, wasCached] = cached.load(self.matfile,varargin{:});
+            [~, wasCached] = cached.load(self.matfile,varargin{:});
             assert(wasCached);
             cached.load(self.matfile,varargin{:},'-clear');
-            [S, wasCached] = cached.load(self.matfile,varargin{:});
+            [~, wasCached] = cached.load(self.matfile,varargin{:});
             assert(~wasCached);
         end
         function testSave(self)
-            [S, wasCached] = cached.load(self.matfile);
+            [~, wasCached] = cached.load(self.matfile);
             assert(~wasCached);
             [S, wasCached] = cached.load(self.matfile);
             assert(wasCached);
@@ -97,12 +99,12 @@ classdef TestLoad < TestCase
             S.asdf = pi;
             cached.save(self.matfile,'-struct','S');
 
-            [S, wasCached] = cached.load(self.matfile);
+            [~, wasCached] = cached.load(self.matfile);
             assert(~wasCached);
 
             % make this works when the contents do not actually change
             cached.save(self.matfile,'-struct','S');
-            [S, wasCached] = cached.load(self.matfile);
+            [~, wasCached] = cached.load(self.matfile);
             assert(~wasCached);
         end
         function testTerminalReset(self)

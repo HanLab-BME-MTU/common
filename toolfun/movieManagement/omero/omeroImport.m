@@ -95,7 +95,7 @@ movie.setOmeroSave(true);
 roiResult = session.getRoiService().findByImage(imageID, []);
 rois = toMatlabList(roiResult.rois);
 if ~isempty(rois) && isscalar(rois),
-    movie.roiOmeroId_ = rois.getId().getValue();
+    movie.setROIOmeroId(rois.getId().getValue());
 end
 
 % Save the movie
@@ -120,7 +120,7 @@ if ~isempty(pixelSize)
 end
 
 % Read camera bit depth
-camBitdepth = pixels.getPixelsType.getBitSize.getValue/2;
+camBitdepth = pixels.getSignificantBits().getValue();
 if ~isempty(camBitdepth)
     movieArgs=horzcat(movieArgs,'camBitdepth_',camBitdepth);
 end
