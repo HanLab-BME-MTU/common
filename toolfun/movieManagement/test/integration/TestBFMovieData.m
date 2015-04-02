@@ -252,5 +252,21 @@ classdef TestBFMovieData < TestMovieData & TestCase
             movies(2).getChannel(1).loadImage(1, 1);
             assertEqual(r.getSeries(), 1);
         end
+        
+        function testMemoizer(self)
+            self.fakename = 'test.fake';
+            self.setUpMovie();
+            
+            % Check Bio-Formats reader has been cached
+            r = self.movie.getReader().formatReader;
+            assertTrue(r.isSavedToMemo());
+            assertFalse(r.isLoadedFromMemo());
+            
+            % Reload movie and check the reader is read from cache
+            self.movie = MovieData.load(self.movie.getFullPath());
+            r = self.movie.getReader().formatReader;
+            assertFalse(r.isSavedToMemo());
+            assertTrue(r.isLoadedFromMemo());
+        end
     end
 end
