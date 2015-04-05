@@ -199,19 +199,19 @@ classdef TestBFMovieData < TestMovieData & TestCase
             self.setUpMovie();
             assertElementsAlmostEqual(self.movie.pixelSize_, 300.0);
         end
-
+        
         function testPixelsSizeY(self)
             self.fakename = 'test&physicalSizeY=.3.fake';
             self.setUpMovie();
             assertElementsAlmostEqual(self.movie.pixelSize_, 300.0);
         end
-
+        
         function testPixelsSizeZ(self)
             self.fakename = 'test&physicalSizeZ=.3.fake';
             self.setUpMovie();
             assertElementsAlmostEqual(self.movie.pixelSizeZ_, 300.0);
         end
-
+        
         %% ROI tests
         function testAddROIMultiSeries(self)
             nMovies = 3;
