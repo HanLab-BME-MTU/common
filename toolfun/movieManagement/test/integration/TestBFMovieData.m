@@ -193,6 +193,25 @@ classdef TestBFMovieData < TestMovieData & TestCase
             assertEqual(self.movie.getDimensions('XYC'), dim([1 2 4]));
         end
         
+        %% Metadata tests
+        function testPixelsSizeX(self)
+            self.fakename = 'test&physicalSizeX=.3.fake';
+            self.setUpMovie();
+            assertElementsAlmostEqual(self.movie.pixelSize_, 300.0);
+        end
+        
+        function testPixelsSizeY(self)
+            self.fakename = 'test&physicalSizeY=.3.fake';
+            self.setUpMovie();
+            assertElementsAlmostEqual(self.movie.pixelSize_, 300.0);
+        end
+        
+        function testPixelsSizeZ(self)
+            self.fakename = 'test&physicalSizeZ=.3.fake';
+            self.setUpMovie();
+            assertElementsAlmostEqual(self.movie.pixelSizeZ_, 300.0);
+        end
+        
         %% ROI tests
         function testAddROIMultiSeries(self)
             nMovies = 3;
@@ -251,6 +270,22 @@ classdef TestBFMovieData < TestMovieData & TestCase
             assertEqual(r.getSeries(), 0);
             movies(2).getChannel(1).loadImage(1, 1);
             assertEqual(r.getSeries(), 1);
+        end
+        
+        function testMemoizer(self)
+            self.fakename = 'test.fake';
+            self.setUpMovie();
+            
+            % Check Bio-Formats reader has been cached
+            r = self.movie.getReader().formatReader;
+            assertTrue(r.isSavedToMemo());
+            assertFalse(r.isLoadedFromMemo());
+            
+            % Reload movie and check the reader is read from cache
+            self.movie = MovieData.load(self.movie.getFullPath());
+            r = self.movie.getReader().formatReader;
+            assertFalse(r.isSavedToMemo());
+            assertTrue(r.isLoadedFromMemo());
         end
     end
 end
