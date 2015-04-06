@@ -20,6 +20,8 @@ classdef TestBioFormatsReader < TestCase
             assertEqual(self.reader.series, 0);
             assertTrue(isa(self.reader.formatReader,...
                 'loci.formats.IFormatReader'));
+            assertTrue(isa(self.reader.formatReader,...
+                'loci.formats.Memoizer'));
         end
         
         function testConstructorMultiSeries(self)
@@ -91,7 +93,7 @@ classdef TestBioFormatsReader < TestCase
         end
         
         function testGetReaderClose(self)
-            self.reader = BioFormatsReader(self.id);
+            self.reader = BioFormatsReader(self.id, 'reader', bfGetReader());
             assertTrue(isa(self.reader.getReader(),...
                 'loci.formats.IFormatReader'));
             assertEqual(char(self.reader.formatReader.getCurrentFile()), self.id);
