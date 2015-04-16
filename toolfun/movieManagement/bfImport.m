@@ -187,7 +187,8 @@ end
 % Time interval
 timeInterval = metadataStore.getPixelsTimeIncrement(iSeries);
 if ~isempty(timeInterval)
-    movieArgs=horzcat(movieArgs,'timeInterval_',double(timeInterval));
+    movieArgs=horzcat(movieArgs,'timeInterval_',...
+        timeInterval.value(ome.units.UNITS.S).doubleValue());
 end
 
 % Lens numerical aperture
