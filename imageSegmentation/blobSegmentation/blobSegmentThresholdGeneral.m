@@ -162,14 +162,20 @@ end
 
 if plotRes
     
+    plotOptions = thresholdMethod;
+    if filterNoise
+        plotOptions = [plotOptions '_noise'];
+    end
+    if filterBackground
+        plotOptions = [plotOptions '_background'];
+    end
+    
     imageScaled = (image - prctile(image(:),1)) / (prctile(image(:),99) - prctile(image(:),1));
     imageScaled(imageScaled<0) = 0;
     imageScaled(imageScaled>1) = 1;
     
     %plot 1: bandpass-filtered image
-    f(1) = figure('Name',[plotName '_filteredimage_' ...
-    thresholdMethod '_noise' num2str(filterNoise) ...
-    '_background' num2str(filterBackground)]);
+    f(1) = figure('Name',[plotName '_filteredimage_' plotOptions]);
 
     imageScaled2 = (imageFilteredMinusBackground - prctile(imageFilteredMinusBackground(:),1)) / ...
         (prctile(imageFilteredMinusBackground(:),99) - prctile(imageFilteredMinusBackground(:),1));
@@ -178,9 +184,7 @@ if plotRes
     imshow(imageScaled2,[])
     
     %plot 2: mask edges
-    f(2) = figure('Name',[plotName '_segmentation_' ...
-        thresholdMethod '_noise' num2str(filterNoise) ...
-        '_background' num2str(filterBackground)]);
+    f(2) = figure('Name',[plotName '_segmentation_' plotOptions]);
     
     %get the blob edges from the final blob mask
     SE = strel('square',3);
@@ -200,9 +204,7 @@ if plotRes
     imshow(image3Color,[]);
 
     %plot 3: intensity histogram and threshold
-    f(3) = figure('Name',[plotName '_histogram_' ...
-        thresholdMethod '_noise' num2str(filterNoise) ...
-        '_background' num2str(filterBackground)]);
+    f(3) = figure('Name',[plotName '_histogram_' plotOptions]);
     
     n = optimalHistogram(imageDilatedNorm(nzInd),[],0);
     optimalHistogram(imageDilatedNorm(nzInd),[],0);

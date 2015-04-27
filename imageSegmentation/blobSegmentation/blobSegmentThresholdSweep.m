@@ -26,7 +26,7 @@ for k = 1 : 3
         for i = 1 : 2
             blobSegmentThresholdGeneral(image,thresholdMethod{k},...
                 filterNoise(j),filterBackground(i),minSize,plotRes,...
-                saveDir,plotName);
+                plotName);
         end
     end
 end
