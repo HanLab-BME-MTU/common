@@ -1,5 +1,5 @@
 function [maskBlobs, f] = blobSegmentThresholdGeneral(image,thresholdMethod,...
-    filterNoise,filterBackground,minSize,plotRes,saveDir,plotName)
+    filterNoise,filterBackground,minSize,plotRes,plotName)
 %BLOBSEGMENTTHRESHOLDGENERAL segments blobs in 2D images via various thresholding methods
 %
 %SYNOPSIS maskBlobs = blobSegmentThreshold(image,minSize,plotRes)
@@ -15,8 +15,6 @@ function [maskBlobs, f] = blobSegmentThresholdGeneral(image,thresholdMethod,...
 %                   Optional. Default: 20 pixels.
 %       plotRes   : 1 to plot segmentation results, 0 otherwise.
 %                   Optional. Default: 0.
-%       saveDir   : Directory where to save plots.
-%                   Only needed if plotRes = 1.
 %       plotName  : Image name for plotting.
 %                   Only needed if plotRes = 1.
 %
