@@ -198,29 +198,63 @@ if userData.newFigure || userData.updateImage
     end
 end
 
+% set the userdata before interactive impoly in case the figure changes
+% first
+set(handles.figure1, 'UserData', userData);
+guidata(hObject,handles);
+
 if userData.imPolyHandle.isvalid
     % Update the imPoly position
     setPosition(userData.imPolyHandle,userData.ROI)
 else
-    % Create a new imPoly object and store the handle
-    if ~isempty(userData.ROI)
-        userData.imPolyHandle = impoly(get(imHandle,'Parent'), []);
-    else
-        userData.imPolyHandle = impoly(get(imHandle,'Parent'),userData.ROI);
+    % Do not create a new impoly if one is in progress
+    if(isempty(findobj(gca,'Tag','impoly')))
+    
+        % Create a new imPoly object and store the handle
+        % since impoly blocks, create the constraint function first in case
+        % something happens later
+        fcn = makeConstrainToRectFcn('impoly',get(imHandle,'XData'),get(imHandle,'YData'));
+        if ~isempty(userData.ROI)
+            userData.imPolyHandle = impoly(get(imHandle,'Parent'), []);
+        else
+            userData.imPolyHandle = impoly(get(imHandle,'Parent'),userData.ROI);
+        end
+        setPositionConstraintFcn(userData.imPolyHandle,fcn);
     end
-    fcn = makeConstrainToRectFcn('impoly',get(imHandle,'XData'),get(imHandle,'YData'));
-    setPositionConstraintFcn(userData.imPolyHandle,fcn);
 end
 
 set(handles.figure1, 'UserData', userData);
 guidata(hObject,handles);
+impoly_finish_cb(hObject,eventdata,handles)
+
+function impoly_finish_cb(hObject,eventdata,handles)
+% impoly_finish_cb displays a useful help message if the user double clicks
+% on the polygon selection
+    userData = get(handles.figure1, 'UserData');
+        while(isempty(userData.ROI) && userData.imPolyHandle.isvalid)
+            resume(userData.imPolyHandle);
+            wait(userData.imPolyHandle);
+            % After user double clicks, check if figure is still valid
+            if(isvalid(handles.figure1))
+                userData = get(handles.figure1, 'UserData');
+                % Check if a valid ROI has been set already, meaning we are closing
+                % or saving. If not, then display a help message
+                if(isempty(userData.ROI))
+                    helpdlg(['Click "Save" to store the ROI, or ' ...
+                             'Click "Draw new region of interest" to reset. ' ...
+                             'See impoly documentation for other commands.']);
+                end
+            end
+        end
 
 function close_previewFig(hObject, eventdata)
 handles = guidata(get(hObject,'UserData'));
 userData=get(handles.figure1,'UserData');
-userData.ROI=getPosition(userData.imPolyHandle);
-set(handles.figure1,'UserData',userData);
-update_data(hObject, eventdata, handles);
+if(userData.imPolyHandle.isvalid)
+    userData.ROI=getPosition(userData.imPolyHandle);
+    set(handles.figure1,'UserData',userData);
+    update_data(hObject, eventdata, handles);
+end
 
 % --- Executes on slider movement.
 function frameNumberEdition_Callback(hObject, eventdata, handles)
@@ -272,34 +306,39 @@ update_data(hObject,eventdata,handles);
 
 % Create ROI mask and save it in the outputDirectory
 userData = get(handles.figure1, 'UserData');
-mask=createMask(userData.imPolyHandle);
-maskPath = fullfile(userData.MD.outputDirectory_,'roiMask.tif');
-imwrite(mask,maskPath);
+try
+    mask=createMask(userData.imPolyHandle);
+    maskPath = fullfile(userData.MD.outputDirectory_,'roiMask.tif');
+    imwrite(mask,maskPath);
 
-if get(handles.checkbox_addROI, 'Value')
-    % Create a new region of interest and save the object
-    userData.MD.addROI(maskPath, outputDirectory);
-    movieROI = userData.MD.rois_(end);
-    movieROI.save();
-    
-    % If called from movieSelectorGUI
-    if userData.mainFig ~=-1,
-        % Retrieve main window userData
-        userData_main = get(userData.mainFig, 'UserData');
-        
-        % Append new ROI to movie selector panel
-        userData_main.MD = horzcat(userData_main.MD, movieROI);
-        set(userData.mainFig, 'UserData', userData_main)
-        movieSelectorGUI('refreshDisplay',userData.mainFig,...
-            eventdata,guidata(userData.mainFig));
+    if get(handles.checkbox_addROI, 'Value')
+        % Create a new region of interest and save the object
+        userData.MD.addROI(maskPath, outputDirectory);
+        movieROI = userData.MD.rois_(end);
+        movieROI.save();
+
+        % If called from movieSelectorGUI
+        if userData.mainFig ~=-1,
+            % Retrieve main window userData
+            userData_main = get(userData.mainFig, 'UserData');
+
+            % Append new ROI to movie selector panel
+            userData_main.MD = horzcat(userData_main.MD, movieROI);
+            set(userData.mainFig, 'UserData', userData_main)
+            movieSelectorGUI('refreshDisplay',userData.mainFig,...
+                eventdata,guidata(userData.mainFig));
+        end
+    else
+        % Create a new region of interest and save the object
+        userData.MD.setROIMaskPath(maskPath);
+        userData.MD.save();
     end
-else
-    % Create a new region of interest and save the object
-    userData.MD.setROIMaskPath(maskPath);
-    userData.MD.save();
+    % Delete current window
+    delete(handles.figure1)
+catch err
+    errordlg('Did not successfully save ROI. Complete ROI selection or Cancel.');
+    rethrow(err);
 end
-% Delete current window
-delete(handles.figure1)
 
 
 % --- Executes on button press in pushbutton_outputDirectory.
