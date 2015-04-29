@@ -22,7 +22,7 @@ function varargout = addMovieROIMaskGUI(varargin)
 
 % Edit the above text to modify the response to help addMovieROIMaskGUI
 
-% Last Modified by GUIDE v2.5 24-Mar-2015 13:16:14
+% Last Modified by GUIDE v2.5 29-Apr-2015 13:01:19
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -91,10 +91,10 @@ userData_main = get(ip.Results.mainFig, 'UserData');
 set(handles.figure1,'CurrentAxes',handles.axes_help);
 Img = image(userData_main.questIconData);
 set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'),...
-	'visible','off','YDir','reverse');
+    'visible','off','YDir','reverse');
 set(Img,'ButtonDownFcn',@icon_ButtonDownFcn,...
-  	'UserData', struct('class', mfilename))
-    
+    'UserData', struct('class', mfilename))
+
 % Choose default command line output for addMovieROIMaskGUI
 handles.output = hObject;
 
@@ -105,7 +105,7 @@ update_data(hObject,eventdata,handles);
 
 
 % --- Outputs from this function are returned to the command line.
-function varargout = addMovieROIMaskGUI_OutputFcn(~, ~, handles) 
+function varargout = addMovieROIMaskGUI_OutputFcn(~, ~, handles)
 % varargout  cell array for returning output args (see VARARGOUT);
 % hObject    handle to figure
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -147,7 +147,7 @@ if strcmp(eventdata.Key, 'return')
     pushbutton_done_Callback(handles.pushbutton_save, [], handles);
 end
 
- % --- Executes on button press in checkbox_preview.
+% --- Executes on button press in checkbox_preview.
 function update_data(hObject, eventdata, handles)
 userData = get(handles.figure1, 'UserData');
 
@@ -163,11 +163,11 @@ if (chanIndex~=userData.chanIndex) ||  (imIndx~=userData.imIndx)
     userData.updateImage=1;
     userData.chanIndex=chanIndex;
     userData.imIndx=imIndx;
-        
+    
     % Update roi
     if userData.imPolyHandle.isvalid
         userData.ROI=getPosition(userData.imPolyHandle);
-    end    
+    end
 else
     userData.updateImage=0;
 end
@@ -252,6 +252,15 @@ function pushbutton_save_Callback(hObject, eventdata, handles)
 
 userData = get(handles.figure1, 'UserData');
 
+if get(handles.checkbox_addROI, 'Value')
+    % Check valid output directory for the subregional movie
+    outputDirectory = get(handles.edit_outputDirectory,'String');
+    if isempty(outputDirectory),
+        errordlg('Please select an output directory','Error','modal');
+        return;
+    end
+end
+
 % Read ROI if crop window is still visible
 if userData.imPolyHandle.isvalid
     userData.ROI=getPosition(userData.imPolyHandle);
@@ -265,9 +274,57 @@ mask=createMask(userData.imPolyHandle);
 maskPath = fullfile(userData.MD.outputDirectory_,'roiMask.tif');
 imwrite(mask,maskPath);
 
-% Create a new region of interest and save the object
-userData.MD.setROIMaskPath(maskPath);   
-userData.MD.save();
-
+if get(handles.checkbox_addROI, 'Value')
+    % Create a new region of interest and save the object
+    userData.MD.addROI(maskPath, outputDirectory);
+    movieROI = userData.MD.rois_(end);
+    movieROI.save();
+    
+    % If called from movieSelectorGUI
+    if userData.mainFig ~=-1,
+        % Retrieve main window userData
+        userData_main = get(userData.mainFig, 'UserData');
+        
+        % Append new ROI to movie selector panel
+        userData_main.MD = horzcat(userData_main.MD, movieROI);
+        set(userData.mainFig, 'UserData', userData_main)
+        movieSelectorGUI('refreshDisplay',userData.mainFig,...
+            eventdata,guidata(userData.mainFig));
+    end
+else
+    % Create a new region of interest and save the object
+    userData.MD.setROIMaskPath(maskPath);
+    userData.MD.save();
+end
 % Delete current window
 delete(handles.figure1)
+
+
+% --- Executes on button press in pushbutton_outputDirectory.
+function pushbutton_outputDirectory_Callback(hObject, eventdata, handles)
+
+userData = get(handles.figure1, 'UserData');
+pathname = uigetdir(userData.MD.getPath(),'Select output directory');
+
+% Test uigetdir output and store its results
+if isequal(pathname,0), return; end
+set(handles.edit_outputDirectory,'String',pathname);
+
+% Save data
+set(handles.figure1,'UserData',userData);
+guidata(hObject, handles);
+
+% --- Executes on button press in checkbox_addROI.
+function checkbox_addROI_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox_addROI (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+if get(hObject,'Value')
+    state = 'on';
+else
+    state = 'off';
+end
+set(handles.pushbutton_outputDirectory, 'Enable', state);
+set(handles.edit_outputDirectory, 'Enable', state);
+
