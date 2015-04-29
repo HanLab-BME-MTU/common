@@ -80,8 +80,13 @@ userData.helpFig=-1;
 % Read the first image and update the sliders max value and steps
 userData.chanIndex = 1;
 set(handles.edit_frameNumber,'String',1);
-set(handles.slider_frameNumber,'Min',1,'Value',1,'Max',userData.nFrames,...
-    'SliderStep',[1/max(1,double(userData.nFrames-1))  10/max(1,double(userData.nFrames-1))]);
+if userData.nFrames > 1
+    set(handles.slider_frameNumber,'Min',1,'Value',1,'Max',userData.nFrames,...
+        'SliderStep',[1/max(1,double(userData.nFrames-1))  10/max(1,double(userData.nFrames-1))]);
+else
+    set(handles.edit_frameNumber, 'Enable', 'off');
+    set(handles.slider_frameNumber, 'Enable', 'off');
+end
 userData.imIndx=1;
 userData.imData=mat2gray(userData.MD.channels_(userData.chanIndex).loadImage(userData.imIndx));
     
