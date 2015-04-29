@@ -22,7 +22,7 @@ function varargout = addROIGUI(varargin)
 
 % Edit the above text to modify the response to help addROIGUI
 
-% Last Modified by GUIDE v2.5 29-Apr-2015 13:44:23
+% Last Modified by GUIDE v2.5 29-Apr-2015 14:56:21
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -80,10 +80,9 @@ userData.helpFig=-1;
 % Read the first image and update the sliders max value and steps
 userData.chanIndex = 1;
 set(handles.edit_frameNumber,'String',1);
-if userData.nFrames > 1
-    set(handles.slider_frameNumber,'Min',1,'Value',1,'Max',userData.nFrames,...
-        'SliderStep',[1/max(1,double(userData.nFrames-1))  10/max(1,double(userData.nFrames-1))]);
-else
+set(handles.slider_frameNumber,'Min',1,'Value',1,'Max',userData.nFrames,...
+    'SliderStep',[1/max(1,double(userData.nFrames-1))  10/max(1,double(userData.nFrames-1))]);
+if userData.nFrames == 1
     set(handles.edit_frameNumber, 'Enable', 'off');
     set(handles.slider_frameNumber, 'Enable', 'off');
 end
@@ -106,8 +105,6 @@ handles.output = hObject;
 % Update user data and GUI data
 set(hObject, 'UserData', userData);
 guidata(hObject, handles);
-update_data(hObject,eventdata,handles);
-
 
 % --- Outputs from this function are returned to the command line.
 function varargout = addROIGUI_OutputFcn(~, ~, handles)
@@ -207,7 +204,7 @@ if userData.imPolyHandle.isvalid
 else
     % Create a new imPoly object and store the handle
     if ~isempty(userData.ROI)
-        userData.imPolyHandle = impoly(get(imHandle,'Parent'));
+        userData.imPolyHandle = impoly(get(imHandle,'Parent'), []);
     else
         userData.imPolyHandle = impoly(get(imHandle,'Parent'),userData.ROI);
     end
@@ -332,3 +329,15 @@ else
 end
 set(handles.pushbutton_outputDirectory, 'Enable', state);
 set(handles.edit_outputDirectory, 'Enable', state);
+
+
+% --- Executes on button press in pushbutton_draw.
+function pushbutton_draw_Callback(hObject, eventdata, handles)
+
+userData=get(handles.figure1,'UserData');
+userData.ROI = [];
+if userData.imPolyHandle.isvalid
+    delete(userData.imPolyHandle);
+end
+set(hObject, 'UserData', userData);
+update_data(hObject,eventdata,handles);
