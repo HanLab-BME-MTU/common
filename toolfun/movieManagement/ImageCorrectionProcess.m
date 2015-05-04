@@ -45,23 +45,26 @@ classdef ImageCorrectionProcess < ImageProcessingProcess
             
         end                 
         
-        function setCorrectionImagePath(obj,iChan,imagePaths)           
-            if ~obj.checkChanNum(iChan);
-                error('lccb:set:fatal','Invalid image channel number for correction image path!\n\n'); 
-            end
+        function setCorrectionImagePath(obj, iChan, imagePaths)
+            % Register the correction image paths for the input channels
+
+            % Input check
+            assert(all(obj.checkChanNum(iChan)), 'lccb:set:fatal',...
+                'Invalid image channel number for correction image path!\n\n');
             nChan = length(iChan);
             if ~iscell(imagePaths)
                 imagePaths = {imagePaths};
             end
-            if numel(imagePaths) ~= nChan
-                error('lccb:set:fatal','You must specify one image path for each correction image channel!\n\n'); 
-            end
+            assert(numel(imagePaths) == nChan, 'lccb:set:fatal',...
+                ['You must specify one image path for each correction image'...
+                 ' channel!']);
+            isValidDir = @(x) exist(x,'dir') && numel(imDir(x)) > 0;
             for j = 1:nChan
-                if exist(imagePaths{j},'dir') && numel(imDir(imagePaths{j})) > 0
-                    obj.inFilePaths_{2,iChan(j)} = imagePaths{j};
-                else
-                   error(['The correction image path specified for channel ' num2str(iChan(j)) ' was not a valid image-containing directory!']) 
-                end
+                assert(isempty(imagePaths{j}) || isValidDir(imagePaths{j}),...
+                    ['The correction image path specified for channel '...
+                     num2str(iChan(j)) ' is not a valid image-containing'...
+                     ' directory!']);
+                obj.inFilePaths_{2, iChan(j)} = imagePaths{j};
             end
         end
         
