@@ -2,7 +2,6 @@ classdef TestBFMovieData < TestMovieData & TestCase
     
     properties
         fakename = 'test.fake';
-        lociToolsPath
     end
     
     methods
@@ -12,18 +11,8 @@ classdef TestBFMovieData < TestMovieData & TestCase
         
         %% Set up and tear down methods
         function setUp(self)
+            bfCheckJavaPath();
             self.setUp@TestMovieData();
-            
-            % Get path to Bio-Formats JAR (assuming it is in Matlab path)
-            self.lociToolsPath = which('bioformats_package.jar');
-            assert(~isempty(self.lociToolsPath));
-            
-            % Remove Bio-Formats JAR from dynamic class path
-            if ismember(self.lociToolsPath,javaclasspath('-dynamic'))
-                javarmpath(self.lociToolsPath);
-            end
-            
-            bfCheckJavaPath;
             r = loci.formats.in.FakeReader();
             self.imSize = [r.DEFAULT_SIZE_Y r.DEFAULT_SIZE_X];
             self.nChan = r.DEFAULT_SIZE_C;
@@ -32,11 +21,6 @@ classdef TestBFMovieData < TestMovieData & TestCase
         
         function tearDown(self)
             self.tearDown@TestMovieData();
-            
-            % Remove Bio-Formats JAR from dynamic class path
-            if ismember(self.lociToolsPath,javaclasspath('-dynamic'))
-                javarmpath(self.lociToolsPath);
-            end
         end
         
         function filename = createFakeFile(self)
@@ -193,6 +177,25 @@ classdef TestBFMovieData < TestMovieData & TestCase
             assertEqual(self.movie.getDimensions('XYC'), dim([1 2 4]));
         end
         
+        %% Metadata tests
+        function testPixelsSizeX(self)
+            self.fakename = 'test&physicalSizeX=.3.fake';
+            self.setUpMovie();
+            assertElementsAlmostEqual(self.movie.pixelSize_, 300.0);
+        end
+        
+        function testPixelsSizeY(self)
+            self.fakename = 'test&physicalSizeY=.3.fake';
+            self.setUpMovie();
+            assertElementsAlmostEqual(self.movie.pixelSize_, 300.0);
+        end
+        
+        function testPixelsSizeZ(self)
+            self.fakename = 'test&physicalSizeZ=.3.fake';
+            self.setUpMovie();
+            assertElementsAlmostEqual(self.movie.pixelSizeZ_, 300.0);
+        end
+        
         %% ROI tests
         function testAddROIMultiSeries(self)
             nMovies = 3;
@@ -251,6 +254,22 @@ classdef TestBFMovieData < TestMovieData & TestCase
             assertEqual(r.getSeries(), 0);
             movies(2).getChannel(1).loadImage(1, 1);
             assertEqual(r.getSeries(), 1);
+        end
+        
+        function testMemoizer(self)
+            self.fakename = 'test.fake';
+            self.setUpMovie();
+            
+            % Check Bio-Formats reader has been cached
+            r = self.movie.getReader().formatReader;
+            assertTrue(r.isSavedToMemo());
+            assertFalse(r.isLoadedFromMemo());
+            
+            % Reload movie and check the reader is read from cache
+            self.movie = MovieData.load(self.movie.getFullPath());
+            r = self.movie.getReader().formatReader;
+            assertFalse(r.isSavedToMemo());
+            assertTrue(r.isLoadedFromMemo());
         end
     end
 end

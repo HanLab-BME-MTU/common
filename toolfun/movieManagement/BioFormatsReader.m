@@ -28,7 +28,19 @@ classdef  BioFormatsReader < Reader
             if ~isempty(ip.Results.reader),
                 obj.formatReader = ip.Results.reader;
             else
-                obj.formatReader = bfGetReader(obj.id, false);
+                obj.formatReader = loci.formats.Memoizer(bfGetReader(),0);
+                try
+                    obj.formatReader.setId(obj.id);
+                catch
+                    % The following block is a workaround for handling
+                    % FileNotFoundException when a file is relocated
+                    % together with its memo file.
+                    % Hopefully this should be fixed at the Bio-Formats
+                    % level directly in a 5.1.x releas
+                    delete(obj.formatReader.getMemoFile(obj.id));
+                    obj.formatReader.close();
+                    obj.formatReader.setId(obj.id);
+                end
             end
             obj.series = ip.Results.series;
         end
