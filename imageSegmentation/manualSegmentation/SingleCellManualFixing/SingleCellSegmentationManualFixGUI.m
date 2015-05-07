@@ -205,15 +205,26 @@ if handles.segThisCell > 1
         sup_cellMask  = arrayfun(@(x) currObj.processes_{maskIdx}.loadChannelOutput(supChan,x),1:nFrame,'Unif',0);
         masks     = cat(3,cellMask{:}); 
         sup_masks     = cat(3,sup_cellMask{:}); 
+        maskFileNames = currObj.processes_{maskIdx}.getOutMaskFileNames(currChan);
+        orgPath = currObj.processes_{maskIdx}.outFilePaths_{currChan};
         handles.loadedCells(handles.currCell)  =  true;
         handles.loadedMask{handles.currCell}   = masks;
         handles.loadedSupMask{handles.currCell}   = sup_masks;
         handles.loadedImage{handles.currCell}  = images;
+        handles.maskFileNames{handles.currCell}   = maskFileNames;
+        handles.maskPath{handles.currCell}  = orgPath;
         guidata(hObject, handles);
     else
         masks  = handles.loadedMask{handles.currCell};
         images = handles.loadedImage{handles.currCell};
-        sup_masks  = handles.loadedSupMask{handles.currCell};        
+        sup_masks  = handles.loadedSupMask{handles.currCell};      
+        try
+            maskFileNames = handles.maskFileNames{handles.currCell};
+            orgPath = handles.maskPath{handles.currCell};
+        catch
+            maskFileNames = [];
+            orgPath = [];
+        end
     end
   
     segIdx    = currObj.getPackageIndex('SegmentationPackage');
@@ -228,7 +239,6 @@ if handles.segThisCell > 1
     truthPath = [segPath filesep 'FixedChannel' num2str(currChan) 'Cell' num2str(currSingleCell)];
     fixedPath = [segPath filesep 'OnlyFixedChannel' num2str(currChan) 'Cell' num2str(currSingleCell)];    
     compPath  = [segPath filesep 'completedFramesChannel' num2str(currChan) 'Cell' num2str(currSingleCell)];
-    
     
     boxall = nan(size(masks,3),4);
 
@@ -248,7 +258,7 @@ if handles.segThisCell > 1
         goodMask = imDir([truthPath]);
         for iMask = find(aux.isCompleted)'
             try
-            masks(:,:,iMask) = imread([truthPath filesep goodMask(iMask).name]);
+                masks(:,:,iMask) = imread([truthPath filesep goodMask(iMask).name]);
             catch
                 masks(:,:,iMask) = 0;
             end
@@ -256,7 +266,7 @@ if handles.segThisCell > 1
             
     end
     
-    [outMasks,boxall,isCompleted] = manualSegmentationFixSingleCellTweakGUI(images,masks,sup_masks,[],aux.isCompleted,boxall,[],fixedPath,compPath);
+    [outMasks,boxall,isCompleted] = manualSegmentationFixSingleCellTweakGUI(images,masks,sup_masks,[],aux.isCompleted,boxall,[],fixedPath,compPath,orgPath,maskFileNames{1});
     
 
 %     iCell=currentSingleCellID;
@@ -436,7 +446,12 @@ if handles.segThisCell > 1
             
         end
     else
-        winopen(fixedPath);
+        if ispc
+            winopen(fixedPath);
+        else
+            disp('Data are stored in: ');
+            disp(fixedPath);
+        end
     end    
     
     
