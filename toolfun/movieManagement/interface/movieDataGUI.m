@@ -404,7 +404,9 @@ if isequal(file,0) || isequal(path,0), return; end
 % Import data into movie using bioformats
 loci.common.DebugTools.enableLogging('INFO');
 importMetadata = logical(get(handles.checkbox_importMetadata,'Value'));
-MD = MovieData([path file], importMetadata, 'askUser', true);
+outputDir = get(handles.edit_output, 'String');
+MD = MovieData([path file], importMetadata, 'askUser', true,...
+    'outputDirectory', outputDir);
 
 % Update movie selector interface
 userData=get(handles.figure1,'UserData');

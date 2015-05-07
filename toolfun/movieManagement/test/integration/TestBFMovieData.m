@@ -2,7 +2,6 @@ classdef TestBFMovieData < TestMovieData & TestCase
     
     properties
         fakename = 'test.fake';
-        lociToolsPath
     end
     
     methods
@@ -12,18 +11,8 @@ classdef TestBFMovieData < TestMovieData & TestCase
         
         %% Set up and tear down methods
         function setUp(self)
+            bfCheckJavaPath();
             self.setUp@TestMovieData();
-            
-            % Get path to Bio-Formats JAR (assuming it is in Matlab path)
-            self.lociToolsPath = which('bioformats_package.jar');
-            assert(~isempty(self.lociToolsPath));
-            
-            % Remove Bio-Formats JAR from dynamic class path
-            if ismember(self.lociToolsPath,javaclasspath('-dynamic'))
-                javarmpath(self.lociToolsPath);
-            end
-            
-            bfCheckJavaPath;
             r = loci.formats.in.FakeReader();
             self.imSize = [r.DEFAULT_SIZE_Y r.DEFAULT_SIZE_X];
             self.nChan = r.DEFAULT_SIZE_C;
@@ -32,11 +21,6 @@ classdef TestBFMovieData < TestMovieData & TestCase
         
         function tearDown(self)
             self.tearDown@TestMovieData();
-            
-            % Remove Bio-Formats JAR from dynamic class path
-            if ismember(self.lociToolsPath,javaclasspath('-dynamic'))
-                javarmpath(self.lociToolsPath);
-            end
         end
         
         function filename = createFakeFile(self)
