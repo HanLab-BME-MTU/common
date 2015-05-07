@@ -307,11 +307,14 @@ update_data(hObject,eventdata,handles);
 % Create ROI mask and save it in the outputDirectory
 userData = get(handles.figure1, 'UserData');
 try
-    mask=createMask(userData.imPolyHandle);
-    maskPath = fullfile(userData.MD.outputDirectory_,'roiMask.tif');
-    imwrite(mask,maskPath);
-
+    mask=createMask(userData.imPolyHandle);           
+    
     if get(handles.checkbox_addROI, 'Value')
+        
+        %Save  mask to ROI output directory
+        maskPath = fullfile(outputDirectory,'roiMask.tif');
+        imwrite(mask,maskPath);
+        
         % Create a new region of interest and save the object
         userData.MD.addROI(maskPath, outputDirectory);
         movieROI = userData.MD.rois_(end);
@@ -329,6 +332,10 @@ try
                 eventdata,guidata(userData.mainFig));
         end
     else
+        %Save mask to this MD's output directory
+        maskPath = fullfile(userData.MD.outputDirectory_,'roiMask.tif');
+        imwrite(mask,maskPath);
+        
         % Create a new region of interest and save the object
         userData.MD.setROIMaskPath(maskPath);
         userData.MD.save();

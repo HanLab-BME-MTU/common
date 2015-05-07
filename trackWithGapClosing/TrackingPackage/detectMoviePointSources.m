@@ -141,39 +141,18 @@ for i = 1:numel(p.ChannelIndex)
     disp(outFilePaths{1,iChan});
     
     %Set up parameter structure for detection on this channel
-    initDetP = splitPerChannelParams(p, iChan);
+    detP = splitPerChannelParams(p, iChan);
     
     % Initialize a movieInfo structure with the minimum amount of fields
     clear movieInfo
     movieInfo(1 : nFrames)= struct('xCoord', [], 'yCoord', [],...
         'amp', [], 'sigmaX', [], 'sigmaY', [], 'bkg', []);
     
-    maskChannel_i = zeros(size(maskProc.loadChannelOutput(p.MaskChannelIndex(i),1),1),...
-        size(maskProc.loadChannelOutput(p.MaskChannelIndex(i),1),2),nFrames);
-    imagesChannel_i = zeros(size(movieData.channels_(iChan).loadImage(1),1),...
-        size(movieData.channels_(iChan).loadImage(1),2),nFrames);
-    for j=1:nFrames
-        maskChannel_i(:,:,j)=maskProc.loadChannelOutput(p.MaskChannelIndex(i),j); %for parfor
-        imagesChannel_i(:,:,j) = movieData.channels_(iChan).loadImage(j);
-    end
-    %initialization for movieInfo with first frame
-    pstruct = pointSourceDetection(double(imagesChannel_i(:,:,1)),p.filterSigma(iChan),initDetP);
-    if ~isempty(pstruct) &&...
-            ~isequal(fieldnames(pstruct), fieldnames(movieInfo(j)))
-        allFields = fieldnames(pstruct);
-        for iField = 1:numel(allFields)
-            movieInfo(end).(allFields{iField}) = pstruct.(allFields{iField}); 
-        end
-        movieInfo = orderfields(movieInfo);
-    end
-    
-%     progressStepSize = 5;
-    parfor_progress(nFrames);
-    parfor j= 1:nFrames
-        detP=initDetP;
-        currImage = double(imagesChannel_i(:,:,j));
+    for j= 1:nFrames
+        
+        currImage = double(movieData.channels_(iChan).loadImage(j));
         if ~isempty(p.MaskProcessIndex) && ~isempty(p.MaskChannelIndex)
-            currMask = maskChannel_i(:,:,j) & roiMask(:,:,j);
+            currMask = maskProc.loadChannelOutput(p.MaskChannelIndex(i),j) & roiMask(:,:,j);
             detP.Mask =  currMask;
         else
             detP.Mask = roiMask(:,:,j);
@@ -182,6 +161,14 @@ for i = 1:numel(p.ChannelIndex)
         % Call main detection function
         pstruct = pointSourceDetection(currImage,p.filterSigma(iChan),detP);
         
+        if ~isempty(pstruct) &&...
+                ~isequal(fieldnames(pstruct), fieldnames(movieInfo(j)))
+            allFields = fieldnames(pstruct);
+            for iField = 1:numel(allFields)
+                movieInfo(j).(allFields{iField}) = pstruct.(allFields{iField}); %#ok<AGROW>
+            end
+            movieInfo = orderfields(movieInfo);
+        end
         % add xCoord, yCoord, amp fields for compatibilty  with tracker
         if ~isempty(pstruct)
             
@@ -192,17 +179,15 @@ for i = 1:numel(p.ChannelIndex)
             pstruct.sigmaY = [pstruct.s' pstruct.s_pstd'];
             pstruct.bkg = [pstruct.c' pstruct.c_pstd'];
             
-            movieInfo(j) = orderfields(pstruct); 
+            movieInfo(j) = orderfields(pstruct); %#ok<AGROW>
         end
         
-        parfor_progress;
-%         if mod(j,5)==1 && ishandle(wtBar)
-%             tj=toc;
-%             nj = (i-1)*nFrames+ j;
-%             waitbar(nj/nTot,wtBar,sprintf([logMsg(iChan) timeMsg(tj*nTot/nj-tj)]));
-%         end
+        if mod(j,5)==1 && ishandle(wtBar)
+            tj=toc;
+            nj = (i-1)*nFrames+ j;
+            waitbar(nj/nTot,wtBar,sprintf([logMsg(iChan) timeMsg(tj*nTot/nj-tj)]));
+        end
     end
-    parfor_progress(0);
     save(outFilePaths{1,iChan}, 'movieInfo');
 end
 
