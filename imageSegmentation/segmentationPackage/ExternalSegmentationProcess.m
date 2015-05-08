@@ -31,6 +31,10 @@ classdef ExternalSegmentationProcess < SegmentationProcess
             name = 'External Segmentation';
         end
         
+        function h = GUI()
+            h= @externalSegmentationProcessGUI;
+        end
+
         function funParams = getDefaultParams(owner,varargin)
             % Input check
             ip=inputParser;
@@ -41,6 +45,7 @@ classdef ExternalSegmentationProcess < SegmentationProcess
             
             % Set default parameters
             funParams.OutputDirectory = [outputDir  filesep 'externalSegmentation'];
+            funParams.ChannelIndex = 1:numel(owner.channels_);
             funParams.InputData = cell(numel(owner.channels_), 1);
         end
     end

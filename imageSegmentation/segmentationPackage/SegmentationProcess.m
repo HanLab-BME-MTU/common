@@ -38,7 +38,8 @@ classdef SegmentationProcess < MaskProcess
             procClasses = ...
                 {'ThresholdProcess';
                 'MSSSegmentationProcess';
-                'ThresholdProcess3D'
+                'ThresholdProcess3D';
+                'ExternalSegmentationProcess';
                 'NucSegProcess'};
         end
         
