@@ -110,7 +110,10 @@ if numel(channelString) ~= numel(maskPaths)
     return;
 end
 
-% Apply new channel index and new shade images for sanity check
+oldFunParams = userData.crtProc.funParams_;
+% Apply new channel index and new mask input for sanity check
+funParams.ChannelIndex = channelIndex;
+funParams.InputData = cell(numel(userData.MD.channels_), 1);
 funParams.InputData(channelIndex) = maskPaths;
 
 parseProcessParams(userData.crtProc, funParams);
@@ -125,8 +128,7 @@ catch ME
 end
 
 % Set parameters
-shadeSettingFcn =@(x) setCorrectionImagePath(x,channelIndex,shadeChannels);
-processGUI_ApplyFcn(hObject, eventdata, handles,funParams,{shadeSettingFcn});
+processGUI_ApplyFcn(hObject, eventdata, handles,funParams);
 
 
 % --- Executes on button press in pushbutton_deletechannel.
