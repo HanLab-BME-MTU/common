@@ -603,11 +603,15 @@ function menu_tools_exportMovieData_Callback(hObject, eventdata, handles)
 
 % Return if no movie
 props=get(handles.listbox_movie, {'String','Value'});
-if isempty(props{1}), return; end
+if isempty(props{1}),
+    errordlg('No movie selected. Please load or create a new movie first.');
+    return;
+end
 
-% Query
+% Query for a variable name
 varname = inputdlg('Input the name of the variable to export the movie as',...
     'MovieData export', 1, {'MD'});
+if isempty(varname), return; end
 
 userData = get(handles.figure1, 'UserData');
 assignin('base', varname{1}, userData.MD(props{2}));
