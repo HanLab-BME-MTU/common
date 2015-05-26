@@ -22,7 +22,7 @@ function varargout = movieSelectorGUI(varargin)
 
 % Edit the above text to modify the response to help movieSelectorGUI
 
-% Last Modified by GUIDE v2.5 29-Apr-2015 13:50:26
+% Last Modified by GUIDE v2.5 25-May-2015 22:56:16
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -479,7 +479,7 @@ set(handles.figure1,'UserData',userData);
 
 
 % --------------------------------------------------------------------
-function maticmenu_tools_addROI_Callback(hObject, eventdata, handles)
+function menu_tools_addROI_Callback(hObject, eventdata, handles)
 
 % Return if no movie 
 props=get(handles.listbox_movie, {'String','Value'});
@@ -596,3 +596,41 @@ if isempty(props{1}), return; end
 
 userData = get(handles.figure1, 'UserData');
 movieViewer(userData.MD(props{2}));
+
+
+% --------------------------------------------------------------------
+function menu_tools_exportMovieData_Callback(hObject, eventdata, handles)
+
+% Return if no movie
+props=get(handles.listbox_movie, {'String','Value'});
+if isempty(props{1}),
+    errordlg('No movie selected. Please load or create a new movie first.');
+    return;
+end
+
+% Query for a variable name
+varname = inputdlg('Input the name of the variable to export the movie as',...
+    'MovieData export', 1, {'MD'});
+if isempty(varname), return; end
+
+userData = get(handles.figure1, 'UserData');
+assignin('base', varname{1}, userData.MD(props{2}));
+
+
+% --------------------------------------------------------------------
+function menu_tools_exportMovieList_Callback(hObject, eventdata, handles)
+
+% Return if no movie
+props=get(handles.listbox_movieList, {'String','Value'});
+if isempty(props{1}),
+    errordlg('No movie list selected. Please load or create a new movie list first.');
+    return;
+end
+
+% Query for a variable name
+varname = inputdlg('Input the name of the variable to export the movie list as',...
+    'MovieData export', 1, {'ML'});
+if isempty(varname), return; end
+
+userData = get(handles.figure1, 'UserData');
+assignin('base', varname{1}, userData.ML(props{2}));
