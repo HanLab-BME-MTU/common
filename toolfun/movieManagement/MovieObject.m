@@ -323,20 +323,25 @@ classdef  MovieObject < hgsetget
         end
         
         %% Miscellaneous functions
-        function askUser = sanityCheck(obj, path, filename,askUser)
+        function askUser = sanityCheck(obj, varargin)
             % Check sanity of movie object
             %
             % Check if the path and filename stored in the movie object are
             % the same as the input if any. If they differ, call the
             % movie object relocation routine. Use a dialog interface to ask
             % for relocation if askUser is set as true and return askUser.
-            
-            if nargin < 4, askUser = true; end
-            if nargin > 1 && ~isempty(path)
+            ip = inputParser();
+            ip.addOptional('path', '', @ischar);
+            ip.addOptional('filename', '', @ischar);
+            ip.addOptional('askUser', true, @isscalar);
+            ip.parse(varargin{:});
+            askUser = ip.Results.askUser;
+
+            if ~isempty(ip.Results.path)
                 % Remove ending file separators from paths
                 endingFilesepToken = [regexptranslate('escape',filesep) '$'];
                 oldPath = regexprep(obj.getPath(),endingFilesepToken,'');
-                newPath = regexprep(path,endingFilesepToken,'');
+                newPath = regexprep(ip.Results.path,endingFilesepToken,'');
                 
                 % If different path
                 hasDisplay = feature('ShowFigureWindows');
@@ -359,8 +364,9 @@ classdef  MovieObject < hgsetget
                     
                     full = ~strcmp(confirmRelocate,'No');
                     askUser = ~strcmp(confirmRelocate,'Yes to all');
+
                     % Get old and new relocation directories
-                    [oldRootDir newRootDir]=getRelocationDirs(oldPath,newPath);
+                    [oldRootDir, newRootDir]=getRelocationDirs(oldPath,newPath);
                     oldRootDir = regexprep(oldRootDir,endingFilesepToken,'');
                     newRootDir = regexprep(newRootDir,endingFilesepToken,'');
                     
@@ -369,10 +375,14 @@ classdef  MovieObject < hgsetget
                     obj.relocate(oldRootDir,newRootDir,full);
                 end
             end
-            if nargin > 2 && ~isempty(filename), obj.setFilename(filename); end
+            if ~isempty(ip.Results.filename),
+                obj.setFilename(ip.Results.filename);
+            end
             
-            if isempty(obj.outputDirectory_), warning('lccb:MovieObject:sanityCheck',...
-                    'Empty output directory!'); end
+            if isempty(obj.outputDirectory_),
+                warning('lccb:MovieObject:sanityCheck',...
+                    'Empty output directory!');
+            end
         end
         
         function relocate(obj,oldRootDir,newRootDir)
