@@ -158,14 +158,14 @@ if numMerges0 > 0
         costMat(isnan(costMat)) = -1;
         
         %match via LAP
-        linkFto0 = lap(costMat,-1,0,1);
+        linkFto0 = double(lap(costMat,-1,0,1));
         linkFto0 = linkFto0(1:numMergesF);
         
         %evaluate merges
         indxGood = find(linkFto0 <= numMerges0);
         indxFP = setdiff(1:numMergesF,indxGood);
         indxMatch = linkFto0(indxGood);
-        indxFN = setdiff(1:numMerges0,indxMatch);
+        indxFN = setdiff((1:numMerges0)',indxMatch);
         indxLin = sub2ind([numMergesF numMerges0],indxGood,indxMatch);
         mergeTP = length(indxGood);
         mergeFP = numMergesF - mergeTP;
@@ -252,14 +252,14 @@ if numSplits0 > 0
         costMat(isnan(costMat)) = -1;
         
         %match via LAP
-        linkFto0 = lap(costMat,-1,0,1);
+        linkFto0 = double(lap(costMat,-1,0,1));
         linkFto0 = linkFto0(1:numSplitsF);
         
         %evaluate splits
         indxGood = find(linkFto0 <= numSplits0);
         indxFP = setdiff(1:numSplitsF,indxGood);
         indxMatch = linkFto0(indxGood);
-        indxFN = setdiff(1:numSplits0,indxMatch);
+        indxFN = setdiff((1:numSplits0)',indxMatch);
         indxLin = sub2ind([numSplitsF numSplits0],indxGood,indxMatch);
         splitTP = length(indxGood);
         splitFP = numSplitsF - splitTP;

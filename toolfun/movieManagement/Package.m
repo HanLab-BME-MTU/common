@@ -255,11 +255,13 @@ classdef Package < hgsetget
             end
         end
         
-        function parentID = getParent(obj,procID)
+        function parentID = getParent(obj, procID)
             % Returns the list of valid parents for a given process
-            
-            % By default, get the required parent processes as well as
-            % all non-empty optional parent processes
+            %
+            % By default, this method returns all required parent processes
+            % as well as all non-empty optional parent processes as defined
+            % by the package dependency matrix
+            % See also GETDEPENDENCYMATRIX.
             reqParentIndex = find(obj.getDependencyMatrix(procID,:)==1);
             optParentIndex = find(obj.getDependencyMatrix(procID,:)==2);
             isValidOptParent = ~cellfun(@isempty,obj.processes_(optParentIndex));
@@ -286,9 +288,32 @@ classdef Package < hgsetget
 
     methods(Static,Abstract)
         GUI
+        % Return the name of the package
         getName
+        % Return the package dependency matrix
+        %
+        % The output of this method should a N x N matrix where N is the
+        % number of processes. Each (j, i) element of the matrix can have
+        % the following values:
+        % - 0 means process j does not depend on process i
+        % - 1 means process j has a mandatory dependency on process i
+        % - 2 means process j has an optional dependency on process i
+        % See also GETPARENT.
         getDependencyMatrix
+        % Return the class names of the package processes
+        %
+        % The output of this method should be a Nx1 cell array where N is
+        % the number of processes. Each element of the cell array should
+        % define the class of the ith process (abstract or concrete).
+        % See also GETDEFAULTPROCESSCONSTRUCTORS.
         getProcessClassNames
+        % Return the default constructors for the package processes
+        %
+        % The output of this method should be a Nx1 cell array where N is
+        % the number of processes. Each element of the cell array should
+        % be a function handle defining the default constructor for the ith
+        % process.
+        % See also GETPROCESSCLASSNAMES.
         getDefaultProcessConstructors
     end
     

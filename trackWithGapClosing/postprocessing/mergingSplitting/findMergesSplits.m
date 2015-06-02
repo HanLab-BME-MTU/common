@@ -203,10 +203,12 @@ for iTrack = 1 : numTracks
     %store the merge information for this track
     mergesInfo(iTrack,1:length(mergeTimes)+2) = [trackType(iTrack) ...
         length(mergeTimes) mergeTimes'];
-    mergesInfoSpace(iTrack,1:3*length(mergeTimes)) = mergeCoords;
-    mergesInfoSpaceExt(iTrack,1:3*length(mergeTimes),1) = mergeCoords21;
-    mergesInfoSpaceExt(iTrack,1:3*length(mergeTimes),2) = mergeCoords22;
-    mergesInfoAmp(iTrack,1:3*length(mergeTimes)) = mergeAmps;
+    if ~isempty(mergeTimes)
+        mergesInfoSpace(iTrack,1:3*length(mergeTimes)) = mergeCoords;
+        mergesInfoSpaceExt(iTrack,1:3*length(mergeTimes),1) = mergeCoords21;
+        mergesInfoSpaceExt(iTrack,1:3*length(mergeTimes),2) = mergeCoords22;
+        mergesInfoAmp(iTrack,1:3*length(mergeTimes)) = mergeAmps;
+    end
         
     %% splits
     
@@ -258,10 +260,12 @@ for iTrack = 1 : numTracks
     %store the split information for this track
     splitsInfo(iTrack,1:length(splitTimes)+2) = [trackType(iTrack) ...
         length(splitTimes) splitTimes'];
-    splitsInfoSpace(iTrack,1:3*length(splitTimes)) = splitCoords;
-    splitsInfoSpaceExt(iTrack,1:3*length(splitTimes),1) = splitCoords21;
-    splitsInfoSpaceExt(iTrack,1:3*length(splitTimes),2) = splitCoords22;
-    splitsInfoAmp(iTrack,1:3*length(splitTimes)) = splitAmps;
+    if ~isempty(splitTimes)
+        splitsInfoSpace(iTrack,1:3*length(splitTimes)) = splitCoords;
+        splitsInfoSpaceExt(iTrack,1:3*length(splitTimes),1) = splitCoords21;
+        splitsInfoSpaceExt(iTrack,1:3*length(splitTimes),2) = splitCoords22;
+        splitsInfoAmp(iTrack,1:3*length(splitTimes)) = splitAmps;
+    end
 
 end
 
