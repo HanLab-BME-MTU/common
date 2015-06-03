@@ -1,5 +1,5 @@
 
-function [m,boxall,isDone]  = manualSegmentationFixSingleCellTweakGUI(im,m,sup_masks,displayrange,isDone,boxall,ptsShow,fixedPath,compPath)
+function [m,boxall,isDone]  = manualSegmentationFixSingleCellTweakGUI(im,m,sup_masks,displayrange,isDone,boxall,ptsShow,fixedPath,compPath,orgPath,imageNames)
 %MANUALSEGMENTATIONTWEAKGUI allows manual segmentation creation of masks or alteration of existing masksk
 % [masks,isCompleted] = manualSegmentationTweakGUI(images,masks)
 %
@@ -53,6 +53,10 @@ function [m,boxall,isDone]  = manualSegmentationFixSingleCellTweakGUI(im,m,sup_m
 % segmentation for sequences,2013
 
 %%
+if nargin < 10
+    orgPath = [];
+    imageNames = [];
+end
 
 if nargin < 5
     ptsShow = [];
@@ -163,6 +167,12 @@ hMainFigure = fsFigure(.75);
     data_get_fgnd_bgnd_seeds_3d_points.ui_savemarking = uicontrol('Style','pushbutton','String','Save Marking',...
                                  'Units' , 'normalized' ,'Position',[0.82 0.05 0.14 0.05],'parent',hMainFigure,'Callback',{@pushSaveMarking_Callback});                
     
+    %Replace to an original mask folder with completed sementations with
+    %backing up the original segmentation - Sangyoon Han 2015
+    if ~isempty(orgPath)
+        data_get_fgnd_bgnd_seeds_3d_points.ui_overwrite = uicontrol('Style','pushbutton','String','Overwrite Source Folder',...
+                                     'Units' , 'normalized' ,'Position',[0.82 0 0.14 0.05],'parent',hMainFigure,'Callback',{@pushOverwriteSource_Callback});                
+    end
 
     %Go button
     data_get_fgnd_bgnd_seeds_3d_points.ui_go = uicontrol('Style','pushbutton','String','Start Fixing',...
@@ -230,6 +240,8 @@ data_get_fgnd_bgnd_seeds_3d_points.trackingflag=0;
 data_get_fgnd_bgnd_seeds_3d_points.jumpto_frame =1;
 data_get_fgnd_bgnd_seeds_3d_points.fixedPath = fixedPath;
 data_get_fgnd_bgnd_seeds_3d_points.compPath = compPath;
+data_get_fgnd_bgnd_seeds_3d_points.orgPath = orgPath;
+data_get_fgnd_bgnd_seeds_3d_points.imgNames = imageNames;
 
 % data_get_fgnd_bgnd_seeds_3d_points.currentSingleCellID = 1;
 
@@ -956,7 +968,12 @@ function [new_box, new_mask] = consequent_frame_segment_tracking...
     if ~exist(data_get_fgnd_bgnd_seeds_3d_points.fixedPath,'dir')        
         msgbox('There is no saved marking result for this movie this cell.')
     else
-        winopen(data_get_fgnd_bgnd_seeds_3d_points.fixedPath);        
+        if ispc
+            winopen(data_get_fgnd_bgnd_seeds_3d_points.fixedPath);
+        else
+            disp('Data are stored in: ');
+            disp(data_get_fgnd_bgnd_seeds_3d_points.fixedPath);
+        end
     end
     
     
@@ -988,3 +1005,20 @@ function [new_box, new_mask] = consequent_frame_segment_tracking...
         end
        end
      msgbox('Current complete frames saved.')
+
+    function pushOverwriteSource_Callback(hSrc,eventdata_get_fgnd_bgnd_seeds_3d_points)  
+    global data_get_fgnd_bgnd_seeds_3d_points
+   
+    isCompleted = data_get_fgnd_bgnd_seeds_3d_points.isDone;
+    
+    display('Backing up the original data')
+    backupFolder = [data_get_fgnd_bgnd_seeds_3d_points.orgPath ' Backup']; % name]);
+    if exist(data_get_fgnd_bgnd_seeds_3d_points.orgPath,'dir')
+        mkdir(backupFolder);
+        copyfile(data_get_fgnd_bgnd_seeds_3d_points.orgPath, backupFolder,'f')
+    end
+    
+    for iFrame = find(isCompleted)'
+        imwrite(data_get_fgnd_bgnd_seeds_3d_points.m(:,:,iFrame),[data_get_fgnd_bgnd_seeds_3d_points.orgPath filesep data_get_fgnd_bgnd_seeds_3d_points.imgNames{iFrame}]);
+    end
+     msgbox(['Current complete frames overwritten in ' data_get_fgnd_bgnd_seeds_3d_points.orgPath '.'])     

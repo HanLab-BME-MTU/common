@@ -43,10 +43,12 @@ function [clusterInfo, pointToClusterMap, pointTraj] = VariableBandwidthMeanShif
 %                             include when evaluating the mean-shift kernel.
 %                             Default: =2*bandwidth for 'gaussian' and user-specified kernel
 %                                      =banwidth for 'flat' kernel;
-%                             
-%              flagUseKDTree: true/false
-%                             specifies whether or not to use the KD-Tree
-%                             Default: true (recommended)
+%              flagUseKDTree: 0/1/2
+%                             specifies which kdtree to use, if any:
+%                             0 - no kdtree
+%                             1 - matlab builtin kdtree
+%                             2 - external kdtree (Andrea)
+%                             Default: 1 (but recommended to use 2 if available, faster than matlab built-in but has problems in r2013b under windows)
 %                            
 %                  flagDebug: true/false
 %                             specifies whether or not to run in debug mode.
@@ -92,7 +94,7 @@ function [clusterInfo, pointToClusterMap, pointTraj] = VariableBandwidthMeanShif
     p.addParamValue( 'maxIterations', 500, @(x) (isscalar(x)) );
     p.addParamValue('kernelSupport',[],@(x)(numel(x) == size(ptData,1)));
     p.addParamValue( 'minClusterDistance', .05,  @(x) (numel(x) == 1));
-    p.addParamValue( 'flagUseKDTree', true, @(x) (isscalar(x) && islogical(x)) );
+    p.addParamValue( 'flagUseKDTree', 1, @(x) (isscalar(x) && ismember(x,0:2)) );
     p.addParamValue( 'flagDebug', false, @(x) (isscalar(x) && islogical(x)) );
     p.parse( ptData, bandwidth, varargin{:} );
     
@@ -177,9 +179,12 @@ function [clusterInfo, pointToClusterMap] = OptimizedMeanShift( ptData, bandwidt
             
             if flagDebug
                 fprintf( 1, '\n\tBuilding KD-Tree ...\n' );        
-            end        
-            kdtree_points = KDTree( ptData );  
-            
+            end                 
+            if flagUseKDTree == 1            
+                kdtree_points = KDTreeSearcher( ptData );  
+            else
+                kdtree_points = kdtree_build(ptData);
+            end
         end
         
         % for each data point climb the non-parametric density function to find its mode
@@ -205,9 +210,12 @@ function [clusterInfo, pointToClusterMap] = OptimizedMeanShift( ptData, bandwidt
             while true            
 
                 % get nearest points
-                if flagUseKDTree
-                    [ptIdNearest] = kdtree_points.ball( ptOldMean, max(max(kernelSupport(:,:,i))));
-                else                    
+                if flagUseKDTree == 1
+                    [ptIdNearest] = rangesearch(kdtree_points, ptOldMean, max(max(kernelSupport(:,:,i))));
+                    ptIdNearest = ptIdNearest{1};  
+                elseif flagUseKDTree == 2
+                    ptIdNearest = kdtree_ball_query(kdtree_points, ptOldMean, max(max(kernelSupport(:,:,i))));                       
+                else
                     ptIdNearest = exhaustive_ball_query( ptData, ptOldMean, max(max(kernelSupport(:,:,i))));                       
                 end
                 
@@ -299,8 +307,11 @@ function [clusterInfo, pointToClusterMap, pointTraj] = StandardMeanShift( ptData
             if flagDebug
                 fprintf( 1, '\n\tBuilding KD-Tree ...\n' );        
             end        
-            kdtree_points = KDTree( ptData );  
-            
+            if flagUseKDTree == 1            
+                kdtree_points = KDTreeSearcher( ptData );  
+            elseif flagUseKDTree == 2
+                kdtree_points = kdtree_build(ptData);
+            end
         end        
         
         % for each data point climb the non-parametric density function to find its mode
@@ -320,10 +331,13 @@ function [clusterInfo, pointToClusterMap, pointTraj] = StandardMeanShift( ptData
             while true            
 
                 % get nearest points
-                if flagUseKDTree
-                    [ptIdNearest] = kdtree_points.ball( ptOldMean, max(max(kernelSupport(:,:,i))) );
-                else                    
-                    ptIdNearest = exhaustive_ball_query( ptData, ptOldMean, max(max(kernelSupport(:,:,i))) );                       
+                if flagUseKDTree == 1
+                    [ptIdNearest] = rangesearch(kdtree_points, ptOldMean, max(max(kernelSupport(:,:,i))));
+                    ptIdNearest = ptIdNearest{1};  
+                elseif flagUseKDTree == 2
+                    ptIdNearest = kdtree_ball_query(kdtree_points, ptOldMean, max(max(kernelSupport(:,:,i))));                       
+                else
+                    ptIdNearest = exhaustive_ball_query( ptData, ptOldMean, max(max(kernelSupport(:,:,i))));                       
                 end
                 ptNearest = ptData( ptIdNearest, : );
                 
@@ -347,12 +361,15 @@ function [clusterInfo, pointToClusterMap, pointTraj] = StandardMeanShift( ptData
             ptClusterCenter = ptNewMean;     
             pointTraj{i} = pointTraj{i}(1:numIterationsElapsed+1,:);
             
-            % get point density around the cluster center
-            if flagUseKDTree
-                [ptIdNearest,distNearest] = kdtree_points.ball( ptClusterCenter, max(max(kernelSupport(:,:,i))) );
-            else                    
-                [ptIdNearest,distNearest] = exhaustive_ball_query( ptData, ptClusterCenter, max(max(kernelSupport(:,:,i))) );                       
-            end            
+            % get point density around the cluster center            
+            if flagUseKDTree == 1
+                [ptIdNearest] = rangesearch(kdtree_points, ptOldMean, max(max(kernelSupport(:,:,i))));
+                ptIdNearest = ptIdNearest{1};  
+            elseif flagUseKDTree == 2
+                ptIdNearest = kdtree_ball_query(kdtree_points, ptOldMean, max(max(kernelSupport(:,:,i))));                       
+            else
+                ptIdNearest = exhaustive_ball_query( ptData, ptOldMean, max(max(kernelSupport(:,:,i))));                       
+            end
             curClusterCenterDensity = numel( ptIdNearest );
             
             % check if cluster is present already

@@ -29,7 +29,7 @@ function MD = bfImport(dataPath,varargin)
 %   MD - A single MovieData object or an array of MovieData objects
 %   depending on the number of series in the original images.
 
-% Sebastien Besson, Dec 2011 (last modifier May 2014)
+% Sebastien Besson, Dec 2011 (last modifier Apr 2015)
 
 % Input check
 ip=inputParser;
@@ -49,7 +49,8 @@ try
     % autoload java path and configure log4j
     bfInitLogging();
     % Retrieve movie reader and metadata
-    r = bfGetReader(dataPath);
+    r = loci.formats.Memoizer(bfGetReader(),0);
+    r.setId(dataPath);
     r.setSeries(0);
 catch bfException
     ME = MException('lccb:import:error','Import error');
@@ -138,31 +139,42 @@ end
 
 function movieArgs = getMovieMetadata(r, iSeries)
 
+import ome.units.UNITS.*;
+
 % Create movie metadata cell array using read metadata
 movieArgs={};
 metadataStore = r.getMetadataStore();
 
+% Retrieve pixel size along the X-axis
+pixelSize = [];
 pixelSizeX = metadataStore.getPixelsPhysicalSizeX(iSeries);
-% Pixel size might be automatically set to 1.0 by @#$% Metamorph
-hasValidPixelSizeX = ~isempty(pixelSizeX) && pixelSizeX.getValue() ~= 1;
-if hasValidPixelSizeX
-    % Convert from microns to nm and check x and y values are equal
-    pixelSizeY = metadataStore.getPixelsPhysicalSizeX(iSeries);
-    if ~isempty(pixelSizeY),
-        assert(isequal(pixelSizeX.getValue(), pixelSizeY.getValue()),...
-            'Pixel size different in x and y');
-    end
-    pixelSizeX = pixelSizeX.getValue() *10^3;
-    movieArgs = horzcat(movieArgs,'pixelSize_',pixelSizeX);
+if ~isempty(pixelSizeX)
+    pixelSize = pixelSizeX.value(ome.units.UNITS.NM).doubleValue();
 end
 
+% Retrieve pixel size along the Y-axis
+pixelSizeY = metadataStore.getPixelsPhysicalSizeY(iSeries);
+if ~isempty(pixelSizeY)
+    if ~isempty(pixelSize)
+        pixelSizeY = pixelSizeY.value(ome.units.UNITS.NM).doubleValue();
+        assert(isequal(pixelSize, pixelSizeY),...
+            'Pixel size different in x and y');
+    else
+        pixelSize = pixelSizeY.value(ome.units.UNITS.NM).doubleValue();
+    end
+end
+
+if ~isempty(pixelSize) && pixelSize ~= 1000  % Metamorph fix
+    movieArgs = horzcat(movieArgs, 'pixelSize_', pixelSize);
+end
+
+% Retrieve pixel size along the Z-axis
 pixelSizeZ = metadataStore.getPixelsPhysicalSizeZ(iSeries);
-% Pixel size might be automatically set to 1.0 by @#$% Metamorph
-hasValidPixelSizeZ = ~isempty(pixelSizeZ) && pixelSizeZ.getValue() ~= 1;
-if hasValidPixelSizeZ
-    % Convert from microns to nm and check x and y values are equal
-    pixelSizeZ = pixelSizeZ.getValue() * 10^3;
-    movieArgs = horzcat(movieArgs,'pixelSizeZ_',pixelSizeZ);
+if ~isempty(pixelSizeZ)
+    pixelSizeZ = pixelSizeZ.value(ome.units.UNITS.NM).doubleValue();
+    if pixelSizeZ ~= 1000  % Metamorph fix
+        movieArgs = horzcat(movieArgs, 'pixelSizeZ_', pixelSizeZ);
+    end
 end
 
 % Camera bit depth
@@ -175,11 +187,13 @@ end
 % Time interval
 timeInterval = metadataStore.getPixelsTimeIncrement(iSeries);
 if ~isempty(timeInterval)
-    movieArgs=horzcat(movieArgs,'timeInterval_',double(timeInterval));
+    movieArgs=horzcat(movieArgs,'timeInterval_',...
+        timeInterval.value(ome.units.UNITS.S).doubleValue());
 end
 
 % Lens numerical aperture
-try % Use a try-catch statement because property is not always defined
+if metadataStore.getInstrumentCount() > 0 &&...
+        metadataStore.getObjectiveCount(0) > 0
     lensNA = metadataStore.getObjectiveLensNA(0,0);
     if ~isempty(lensNA)
         movieArgs=horzcat(movieArgs,'numAperture_',double(lensNA));
@@ -195,7 +209,18 @@ try % Use a try-catch statement because property is not always defined
     end
 end
 
+acquisitionDate = metadataStore.getImageAcquisitionDate(iSeries);
+if ~isempty(acquisitionDate)
+    % The acquisition date is returned as an ome.xml.model.primitives.Timestamp
+    % object which is using the ISO 8601 format
+    movieArgs=horzcat(movieArgs, 'acquisitionDate_',...
+        datevec(char(acquisitionDate.toString()),'yyyy-mm-ddTHH:MM:SS'));
+end
+
+
 function channelArgs = getChannelMetadata(r, iSeries, iChan)
+
+import ome.units.UNITS.*;
 
 channelArgs={};
 
@@ -208,18 +233,15 @@ end
 % Read excitation wavelength
 exwlgth=r.getMetadataStore().getChannelExcitationWavelength(iSeries, iChan);
 if ~isempty(exwlgth)
-    channelArgs=horzcat(channelArgs, 'excitationWavelength_', exwlgth.getValue);
+    exwlgth = exwlgth.value(ome.units.UNITS.NM).doubleValue();
+    channelArgs=horzcat(channelArgs, 'excitationWavelength_', exwlgth);
 end
 
 % Fill emission wavelength
 emwlgth=r.getMetadataStore().getChannelEmissionWavelength(iSeries, iChan);
-if isempty(emwlgth)
-    try
-        emwlgth= r.getMetadataStore().getChannelLightSourceSettingsWavelength(iSeries, iChan);
-    end
-end
 if ~isempty(emwlgth)
-    channelArgs = horzcat(channelArgs, 'emissionWavelength_', emwlgth.getValue);
+    emwlgth = emwlgth.value(ome.units.UNITS.NM).doubleValue();
+    channelArgs = horzcat(channelArgs, 'emissionWavelength_', emwlgth);
 end
 
 % Read imaging mode

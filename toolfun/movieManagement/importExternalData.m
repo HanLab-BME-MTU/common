@@ -85,4 +85,4 @@ for  i = channelIndex
 end
 dummyProc.setOutFilePaths(outFilePaths);
 
-disp('Finished importing detection!')
+disp('Finished importing external data!')

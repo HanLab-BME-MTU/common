@@ -1,35 +1,35 @@
-function varargout = addMovieROIGUI(varargin)
-% addMovieROIGUI M-file for addMovieROIGUI.fig
-%      addMovieROIGUI, by itself, creates a new addMovieROIGUI or raises the existing
+function varargout = addROIGUI(varargin)
+% addROIGUI M-file for addROIGUI.fig
+%      addROIGUI, by itself, creates a new addROIGUI or raises the existing
 %      singleton*.
 %
-%      H = addMovieROIGUI returns the handle to a new addMovieROIGUI or the handle to
+%      H = addROIGUI returns the handle to a new addROIGUI or the handle to
 %      the existing singleton*.
 %
-%      addMovieROIGUI('CALLBACK',hObject,eventData,handles,...) calls the local
-%      function named CALLBACK in addMovieROIGUI.M with the given input arguments.
+%      addROIGUI('CALLBACK',hObject,eventData,handles,...) calls the local
+%      function named CALLBACK in addROIGUI.M with the given input arguments.
 %
-%      addMovieROIGUI('Property','Value',...) creates a new addMovieROIGUI or raises the
+%      addROIGUI('Property','Value',...) creates a new addROIGUI or raises the
 %      existing singleton*.  Starting from the left, property value pairs are
-%      applied to the GUI before addMovieROIGUI_OpeningFcn gets called.  An
+%      applied to the GUI before addROIGUI_OpeningFcn gets called.  An
 %      unrecognized property name or invalid value makes property application
-%      stop.  All inputs are passed to addMovieROIGUI_OpeningFcn via varargin.
+%      stop.  All inputs are passed to addROIGUI_OpeningFcn via varargin.
 %
 %      *See GUI Options on GUIDE's Tools menu.  Choose "GUI allows only one
 %      instance to run (singleton)".
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Edit the above text to modify the response to help addMovieROIGUI
+% Edit the above text to modify the response to help addROIGUI
 
-% Last Modified by GUIDE v2.5 07-Feb-2012 15:54:14
+% Last Modified by GUIDE v2.5 29-Apr-2015 14:56:21
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
                    'gui_Singleton',  gui_Singleton, ...
-                   'gui_OpeningFcn', @addMovieROIGUI_OpeningFcn, ...
-                   'gui_OutputFcn',  @addMovieROIGUI_OutputFcn, ...
+                   'gui_OpeningFcn', @addROIGUI_OpeningFcn, ...
+                   'gui_OutputFcn',  @addROIGUI_OutputFcn, ...
                    'gui_LayoutFcn',  [] , ...
                    'gui_Callback',   []);
 if nargin && ischar(varargin{1})
@@ -44,8 +44,8 @@ end
 % End initialization code - DO NOT EDIT
 
 
-% --- Executes just before addMovieROIGUI is made visible.
-function addMovieROIGUI_OpeningFcn(hObject,eventdata,handles,varargin)
+% --- Executes just before addROIGUI is made visible.
+function addROIGUI_OpeningFcn(hObject,eventdata,handles,varargin)
 
 % Check input
 % The mainFig and procID should always be present
@@ -62,7 +62,7 @@ ip.parse(hObject,eventdata,handles,varargin{:});
 
 userData.MD =ip.Results.MD;
 userData.mainFig =ip.Results.mainFig;
-        
+
 % Set up copyright statement
 set(handles.text_copyright, 'String', getLCCBCopyright());
 
@@ -73,9 +73,7 @@ set(handles.listbox_selectedChannels,'String',userData.MD.getChannelPaths(), ...
 % Save the image directories and names (for cropping preview)
 userData.nFrames = userData.MD.nFrames_;
 userData.imPolyHandle.isvalid=0;
-m=userData.MD.imSize_(2);
-n=userData.MD.imSize_(1);
-userData.ROI = [1 1; m 1; m n; 1 n;];
+userData.ROI = [];
 userData.previewFig=-1;
 userData.helpFig=-1;
 
@@ -84,22 +82,32 @@ userData.chanIndex = 1;
 set(handles.edit_frameNumber,'String',1);
 set(handles.slider_frameNumber,'Min',1,'Value',1,'Max',userData.nFrames,...
     'SliderStep',[1/max(1,double(userData.nFrames-1))  10/max(1,double(userData.nFrames-1))]);
+if userData.nFrames == 1
+    set(handles.edit_frameNumber, 'Enable', 'off');
+    set(handles.slider_frameNumber, 'Enable', 'off');
+end
 userData.imIndx=1;
 userData.imData=mat2gray(userData.MD.channels_(userData.chanIndex).loadImage(userData.imIndx));
     
 set(handles.listbox_selectedChannels,'Callback',@(h,event) update_data(h,event,guidata(h)));
 
-% Choose default command line output for addMovieROIGUI
+userData_main = get(ip.Results.mainFig, 'UserData');
+set(handles.figure1,'CurrentAxes',handles.axes_help);
+Img = image(userData_main.questIconData);
+set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'),...
+    'visible','off','YDir','reverse');
+set(Img,'ButtonDownFcn',@icon_ButtonDownFcn,...
+    'UserData', struct('class', mfilename))
+
+% Choose default command line output for addROIGUI
 handles.output = hObject;
 
 % Update user data and GUI data
 set(hObject, 'UserData', userData);
 guidata(hObject, handles);
-update_data(hObject,eventdata,handles);
-
 
 % --- Outputs from this function are returned to the command line.
-function varargout = addMovieROIGUI_OutputFcn(~, ~, handles) 
+function varargout = addROIGUI_OutputFcn(~, ~, handles)
 % varargout  cell array for returning output args (see VARARGOUT);
 % hObject    handle to figure
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -127,21 +135,21 @@ if ~isempty(userData)
     guidata(hObject,handles);
 end
 
-% --- Executes on key press with focus on pushbutton_addROI and none of its controls.
-function pushbutton_addROI_KeyPressFcn(~, eventdata, handles)
+% --- Executes on key press with focus on pushbutton_save and none of its controls.
+function pushbutton_save_KeyPressFcn(~, eventdata, handles)
 
 if strcmp(eventdata.Key, 'return')
-    pushbutton_done_Callback(handles.pushbutton_addROI, [], handles);
+    pushbutton_done_Callback(handles.pushbutton_save, [], handles);
 end
 
 % --- Executes on key press with focus on figure1 and none of its controls.
 function figure1_KeyPressFcn(~, eventdata, handles)
 
 if strcmp(eventdata.Key, 'return')
-    pushbutton_done_Callback(handles.pushbutton_addROI, [], handles);
+    pushbutton_done_Callback(handles.pushbutton_save, [], handles);
 end
 
- % --- Executes on button press in checkbox_preview.
+% --- Executes on button press in checkbox_preview.
 function update_data(hObject, eventdata, handles)
 userData = get(handles.figure1, 'UserData');
 
@@ -157,11 +165,11 @@ if (chanIndex~=userData.chanIndex) ||  (imIndx~=userData.imIndx)
     userData.updateImage=1;
     userData.chanIndex=chanIndex;
     userData.imIndx=imIndx;
-        
+    
     % Update roi
     if userData.imPolyHandle.isvalid
         userData.ROI=getPosition(userData.imPolyHandle);
-    end    
+    end
 else
     userData.updateImage=0;
 end
@@ -190,25 +198,63 @@ if userData.newFigure || userData.updateImage
     end
 end
 
+% set the userdata before interactive impoly in case the figure changes
+% first
+set(handles.figure1, 'UserData', userData);
+guidata(hObject,handles);
+
 if userData.imPolyHandle.isvalid
     % Update the imPoly position
     setPosition(userData.imPolyHandle,userData.ROI)
 else
-    % Create a new imPoly object and store the handle
-    userData.imPolyHandle = impoly(get(imHandle,'Parent'),userData.ROI);
-    fcn = makeConstrainToRectFcn('impoly',get(imHandle,'XData'),get(imHandle,'YData'));
-    setPositionConstraintFcn(userData.imPolyHandle,fcn);
+    % Do not create a new impoly if one is in progress
+    if(isempty(findobj(gca,'Tag','impoly')))
+    
+        % Create a new imPoly object and store the handle
+        % since impoly blocks, create the constraint function first in case
+        % something happens later
+        fcn = makeConstrainToRectFcn('impoly',get(imHandle,'XData'),get(imHandle,'YData'));
+        if ~isempty(userData.ROI)
+            userData.imPolyHandle = impoly(get(imHandle,'Parent'), []);
+        else
+            userData.imPolyHandle = impoly(get(imHandle,'Parent'),userData.ROI);
+        end
+        setPositionConstraintFcn(userData.imPolyHandle,fcn);
+    end
 end
 
 set(handles.figure1, 'UserData', userData);
 guidata(hObject,handles);
+impoly_finish_cb(hObject,eventdata,handles)
+
+function impoly_finish_cb(hObject,eventdata,handles)
+% impoly_finish_cb displays a useful help message if the user double clicks
+% on the polygon selection
+    userData = get(handles.figure1, 'UserData');
+        while(isempty(userData.ROI) && userData.imPolyHandle.isvalid)
+            resume(userData.imPolyHandle);
+            wait(userData.imPolyHandle);
+            % After user double clicks, check if figure is still valid
+            if(isvalid(handles.figure1))
+                userData = get(handles.figure1, 'UserData');
+                % Check if a valid ROI has been set already, meaning we are closing
+                % or saving. If not, then display a help message
+                if(isempty(userData.ROI))
+                    helpdlg(['Click "Save" to store the ROI, or ' ...
+                             'Click "Draw new region of interest" to reset. ' ...
+                             'See impoly documentation for other commands.']);
+                end
+            end
+        end
 
 function close_previewFig(hObject, eventdata)
 handles = guidata(get(hObject,'UserData'));
 userData=get(handles.figure1,'UserData');
-userData.ROI=getPosition(userData.imPolyHandle);
-set(handles.figure1,'UserData',userData);
-update_data(hObject, eventdata, handles);
+if(userData.imPolyHandle.isvalid)
+    userData.ROI=getPosition(userData.imPolyHandle);
+    set(handles.figure1,'UserData',userData);
+    update_data(hObject, eventdata, handles);
+end
 
 % --- Executes on slider movement.
 function frameNumberEdition_Callback(hObject, eventdata, handles)
@@ -237,31 +283,18 @@ set(handles.figure1, 'UserData', userData);
 guidata(hObject, handles);
 update_data(hObject,eventdata,handles);
 
-
-% --- Executes on button press in pushbutton_outputDirectory.
-function pushbutton_outputDirectory_Callback(hObject, eventdata, handles)
-
-userData = get(handles.figure1, 'UserData');
-pathname = uigetdir(userData.MD.movieDataPath_,'Select output directory');
-
-% Test uigetdir output and store its results
-if isequal(pathname,0), return; end
-set(handles.edit_outputDirectory,'String',pathname);
-
-% Save data
-set(handles.figure1,'UserData',userData);
-guidata(hObject, handles);
-
-% --- Executes on button press in pushbutton_addROI.
-function pushbutton_addROI_Callback(hObject, eventdata, handles)
+% --- Executes on button press in pushbutton_save.
+function pushbutton_save_Callback(hObject, eventdata, handles)
 
 userData = get(handles.figure1, 'UserData');
 
-% Check valid output directory
-outputDirectory = get(handles.edit_outputDirectory,'String');
-if isempty(outputDirectory),
-    errordlg('Please select an output directory','Error','modal');
-    return;
+if get(handles.checkbox_addROI, 'Value')
+    % Check valid output directory for the subregional movie
+    outputDirectory = get(handles.edit_outputDirectory,'String');
+    if isempty(outputDirectory),
+        errordlg('Please select an output directory','Error','modal');
+        return;
+    end
 end
 
 % Read ROI if crop window is still visible
@@ -273,25 +306,84 @@ update_data(hObject,eventdata,handles);
 
 % Create ROI mask and save it in the outputDirectory
 userData = get(handles.figure1, 'UserData');
-mask=createMask(userData.imPolyHandle);
-maskPath = fullfile(outputDirectory,'roiMask.tif');
-imwrite(mask,maskPath);
+try
+    mask=createMask(userData.imPolyHandle);           
+    
+    if get(handles.checkbox_addROI, 'Value')
+        
+        %Save  mask to ROI output directory
+        maskPath = fullfile(outputDirectory,'roiMask.tif');
+        imwrite(mask,maskPath);
+        
+        % Create a new region of interest and save the object
+        userData.MD.addROI(maskPath, outputDirectory);
+        movieROI = userData.MD.rois_(end);
+        movieROI.save();
 
-% Create a new region of interest and save the object
-userData.MD.addROI(maskPath,outputDirectory);   
-movieROI=userData.MD.rois_(end);
-movieROI.save;
+        % If called from movieSelectorGUI
+        if userData.mainFig ~=-1,
+            % Retrieve main window userData
+            userData_main = get(userData.mainFig, 'UserData');
 
-% If called from movieSelectorGUI
-if userData.mainFig ~=-1, 
-    % Retrieve main window userData
-    userData_main = get(userData.mainFig, 'UserData');
-
-    % Append new ROI to movie selector panel
-    userData_main.MD = horzcat(userData_main.MD, movieROI);
-    set(userData.mainFig, 'UserData', userData_main)
-    movieSelectorGUI('refreshDisplay',userData.mainFig,...
-        eventdata,guidata(userData.mainFig));
+            % Append new ROI to movie selector panel
+            userData_main.MD = horzcat(userData_main.MD, movieROI);
+            set(userData.mainFig, 'UserData', userData_main)
+            movieSelectorGUI('refreshDisplay',userData.mainFig,...
+                eventdata,guidata(userData.mainFig));
+        end
+    else
+        %Save mask to this MD's output directory
+        maskPath = fullfile(userData.MD.outputDirectory_,'roiMask.tif');
+        imwrite(mask,maskPath);
+        
+        % Create a new region of interest and save the object
+        userData.MD.setROIMaskPath(maskPath);
+        userData.MD.save();
+    end
+    % Delete current window
+    delete(handles.figure1)
+catch err
+    errordlg('Did not successfully save ROI. Complete ROI selection or Cancel.');
+    rethrow(err);
 end
-% Delete current window
-delete(handles.figure1)
+
+
+% --- Executes on button press in pushbutton_outputDirectory.
+function pushbutton_outputDirectory_Callback(hObject, eventdata, handles)
+
+userData = get(handles.figure1, 'UserData');
+pathname = uigetdir(userData.MD.getPath(),'Select output directory');
+
+% Test uigetdir output and store its results
+if isequal(pathname,0), return; end
+set(handles.edit_outputDirectory,'String',pathname);
+
+% Save data
+set(handles.figure1,'UserData',userData);
+guidata(hObject, handles);
+
+% --- Executes on button press in checkbox_addROI.
+function checkbox_addROI_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox_addROI (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+if get(hObject,'Value')
+    state = 'on';
+else
+    state = 'off';
+end
+set(handles.pushbutton_outputDirectory, 'Enable', state);
+set(handles.edit_outputDirectory, 'Enable', state);
+
+
+% --- Executes on button press in pushbutton_draw.
+function pushbutton_draw_Callback(hObject, eventdata, handles)
+
+userData=get(handles.figure1,'UserData');
+userData.ROI = [];
+if userData.imPolyHandle.isvalid
+    delete(userData.imPolyHandle);
+end
+set(hObject, 'UserData', userData);
+update_data(hObject,eventdata,handles);

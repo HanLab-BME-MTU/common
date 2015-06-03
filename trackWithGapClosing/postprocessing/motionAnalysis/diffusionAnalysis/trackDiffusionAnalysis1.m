@@ -11,9 +11,7 @@ function [diffAnalysisRes,errFlag] = trackDiffusionAnalysis1(tracks,...
 %                     Output of trackCloseGapsKalman (structure, possibly
 %                     with merges/splits.
 %       extractType : 1 - Analyze every track segment separately.
-%                     2 - Extract from each compound track the longest
-%                         trajectory to use in analysis - NOT IMPLEMENTED
-%                         YET.
+%                     2 - NOTTHING IMPLEMENTED AT THE MOMENT.
 %                     Variable irrelevant if tracks are input as a matrix.
 %                     Optional. Default: 1.
 %       probDim     : Problem dimensionality. Optional. Default: 2.
@@ -29,18 +27,11 @@ function [diffAnalysisRes,errFlag] = trackDiffusionAnalysis1(tracks,...
 %                     asymDeterm2D3D for most up-to-date values allowed).
 %                     Optional. Default: [0.05 0.1]. If only one value is
 %                     entered, it is taken as the alpha-value for MSS
-%                     analysis, whiel the alpha-value for asymmetry
+%                     analysis, while the alpha-value for asymmetry
 %                     analysis is given the default value.
 %       plotRes     : 1 to plot results, 0 otherwise. Optional. Default: 0.
 %                     Results can be plotted only if problem is 2D.
-%                     color-coding:
-%                     *red: linear & 1D normal diffusion.
-%                     *green: linear & 1D super diffusion.
-%                     *yellow: linear & too short to analyze 1D diffusion.
-%                     *blue: not linear & 2D confined diffusion.
-%                     *cyan: not linear & 2D normal diffusion.
-%                     *magenta: not linear & 2D super diffusion.
-%                     *black: unclassified.
+%                     See plotTracksDiffAnalysis2D for color code.
 %       confRadMin  : 1 to calculate the confinement radius of confined
 %                     particles using the minimum positional standard
 %                     deviation; OR
@@ -58,13 +49,13 @@ function [diffAnalysisRes,errFlag] = trackDiffusionAnalysis1(tracks,...
 %                           *Column 2: Classification based on moment
 %                            scaling spectrum analysis applied to the
 %                            tracks using their full dimensionality.
-%                            1 = confined Brownian, 2 = pure Brownian,
-%                            3 = directed motion.
+%                            0 = immobile, 1 = confined Brownian, 
+%                            2 = pure Brownian, 3 = directed motion.
 %                           *Column 3: Classification of motion along
 %                            the preferred direction for linear tracks,
 %                            also based on moment scaling spectrum analysis.
-%                            1 = confined Brownian, 2 = pure Brownian,
-%                            3 = directed motion.
+%                            0 = Immobile, 1 = confined Brownian,
+%                            2 = pure Brownian, 3 = directed motion.
 %           .fullDim       : MSS analysis results for full dimensionality.
 %                            Structure with fields:
 %               .mssSlope    : Slope of the line representing moment 
@@ -84,6 +75,11 @@ function [diffAnalysisRes,errFlag] = trackDiffusionAnalysis1(tracks,...
 %                            For particles undergoing linear motion, the 2
 %                            confinement dimensions parallel and
 %                            perpendicular to the direction of motion.
+%           .summary       : Summary of diffusion characteristics for all
+%                            tracks combined, as output by
+%                            summarizeDiffAnRes. Field filled only in first
+%                            array entry, with all others empty, since
+%                            there is no need for repetition.
 %       errFlag         : 0 if executed normally, 1 otherwise.
 %
 %REMARKS While tracks do not have to be linear in order to be asymmetric,
@@ -169,7 +165,7 @@ if isstruct(tracks)
             [tracks,dummy,compTrackStartRow,numSegments] = ...
                 convStruct2MatIgnoreMS(tracksInput,1);
             
-        case 2 %make the longest track possible, given all the merges and splits
+        case 2 %some other type
 
             disp('Sorry - not implemented yet!')
             errFlag = 1;
@@ -323,8 +319,8 @@ end
 
 %% confinement radius estimation
 
-%find all tracks classified as confined
-indxConf = find( trackClassMSS == 1 );
+%find all tracks classified as confined or immobile
+indxConf = find( trackClassMSS <= 1 );
 
 %remove from the list those tracks classified as linear
 indxConf = setdiff(indxConf,indxAsym);
@@ -344,10 +340,13 @@ if ~isempty(indxConf)
         yCoord = (tracks(iTrack,2:8:end))';
         zCoord = (tracks(iTrack,3:8:end))';
         xyzCoord = [xCoord yCoord zCoord];
+        
+        %calculate the variance-covariance matrix of this track's positions
+        xyzCov = nancov(xyzCoord(:,1:probDim));
 
         %find the eignevalues and eigenvectors of the variance-covariance
-        %matrix of this track's positions
-        eigenVal = eig(nancov(xyzCoord(:,1:probDim)));
+        %matrix
+        eigenVal = eig(xyzCov);
 
         %calculate the track's confinement radius
         if confRadMin == 1
@@ -358,7 +357,7 @@ if ~isempty(indxConf)
         
         %calculate the track's center
         trackCenter(iTrack,:) = nanmean(xyzCoord(:,1:probDim));
-
+        
     end
 end
 
@@ -403,7 +402,7 @@ end
 
 %reserve memory
 diffAnalysisRes = repmat(struct('classification',[],'fullDim',[],'oneDim',...
-    [],'confRadInfo',[]),numInputTracks,1);
+    [],'confRadInfo',[],'summary',[]),numInputTracks,1);
 
 %go over all input tracks
 for iTrack = 1 : numInputTracks
@@ -449,6 +448,13 @@ for iTrack = 1 : numInputTracks
     diffAnalysisRes(iTrack).confRadInfo = confRadInfo;
 
 end
+
+%call code to summarize diffusion analysis results
+%store in .summary field of first track - rest stay empty
+minTrackLen = 5;
+[probMotionType,motionChar,errFlag] = summarizeDiffAnRes(tracksInput,minTrackLen,probDim,diffAnalysisRes,extractType);
+diffAnalysisRes(1).summary.probMotionType = probMotionType;
+diffAnalysisRes(1).summary.motionChar = motionChar;
 
 %% plotting
 
