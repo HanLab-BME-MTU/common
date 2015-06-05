@@ -24,8 +24,8 @@ function statsGeneral = calcStatsMS_noMotionInfo(tracks,minTrackLen,...
 %                         with length >= minTrackLen.
 %                     (4) Probability of a feature merging.
 %                     (5) Probability of a feature splitting.
-%                     (6) Rate of a feature merging (s^-1).
-%                     (7) Rate of a feature splitting (s^-1).
+%                     (6) Rate of a feature merging (per unit time).
+%                     (7) Rate of a feature splitting (per unit time).
 %
 %Khuloud Jaqaman, March 2013
 

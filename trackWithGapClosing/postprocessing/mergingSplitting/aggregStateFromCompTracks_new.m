@@ -88,11 +88,19 @@ segmentStat(numTracks,1) = struct('intSizeErr','','eveSizeErr','','notRepIntSize
 
 %go over all compound tracks
 for iTrack = 1 : numTracks
+    
     fprintf('\nIn aggregState...at iTrack %d',iTrack);
+    
     %get this compound track's information
     seqOfEvents = compTracks(iTrack).seqOfEvents;
     tracksFeatIndx = compTracks(iTrack).tracksFeatIndxCG;
     tracksAmp = compTracks(iTrack).tracksCoordAmpCG(:,4:8:end);
+    
+    %     %if requested, remove splits and merges that are most likely artifacts
+    %     removePotArtifacts = 0;
+    %     if removePotArtifacts
+    %         seqOfEvents = removeSplitMergeArtifacts(seqOfEvents,0);
+    %     end
 
     %determine whether track is sampled regularly or with doubled frequency
     doubleFreq = mod(seqOfEvents(1,1)*2,2)==1;
