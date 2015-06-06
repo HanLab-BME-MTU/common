@@ -334,8 +334,10 @@ classdef  MovieObject < hgsetget
             ip.addOptional('path', '', @ischar);
             ip.addOptional('filename', '', @ischar);
             ip.addOptional('askUser', true, @isscalar);
+            ip.addOptional('full', true, @isscalar);
             ip.parse(varargin{:});
             askUser = ip.Results.askUser;
+            full = ip.Results.full;
 
             if ~isempty(ip.Results.path)
                 % Remove ending file separators from paths
@@ -346,7 +348,6 @@ classdef  MovieObject < hgsetget
                 % If different path
                 hasDisplay = feature('ShowFigureWindows');
                 if ~strcmp(oldPath, newPath)
-                    confirmRelocate = 'Yes to all';
                     if askUser && hasDisplay
                         if isa(obj,'MovieData')
                             type='movie';
@@ -360,10 +361,9 @@ classdef  MovieObject < hgsetget
                         relocateMsg=sprintf(['The %s and its analysis will be relocated from \n%s to \n%s.\n'...
                             'Should I relocate its %s as well?'],type,oldPath,newPath,components);
                         confirmRelocate = questdlg(relocateMsg,['Relocation - ' type],'Yes to all','Yes','No','Yes');
+                        full = ~strcmp(confirmRelocate,'No');
+                        askUser = ~strcmp(confirmRelocate,'Yes to all');
                     end
-                    
-                    full = ~strcmp(confirmRelocate,'No');
-                    askUser = ~strcmp(confirmRelocate,'Yes to all');
 
                     % Get old and new relocation directories
                     [oldRootDir, newRootDir]=getRelocationDirs(oldPath,newPath);

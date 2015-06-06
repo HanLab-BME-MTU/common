@@ -353,7 +353,7 @@ classdef  MovieData < MovieObject
             % Save the movie to disk if run successfully
             
             % Call the superclass sanityCheck
-            if nargin>1, sanityCheck@MovieObject(obj,varargin{:}); end
+            sanityCheck@MovieObject(obj,varargin{:});
             
             % Call subcomponents sanityCheck
             disp('Checking channels');
@@ -361,6 +361,21 @@ classdef  MovieData < MovieObject
                 obj.getChannel(i).sanityCheck(obj);
             end
             
+            obj.checkDimensions()
+
+            % Fix roi/parent initialization
+            if isempty(obj.rois_), obj.rois_=MovieData.empty(1,0); end
+            if isempty(obj.parent_), obj.parent_=MovieData.empty(1,0); end
+
+            if isMock(obj)
+                obj.saveMock();
+            else
+                disp('Saving movie');
+                obj.save();
+            end
+        end
+
+        function checkDimensions(obj)
             % Read raw data dimensions
             width = obj.getReader().getSizeX();
             height = obj.getReader().getSizeY();
@@ -388,31 +403,6 @@ classdef  MovieData < MovieObject
             else
                 obj.zSize_ = zSize;
             end
-            
-            % Fix roi/parent initialization
-            if isempty(obj.rois_), obj.rois_=MovieData.empty(1,0); end
-            if isempty(obj.parent_), obj.parent_=MovieData.empty(1,0); end
-            
-            if isMock(obj)
-                mockMDname = obj.channels_(1,1).getGenericName(obj.channels_(1,1).hcsPlatestack_{1}, 'site_on');
-                if max(size(obj.channels_(1,1).hcsPlatestack_)) ~= 1
-                    mockMDname = strcat('control begin with ',mockMDname);
-                end
-                pathmock = [obj.mockMD_.parent.movieDataPath_ filesep 'controls' filesep mockMDname '.mat'];
-                obj.movieDataPath_ = [obj.mockMD_.parent.movieDataPath_ filesep 'controls'];
-                obj.movieDataFileName_ = [mockMDname '.mat'];
-                obj.mockMD_.path = pathmock;
-                mkdir(obj.movieDataPath_);
-                save(pathmock, 'obj');
-                parentMDpath = [obj.mockMD_.parent.movieDataPath_ filesep obj.mockMD_.parent.movieDataFileName_];
-                load(parentMDpath);
-                MD.mMDparent_ = [MD.mMDparent_; {obj.mockMD_.index obj.mockMD_.path}];
-                save(parentMDpath, 'MD');
-                return
-            end
-            
-            disp('Saving movie');
-            obj.save();
         end
         
         function relocate(obj,oldRootDir,newRootDir,full)
@@ -455,6 +445,23 @@ classdef  MovieData < MovieObject
             setFig = movieDataGUI(obj);
         end
         
+        function saveMock(obj)
+            mockMDname = obj.channels_(1,1).getGenericName(obj.channels_(1,1).hcsPlatestack_{1}, 'site_on');
+            if max(size(obj.channels_(1,1).hcsPlatestack_)) ~= 1
+                mockMDname = strcat('control begin with ',mockMDname);
+            end
+            pathmock = [obj.mockMD_.parent.movieDataPath_ filesep 'controls' filesep mockMDname '.mat'];
+            obj.movieDataPath_ = [obj.mockMD_.parent.movieDataPath_ filesep 'controls'];
+            obj.movieDataFileName_ = [mockMDname '.mat'];
+            obj.mockMD_.path = pathmock;
+            mkdir(obj.movieDataPath_);
+            save(pathmock, 'obj');
+            parentMDpath = [obj.mockMD_.parent.movieDataPath_ filesep obj.mockMD_.parent.movieDataFileName_];
+            load(parentMDpath);
+            MD.mMDparent_ = [MD.mMDparent_; {obj.mockMD_.index obj.mockMD_.path}];
+            save(parentMDpath, 'MD');
+        end
+
         function save(obj,varargin)
             
             % Create list of movies to save simultaneously
