@@ -334,10 +334,8 @@ classdef  MovieObject < hgsetget
             ip.addOptional('path', '', @ischar);
             ip.addOptional('filename', '', @ischar);
             ip.addOptional('askUser', true, @isscalar);
-            ip.addOptional('full', true, @isscalar);
             ip.parse(varargin{:});
             askUser = ip.Results.askUser;
-            full = ip.Results.full;
 
             if ~isempty(ip.Results.path)
                 % Remove ending file separators from paths
@@ -348,6 +346,7 @@ classdef  MovieObject < hgsetget
                 % If different path
                 hasDisplay = feature('ShowFigureWindows');
                 if ~strcmp(oldPath, newPath)
+                    full = true;  % flag for full relocation
                     if askUser && hasDisplay
                         if isa(obj,'MovieData')
                             type='movie';
@@ -372,7 +371,7 @@ classdef  MovieObject < hgsetget
                     
                     % Relocate the object
                     fprintf(1,'Relocating analysis from %s to %s\n',oldRootDir,newRootDir);
-                    obj.relocate(oldRootDir,newRootDir,full);
+                    obj.relocate(oldRootDir, newRootDir, full);
                 end
             end
             if ~isempty(ip.Results.filename),
