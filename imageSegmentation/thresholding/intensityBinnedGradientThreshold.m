@@ -75,7 +75,7 @@ if nargin < 5 || isempty(force2D)
     force2D = false;
 end
 
-if nargin < 5 || isempty(method)
+if nargin < 6 || isempty(method)
     method = 'LocalMaxima';
 end
 
