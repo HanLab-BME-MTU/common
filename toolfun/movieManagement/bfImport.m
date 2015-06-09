@@ -164,7 +164,7 @@ if ~isempty(pixelSizeY)
     end
 end
 
-if ~isempty(pixelSize) && pixelSize ~= 1000  % Metamorph fix
+if ~isempty(pixelSize) && round(pixelSize) ~= 1000  % Metamorph fix
     movieArgs = horzcat(movieArgs, 'pixelSize_', pixelSize);
 end
 
