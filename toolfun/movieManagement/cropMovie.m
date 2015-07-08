@@ -1,4 +1,4 @@
-function croppedMovieData = cropMovie(movieData,varargin)
+function croppedMovieData = cropMovie(movieData,outputDirectory,varargin)
 %CROPMOVIE allows the user to crop the movie
 %
 % Syntax:
@@ -37,17 +37,13 @@ warning('off','MATLAB:structOnObject');
 % Input check
 ip= inputParser;
 ip.addRequired('movieData',@(x) isa(x,'MovieData'));
-ip.addOptional('outputDirectory',[],@(x) exist(x,'dir'));
+ip.addRequired('outputDirectory',@ischar);
 ip.addParamValue('cropROI',[1 1 movieData.imSize_(end:-1:1)],@(x) isvector(x) && numel(x)==4);
 ip.addParamValue('cropTOI',1:movieData.nFrames_,@isvector);
 ip.addParamValue('additionalFiles',{},@iscell);
-ip.parse(movieData,varargin{:});
+ip.parse(movieData,outputDirectory,varargin{:});
 cropROI=ip.Results.cropROI;
 cropTOI=ip.Results.cropTOI;
-outputDirectory = ip.Results.outputDirectory;
-if(isempty(outputDirectory))
-    outputDirectory = uigetdir(movieData.outputDirectory_,'Select output directory for cropped MovieData');
-end
 additionalFiles=ip.Results.additionalFiles;
 
 % Create log message
