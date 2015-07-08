@@ -1,4 +1,4 @@
-% [r, udata, sdata] = getMultiplicityInt(data,index,skipFiniteCheck) returns the occurrences/Multiplicity of the elements of 'data'
+% [r, udata, sdata] = getMultiplicityInt(data) returns the occurrences/Multiplicity of the elements of 'data'
 %
 % Inputs:
 %         data : n-dimensional input array (Nx1 linearized)
