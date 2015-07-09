@@ -147,5 +147,18 @@ classdef ProxyReader < Reader
             I = obj.reader.loadStack_(varargin{:});
         end
     end
+    methods ( Static )
+        function proxies = removeProxyReaders(movieData)
+            R = movieData.getReader();
+            proxies = R.findProxies();
+            if(~isempty(proxies))
+                % the last reader should contain a reference to a real
+                % reader
+                movieData.setReader(proxies{end}.reader);
+                % deactivate base reader deletion
+                proxies{end}.setDeleteBaseReader(false);
+            end
+        end
+    end
 end
 
