@@ -14,11 +14,17 @@ function plot(tracks,varargin)
    % In order to for the selection tool to display the correct index
    % construct a fake larger array with null coordinates
    if(all(~cellfun('isempty',{tracks.index})))
-       T([tracks.index]) = tracks;
+       % convert to tracksStruct since we use legacy plotTracks2D
+       tracksStruct = TracksStruct(tracks);
+       tracksStruct.reindex([tracks.index]);
+       
+       T([tracks.index]) = tracksStruct;
        nullTracks = cellfun('isempty',{T.index});
-       [T(nullTracks).tracksCoordAmpCG] = deal(NaN(1,8));
-       [T(nullTracks).seqOfEvents] = deal([1 1 1 NaN
-                                           1 2 1 NaN]);
+       if(any(nullTracks))
+            [T(nullTracks).tracksCoordAmpCG] = deal(NaN(1,8));
+            [T(nullTracks).seqOfEvents] = deal([1 1 1 NaN
+                                                1 2 1 NaN]);
+       end
        disp('Tracks.plot numbers tracks according to the index property');
    else
        % If index is unset for some reason, do not attempt to reindex
