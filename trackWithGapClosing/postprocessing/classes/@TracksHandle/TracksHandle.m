@@ -77,6 +77,7 @@ classdef TracksHandle < Tracks & dynamicprops
                 [obj.tracksFeatIndxCG] = deal(tracks.tracksFeatIndxCG);
                 [obj.seqOfEvents] = deal(tracks.seqOfEvents);
                 [obj.tracksCoordAmpCG] = deal(tracks.tracksCoordAmpCG);
+                obj.reindex();
             end
         end
         function set.tracksFeatIndxCG(obj,tracksFeatIndxCG)
