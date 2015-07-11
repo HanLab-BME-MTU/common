@@ -489,10 +489,12 @@ if indicateSE %if user wants to indicate starts and ends
         %find the beginning and end of each track
         for i=numTracks:-1:1
             timePoint = find(~isnan(tracksX(:,i)));
-            startInfo(i,:) = [tracksX(timePoint(1),i) ...
-                tracksY(timePoint(1),i) timePoint(1)];
-            endInfo(i,:) = [tracksX(timePoint(end),i) ...
-                tracksY(timePoint(end),i) timePoint(end)];
+            if(~isempty(timePoint))
+                startInfo(i,:) = [tracksX(timePoint(1),i) ...
+                    tracksY(timePoint(1),i) timePoint(1)];
+                endInfo(i,:) = [tracksX(timePoint(end),i) ...
+                    tracksY(timePoint(end),i) timePoint(end)];
+            end
         end
 
         allStartInfo = [ allStartInfo ; startInfo(startInfo(:,3)>=timeRange(1) & startInfo(:,3)<=timeRange(2),:) ];
