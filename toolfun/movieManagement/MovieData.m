@@ -52,12 +52,26 @@ classdef  MovieData < MovieObject
             %
             % INPUT
             %    channels - a Channel object or an array of Channels
+            %               or a char string for MovieData
+            %               or a MovieData class to copy channels from
             %    outputDirectory - a string containing the output directory
             %    OPTIONAL - a set of options under the property/key format
             
             if nargin>0
+                if(isa(path_or_channels,'MovieData'))
+                    % Make a MovieData object from another MovieData
+                    MD = path_or_channels;
+                    % Make a copy of the channels
+                    path_or_channels = MD.channels_.copy();
+                    if(MD.isBF())
+                        % if this is bioformats, also copy the series
+                        % number
+                        obj.bfSeries_ = MD.getSeries();
+                    end
+                end
+
                 if ischar(path_or_channels)
-                    obj = bfImport(path_or_channels, varargin{:});
+                    obj = bfImport(path_or_channels, varargin{:},'class',class(obj));
                 else
                     % Parse options
                     ip = inputParser();
