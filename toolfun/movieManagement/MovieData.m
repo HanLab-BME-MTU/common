@@ -71,7 +71,7 @@ classdef  MovieData < MovieObject
                 end
 
                 if ischar(path_or_channels)
-                    if(mod(nargin,2) == 0)
+                    if(mod(nargin,2) == 0 && ischar(varargin{1}))
                         % outputDirectory was passed as an optional parameter
                         % make outputDirectory a parameter instead
                         varargin = ['outputDirectory' varargin];
