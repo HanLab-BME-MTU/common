@@ -71,11 +71,20 @@ classdef  MovieData < MovieObject
                 end
 
                 if ischar(path_or_channels)
+                    if(mod(nargin,2) == 0)
+                        % outputDirectory was passed as an optional parameter
+                        % make outputDirectory a parameter instead
+                        varargin = ['outputDirectory' varargin];
+                    end
                     obj = bfImport(path_or_channels, varargin{:},'class',class(obj));
                 else
                     % Parse options
                     ip = inputParser();
-                    ip.addOptional('outputDirectory', '', @ischar);
+                    if(mod(nargin,2) == 0)
+                        ip.addOptional('outputDirectory', '', @ischar);
+                    else
+                        ip.addParameter('outputDirectory','', @ischar);
+                    end
                     ip.KeepUnmatched = true;
                     ip.parse(varargin{:});
                     
