@@ -36,9 +36,9 @@ classdef TestBFMovieData < TestMovieData & TestCase
             fclose(fid);
         end
         
-        function setUpMovie(self)
+        function setUpMovie(self,varargin)
             filename = self.createFakeFile();
-            self.movie = MovieData(filename);
+            self.movie = MovieData(filename,varargin{:});
         end
         
         function checkChannelPaths(self)
@@ -55,7 +55,7 @@ classdef TestBFMovieData < TestMovieData & TestCase
             self.movie = MovieData(filename);
             self.checkChannelPaths();
         end
-        
+
         function testConstructorMetadata(self)
             filename = self.createFakeFile();
             self.createFakeFileCompanion('physicalSizeX=1');
@@ -74,6 +74,21 @@ classdef TestBFMovieData < TestMovieData & TestCase
                 movies(2).getReader().formatReader);
             assertEqual(movies(1).getReader().series, 0);
             assertEqual(movies(2).getReader().series, 1);
+        end
+
+        function testOutputDirectoryAsOptional(self)
+            self.setUpMovie(self.path);
+        end
+
+        function testOutputDirectoryAsParameter(self)
+            self.setUpMovie('outputDirectory',self.path);
+        end
+
+        function testImportMetadata(self)
+            self.setUpMovie(true);
+            self.setUpMovie(true,self.path);
+            self.setUpMovie(false,'outputDirectory',self.path);
+            self.setUpMovie('importMetadata',true,'outputDirectory',self.path);
         end
         
         %% Typecasting tests

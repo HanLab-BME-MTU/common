@@ -52,16 +52,45 @@ classdef  MovieData < MovieObject
             %
             % INPUT
             %    channels - a Channel object or an array of Channels
+            %               or a char string for MovieData
+            %               or a MovieData class to copy channels from
             %    outputDirectory - a string containing the output directory
             %    OPTIONAL - a set of options under the property/key format
             
             if nargin>0
+                if(isa(path_or_channels,'MovieData'))
+                    % Make a MovieData object from another MovieData
+                    MD = path_or_channels;
+                    % Make a copy of the channels
+                    path_or_channels = MD.channels_.copy();
+                    if(MD.isBF())
+                        % if this is bioformats, also copy the series
+                        % number
+                        obj.bfSeries_ = MD.getSeries();
+                    end
+                end
+
+                importMetadata = true;
+                if(nargin > 1 && islogical(varargin{1}))
+                    importMetadata = varargin{1};
+                    varargin = varargin(2:end);
+                end
+
                 if ischar(path_or_channels)
-                    obj = bfImport(path_or_channels, varargin{:});
+                    if(mod(length(varargin),2) == 1 && ~isempty(varargin) && ischar(varargin{1}))
+                        % outputDirectory was passed as an optional parameter
+                        % make outputDirectory a parameter instead
+                        varargin = ['outputDirectory' varargin];
+                    end
+                    obj = bfImport(path_or_channels, importMetadata, varargin{:},'class',class(obj));
                 else
                     % Parse options
                     ip = inputParser();
-                    ip.addOptional('outputDirectory', '', @ischar);
+                    if(mod(length(varargin),2) == 1)
+                        ip.addOptional('outputDirectory', '', @ischar);
+                    else
+                        ip.addParameter('outputDirectory','', @ischar);
+                    end
                     ip.KeepUnmatched = true;
                     ip.parse(varargin{:});
                     
