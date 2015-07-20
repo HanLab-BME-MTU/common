@@ -246,13 +246,13 @@ else
             % Check percentage of NaN and remove linear trend for energy
             validSlices = p.SliceIndex;
             [energyData{iBand} ,energyRange{iBand},~,~,excVar] = ...
-                removeMeanTrendNaN(rawData{iBand}(validSlices,:)',1);
+                removeMeanTrendNaN(rawData{iBand}(validSlices,:)','trendType',1);
             validSlices(excVar) = false;
             
             % Recompute signal detrending if using a different trend type
             if p.trendType(iInput)~=1
                 [data{iBand}(validSlices) ,range{iBand}(validSlices)] = ...
-                    removeMeanTrendNaN(rawData{iBand}(validSlices,:)',p.trendType(iInput));
+                    removeMeanTrendNaN(rawData{iBand}(validSlices,:)','trendType',p.trendType(iInput));
             else
                 data{iBand}(validSlices)=energyData{iBand};
                 range{iBand}(validSlices)=energyRange{iBand};
