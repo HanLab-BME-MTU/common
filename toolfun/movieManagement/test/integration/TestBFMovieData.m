@@ -83,6 +83,12 @@ classdef TestBFMovieData < TestMovieData & TestCase
         function testOutputDirectoryAsParameter(self)
             self.setUpMovie('outputDirectory',self.path);
         end
+
+        function testImportMetadata(self)
+            self.setUpMovie(true);
+            self.setUpMovie(false,'outputDirectory',self.path);
+            self.setUpMovie('importMetadata',true,'outputDirectory',self.path);
+        end
         
         %% Typecasting tests
         function checkPixelType(self, classname)
