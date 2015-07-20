@@ -70,17 +70,23 @@ classdef  MovieData < MovieObject
                     end
                 end
 
+                importMetadata = true;
+                if(nargin > 1 && islogical(varargin{1}))
+                    importMetadata = varargin{1};
+                    varargin = varargin(2:end);
+                end
+
                 if ischar(path_or_channels)
-                    if(mod(nargin,2) == 0 && ischar(varargin{1}))
+                    if(mod(length(varargin),2) == 1 && ~isempty(varargin) && ischar(varargin{1}))
                         % outputDirectory was passed as an optional parameter
                         % make outputDirectory a parameter instead
                         varargin = ['outputDirectory' varargin];
                     end
-                    obj = bfImport(path_or_channels, varargin{:},'class',class(obj));
+                    obj = bfImport(path_or_channels, importMetadata, varargin{:},'class',class(obj));
                 else
                     % Parse options
                     ip = inputParser();
-                    if(mod(nargin,2) == 0)
+                    if(mod(length(varargin),2) == 1)
                         ip.addOptional('outputDirectory', '', @ischar);
                     else
                         ip.addParameter('outputDirectory','', @ischar);
