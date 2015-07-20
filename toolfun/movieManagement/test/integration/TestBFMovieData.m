@@ -86,6 +86,7 @@ classdef TestBFMovieData < TestMovieData & TestCase
 
         function testImportMetadata(self)
             self.setUpMovie(true);
+            self.setUpMovie(true,self.path);
             self.setUpMovie(false,'outputDirectory',self.path);
             self.setUpMovie('importMetadata',true,'outputDirectory',self.path);
         end
