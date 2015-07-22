@@ -29,7 +29,7 @@ settingFcn=ip.Results.settingFcn;
 userData = get(handles.figure1, 'UserData');
 if isfield(userData,'MD'),
     field = 'MD';
-elseif isfield(userData,'MD');
+elseif isfield(userData,'ML');
     field = 'ML';
 else
     error('Missing movie');

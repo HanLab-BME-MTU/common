@@ -218,7 +218,7 @@ else
     %At least 50 points are needed to calculate the ACF
     %Number of lags <= N/4;
     %Ref: Time Series Analysis, Forecast and Control. Jenkins, G. Box,G
-    minP     = 50;
+    %minP     = 50; %The removeMeanTrendNaN code already checks this...
     
     % Create log messages
     tic;
@@ -244,15 +244,15 @@ else
             rawData{iBand}(detectOutliers(rawData{iBand},p.kSigma(iInput))) = NaN;
             
             % Check percentage of NaN and remove linear trend for energy
-            validSlices = (nPoints-sum(isnan(rawData{iBand}),2))>=minP & ...
-                 p.SliceIndex;
-            [energyData{iBand} ,energyRange{iBand}] = ...
-                removeMeanTrendNaN(rawData{iBand}(validSlices,:)',1);
+            validSlices = p.SliceIndex;
+            [energyData{iBand} ,energyRange{iBand},~,~,excVar] = ...
+                removeMeanTrendNaN(rawData{iBand}(validSlices,:)','trendType',1);
+            validSlices(excVar) = false;
             
             % Recompute signal detrending if using a different trend type
             if p.trendType(iInput)~=1
                 [data{iBand}(validSlices) ,range{iBand}(validSlices)] = ...
-                    removeMeanTrendNaN(rawData{iBand}(validSlices,:)',p.trendType(iInput));
+                    removeMeanTrendNaN(rawData{iBand}(validSlices,:)','trendType',p.trendType(iInput));
             else
                 data{iBand}(validSlices)=energyData{iBand};
                 range{iBand}(validSlices)=energyRange{iBand};

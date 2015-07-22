@@ -108,7 +108,7 @@ if isa(movieObject,'MovieList')
                 movieData.outputDirectory_));
         end
         % Parse parameters and run the process
-        movieSignalProc{i} = movieData.processes_{end};
+        movieSignalProc{i} = movieData.processes_{movieData.getProcessIndex('SignalProcessingProcess',1,0)};
         parseProcessParams(movieSignalProc{i},movieParams);
         movieSignalProc{i}.run(wtBarArgs{:});
         movieInput{i}=movieSignalProc{i}.getInput;       
