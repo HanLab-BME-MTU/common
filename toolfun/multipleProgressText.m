@@ -1,4 +1,4 @@
-function [] = multipleProgressText(text_, nStep_)
+function [out] = multipleProgressText(text_, nStep_)
 %multipleProgressText shows progress of a loop as text on the screen. Can handle multiple levels of progress
 %
 %SYNOPSIS
@@ -6,6 +6,8 @@ function [] = multipleProgressText(text_, nStep_)
 %       Initializes the progressText
 %   [] = multipleProgressText(text_)
 %       Changes the optional text and updates progressText
+%   [] = multipleProgressText('reset')
+%       Resets the program
 %   [] = multipleProgressText()
 %       Updates progressText
 %
@@ -13,6 +15,13 @@ function [] = multipleProgressText(text_, nStep_)
 %   text        : Optional text in the progress display
 %   nSteps      : Max number of steps until completion
 %
+%OUTPUT
+%   out     : diagnostic information about the persistent variables
+%       .level      : The layer / level of prgoress display. Larger the
+%                     level, smaller the increase in progress fraction
+%       .iStep      : array of progress on each level
+%       .nStep      : array of max number of steps needed to complete each
+%                     level
 %Tae H Kim, July 2015
 
 %% Initialization
@@ -30,6 +39,12 @@ if nargin == 1 && level == 1
     iStep(level) = iStep(level) + 1;
     text = text_;
 end
+if nargin == 1 && strcmp(text_, 'reset')
+    level = 0;
+    iStep = [];
+    nStep = [];
+    frac = [];
+end
 if nargin == 2
     level = level + 1;
     iStep(level) = 0;
@@ -38,6 +53,11 @@ if nargin == 2
     if level == 1
         text = text_;
     end
+end
+%input check
+%throws error if level < 1;
+if level < 1
+    error('Progress display error: number of steps do not match the number times the program was called -or- program was never initialized');
 end
 
 %% Fraction calculation
@@ -57,4 +77,12 @@ if iStep(level) == nStep(level)
     weight = weight(1:end-1);
 end
 
+%% Output
+if nargout > 0
+    out.level = level;
+    out.iStep = iStep;
+    out.nStep = nStep;
 end
+
+end
+
