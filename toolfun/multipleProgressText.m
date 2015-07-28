@@ -36,10 +36,10 @@ if isempty(warned)
 end
 
 %% Input
-if nargin == 0
+if nargin == 0 && level ~= 0
     iStep(level) = iStep(level) + 1;
 end
-if nargin == 1
+if nargin == 1 && level ~= 0
     iStep(level) = iStep(level) + 1;
     text{level} = text_;
 end
@@ -61,9 +61,9 @@ if level > 0
 
     %% Progress Display
     if iStep(1) < nStep(1) && iStep(level) ~= nStep(level) && nargin ~= 2
-        progressText(frac * weight, text);
+        progressText(frac * weight, getFullText(text));
     elseif iStep(1) == nStep(1)
-        progressText(1, text);
+        progressText(1, getFullText(text));
     end
 
     %% level check
@@ -77,14 +77,15 @@ if level > 0
     end
 
     %% Output
-    if nargout > 0
-        out.level = level;
-        out.iStep = iStep;
-        out.nStep = nStep;
-    end
+
 elseif ~warned
     warned = true;
     warning('Level 0 reached. The progressText maybe inaccurate');
+end
+if nargout > 0
+    out.level = level;
+    out.iStep = iStep;
+    out.nStep = nStep;
 end
 
 end

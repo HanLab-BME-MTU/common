@@ -33,16 +33,22 @@ classdef TestMultipleProgressText < TestCase
                     for k=1:nSteps(3)
                         pause(0.1);
                         o = multipleProgressText;
-                        assertEqual(o.iStep(3),k);
-                        assertEqual(o.nStep(3),nSteps(3));
+                        if k ~= nSteps(3)
+                            assertEqual(o.iStep(3),k);
+                            assertEqual(o.nStep(3),nSteps(3));
+                        end
                     end
                     o = multipleProgressText;
-                    assertEqual(o.iStep(2),j);
-                    assertEqual(o.nStep(2),nSteps(2));
+                    if j ~= nSteps(2)
+                        assertEqual(o.iStep(2),j);
+                        assertEqual(o.nStep(2),nSteps(2));
+                    end
                 end
                 o = multipleProgressText;
-                assertEqual(o.iStep(1),i);
-                assertEqual(o.nStep(1),nSteps(1));
+                if i ~= nSteps(1)
+                    assertEqual(o.iStep(1),i);
+                    assertEqual(o.nStep(1),nSteps(1));
+                end
             end
         end
         function testOverrun(self)
