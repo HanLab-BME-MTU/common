@@ -1,50 +1,50 @@
-classdef TestMultipleProgressText < TestCase
-% Test the function multipleProgressText
+classdef TestProgressTextMultiple < TestCase
+% Test the function progressTextMultiple
     properties
     end
     methods
-        function self = TestMultipleProgressText(name)
+        function self = TestProgressTextMultiple(name)
             self@TestCase(name);
         end
         function setUp(self)
-            clear multipleProgressText;
+            clear progressTextMultiple;
         end
         function tearDown(self)
-            clear multipleProgressText;
+            clear progressTextMultiple;
         end
         function testNormalCountdown(self)
             % Test a normal progress update scenario
             nSteps = [5 3 2];
             text = 'Testing';
-            o = multipleProgressText(text,nSteps(1));
+            o = progressTextMultiple(text,nSteps(1));
             assertEqual(o.level,1);
             assertEqual(o.iStep,0);
             assertEqual(o.nStep,nSteps(1));
             for i=1:nSteps(1)
-                o = multipleProgressText(text,nSteps(2));
+                o = progressTextMultiple(['A' num2str(i)],nSteps(2));
                 assertEqual(o.level,2);
                 assertEqual(o.iStep(2),0);
                 assertEqual(o.nStep(2),nSteps(2));
                 for j=1:nSteps(2)
-                    o = multipleProgressText(text,nSteps(3));
+                    o = progressTextMultiple(['B' num2str(j)],nSteps(3));
                     assertEqual(o.level,3);
                     assertEqual(o.iStep(3),0);
                     assertEqual(o.nStep(3),nSteps(3));
                     for k=1:nSteps(3)
-                        pause(0.1);
-                        o = multipleProgressText;
+                        pause(1);
+                        o = progressTextMultiple;
                         if k ~= nSteps(3)
                             assertEqual(o.iStep(3),k);
                             assertEqual(o.nStep(3),nSteps(3));
                         end
                     end
-                    o = multipleProgressText;
+                    o = progressTextMultiple;
                     if j ~= nSteps(2)
                         assertEqual(o.iStep(2),j);
                         assertEqual(o.nStep(2),nSteps(2));
                     end
                 end
-                o = multipleProgressText;
+                o = progressTextMultiple;
                 if i ~= nSteps(1)
                     assertEqual(o.iStep(1),i);
                     assertEqual(o.nStep(1),nSteps(1));
@@ -57,14 +57,27 @@ classdef TestMultipleProgressText < TestCase
             nSteps = 5;
             overrun = 3;
             text = 'Testing';
-            o = multipleProgressText(text,nSteps(1));
+            o = progressTextMultiple(text,nSteps(1));
             assertEqual(o.level,1);
             assertEqual(o.iStep,0);
             assertEqual(o.nStep,nSteps(1));
+            lastwarn('');
             for i=1:(nSteps+overrun)
                 pause(0.1);
-                o = multipleProgressText;
+                o = progressTextMultiple;
             end
+            % Ensure that a warning is issued the first time
+            [msgstr,msgid] = lastwarn;
+            assertEqual(msgid,'progressTextMultiple:LevelZero');
+
+            lastwarn('');
+            for i=1:(nSteps+overrun)
+                pause(0.1);
+                o = progressTextMultiple;
+            end
+            % Ensrue that a warning is not thrown the second time
+            [msgstr,msgid] = lastwarn;
+            assertEqual(msgid,'');
         end
     end
 end
