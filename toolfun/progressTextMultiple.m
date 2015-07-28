@@ -20,6 +20,12 @@ function [out] = progressTextMultiple(text_, nStep_)
 %       .iStep      : array of progress on each level
 %       .nStep      : array of max number of steps needed to complete each
 %                     level
+%
+%WARNINGS
+%   Throws a progressTextMultiple:LevelZero warning if the number of steps
+%   specified is exceeded and level 0 is reached. Warning is thrown only
+%   once. Reset using 'clear progressTextMultiple'
+%
 %Tae H Kim, July 2015
 
 %% Initialization
@@ -80,7 +86,7 @@ if level > 0
 
 elseif ~warned
     warned = true;
-    warning('Level 0 reached. The progressText maybe inaccurate');
+    warning('progressTextMultiple:LevelZero','Level 0 reached. The progressText maybe inaccurate');
 end
 if nargout > 0
     out.level = level;
