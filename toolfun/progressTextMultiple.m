@@ -1,12 +1,12 @@
 function [out] = progressTextMultiple(text_, nStep_)
-%multipleProgressText shows progress of a loop as text on the screen. Can handle multiple levels of progress
+%progressTextMultiple shows progress of a loop as text on the screen. Can handle multiple levels of progress
 %
 %SYNOPSIS
-%   [] = multipleProgressText(text_, nStep_)
+%   [] = progressTextMultiple(text_, nStep_)
 %       Initializes the progressText
-%   [] = multipleProgressText(text_)
+%   [] = progressTextMultiple(text_)
 %       Changes the optional text and updates progressText
-%   [] = multipleProgressText()
+%   [] = progressTextMultiple()
 %       Updates progressText
 %
 %INPUT
