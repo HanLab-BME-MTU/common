@@ -1,5 +1,7 @@
 classdef  MovieData < MovieObject
     % Concrete implementation of MovieObject for a single movie
+    %
+    % See also MovieData.MovieData
     
     properties (SetAccess = protected)
         channels_               % Channel object array
@@ -54,8 +56,25 @@ classdef  MovieData < MovieObject
             %    channels - a Channel object or an array of Channels
             %               or a char string for MovieData
             %               or a MovieData class to copy channels from
-            %    outputDirectory - a string containing the output directory
+            %    importMetadata  - (optional) logical for bfImport
+            %                      default: true
+            %    outputDirectory - (optional)
+            %                      a string containing the output directory
+            %                      
             %    OPTIONAL - a set of options under the property/key format
+            %
+            % EXAMPLE
+            % % Use BioFormatsReader, with importMetadata == true
+            % MD = MovieData('image.tif',true,pwd);
+            % MD = MovieData('image.tif',pwd);
+            % MD = MovieData('image.tif','outputDirectory',pwd);
+            %
+            % % Use TiffSeriesReader
+            % c = Channel('image.tif');
+            % MD = MovieData(c,pwd);
+            %
+            % See also bfImport, Channel, BioformatsReader,
+            % TiffSeriesReader
             
             if nargin>0
                 if(isa(path_or_channels,'MovieData'))
@@ -70,15 +89,23 @@ classdef  MovieData < MovieObject
                     end
                 end
 
+                % importMetadata is only relevant to Bio-Formats
+                % The constructor will accept an optional logical as a
+                % second argument, but will ignore it for non-character
+                % path or channels
                 importMetadata = true;
                 if(nargin > 1 && islogical(varargin{1}))
                     importMetadata = varargin{1};
                     varargin = varargin(2:end);
                 end
-
+                
+                % bfImport takes outputDirectory as a parameter while
+                % MovieData has traditionally accepted it as an optional
+                % argument. Allow outputDirectory to be passed in either as
+                % the 2nd or 3rd optional argument or as a parameter.
                 if ischar(path_or_channels)
                     if(mod(length(varargin),2) == 1 && ~isempty(varargin) && ischar(varargin{1}))
-                        % outputDirectory was passed as an optional parameter
+                        % outputDirectory was passed as an optional argument
                         % make outputDirectory a parameter instead
                         varargin = ['outputDirectory' varargin];
                     end
@@ -86,6 +113,8 @@ classdef  MovieData < MovieObject
                 else
                     % Parse options
                     ip = inputParser();
+                    % Accept outputDirectory as an optional argument if the
+                    % number of remaining arguments is an odd number
                     if(mod(length(varargin),2) == 1)
                         ip.addOptional('outputDirectory', '', @ischar);
                     else
