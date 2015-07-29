@@ -65,7 +65,7 @@ classdef CroppableMovieData < MovieData
                 S.positions{end+1} = position;
                 save(obj.cropDataFile_,'-struct','S');
             catch err
-                disp(['Could not save crop area to ' file]);
+                disp(['Could not save crop area to ' obj.cropDataFile_]);
                 disp(err);
             end
             if(nargin < 2)
