@@ -10,7 +10,7 @@ function [out] = progressTextMultiple(text_, nStep_)
 %       Updates progressText
 %
 %INPUT
-%   text        : Optional text in the progress display
+%   text        : Text in the progress display or empty
 %   nSteps      : Max number of steps until completion
 %
 %OUTPUT
@@ -56,7 +56,7 @@ if nargin == 2
     if level == 1
         weight(1, 1) = 1;
     else
-        weight(level, 1) = weight(level-1, 1) / nStep(level - 1);
+        weight(level, 1) = weight(level-1, 1) / nStep(level - 1)*0.9;
     end
     text{level} = text_;
 end
@@ -66,7 +66,7 @@ if level > 0
     frac(level) = iStep(level) / nStep(level);
 
     %% Progress Display
-    if iStep(1) < nStep(1) && iStep(level) ~= nStep(level) && nargin ~= 2
+    if iStep(1) < nStep(1) && nargin ~= 2
         progressText(frac * weight, getFullText(text));
     elseif iStep(1) == nStep(1)
         progressText(1, getFullText(text));
@@ -86,7 +86,7 @@ if level > 0
 
 elseif ~warned
     warned = true;
-    warning('progressTextMultiple:LevelZero','Level 0 reached. The progressText maybe inaccurate');
+    warning('progressTextMultiple:LevelZero','Level 0 reached. The progressText may be inaccurate');
 end
 if nargout > 0
     out.level = level;
@@ -99,6 +99,7 @@ end
 %% Local function
 %generates fullText
 function [fullText] = getFullText(text)
+text = text(~cellfun('isempty',text));
 text = cellfun(@(x) [x ': '], text, 'UniformOutput', false);
 fullText = [text{:}];
 fullText = fullText(1:end-2);
