@@ -1,25 +1,54 @@
-function [labelImg,nLabel] = segmentNucleii(img)
+function [labelImg,nLabel] = segmentNucleii(img, dilateNucleii)
 %[labelImg] = segmentNucleii(img) sements img into label indentifying each
 % nucleus by double thresholding and watershed.
 %  input: img - 2D image matrix
 % output: labelImg - label matrix (uint16 or uint8) 
 %            nLabel - the total number of nucleii
+if nargin<2
+    dilateNucleii=false;
+end
 img = double(img);
-imgnorm = img/max(img(:));
-levelOtsu = graythresh(imgnorm);
-[~, level2] = cutFirstHistMode(imgnorm,0); %Rosin
-levelOtsu = 0.99*levelOtsu + 0.01*level2;
-levelrosin = 0.33333*levelOtsu + 0.66667*level2;
-imageNormFiltered = filterGauss2D(imgnorm,1);
+%% Do background subtraction
+%remove noise by filtering image with a Gaussian whose sigma = 1 pixel
+imageFiltered = filterGauss2D(img,1);
 
-bwDAPI = im2bw(imageNormFiltered,levelOtsu);
+%estimate background by filtering image with a Gaussian whose sigma = 10 pixels
+imageBackground = filterGauss2D(img,10);
+
+%calculate noise-filtered and background-subtracted image
+imageFilteredMinusBackground = imageFiltered - imageBackground;
+imageDilated = imageFilteredMinusBackground;
+
+%get minumum and maximum pixel values in image
+minSignal = min(imageDilated(:));
+maxSignal = max(imageDilated(:));
+imageDilatedNorm = (imageDilated - minSignal) / (maxSignal - minSignal);
+
 % bwDAPI = im2bw(imgDAPInorm,levelrosin);
 % figure, imshow(bwDAPI)
+%% Thresholding
+% imgnorm = img/max(img(:));
+levelOtsu = graythresh(imageDilatedNorm);
+[~, level2] = cutFirstHistMode(imageDilatedNorm,0); %Rosin
+levelOtsu = 0.99*levelOtsu + 0.01*level2;
+levelrosin = 0.33333*levelOtsu + 0.66667*level2;
+% bwDAPI = im2bw(imageNormFiltered,levelOtsu);
+bwDAPI = im2bw(imageDilatedNorm,levelOtsu);
 %% Lable each segments and break the clumps
 labelOtsu = bwlabel(bwDAPI);
 labelDAPIws = labelOtsu;
 areas = regionprops(bwDAPI,'Area');
 medianArea = median(arrayfun(@(x) (x.Area),areas));
+% Sometimes otsu algorithm can pick up too generous value if there is some
+% out-of-focus signal in the image. In that case, we will pass this image
+% by returning NaNs for labelImg and nLabel.
+maxArea = max(arrayfun(@(x) (x.Area),areas));
+if maxArea>1000*medianArea
+    disp('Some out-of-focus signal interfered automatic thresholding, leading to huge wrong segmentation. Passing on this cell ...')
+    labelImg=NaN;
+    nLabel = NaN;
+    return
+end
 % For each segment, check if they can be divided by watershed
 nLabel = max(labelOtsu(:));
 idxLargeNucleii=find(arrayfun(@(x) x.Area>medianArea,areas));
@@ -77,7 +106,13 @@ end
 % use labelDAPIws as a seed point to propagate the same IDs to expanded
 % version of mask. I can either dilate the existing or use Rosin
 % thresholding to get more generous mask. I'll try latter first.
-bwDAPIrosin = im2bw(imageNormFiltered,levelrosin);
+% bwDAPIrosin = im2bw(imageNormFiltered,levelrosin);
+bwDAPIrosin = im2bw(imageDilatedNorm,levelrosin);
+if dilateNucleii
+    dilationRadius = 5; % pixel
+    se = strel('disk',dilationRadius);
+    bwDAPIrosin = imdilate(bwDAPIrosin,se);
+end
 % There is some unwanted additional segmentation from lower threshold by
 % Rosin. We need to clear those out before processing
 

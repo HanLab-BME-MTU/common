@@ -1,4 +1,4 @@
-function [nameSlide,numDetectedNuc,numAllNuc,ratioDetected,meanIntenCD45,meanIntenCD45ND]=nucleusProteinColoc(pathProject,pathImgDAPI,readCD45)
+function [nameSlide,numDetectedNuc,numAllNuc,ratioDetected,meanIntenCD45,meanIntenCD45ND]=nucleusProteinColoc(pathProject,pathImgDAPI,thresSignal,readCD45)
 %[nameSlide,numDetectedNuc,numAllNuc,ratioDetected,meanIntenCD45]=nucleusProteinColoc(pathProject,pathImgDAPI,readCD45)
 % detects and segments nucleii from the first
 % image, and per each identified nucleus, finds if it is overlapping with
@@ -9,6 +9,8 @@ function [nameSlide,numDetectedNuc,numAllNuc,ratioDetected,meanIntenCD45,meanInt
 % input:
 %       pathProject              : path to project
 %       pathImgDAPI            : path to DAPI image
+%       thresSignal              : threshold value for signal (e.g. for Tra
+%       or Bstrong)
 %       readCD45                : true if you have CD45 channel (default:
 %                                       false)
 % output:
@@ -22,7 +24,7 @@ function [nameSlide,numDetectedNuc,numAllNuc,ratioDetected,meanIntenCD45,meanInt
 % 
 % also look at: batchNecleiiProteinColoc
 % Sangyoon Han May 2015
-if nargin<3
+if nargin<4
     readCD45=false;
 end
 %% Nucleii detection and segmentation
@@ -53,9 +55,19 @@ pathLabelDAPIwithDet = [pathOut filesep patientName '-' traOrBstr 'LabelDAPIwith
 pathBwTra = [pathOut filesep patientName '-' traOrBstr 'traThresholded.tif'];
 pathResults = [pathOut filesep patientName '-' traOrBstr 'results.csv'];
 pathResultsCD45 = [pathOut filesep patientName '-' traOrBstr 'CD45intensity.csv'];
+pathResultsAllData = [pathOut filesep patientName '-' traOrBstr 'allData.mat'];
 pathCD45withDet = [pathOut filesep patientName '-' traOrBstr 'CD45withDetection.tif'];
 %% Run segmentNucleii
-[labelDAPI,nLabel] = segmentNucleii(imgDAPI);
+if readCD45
+    [labelDAPI,nLabel] = segmentNucleii(imgDAPI);
+else
+    [labelDAPI,nLabel] = segmentNucleii(imgDAPI,1);
+end
+%% If imgDAPI was bad, labelDAPI and nLabel are NaN, then we return NaN for outputs
+if any(isnan(labelDAPI(:))) && any(isnan(nLabel(:)))
+    numDetectedNuc=NaN; numAllNuc=NaN; ratioDetected=NaN; meanIntenCD45=NaN; meanIntenCD45ND=NaN; 
+    return
+end
 %% Showing splitted result:
 % oldNLable = nLabel;
 % nLabel=newLabel;
@@ -86,8 +98,8 @@ imgSignal = imread(pathImgSignal);
 % maxIntenFromSignal = max(imgSignal(:));
 % figure, histogram(imgSignal(:),100)
 % figure, histogram(imgSignalControl(:),100)
-thresSignal = 3000;%quantile(imgSignalControl(:),0.999999); % this gives around 2500
 bwSignal = imgSignal>thresSignal;
+% bwSignal = bwmorph(bwSignal,'majority');
 % figure, imshow(bwSignal)
 % sum(bwSignal(:)) % there are about 182 of positive pixels
 % Now Colocalization
@@ -97,7 +109,23 @@ detectedNucleii = labelDAPI(bwSignal);
 % combImg(:,:,1) = bwSignal;
 % figure, imshow(double(combImg),[])
 % [detectedNucleii,ia,ic]= unique(detectedNucleii);
-[detectedNucleii,ia] = setdiff(detectedNucleii,0);
+[detectedNucleiiUniq,ia] = setdiff(detectedNucleii,0);
+%% Size threshold: get rid of nucleii with only small pixels of Tra...
+minNumSigPix = 5;
+SignalAreas = arrayfun(@(x) sum(detectedNucleii==x),detectedNucleiiUniq);
+idxNonSmallDetectedNuc=SignalAreas > minNumSigPix;
+detectedNucleiiUniq=detectedNucleiiUniq(idxNonSmallDetectedNuc);
+ia=ia(idxNonSmallDetectedNuc);
+% Reconstructing bwSignal with detectedNucleiiUniq
+disp(['Size thresholding with ' num2str(minNumSigPix) ' pixels.'])
+tic
+p=0;
+for jj=find(bwSignal(:))'
+    p=p+1;
+    bwSignal(jj) = ismember(detectedNucleii(p),detectedNucleiiUniq);
+end
+toc
+%% Showing
 % figure, imshow(labelDAPI>0)
 h=figure; imshow(labelDAPI,colors)
 hold on, plot(xSignal(ia),ySignal(ia),'yo')
@@ -105,7 +133,7 @@ print('-dtiff', '-r300', pathLabelDAPIwithDet)
 imwrite(bwSignal,pathBwTra)
 close(h)
 %% key statistics: number of detected nucleii vs. all nucleii
-numDetectedNuc = length(detectedNucleii);
+numDetectedNuc = length(detectedNucleiiUniq);
 numAllNuc =nLabel;
 ratioDetected = numDetectedNuc/numAllNuc;
 %% Record CD45 mean intensity in detected nucleii
@@ -114,14 +142,14 @@ if readCD45
     meanIntenTra = zeros(numDetectedNuc,1);
     pathCD45 = strrep(pathImgDAPI,'c1.tif','c2.tif');
     imgCD45 = imread(pathCD45);
-    notDetectedNucleii = setdiff((1:numAllNuc)',detectedNucleii);
+    notDetectedNucleii = setdiff((1:numAllNuc)',detectedNucleiiUniq);
     numNotDetectedNuc = length(notDetectedNucleii);
     meanIntenCD45ND = zeros(numNotDetectedNuc,1); %ND: NotDetected
     meanIntenTraND = zeros(numNotDetectedNuc,1); %ND: NotDetected
     % Get the pixel list of detected adhesions
     regionDAPI = regionprops(labelDAPI,'PixelID');
     for ii=1:numDetectedNuc
-        curPixelIDs = regionDAPI(detectedNucleii(ii)).PixelIdxList;
+        curPixelIDs = regionDAPI(detectedNucleiiUniq(ii)).PixelIdxList;
         curMeanIntenCD45 = mean(imgCD45(curPixelIDs));
         curMeanIntenTra = mean(imgSignal(curPixelIDs));
         meanIntenCD45(ii)=curMeanIntenCD45;
@@ -158,7 +186,7 @@ if readCD45
         detectedNucleiiNaN = NaN(numNotDetectedNuc,1);
         meanIntenCD45NaN = NaN(numNotDetectedNuc,1); 
         meanIntenTraNaN = NaN(numNotDetectedNuc,1); 
-        detectedNucleiiNaN(1:numDetectedNuc) = detectedNucleii;
+        detectedNucleiiNaN(1:numDetectedNuc) = detectedNucleiiUniq;
         meanIntenCD45NaN(1:numDetectedNuc) = meanIntenCD45;
         meanIntenTraNaN(1:numDetectedNuc) = meanIntenTra;
         B = table(detectedNucleiiNaN,meanIntenCD45NaN,meanIntenTraNaN,notDetectedNucleii,meanIntenCD45ND,meanIntenTraND);
@@ -170,7 +198,8 @@ if readCD45
         notDetectedNucleiiNaN(1:numNotDetectedNuc) = notDetectedNucleii;
         meanIntenCD45NDNaN(1:numNotDetectedNuc) = meanIntenCD45ND;
         meanIntenTraNDNaN(1:numNotDetectedNuc) = meanIntenTraND;
-        B = table(detectedNucleii,meanIntenCD45,meanIntenTra,notDetectedNucleiiNaN,meanIntenCD45NDNaN,meanIntenTraNDNaN);
+        B = table(detectedNucleiiUniq,meanIntenCD45,meanIntenTra,notDetectedNucleiiNaN,meanIntenCD45NDNaN,meanIntenTraNDNaN);
         writetable(B,pathResultsCD45)
     end
 end
+save(pathResultsAllData)
