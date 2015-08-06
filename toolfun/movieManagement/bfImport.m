@@ -37,7 +37,13 @@ ip.addRequired('dataPath',@ischar);
 ip.addOptional('importMetadata',true,@islogical);
 ip.addParamValue('outputDirectory',[],@ischar);
 ip.addParamValue('askUser', false, @isscalar);
+ip.addParamValue('class',@MovieData,@(c) ischar(c) || isa(c,'function_handle'));
 ip.parse(dataPath,varargin{:});
+
+constructor = ip.Results.class;
+if(ischar(constructor))
+    constructor = str2func(constructor);
+end
 
 % Retrieve the absolute path of the image file
 [status, f] = fileattrib(dataPath);
@@ -60,7 +66,8 @@ end
 
 % Read number of series and initialize movies
 nSeries = r.getSeriesCount();
-MD(1, nSeries) = MovieData();
+MD(1, nSeries) = constructor();
+assert(isa(MD,'MovieData'),'class parameter must be a MovieData subclass');
 
 % Set output directory (based on image extraction flag)
 [mainPath, movieName, movieExt] = fileparts(dataPath);
@@ -117,7 +124,7 @@ for i = 1 : nSeries
     end
     
     % Create movie object
-    MD(i) = MovieData(movieChannels(i, :), outputDir, movieArgs{:});
+    MD(i) = constructor(movieChannels(i, :), outputDir, movieArgs{:});
     MD(i).setPath(outputDir);
     MD(i).setFilename(movieFileName);
     MD(i).setSeries(iSeries);
@@ -164,7 +171,7 @@ if ~isempty(pixelSizeY)
     end
 end
 
-if ~isempty(pixelSize) && pixelSize ~= 1000  % Metamorph fix
+if ~isempty(pixelSize) && round(pixelSize) ~= 1000  % Metamorph fix
     movieArgs = horzcat(movieArgs, 'pixelSize_', pixelSize);
 end
 

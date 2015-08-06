@@ -128,9 +128,11 @@ if nargout > 1
         
 end
 
-%Replicate per-channel parameters if necessary
-nChan = numel(procOb.owner_.channels_);    
-paramOut = prepPerChannelParams(paramOut,nChan);
+if isa(procOb.owner_,'MovieData')
+    %Replicate per-channel parameters if necessary
+    nChan = numel(procOb.owner_.channels_);    
+    paramOut = prepPerChannelParams(paramOut,nChan);
+end
 
 %Store the parameters in the process object
 procOb.setPara(paramOut);

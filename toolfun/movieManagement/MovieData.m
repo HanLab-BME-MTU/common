@@ -1,5 +1,7 @@
 classdef  MovieData < MovieObject
     % Concrete implementation of MovieObject for a single movie
+    %
+    % See also MovieData.MovieData
     
     properties (SetAccess = protected)
         channels_               % Channel object array
@@ -52,16 +54,72 @@ classdef  MovieData < MovieObject
             %
             % INPUT
             %    channels - a Channel object or an array of Channels
-            %    outputDirectory - a string containing the output directory
+            %               or a char string for MovieData
+            %               or a MovieData class to copy channels from
+            %    importMetadata  - (optional) logical for bfImport
+            %                      default: true
+            %    outputDirectory - (optional)
+            %                      a string containing the output directory
+            %                      
             %    OPTIONAL - a set of options under the property/key format
+            %
+            % EXAMPLE
+            % % Use BioFormatsReader, with importMetadata == true
+            % MD = MovieData('image.tif',true,pwd);
+            % MD = MovieData('image.tif',pwd);
+            % MD = MovieData('image.tif','outputDirectory',pwd);
+            %
+            % % Use TiffSeriesReader
+            % c = Channel('image.tif');
+            % MD = MovieData(c,pwd);
+            %
+            % See also bfImport, Channel, BioformatsReader,
+            % TiffSeriesReader
             
             if nargin>0
+                if(isa(path_or_channels,'MovieData'))
+                    % Make a MovieData object from another MovieData
+                    MD = path_or_channels;
+                    % Make a copy of the channels
+                    path_or_channels = MD.channels_.copy();
+                    if(MD.isBF())
+                        % if this is bioformats, also copy the series
+                        % number
+                        obj.bfSeries_ = MD.getSeries();
+                    end
+                end
+
+                % importMetadata is only relevant to Bio-Formats
+                % The constructor will accept an optional logical as a
+                % second argument, but will ignore it for non-character
+                % path or channels
+                importMetadata = true;
+                if(nargin > 1 && islogical(varargin{1}))
+                    importMetadata = varargin{1};
+                    varargin = varargin(2:end);
+                end
+                
+                % bfImport takes outputDirectory as a parameter while
+                % MovieData has traditionally accepted it as an optional
+                % argument. Allow outputDirectory to be passed in either as
+                % the 2nd or 3rd optional argument or as a parameter.
                 if ischar(path_or_channels)
-                    obj = bfImport(path_or_channels, varargin{:});
+                    if(mod(length(varargin),2) == 1 && ~isempty(varargin) && ischar(varargin{1}))
+                        % outputDirectory was passed as an optional argument
+                        % make outputDirectory a parameter instead
+                        varargin = ['outputDirectory' varargin];
+                    end
+                    obj = bfImport(path_or_channels, importMetadata, varargin{:},'class',class(obj));
                 else
                     % Parse options
                     ip = inputParser();
-                    ip.addOptional('outputDirectory', '', @ischar);
+                    % Accept outputDirectory as an optional argument if the
+                    % number of remaining arguments is an odd number
+                    if(mod(length(varargin),2) == 1)
+                        ip.addOptional('outputDirectory', '', @ischar);
+                    else
+                        ip.addParameter('outputDirectory','', @ischar);
+                    end
                     ip.KeepUnmatched = true;
                     ip.parse(varargin{:});
                     
@@ -353,7 +411,7 @@ classdef  MovieData < MovieObject
             % Save the movie to disk if run successfully
             
             % Call the superclass sanityCheck
-            if nargin>1, sanityCheck@MovieObject(obj,varargin{:}); end
+            sanityCheck@MovieObject(obj,varargin{:});
             
             % Call subcomponents sanityCheck
             disp('Checking channels');
@@ -361,6 +419,21 @@ classdef  MovieData < MovieObject
                 obj.getChannel(i).sanityCheck(obj);
             end
             
+            obj.checkDimensions()
+
+            % Fix roi/parent initialization
+            if isempty(obj.rois_), obj.rois_=MovieData.empty(1,0); end
+            if isempty(obj.parent_), obj.parent_=MovieData.empty(1,0); end
+
+            if isMock(obj)
+                obj.saveMock();
+            else
+                disp('Saving movie');
+                obj.save();
+            end
+        end
+
+        function checkDimensions(obj)
             % Read raw data dimensions
             width = obj.getReader().getSizeX();
             height = obj.getReader().getSizeY();
@@ -388,31 +461,6 @@ classdef  MovieData < MovieObject
             else
                 obj.zSize_ = zSize;
             end
-            
-            % Fix roi/parent initialization
-            if isempty(obj.rois_), obj.rois_=MovieData.empty(1,0); end
-            if isempty(obj.parent_), obj.parent_=MovieData.empty(1,0); end
-            
-            if isMock(obj)
-                mockMDname = obj.channels_(1,1).getGenericName(obj.channels_(1,1).hcsPlatestack_{1}, 'site_on');
-                if max(size(obj.channels_(1,1).hcsPlatestack_)) ~= 1
-                    mockMDname = strcat('control begin with ',mockMDname);
-                end
-                pathmock = [obj.mockMD_.parent.movieDataPath_ filesep 'controls' filesep mockMDname '.mat'];
-                obj.movieDataPath_ = [obj.mockMD_.parent.movieDataPath_ filesep 'controls'];
-                obj.movieDataFileName_ = [mockMDname '.mat'];
-                obj.mockMD_.path = pathmock;
-                mkdir(obj.movieDataPath_);
-                save(pathmock, 'obj');
-                parentMDpath = [obj.mockMD_.parent.movieDataPath_ filesep obj.mockMD_.parent.movieDataFileName_];
-                load(parentMDpath);
-                MD.mMDparent_ = [MD.mMDparent_; {obj.mockMD_.index obj.mockMD_.path}];
-                save(parentMDpath, 'MD');
-                return
-            end
-            
-            disp('Saving movie');
-            obj.save();
         end
         
         function relocate(obj,oldRootDir,newRootDir,full)
@@ -455,6 +503,23 @@ classdef  MovieData < MovieObject
             setFig = movieDataGUI(obj);
         end
         
+        function saveMock(obj)
+            mockMDname = obj.channels_(1,1).getGenericName(obj.channels_(1,1).hcsPlatestack_{1}, 'site_on');
+            if max(size(obj.channels_(1,1).hcsPlatestack_)) ~= 1
+                mockMDname = strcat('control begin with ',mockMDname);
+            end
+            pathmock = [obj.mockMD_.parent.movieDataPath_ filesep 'controls' filesep mockMDname '.mat'];
+            obj.movieDataPath_ = [obj.mockMD_.parent.movieDataPath_ filesep 'controls'];
+            obj.movieDataFileName_ = [mockMDname '.mat'];
+            obj.mockMD_.path = pathmock;
+            mkdir(obj.movieDataPath_);
+            save(pathmock, 'obj');
+            parentMDpath = [obj.mockMD_.parent.movieDataPath_ filesep obj.mockMD_.parent.movieDataFileName_];
+            load(parentMDpath);
+            MD.mMDparent_ = [MD.mMDparent_; {obj.mockMD_.index obj.mockMD_.path}];
+            save(parentMDpath, 'MD');
+        end
+
         function save(obj,varargin)
             
             % Create list of movies to save simultaneously

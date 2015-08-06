@@ -107,5 +107,17 @@ classdef TestInputParserRetrofit < TestCase
             assertEqual(p.Results.arg1,R.arg1);
             assertEqual(p.Results.opt1,R.opt1);
         end
+        function testUnmatched(self)
+            p = self.ipr;
+            R = self.Results;
+            R.req1 = 90;    
+            R.req2 = pi;
+            p.KeepUnmatched = true;
+            newStruct.unknown1 = 5;
+            newStruct.unknown2 = 6;
+            p.parse(R.req1,R.req2,R,newStruct);
+            assertEqual(p.Results,R);
+            assertEqual(p.Unmatched,newStruct);
+        end
     end
 end

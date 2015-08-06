@@ -111,6 +111,10 @@ classdef (Abstract = true) Tracks < handle  & matlab.mixin.Copyable
         % Number of frames in which each compound track exists
         numFrames
     end
+    properties
+        % Index assigned on construction of object or by reindex()
+        index
+    end
     properties ( Dependent = true )
         lifetime
         nSeg
@@ -158,6 +162,7 @@ classdef (Abstract = true) Tracks < handle  & matlab.mixin.Copyable
         msM = getMergeSplitMatrix(obj)
         idx = getMergeIdx(obj,msM)
         idx = getSplitIdx(obj,msM)
+        oldIdx = reindex(obj,newIdx);
         [merge,split] = getMergeSplitXY(obj,matrix);
     end
 end

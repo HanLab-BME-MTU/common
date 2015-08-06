@@ -48,7 +48,7 @@ ny = info(1).Height;
 
 % Determine format and allocate arrays
 isRGB = false;
-if strcmpi(info(1).ColorType, 'grayscale')
+if (strcmpi(info(1).ColorType, 'grayscale')||strcmpi(info(1).ColorType, 'indexed'))
     if isfield(info, 'SampleFormat')
         switch info(1).SampleFormat
             case 'Unsigned integer'

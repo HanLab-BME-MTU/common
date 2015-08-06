@@ -195,7 +195,8 @@ classdef inputParserRetrofit < handle
                 sc(useDefaults) = defaults(useDefaults);
                 sc = cell2struct(sc,fieldnames(parser.Results));
                 % Depends on StructExpand, consider alternative
-                parser.parse(varargin{1:obj.numRequired},sc);
+                % Also pass Unmatched through in case KeepUnmatched active
+                parser.parse(varargin{1:obj.numRequired},sc,parser.Unmatched);
             end
         end
         function parser = getParser(obj)
