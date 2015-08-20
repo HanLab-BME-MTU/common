@@ -1,10 +1,9 @@
-% A QD regression test script based on tracking comparison methods. 
-% Warning: this test is based on simulated data. Please sync simulation function before testing. 
+% A QD script to compare the performances of multiple tracking branches (tested with 2 ...)
+% Warning: this script uses  simulated data as a benchmark. Please synchronise simulation function in each branch before testing. 
 
 
-%% Parameter Setting 
-
-% Please clone your branch separately first 
+%% Branches setup
+% Each branch must be cloned in a separated directory
 branchNb=2;
 branches(branchNb) = struct();
 
@@ -14,26 +13,26 @@ branches(1).path='/home2/proudot/repo/iu-track-branch/';
 branches(2).name='master';
 branches(2).path='/home2/proudot/repo/danuser-utsw/';
 
-
 arrayfun(@(x) (rmpath(genpath(x.path))),branches);
 
-% simulation type
+%% simulation parameter
 % 1 for classic simulation (brownian or confined ordirected)
 % 2 for heterogeneous
 simulation_type=1;
 
-% Compare different type of approches
+% Varying param for simulation density in spots/1 microm^2 (20 px window)
+speed_transition_range=1:10;
+
+renderSimulation=false;
+
+%% tracking methods
+% Tracking method(s) compared
 method_nb=1;
 compute_U_track=1;
 compute_KF_iter_mostRecent=0;
 
-renderSimulation=false;
 
-% Varying param for simulation
-% density in spots/1 microm^2 (20 px window)
-speed_transition_range=1:10;
-
-% Results for each method, each parameter
+%% Memory allocation for results for each simulation and each tracking method
 for i=1:length(branches)
     branches(i).percentageGoodLink=zeros(method_nb,size(speed_transition_range,2),4);
     branches(i).percentageBadLink=zeros(method_nb,size(speed_transition_range,2),4);
@@ -43,6 +42,7 @@ for i=1:length(branches)
     branches(i).schemesStats=zeros(2,method_nb,size(speed_transition_range,2));
 end
 
+%% For each parameter in the input range, simulated and track for each branch.
 simuParamIdx=1;
 for speed_transition=speed_transition_range
     addpath(genpath(branches(1).path));

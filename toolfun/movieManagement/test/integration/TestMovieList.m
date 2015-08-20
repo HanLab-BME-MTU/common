@@ -111,6 +111,23 @@ classdef TestMovieList < TestMovieObject & TestCase
             assertEqual(self.movieList.getPath(), absolutePath);            
         end
         
+        function testLoadRegenerateMemoFile(self)
+            % Test MovieList loading generate non-existing memo files
+            
+            self.setUpMovieList();
+            % Check the memo file exists
+            memoFilePath = fullfile(self.path, '.test.fake.bfmemo');
+            assertTrue(exist(memoFilePath, 'file') == 2);
+            % Delete the memo file
+            delete(memoFilePath);
+            assertFalse(exist(memoFilePath, 'file') == 2);
+            % Load the movie list and check the memo file has been
+            % regenerated
+            self.movieList = MovieList.load(self.movieList.getFullPath());
+            assertTrue(exist(memoFilePath, 'file') == 2);
+        end
+        
+        %% ROI scenarios
         function testROILists(self)
             % Test movie list composed of multiple ROIs
             self.movie = self.setUpMovie();

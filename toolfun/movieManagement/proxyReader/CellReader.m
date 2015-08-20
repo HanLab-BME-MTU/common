@@ -229,6 +229,19 @@ classdef CellReader < LinearReader
         function out = toMatrix(obj)
             out = reshape(obj.to3D,[obj.getSizeY obj.getSizeX obj.size]);
         end
+        
+        function c = num2cell(obj,varargin)
+            % num2cell: Emulate the builtin num2cell by creating a cell array along a particular dimension
+            c = cell(size(obj));
+            % numel does not give the correct answer in this situation
+            s = prod(size(obj));
+            for i=1:s
+                c{i} = obj.subsref(struct('type','()','subs',{{i}}));
+            end
+            if(nargin > 1)
+                c = num2cell(c,varargin{:});
+            end
+        end
 
         % implement other cell functions by converting to cell
         function out = cell2mat(obj)
@@ -262,6 +275,45 @@ classdef CellReader < LinearReader
             end
             S.subs = cellfun(@(n) 1:n,S.subs,'UniformOutput',false);
             out = obj.subsref(S);
+        end
+        function varargout = cellfun(varargin)
+         % CellReader.cellfun allows cellfun to be called directly to
+         % access each image by converting the data to to a cell
+         %
+         % See also cellfun
+            for i=1:length(varargin)
+                if(isa(varargin{i},'CellReader'))
+                    varargin{i} = varargin{i}.toCell;
+                end
+            end
+            [varargout{1:nargout}] = cellfun(varargin{:});
+        end
+        function varargout = cellfun_lowmem(varargin)
+            % CellReader.cellfun_lowmem emulates the built-in cellfun but
+            % only loads a single 2D image plane at a time
+            %
+            % See also CellReader.cellfun, cellfun, arrayfun
+            if(ischar(varargin{1}))
+                warning('cellfun_lowmem cannot allow for the function to be a string. Using normal cellfun instead', 'CellReader:cellfun_lowmem::FuncIsString');
+                [varargout{1:nargout}] = cellfun(varargin{:});
+                return;
+            end
+            for i=1:length(varargin)
+                if(isa(varargin{i},'CellReader'))
+                    varargin{i} = num2cell(varargin{i});
+                end
+            end
+            fxn = varargin{1};
+            varargin{1} = @loadImages;
+            [varargout{1:nargout}] = cellfun(varargin{:});
+            function varargout = loadImages(varargin)
+                for j=1:length(varargin)
+                    if(isa(varargin{j},'CellReader'))
+                        varargin{j} = varargin{j}.loadImage(1,1);
+                    end
+                end
+                [varargout{1:nargout}] = fxn(varargin{:});
+            end
         end
     end
 

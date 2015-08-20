@@ -103,6 +103,18 @@ classdef TestMovieDataProperties < TestCase & TestLibrary
             f= @() self.movie.setROIOmeroId('/path/to/mask');
             assertExceptionThrown(f, 'lccb:set:invalid');
         end
+
+        function testOutputDirectoryAsOptional(self)
+            nchannels = 2;
+            self.setUpChannels(nchannels);
+            self.movie = MovieData(self.channels, self.tmpdir);
+        end
+
+        function testOutputDirectoryAsParameter(self)
+            nchannels = 2;
+            self.setUpChannels(nchannels);
+            self.movie = MovieData(self.channels, 'outputDirectory', self.tmpdir);
+        end
         
         %% Multi        
         function values = getValues(self)

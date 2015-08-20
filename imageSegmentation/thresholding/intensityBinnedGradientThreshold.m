@@ -1,4 +1,4 @@
-function threshold = intensityBinnedGradientThreshold(im,binSize,sigma,smoothPar,force2D,method)
+function threshold = intensityBinnedGradientThreshold(im,binSize,sigma,smoothPar,force2D,method,maskIn)
 %INTENSITYBINNEDGRADIENTTHRESH thresholds an image combining gradient and intensity information
 % 
 % threshold = intensityBinnedGradientThreshold(im)
@@ -40,6 +40,9 @@ function threshold = intensityBinnedGradientThreshold(im,binSize,sigma,smoothPar
 %   local maxima. This is good for objects with mixed intensities - will
 %   tend to find threshold which matches the edge of the dimmest object.
 %
+%   maskIn - Optionally input a mask to specify pixels to use when
+%   constructing gradient histogra (areas with false in mask are ignored).
+%
 % Output:
 % 
 %   threshold - The selected threshold value. If a threshold could not be
@@ -75,9 +78,14 @@ if nargin < 5 || isempty(force2D)
     force2D = false;
 end
 
-if nargin < 5 || isempty(method)
+if nargin < 6 || isempty(method)
     method = 'LocalMaxima';
 end
+
+if nargin < 7 || isempty(maskIn)
+    maskIn = true(size(im));
+end
+
 
 im = double(im);
 nPlanes = size(im,3);
@@ -100,9 +108,13 @@ if nPlanes == 1 || force2D
         else
             currIm = im(:,:,j);
         end
+        currMask = maskIn(:,:,j);
+        
         %Get gradient of image.
         [gX,gY] = gradient(currIm);
-        g = sqrt(gX .^2 + gY .^2);    
+        g = sqrt(gX .^2 + gY .^2);   
+        
+        g(~currMask) = NaN;
 
         %Get average gradient at each intensity level
         tmp = arrayfun(@(x)(nanmean(nanmean(double(g(currIm >= intBins(x) & currIm < intBins(x+1)))))),1:numel(intBins)-1);
@@ -119,7 +131,9 @@ else
         [dX,dY,dZ] = gradient(im);
     end
     
-    g = sqrt(dX .^2 + dY .^2 + dZ .^2);                            
+    g = sqrt(dX .^2 + dY .^2 + dZ .^2);        
+    
+    g(~maskIn) = NaN;
     
     gradAtIntVal = arrayfun(@(x)(mean(double(g(im(:) >= intBins(x) & im(:) < intBins(x+1))))),1:numel(intBins)-1);            
     

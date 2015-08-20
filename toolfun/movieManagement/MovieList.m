@@ -92,11 +92,7 @@ classdef MovieList < MovieObject
             % Save the movie list to disk if run successfully.
             
             % Call the superclass sanityCheck
-            if nargin>1, 
-                askUser = sanityCheck@MovieObject(obj, varargin{:});
-            else
-                askUser = true;
-            end
+            askUser = sanityCheck@MovieObject(obj, varargin{:});
             
             % Load movie components (run sanityCheck on each of them)
             movieException = cell(1, obj.getSize());

@@ -1,4 +1,4 @@
-classdef Channel < hgsetget
+classdef Channel < hgsetget & matlab.mixin.Copyable
     %  Class definition of channel class
     
     properties
@@ -338,6 +338,11 @@ classdef Channel < hgsetget
             obj.psfSigma_ = getGaussianPSFsigma(numAperture,1,pixelSize,emissionWavelength);
             % obj.psfSigma_ =.21*obj.emissionWavelength/(numAperture*pixelSize);
             
+        end
+        function cpObj = copyElement(obj)
+            cpObj = copyElement@matlab.mixin.Copyable(obj);
+            % owner should not be copied so that a new owner can be set
+            cpObj.owner_ = [];
         end
     end
     methods(Static)
