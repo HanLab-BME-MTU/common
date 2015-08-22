@@ -24,10 +24,10 @@ ip = inputParser;
 ip.CaseSensitive = false;
 ip.addRequired('center', @(c) size(c,2)==2);
 ip.addRequired('radius', @(r) any(size(r)==1) && all(r>0));
-ip.addParameter('EdgeColor', 'k');
-ip.addParameter('FaceColor', 'none');
-ip.addParameter('LineStyle', '-');
-ip.addParameter('Handle', gca, @ishandle);
+ip.addParamValue('EdgeColor', 'k');
+ip.addParamValue('FaceColor', 'none');
+ip.addParamValue('LineStyle', '-');
+ip.addParamValue('Handle', gca, @ishandle);
 ip.parse(center, radius, varargin{:});
 
 center = ip.Results.center;
