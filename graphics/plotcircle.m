@@ -24,10 +24,10 @@ ip = inputParser;
 ip.CaseSensitive = false;
 ip.addRequired('center', @(c) size(c,2)==2);
 ip.addRequired('radius', @(r) any(size(r)==1) && all(r>0));
-ip.addParamValue('EdgeColor', 'k');
-ip.addParamValue('FaceColor', 'none');
-ip.addParamValue('LineStyle', '-');
-ip.addParamValue('Handle', gca, @ishandle);
+ip.addParameter('EdgeColor', 'k');
+ip.addParameter('FaceColor', 'none');
+ip.addParameter('LineStyle', '-');
+ip.addParameter('Handle', gca, @ishandle);
 ip.parse(center, radius, varargin{:});
 
 center = ip.Results.center;
@@ -43,6 +43,7 @@ hold on;
 axis(ip.Results.Handle, 'equal');
 h = arrayfun(@(i) rectangle('Position', [center(i,1)-radius(i) center(i,2)-radius(i) 2*radius(i) 2*radius(i)],...
     'Curvature', [1,1], 'EdgeColor', ip.Results.EdgeColor, 'FaceColor', ip.Results.FaceColor,...
-    'LineStyle', ip.Results.LineStyle, 'Parent', ip.Results.Handle), 1:nc);
+    'LineStyle', ip.Results.LineStyle, 'Parent', ip.Results.Handle), 1:nc,'UniformOutput',false);
+h = [h{:}];
 
 plot(0, 0, ip.Results.LineStyle, 'Color', ip.Results.EdgeColor);
