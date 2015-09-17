@@ -250,17 +250,29 @@ for iChan = 1:nChanThresh
         %Apply the threshold to create the mask
         imageMask = currImage > currThresh;
         
-        if isfield(paramsIn,'PostProcess')
-            %TEMPORARY! don't have time to write separate class def...
+        if isfield(p,'PostProcess')
+
+            %TEMPORARY! don't have time to write separate class def for
+            %post processing, but should move this eventually!?
+           
+            if p.PostProcess.ClosureRadius > 0
+               imageMask = imclose(imageMask,strel('disk', p.PostProcess.ClosureRadius));
+            end
+            
             CC = bwconncomp(imageMask);
             nPer = cellfun(@numel,CC.PixelIdxList);
-            iKeep = find(nPer > paramsIn.PostProcess.MinVoxels);
+            iKeep = find(nPer > p.PostProcess.MinVoxels);
             imageMask = false(size(imageMask));
             for j = 1:numel(iKeep)
                 imageMask(CC.PixelIdxList{iKeep(j)}) = true;
             end  
-            if paramsIn.PostProcess.DilateRadius > 0
-               imageMask = imdilate(imageMask,binarySphere(paramsIn.PostProcess.DilateRadius));                
+            if p.PostProcess.DilateRadius > 0
+               %imageMask = imdilate(imageMask,binarySphere(p.PostProcess.DilateRadius));                
+               %We don't need the accuracy of the true spherical dilation,
+               %and this is ~20x faster (this is effectively rectangular
+               %dilation implemented as 3 successive line dilations along each axis)
+               imageMask = permute(imdilate(permute(imdilate(imdilate(imageMask,strel('line',p.PostProcess.DilateRadius*2,0)),...
+                   strel('line',p.PostProcess.DilateRadius*2,90)),[3 1 2]),strel('line',p.PostProcess.DilateRadius*2,90)),[2 3 1]);
             end
             
         end        
