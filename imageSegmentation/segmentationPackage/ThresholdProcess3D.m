@@ -30,6 +30,31 @@ classdef ThresholdProcess3D < SegmentationProcess
             obj = obj@SegmentationProcess(super_args{:});
         end
         
+        function drawImaris(obj,iceConn)
+            
+            for iChan = obj.getParameters.ChannelIndex
+                
+                if obj.checkChannelOutput(iChan)
+                    for iFrame = 1:obj.owner_.nFrames_;
+                        mask = obj.loadChannelOutput(iChan,iFrame);
+                        if nnz(mask) > 0
+                            mSurf = isosurface(mask,.5);
+                            norms = isonormals(mask,mSurf.vertices);
+                            norms = -norms;%Imaris uses opposite convention for normals
+                            mSurf.vertices(:,1:2) = mSurf.vertices(:,[2 1]) * obj.owner_.pixelSize_ / 1e3;%Swap X and Y to agree with imaris coord
+                            mSurf.vertices(:,3) = mSurf.vertices(:,3) * obj.owner_.pixelSizeZ_ / 1e3;
+
+                            dataSet = iceConn.mImarisApplication.GetDataSet;
+                            chanCol = iceConn.mapRgbaScalarToVector(dataSet.GetChannelColorRGBA(iChan-1));                                        
+                            iceConn.createAndSetSurfaces(mSurf,norms,iFrame-1,['Mask ' char(dataSet.GetChannelName(iChan-1))],chanCol);
+                        end
+                    end
+                end
+            end
+            
+        end
+        
+        
     end
     methods (Static)
         function name = getName()

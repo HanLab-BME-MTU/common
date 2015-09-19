@@ -171,20 +171,58 @@ classdef ImageProcessingProcess < Process
         function outIm = loadOutImage(obj,iChan,iFrame)
             outIm=obj.loadChannelOutput(iChan,iFrame);
         end
-           
         
         function outIm = loadChannelOutput(obj,iChan,iFrame,varargin)
-            % Input check
+             % Input check
             ip =inputParser;
-            ip.addRequired('iChan',@obj.checkChanNum);
-            ip.addRequired('iFrame',@obj.checkFrameNum);
+            ip.addRequired('obj');
+            ip.addRequired('iChan', @obj.checkChanNum);
+            ip.addRequired('iFrame', @obj.checkFrameNum);
+            if obj.owner_.is3D()
+                ip.addOptional('iZ', @obj.checkDepthNum);
+            end
             ip.addParamValue('output',[],@ischar);            
-            ip.parse(iChan,iFrame,varargin{:})
-
-            % Data loading
+            ip.parse(obj,iChan,iFrame,varargin{:})
             imNames = obj.getOutImageFileNames(iChan);
-            outIm = imread(fullfile(obj.outFilePaths_{1,iChan},imNames{1}{iFrame}));
+            if obj.getOwner().is3D()
+                %iZ = ip.Results.iZ;
+                if ~exist('iZ', 'var')
+                    outIm = tif3Dread([obj.outFilePaths_{1,iChan} filesep imNames{1}{iFrame}]);
+                else 
+                    outIm =imread([obj.outFilePaths_{1,iChan} filesep imNames{1}{iFrame}], iZ);
+                end
+            else
+                outIm =imread([obj.outFilePaths_{1,iChan} filesep imNames{1}{iFrame}]);
+            end
         end
+        
+        function drawImaris(obj,iceConn)
+            
+            dataSet = iceConn.mImarisApplication.GetDataSet;            
+            nChanRaw = numel(obj.owner_.channels_);
+            nFrames = obj.owner_.nFrames_;
+            for iChan = 1:nChanRaw
+                
+                if obj.checkChannelOutput(iChan)
+                                        
+                    nChanDisp = dataSet.GetSizeC + 1;
+                    dataSet.SetSizeC(nChanDisp)
+                    dataSet.SetChannelName(nChanDisp-1,[ char(dataSet.GetChannelName(iChan-1)) ' ' obj.name_]);
+                    dataSet.SetChannelColorRGBA(nChanDisp-1,dataSet.GetChannelColorRGBA(iChan-1));                    
+                    datMin = Inf;
+                    datMax = -Inf;
+                    for iFrame = 1:nFrames
+                        vol = obj.loadChannelOutput(iChan,iFrame);                        
+                        datMin = min(min(vol(:)),datMin);
+                        datMax = max(max(vol(:)),datMax);
+                        iceConn.setDataVolume(vol,nChanDisp-1,iFrame-1);                       
+                    end
+                    dataSet.SetChannelRange(nChanDisp-1,datMin,datMax);                   
+                end                
+            end
+            
+        end
+        
         
     end
     methods(Static)
