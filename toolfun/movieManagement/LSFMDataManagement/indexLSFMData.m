@@ -50,7 +50,7 @@ ip.addParamValue('filePattern','Iter_ sample_scan_3p35ms_zp4um_ch{ch}_stack*', @
 ip.parse(moviePaths,moviesRoot,varargin{:});
 
 p=ip.Results;
-writeData=p.writeData;
+
 
 filePattern=p.filePattern;
 if(ischar(moviePaths))
@@ -61,10 +61,10 @@ if(ischar(moviePaths))
 end
 
 MDs=cell(1,length(moviePaths));
-for cellIdx=1:length(moviePaths)
+parfor cellIdx=1:length(moviePaths)
     cPath=moviePaths{cellIdx};
     channelList=[];
-
+    writeData=p.writeData;
     chIdx=ip.Results.chStartIdx;
     while(true)      
         if(p.deskew)
