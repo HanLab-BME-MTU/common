@@ -1,6 +1,8 @@
 function ML=indexLSFMData(moviePaths,moviesRoot,varargin)
-% Batch sort time points in ch0/, ch1/ (and optionnaly deskew, dezip on demand) 
-% and create movieData/movieList and analysis folder for file management in matlab. 
+% - Batch sort time points in ch0/, ch1/ (and optionnaly deskew, dezip on demand) 
+% - Create movieData and analysis folder for each movie
+% - Print MIP in analysis folder
+% - Create a movieList saved in an anlysis folder below <moviesRoot>
 %
 % EXAMPLE:  indexLSFMData('/path/to/your/cells/Cell_*/whatever/CAM_0{ch}*.tif','/path/to/your/cells','lateralPixelSize',160,'axialPixelSize',400,'copyFile',true)
 %
@@ -48,6 +50,7 @@ ip.addParamValue('filePattern','Iter_ sample_scan_3p35ms_zp4um_ch{ch}_stack*', @
 ip.parse(moviePaths,moviesRoot,varargin{:});
 
 p=ip.Results;
+writeData=p.writeData;
 
 filePattern=p.filePattern;
 if(ischar(moviePaths))
@@ -63,39 +66,49 @@ for cellIdx=1:length(moviePaths)
     channelList=[];
 
     chIdx=ip.Results.chStartIdx;
-    filelistCH=dir([cPath filesep strrep(filePattern,'{ch}',num2str(chIdx))]);
-    if(isempty(filelistCH))
-       filelistCH=dir([cPath filesep 'ch' num2str(chIdx)]);
-    end
-    while(~isempty(filelistCH))        
+    while(true)      
         if(p.deskew)
             outputDirCH=[cPath filesep 'deskew' filesep 'ch' num2str(chIdx)];
         else
             outputDirCH=[cPath filesep 'ch' num2str(chIdx)];
-        end
-        
+        end        
         if(~isempty(p.newDataPath))
             outputDirCH=strrep(outputDirCH,p.moviesRoot,p.newDataPath);
         end
         
+        filelistCH=dir([cPath filesep strrep(filePattern,'{ch}',num2str(chIdx))]);
+        
+        % If it is empty, the reason might be that this as already been
+        % carried out. In which case check out the channel folder. 
+        if(isempty(filelistCH))
+            writeData=false;
+            filelistCH=dir([outputDirCH filesep strrep(filePattern,'{ch}',num2str(chIdx)) ] );
+        end
+        
+        % If this channel does not exist, stop building channels. 
+        if(isempty(filelistCH))
+           break;
+        end
+        
         if(~exist(outputDirCH,'dir')) mkdir(outputDirCH); end;
-        for fileIdx=1:length(filelistCH)
-            file=filelistCH(fileIdx).name;
-            if(p.writeData)
+        if(writeData)
+            for fileIdx=1:length(filelistCH)
+                file=filelistCH(fileIdx).name;
+                
                 if(p.deskew)
                     writeDeskewedFile([cPath filesep file],outputDirCH);
                 else
                     if(p.copyFile)
-                        copyfile([cPath filesep file],outputDirCH); 
+                        copyfile([cPath filesep file],outputDirCH);
                     else
                         movefile([cPath filesep file],outputDirCH);
-                    end                        
+                    end
                 end
+                
             end
         end
         channelList=[channelList Channel(outputDirCH)];
         chIdx=chIdx+1;
-        filelistCH=dir([cPath filesep strrep(filePattern,'{ch}',num2str(chIdx))]);
     end
     
 
@@ -108,7 +121,9 @@ for cellIdx=1:length(moviePaths)
     MD.setReader(tiffReader);                    
     MD.sanityCheck();
     MD.save();
-    printMIP(MD);
+    if(p.createMIP)
+        printMIP(MD);
+    end
     MDs{cellIdx}=MD;
 end
 
