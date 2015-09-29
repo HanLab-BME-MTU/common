@@ -57,12 +57,12 @@ filePattern=p.filePattern;
 if(ischar(moviePaths))
     [fileDirRegexp,fileRegexp,ext]=fileparts(moviePaths);
     filePattern=[fileRegexp ext];
-    dirs=rdir([fileDirRegexp filesep]);    % filesep is important due to a bug in rdir ...
-    moviePaths=unique(cellfun(@(x) fileparts(x),{dirs.name},'unif',0));    
+    dirs=dir([fileDirRegexp]);    % filesep is important due to a bug in rdir ...
+    moviePaths=unique(cellfun(@(x) [fileparts(fileDirRegexp) filesep x],{dirs.name},'unif',0));    
 end
 
 MDs=cell(1,length(moviePaths));
-parfor cellIdx=1:length(moviePaths)
+for cellIdx=1:length(moviePaths)
     cPath=moviePaths{cellIdx};
     channelList=[];
     writeData=p.writeData;
@@ -115,16 +115,23 @@ parfor cellIdx=1:length(moviePaths)
 
     if(~exist([cPath filesep 'analysis'],'dir')) mkdir([cPath filesep 'analysis']); end
     %%
-    tiffReader=TiffSeriesReader({channelList.channelPath_},'force3D',true);
+    MD=[];
+    if(~isempty(channelList))
+        tiffReader=TiffSeriesReader({channelList.channelPath_},'force3D',true);
     %%
-    MD=MovieData(channelList,[cPath filesep 'analysis'],'movieDataFileName_','movieData.mat','movieDataPath_',[cPath filesep 'analysis'], ...
+        MD=MovieData(channelList,[cPath filesep 'analysis'],'movieDataFileName_','movieData.mat','movieDataPath_',[cPath filesep 'analysis'], ...
                             'pixelSize_',p.lateralPixelSize,'pixelSizeZ_',p.axialPixelSize,'timeInterval_',p.timeInterval);
-    MD.setReader(tiffReader);                    
-    MD.sanityCheck();
-    MD.save();
-    if(p.createMIP)
-        printMIP(MD);
-    end
+        MD.setReader(tiffReader);                    
+        MD.sanityCheck();
+        MD.save();
+        if(p.createMIP)
+            printMIP(MD);
+        end
+    else
+        warning(['No files found for movie ' num2str(cellIdx)]);
+        MD=MovieData([],[cPath filesep 'analysis'],'movieDataFileName_','movieData.mat','movieDataPath_',[cPath filesep 'analysis']);
+    end;
+
     MDs{cellIdx}=MD;
 end
 
