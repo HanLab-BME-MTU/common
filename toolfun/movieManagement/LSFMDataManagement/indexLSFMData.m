@@ -25,7 +25,8 @@ function ML=indexLSFMData(moviePaths,moviesRoot,varargin)
 %
 % OPTION: - newDataPath {[]}: if specificied, all the new
 %           cell folders are writen under this folder ( analysis file with MD with or
-%           without data) WARNING: copyFALSE default witll movie files. 
+%           without data) WARNING: 
+%         - copyFile {false}: copy of move file. 
 %         - copyFile {false}: if true copy the file instead of moving them. 
 %         - 'writeData' {true}: If false, do not write data, only create MovieData under movieRoots or  NewDataPath
 
