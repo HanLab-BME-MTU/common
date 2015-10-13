@@ -131,13 +131,13 @@ group = session.getAdminService().getGroup(groupId);
 userData.groupPermissions = group.getDetails().getPermissions();
 set(handles.figure1, 'UserData', userData);
 
-display_username = @(x) [char(x.getChild().getFirstName().getValue())...
-        ' ' char(x.getChild().getLastName().getValue())...
-        ' (' char(x.getChild().getOmeName().getValue()) ')'];
+display_username = @(x) [char(x.getFirstName().getValue())...
+        ' ' char(x.getLastName().getValue())...
+        ' (' char(x.getOmeName().getValue()) ')'];
 if userData.groupPermissions.isGroupRead(),
-    map = toMatlabList(group.copyGroupExperimenterMap());
-    ids = arrayfun(@(x) x.getChild().getId().getValue(), map);
-    names = arrayfun(display_username, map, 'UniformOutput', false);
+    experimenters = toMatlabList(group.linkedExperimenterList);
+    ids = arrayfun(@(x) x.getId().getValue(), experimenters);
+    names = arrayfun(display_username, experimenters, 'UniformOutput', false);
     set(handles.popupmenu_user, 'Enable', 'on', 'String', names,...
         'UserData', ids, 'Value', find(ids == userId));
 else
