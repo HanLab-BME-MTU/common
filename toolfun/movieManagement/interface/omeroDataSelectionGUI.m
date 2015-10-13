@@ -369,7 +369,7 @@ objects =objects(sortindex);
 
 % --- Executes on selection change in popupmenu_project.
 function popupmenu_project_Callback(hObject, eventdata, handles)
-refreshUserList(hObject, eventdata, handles);
+refreshDatasetList(hObject, eventdata, handles);
 
 
 % --- Executes on selection change in popupmenu_group.
