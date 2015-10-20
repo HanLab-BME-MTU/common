@@ -155,6 +155,7 @@ global session
 try
     [client, session] = connectOmero(varargin{:});
     update_status(handles);
+    delete(handles.figure1);
 catch ME
     if isa(ME.ExceptionObject, 'Ice.ConnectionRefusedException')
         status = 'connection refused';
@@ -185,28 +186,6 @@ if ~isempty(session)
         groupName = char(adminService.getEventContext().groupName);
         set(handles.edit_username, 'String', userName);
         
-        % Read group ID and retrieve experimenter
-        userId = adminService.getEventContext().userId;
-        groupId = adminService.getEventContext().groupId;
-        user = adminService.getExperimenter(userId);
-        
-        % Populate drop-down menu for available groups
-        groupIds = toMatlabList(adminService.getMemberOfGroupIds(user));
-        systemGroupId = adminService.getSecurityRoles().systemGroupId;
-        userGroupId = adminService.getSecurityRoles().userGroupId;
-        try
-            guestGroupId = adminService.getSecurityRoles().guestGroupId;
-        catch
-            guestGroupId = -1;
-        end
-        % Filter out system groups
-        groupIds(ismember(groupIds,...
-            [systemGroupId userGroupId guestGroupId])) = [];
-        groupNames = arrayfun(@(x) char(adminService.getGroup(x).getName().getValue),...
-            groupIds, 'UniformOutput', false);
-        set(handles.popupmenu_group, 'String', groupNames, 'UserData', groupIds,...
-            'Value', find(groupId == groupIds));
-        
         % Update status
         status = sprintf('connected as %s under group %s', userName, groupName);
         connected = 1;
@@ -227,13 +206,9 @@ set(handles.text_status, 'String', sprintf('Status: %s', status));
 if connected
     set([handles.pushbutton_login, handles.pushbutton_login_file],...
         'Enable', 'off');
-    set([handles.pushbutton_logout handles.popupmenu_group],...
-        'Enable', 'on');
 else
     set([handles.pushbutton_login, handles.pushbutton_login_file],...
         'Enable', 'on');
-    set([handles.pushbutton_logout handles.popupmenu_group],...
-        'Enable', 'off');
 end
 
 % --- Executes on button press in pushbutton_logout.
@@ -241,13 +216,4 @@ function pushbutton_logout_Callback(hObject, eventdata, handles)
 
 global client
 if ~isempty(client), client.closeSession(); end
-update_status(handles)
-
-% --- Executes on selection change in popupmenu_group.
-function popupmenu_group_Callback(hObject, eventdata, handles)
-
-global session
-props = get(handles.popupmenu_group, {'UserData', 'Value'});
-groupId = props{1}(props{2}); 
-session.setSecurityContext(session.getAdminService().getGroup(groupId));
 update_status(handles)

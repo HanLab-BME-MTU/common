@@ -8,7 +8,9 @@
 %               Higher orders provide better orientation selectivity and are less sensitive to noise,
 %               at a small trade-off in computational cost.
 %       sigma : standard deviation of the Gaussian kernel on which the filters are based
-%   {nAngles} : optional input specifing the number of angles computed for the filterbank output. Default: 36
+%   {nAngles} : optional input specifying the number of angles computed for the filterbank output. Default: 36
+%{bordercond} : optional character input specifying the border condition
+%             : 'mirror' (default), 'replicate', 'periodic', 'zeros'
 %
 % Outputs: 
 %         res : response to the filter

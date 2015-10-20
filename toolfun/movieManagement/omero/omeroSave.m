@@ -50,8 +50,12 @@ if ~isempty(fas)
     fprintf(1, 'Updating file annotation: %d\n', fa.getId().getValue());
     updateFileAnnotation(session, fa, zipFullPath);
 else
+    % Load object to know which group context to use
+    object =  getObjects(session, objecttype, id);
+    groupId = object.getDetails().getGroup().getId().getValue();
     fa = writeFileAnnotation(session, zipFullPath,...
-        'description', 'HMS tracking', 'namespace', namespace);
+        'description', 'HMS tracking', 'namespace', namespace,...
+        'group', groupId);
     msg = 'Creating file annotation %g and linking it to %s %d\n';
     fprintf(1, msg, fa.getId().getValue(), objecttype, id);
     linkAnnotation(session, fa, objecttype, id);
