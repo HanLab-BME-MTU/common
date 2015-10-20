@@ -1,5 +1,5 @@
 function image = tif3Dread(filename)
-
+%TIF3DREAD uses imread to read every page in a multi-page (3D) tif
 % 
 % image = tif3Dread(filename)
 % 
@@ -37,12 +37,18 @@ end
 info = imfinfo(filename);
 nPages = numel(info);
 
-if nPages <= 1
+if nPages < 1
     error('Either the specified image file is not a valid 3D image, or this function does not support the format! Check the file, or try using stackRead.m!')
 end
 
 %Initialize the image array to the correct size and class
 imSize = [info(1).Height info(1).Width nPages];
+
+%Check if each plane is RGB
+if strcmp(info(1).PhotometricInterpretation,'RGB');
+    imSize = [imSize 3];       
+    info(1).BitDepth = info(1).BitDepth/3;%And correct the bit depth
+end
 
 if info(1).BitDepth == 1    
     %Special case for logical - zeros.m doesn't support initialization of binary arrays.
@@ -58,6 +64,6 @@ end
 for i=1:nPages
    
     %Load the image and add it to the array
-    image(:,:,i) = imread(filename,i,'Info',info);
+    image(:,:,i,:) = imread(filename,i,'Info',info);
     
 end
