@@ -29,4 +29,10 @@ function M = maxMatchingSafe(E)
 %
 %
 % Mark Kittisopikul, Liya Ding, October 2014
-M = maxMatching(max(E(:)),E);
+% Mark Kittisopikul, October 2015
+E = double(E);
+if(isempty(E))
+    M = [];
+else
+    M = maxMatching(max(E(:)),E);
+end
