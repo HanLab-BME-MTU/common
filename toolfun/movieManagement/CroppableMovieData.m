@@ -31,6 +31,9 @@ classdef CroppableMovieData < MovieData
                 obj.imSize_ = [ r.getSizeY() r.getSizeX() ];
                 obj.nFrames_ = r.getSizeT();
                 obj.zSize_ = r.getSizeZ();
+                for c = length(obj.channels_)+1:r.getSizeC()
+                    obj.channels_(c) = obj.channels_(mod(c-1,length(obj.channels_))+1).copy;
+                end
             end
         end
         function crop(obj, position)
@@ -52,7 +55,7 @@ classdef CroppableMovieData < MovieData
             for cri = 1:length(cropReaders)
                 r = cropReaders{cri};
                 % shift by previous crop offset if it exists
-                position = position + [r.position([1 2]) 0 0];
+                position = position + [r.position(1,[1 2]) 0 0];
             end
             
             try
@@ -66,7 +69,7 @@ classdef CroppableMovieData < MovieData
                 save(obj.cropDataFile_,'-struct','S');
             catch err
                 disp(['Could not save crop area to ' obj.cropDataFile_]);
-                disp(err);
+                disp(getReport(err));
             end
             if(nargin < 2)
                 delete(hr);
@@ -74,6 +77,76 @@ classdef CroppableMovieData < MovieData
             end
             % reinitialize the reader
             obj.setReader(obj.initReader);
+        end
+    end
+    methods (Static)
+        function croppedMovieData =  multiCrop(varargin)
+            % Creates a CroppableMovieData with multiple simultaneous crop
+            % positions. The positions are replicated as additional
+            % channels.
+            ip = inputParser;
+            ip.addRequired('channels_or_paths',@(x) isa(x,'Channel') || isa(x,'MovieData') || ischar(x) || iscellstr(x));
+%             ip.addOptional('importMetaData',true,@islogical);
+            ip.addOptional('outputDirectory',pwd,@ischar);
+            ip.addParameter('cropPositions',[],@(x) size(x,2) == 4);
+            ip.KeepUnmatched = true;
+            ip.parse(varargin{:});
+            R = ip.Results;
+            R.importMetaData = true;
+            U = ip.Unmatched;
+            U = [fieldnames(U) struct2cell(U)]';
+            U = [{R.importMetaData,R.outputDirectory} U(:)'];
+            series = 0;
+            % Convert channels_or_paths to a Channel object array
+            if(ischar(R.channels_or_paths))
+                % Let MovieData constructor deal with the hardwork
+                R.channels_or_paths = MovieData(R.channels_or_paths,U{:});
+            end
+            if(isa(R.channels_or_paths,'MovieData'))
+                % If we have a MovieData, extract the channels
+                MD = varargin{1};
+                series = MD.getSeries();
+                R.channels_or_paths = MD.channels_.copy;
+            end
+            % Replicate channels to cover the number of positions
+            nC = length(R.channels_or_paths);
+            nP = size(R.cropPositions,1); 
+            channels(nC,nP) = Channel;
+            channels(:,1) = R.channels_or_paths(:);
+            for p = 2:size(R.cropPositions,1)
+                channels(:,p) = channels(:,1).copy;
+            end
+            % Column major, so initial sequence should be maintained
+            channels = channels(:)';
+            croppedMovieData = CroppableMovieData(channels,U{:});
+            % If BioFormats, set the series
+            if(croppedMovieData.isBF)
+                croppedMovieData.setSeries(series);
+            end
+            % Move cropDataFile_ if possible since we are overwriting it
+            try
+                if(exist(croppedMovieData.cropDataFile_,'file'))
+                    movefile(croppedMovieData.cropDataFile_,[croppedMovieData.cropDataFile_ '.bak']);
+                end
+                croppedMovieData.crop(R.cropPositions);
+            catch err
+                warning('Could not backup crop positions');
+                disp(getReport(err))
+            end
+            croppedMovieData.sanityCheck();
+        end
+        function croppedMovieData = subDivide(MD,divisions)
+            imSize = MD.imSize_./divisions;
+            cropPositions = zeros(prod(divisions),4);
+            for i = 0:divisions(1)-1
+                for j = 0:divisions(2)-1
+                    % flip coordinates for the crop
+                    % substract one from width and height due to inclusive
+                    % cropping
+                    cropPositions(i+j*divisions(1)+1,:) = [j*imSize(2)+1 i*imSize(1)+1 imSize([ 2 1])-1];
+                end
+            end
+            croppedMovieData = CroppableMovieData.multiCrop(MD,MD.outputDirectory_,'cropPositions',cropPositions);
         end
     end
     
