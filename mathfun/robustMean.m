@@ -135,8 +135,15 @@ else
         % put NaN wherever there are not enough data points to calculate a
         % standard deviation
         goodIdx = sum(isfinite(res2),dim) > 4;
-        stdSample = NaN(size(goodIdx));
-        stdSample(goodIdx)=sqrt(nansum(res2(goodIdx),dim)./(nInliers(goodIdx)-4));
+    %mkitti, Oct 29 2015
+    % I believe the following commented out lines constitute a bug.
+    % goodIdx does not correctly index res2 in the expected manner.
+    % Therefore the second output of robustMean.m when supplied with a
+    % multidimensional input is invalid.
+%         stdSample = NaN(size(goodIdx));
+%         stdSample(goodIdx)=sqrt(nansum(res2(goodIdx),dim)./(nInliers(goodIdx)-4));
+        stdSample = sqrt(nansum(res2,dim)./(nInliers-4));
+        stdSample(~goodIdx) = NaN;
     end
     
     %====END LMS=========
