@@ -35,7 +35,7 @@ if isempty(data)
 end
 if nargin<2 || isempty(dim)
     % make sure that the dimensinon is correct if there's a vector
-    if any(size(data)==1) && ndims(data)==2
+    if any(size(data)==1) && ismatrix(data)
         dim = find(size(data)>1);
     else
         dim = 1;
@@ -44,7 +44,9 @@ end
 if nargin < 3 || isempty(k)
     k = 3;
 end
-if nargin < 5 || isempty(fit)
+% mkitti: was bug? only four parameters possible
+% if nargin < 5 || isempty(fit)
+if nargin < 4 || isempty(fit)
     fit = 0;
 end
 if fit == 1
@@ -53,7 +55,24 @@ if fit == 1
         error('fitting is currently only supported for 1D data')
     end
 end
-if sum(isfinite(data(:))) < 4
+
+insufficientData = true;
+if(numel(data) >= 4)
+    if(all(isfinite(data(1:4))) ...
+    || all(isfinite(data(end-3:end))) ...
+    || all(isfinite(data(((1:4)+floor(end/2)))))   )
+        % Quickly check if first, last, or middle four are finite
+        insufficientData = false;
+    else
+        finiteMap = isfinite(data);
+        % Only need to find four
+        finiteCount = numel(find(finiteMap,4));
+        insufficientData = finiteCount < 4;
+    end
+end
+
+% if sum(isfinite(data(:))) < 4
+if insufficientData
     warning('ROBUSTMEAN:INSUFFICIENTDATA',...
         'Less than 4 data points!')
     finalMean = nanmean(data,dim);
@@ -74,10 +93,10 @@ magicNumber2=1.4826^2; %see same publications
 
 % remember data size and reduced dataSize
 dataSize = size(data);
-reducedDataSize = dataSize;
-reducedDataSize(dim) = 1;
+% reducedDataSize = dataSize;
+% reducedDataSize(dim) = 1;
 % need this for later repmats
-blowUpDataSize = dataSize./reducedDataSize;
+% blowUpDataSize = dataSize./reducedDataSize;
 % count how many relevant dimensions we have besides dim
 realDimensions = length(find(dataSize>1));
 
@@ -90,20 +109,29 @@ else
 end
 
 % calculate statistics
-res2 = (data-repmat(medianData,blowUpDataSize)).^2;
+% res2 = (data-repmat(medianData,blowUpDataSize)).^2;
+res2 = bsxfun(@minus,data,medianData).^2;
+
 medRes2 = max(nanmedian(res2,dim),eps);
 
 %testvalue to calculate weights
-testValue=res2./repmat(magicNumber2*medRes2,blowUpDataSize);
+% testValue=res2./repmat(magicNumber2*medRes2,blowUpDataSize);
+testValue = bsxfun(@rdivide,res2,magicNumber2*medRes2);
+
+% outlierIdx = testValue > k^2;
+% Note: NaNs will always be false in comparison
+inlierIdx = testValue <= k^2;
+outlierIdx = ~inlierIdx; % Also includes NaNs
 
 if realDimensions == 1;
     %goodRows: weight 1, badRows: weight 0
-    inlierIdx=find(testValue<=k^2);
-    outlierIdx = find(testValue>k^2);
+%     inlierIdx=find(testValue<=k^2);
+%     outlierIdx = find(testValue>k^2);
     
     % calculate std of the sample;
     if nargout > 1
-        nInlier = length(inlierIdx);
+%         nInlier = length(inlierIdx);
+        nInlier = sum(inlierIdx);
         if nInlier > 4
             stdSample=sqrt(sum(res2(inlierIdx))/(nInlier-4));
         else
@@ -122,13 +150,15 @@ if realDimensions == 1;
 else
     
     %goodRows: weight 1, badRows: weight 0
-    inlierIdx=find(testValue<=k^2);
-    outlierIdx=find(testValue > k^2);
+%     inlierIdx=find(testValue<=k^2);
+%     outlierIdx=find(testValue > k^2);
+
     
     % mask outliers
-    res2(outlierIdx) = NaN;
+%     res2(outlierIdx) = NaN;
     % count inliers
-    nInliers = sum(~isnan(res2),dim);
+%     nInliers = sum(~isnan(res2),dim);
+    nInliers = sum(inlierIdx,dim);
     
     % calculate std of the sample;
     if nargout > 1
@@ -152,6 +182,13 @@ else
     % MEAN
     %======
     
-    data(outlierIdx) = NaN;
-    finalMean = nanmean(data,dim);
+%     data(outlierIdx) = NaN;
+%     finalMean = nanmean(data,dim);
+    data(outlierIdx) = 0;
+    finalMean = sum(data,dim)./nInliers;
+end
+if(nargout > 3)
+    % For backwards compatability only
+    % Above, NaNs are included as outliers
+    outlierIdx = testValue > k^2;
 end
