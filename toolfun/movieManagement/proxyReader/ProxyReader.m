@@ -112,11 +112,21 @@ classdef ProxyReader < Reader
 
         function oldReader = setReader(obj,reader)
             oldReader = obj.reader;
-            if(isa(reader,'Reader'))
+            if(isempty(reader))
+                % Clear reader if empty reader is given
+                obj.reader = reader;
+                % Unset the properties
+                obj.sizeX = [];
+                obj.sizeY = [];
+                obj.sizeZ = [];
+                obj.sizeC = [];
+                obj.sizeT = [];
+                obj.bitDepth = [];
+            elseif(isa(reader,'Reader'))
                 obj.reader = reader;
                 obj.proxyProperties();
             else
-                error('ProxyReader:argChk','Single parameter must be a reader');
+                error('ProxyReader:argChk','Single parameter must be a reader or empty');
             end
         end
 
@@ -126,6 +136,7 @@ classdef ProxyReader < Reader
         
         function setDeleteBaseReader(obj,deleteBaseReader)
             P = obj.findProxies;
+            % Propagate deleteBaseReader up the proxy chain
             for p = 1:length(P)
                 P{p}.deleteBaseReader = deleteBaseReader;
             end
