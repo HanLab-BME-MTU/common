@@ -60,7 +60,7 @@ insufficientData = true;
 if(numel(data) >= 4)
     if(all(isfinite(data(1:4))) ...
     || all(isfinite(data(end-3:end))) ...
-    || all(isfinite(data(((1:4)+floor(end/2)))))   )
+    || all(isfinite(data(((1:4)+floor(end/2)-2))))   )
         % Quickly check if first, last, or middle four are finite
         insufficientData = false;
     else
