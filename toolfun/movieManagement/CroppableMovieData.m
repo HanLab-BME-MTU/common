@@ -84,6 +84,11 @@ classdef CroppableMovieData < MovieData
             % Creates a CroppableMovieData with multiple simultaneous crop
             % positions. The positions are replicated as additional
             % channels.
+            
+            %% INPUT setup
+            % TODO: There is more constructor logic here than I, mkitti,
+            % would like. Figure out how to deal with more of this using
+            % the main constructor.
             ip = inputParser;
             ip.addRequired('channels_or_paths',@(x) isa(x,'Channel') || isa(x,'MovieData') || ischar(x) || iscellstr(x));
 %             ip.addOptional('importMetaData',true,@islogical);
@@ -92,11 +97,16 @@ classdef CroppableMovieData < MovieData
             ip.KeepUnmatched = true;
             ip.parse(varargin{:});
             R = ip.Results;
+            
+            %% INPUT parsing
+            % Set importMetaData to true for now
             R.importMetaData = true;
             U = ip.Unmatched;
             U = [fieldnames(U) struct2cell(U)]';
             U = [{R.importMetaData,R.outputDirectory} U(:)'];
             series = 0;
+            
+            %% Get the base channels
             % Convert channels_or_paths to a Channel object array
             if(ischar(R.channels_or_paths))
                 % Let MovieData constructor deal with the hardwork
@@ -108,7 +118,8 @@ classdef CroppableMovieData < MovieData
                 series = MD.getSeries();
                 R.channels_or_paths = MD.channels_.copy;
             end
-            % Replicate channels to cover the number of positions
+            
+            %% Replicate channels to cover the number of positions
             nC = length(R.channels_or_paths);
             nP = size(R.cropPositions,1); 
             channels(nC,nP) = Channel;
@@ -118,11 +129,24 @@ classdef CroppableMovieData < MovieData
             end
             % Column major, so initial sequence should be maintained
             channels = channels(:)';
+            
+            %% Construct the CroppableMovieData object
             croppedMovieData = CroppableMovieData(channels,U{:});
             % If BioFormats, set the series
             if(croppedMovieData.isBF)
                 croppedMovieData.setSeries(series);
             end
+            
+            % If we have a MD template, copy it's public properties
+            if(exist('MD','var'))
+                class = ?MovieData;
+                publicProperties = cellfun(@(x) strcmp(x,'public'),{class.PropertyList.SetAccess});
+                publicProperties = {class.PropertyList(publicProperties).Name};
+                for i=1:length(publicProperties)
+                    croppedMovieData.(publicProperties{i}) = MD.(publicProperties{i});
+                end
+            end
+            
             % Move cropDataFile_ if possible since we are overwriting it
             try
                 if(exist(croppedMovieData.cropDataFile_,'file'))
@@ -135,7 +159,13 @@ classdef CroppableMovieData < MovieData
             end
             croppedMovieData.sanityCheck();
         end
-        function croppedMovieData = subDivide(MD,divisions)
+        function croppedMovieData = subDivide(MD,divisions,varargin)
+            % Divide the MovieData according to the integer number of divisions
+            % for each dimension corresponding to MD.imSize_
+            if(~isa(MD,'MovieData'))
+                % If object is not a MovieData object, try to make it one
+                MD = MovieData(MD);
+            end
             imSize = MD.imSize_./divisions;
             cropPositions = zeros(prod(divisions),4);
             for i = 0:divisions(1)-1
@@ -146,7 +176,7 @@ classdef CroppableMovieData < MovieData
                     cropPositions(i+j*divisions(1)+1,:) = [j*imSize(2)+1 i*imSize(1)+1 imSize([ 2 1])-1];
                 end
             end
-            croppedMovieData = CroppableMovieData.multiCrop(MD,MD.outputDirectory_,'cropPositions',cropPositions);
+            croppedMovieData = CroppableMovieData.multiCrop(MD,MD.outputDirectory_,'cropPositions',cropPositions,varargin{:});
         end
     end
     
