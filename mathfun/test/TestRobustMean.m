@@ -10,6 +10,8 @@ classdef TestRobustMean < TestCase
             self = self@TestCase(name);
         end
         function setUp(self)
+            % Seed for consistency
+            rng(39595353);
             self.distribution = randn(100);
         end
         function testVector(self)
