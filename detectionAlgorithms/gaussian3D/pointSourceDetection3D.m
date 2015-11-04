@@ -10,7 +10,7 @@
 %
 %              'mode' : parameters to estimate. Default: 'xyzAc'.
 %             'alpha' : alpha value used in the statistical tests. Default: 0.05.
-%         'alphaInit' : alpha value used in selecting candidate local maxima for fitting. Default: 0.05.
+%  'alphaLocalMaxima' : alpha value used in selecting candidate local maxima for fitting. Default: 0.05.
 %              'mask' : mask of pixels (i.e., cell mask) to include in the detection. Default: all.
 %       'FitMixtures' : true|{false}. Toggles mixture-model fitting.
 %       'MaxMixtures' : maximum number of mixtures to fit. Default: 5.
@@ -38,7 +38,7 @@ ip.KeepUnmatched = true;
 ip.addRequired('vol', @isnumeric);
 ip.addRequired('sigma', @isnumeric);
 ip.addParamValue('Mode', 'xyzAc', @ischar);
-ip.addParamValue('AlphaInit', [], @isscalar);%Alpha value used in selection of candidate points
+ip.addParamValue('AlphaLocalMaxima', [], @isscalar);%Alpha value used in selection of candidate local maxima
 ip.addParamValue('Alpha', 0.05, @isscalar);
 ip.addParamValue('Mask', [], @(x) isnumeric(x) || islogical(x));
 ip.addParamValue('FitMixtures', false, @islogical);
@@ -51,11 +51,11 @@ ip.addParamValue('ConfRadius', []); % Default: 2*sigma, see fitGaussians3D.
 ip.addParamValue('WindowSize', []); % Default: 2*sigma, see fitGaussians3D.
 ip.parse(vol, sigma, varargin{:});
 
-if isempty(ip.Results.AlphaInit)
+if isempty(ip.Results.AlphaLocalMaxima)
     %Default is to use same as in fit
-    alphaInit = ip.Results.Alpha;    
+    alphaLocalMaxima = ip.Results.Alpha;    
 else
-    alphaInit = ip.Results.AlphaInit;
+    alphaLocalMaxima = ip.Results.AlphaLocalMaxima;
 end
 
 if ~isa(vol, 'double')
@@ -118,7 +118,7 @@ sigma_A = sqrt(sigma_e2*C(1,1));
 sigma_res = sqrt(RSS/(n-1));
 clear fu;
 
-kLevel = norminv(1-alphaInit/2.0, 0, 1);
+kLevel = norminv(1-alphaLocalMaxima/2.0, 0, 1);
 
 SE_sigma_c = sigma_res/sqrt(2*(n-1)) * kLevel;
 df2 = (n-1) * (sigma_A.^2 + SE_sigma_c.^2).^2 ./ (sigma_A.^4 + SE_sigma_c.^4);
