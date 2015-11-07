@@ -31,4 +31,12 @@ function M = maxWeightedMatchingSafe(E,W)
 %
 %
 % Mark Kittisopikul, Liya Ding, October 2014
-M = maxWeightedMatching(max(E(:)),E,W);
+% Mark Kittisopikul, October 2015
+E = double(E);
+W = double(W);
+if(isempty(E))
+    M = [];
+else
+    assert(size(E,1) == size(W,1));
+    M = maxWeightedMatching(max(E(:)),E,W);
+end

@@ -1,4 +1,4 @@
-function mL = bwLargestObj(m,conn)
+function m = bwLargestObj(m,conn)
 %BWLARGESTOBJ removes all but the largest object (connected component) in the input binary mask
 %
 % bw = bwLargestObj(m)
@@ -19,6 +19,6 @@ else
     cc=bwconncomp(m,conn);
 end
 [~,iMax] = max(cellfun(@numel,cc.PixelIdxList));
-mL = false(size(m));
-mL(cc.PixelIdxList{iMax}) = true;
+m(:) = false;
+m(cc.PixelIdxList{iMax}) = true;
 

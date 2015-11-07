@@ -58,6 +58,27 @@ classdef TestMovieData < TestMovieObject
             assertEqual(self.movie.getPath, newPath);
         end
         
+        function testRelocateTrailingSlashes(self)
+            self.setUpMovie();
+            
+            % Perform movie relocation
+            moviePath = self.movie.getPath();
+            movieName = self.movie.getFilename();
+            oldPath = self.path;
+            self.relocate();
+            
+            % Load the relocated movie
+            newPath = relocatePath(moviePath, oldPath, self.path);
+            newFullPath = fullfile(newPath, movieName);
+            self.movie = MovieData.load(newFullPath, false);
+            self.movie.sanityCheck([newPath repmat(filesep,1,6)]);
+            self.checkMovie();
+            
+            % Test movie paths
+            assertEqual(self.movie.outputDirectory_, newPath);
+            assertEqual(self.movie.getPath, newPath);
+        end
+        
         function testLoadAbsolutePath(self)
             % Test MovieData loading from absolute path
             self.setUpMovie();

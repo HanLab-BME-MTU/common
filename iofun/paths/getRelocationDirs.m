@@ -28,8 +28,8 @@ ip.addRequired('newPath',@ischar);
 ip.parse(oldPath,newPath);
 
 %Remove ending file separators (for tree comparison)
-oldPath = regexprep(oldPath,'([/\\])$','');
-newPath = regexprep(newPath,'([/\\])$','');
+oldPath = regexprep(oldPath,'([/\\])+$','');
+newPath = regexprep(newPath,'([/\\])+$','');
 
 % Split the path into tree components and compare trees backwards
 [oldComponents, oldFilesepPos]=regexp(oldPath,'/|\','split');

@@ -101,8 +101,11 @@ classdef  OmeroReader < Reader
         
         function store = getRawPixelsStore(obj)
             if isempty(obj.rawPixelsStore)
+                context = java.util.HashMap;
+                group = obj.getPixels().getDetails().getGroup().getId().getValue();
+                context.put('omero.group', num2str(group));
                 store = obj.getSession().createRawPixelsStore();
-                store.setPixelsId(obj.getPixels().getId().getValue(), false);
+                store.setPixelsId(obj.getPixels().getId().getValue(), false, context);
                 obj.rawPixelsStore = store;
             else
                 store = obj.rawPixelsStore;
