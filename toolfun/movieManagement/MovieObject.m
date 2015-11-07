@@ -339,7 +339,7 @@ classdef  MovieObject < hgsetget
 
             if ~isempty(ip.Results.path)
                 % Remove ending file separators from paths
-                endingFilesepToken = [regexptranslate('escape',filesep) '$'];
+                endingFilesepToken = [regexptranslate('escape',filesep) '+$'];
                 oldPath = regexprep(obj.getPath(),endingFilesepToken,'');
                 newPath = regexprep(ip.Results.path,endingFilesepToken,'');
                 
