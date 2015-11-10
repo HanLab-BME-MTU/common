@@ -52,13 +52,19 @@ ip.parse(moviePaths,moviesRoot,varargin{:});
 
 p=ip.Results;
 
-
+% Get the list of each Cell folder indirectly specified by the regexp, 
+% if no files are found, check if there is a corresponding
+% 'ch*' channel. 
 filePattern=p.filePattern;
 if(ischar(moviePaths))
     [fileDirRegexp,fileRegexp,ext]=fileparts(moviePaths);
     filePattern=[fileRegexp ext];
-    dirs=dir([fileDirRegexp]);    % filesep is important due to a bug in rdir ...
-    moviePaths=unique(cellfun(@(x) [fileparts(fileDirRegexp) filesep x],{dirs.name},'unif',0));    
+    dirs=rdir([fileDirRegexp filesep]);    % filesep is important due to a bug in rdir ...
+    moviePaths=unique(cellfun(@(x) [fileparts(x)],{dirs.name},'unif',0)); 
+    if(isempty(moviePaths))
+        dirs=rdir([fileDirRegexp filesep 'ch*' filesep]);
+        moviePaths=unique(cellfun(@(x) [fileparts(fileparts(x))],{dirs.name},'unif',0)); 
+    end
 end
 
 MDs=cell(1,length(moviePaths));
