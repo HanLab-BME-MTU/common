@@ -172,7 +172,9 @@ else
     % multidimensional input is invalid.
 %         stdSample = NaN(size(goodIdx));
 %         stdSample(goodIdx)=sqrt(nansum(res2(goodIdx),dim)./(nInliers(goodIdx)-4));
-        stdSample = sqrt(nansum(res2,dim)./(nInliers-4));
+        % outlierIdx should send NaN to zeros also so nansum not needed
+        res2(outlierIdx) = 0;
+        stdSample = sqrt(sum(res2,dim)./(nInliers-4));
         stdSample(~goodIdx) = NaN;
     end
     
