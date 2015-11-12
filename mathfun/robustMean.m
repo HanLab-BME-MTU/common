@@ -25,6 +25,9 @@ function [finalMean, stdSample, inlierIdx, outlierIdx] = robustMean(data,dim,k,f
 %          include weights
 %
 % c: jonas, 04/04
+% Mark Kittisopikul, November 2015
+%
+% See also mad
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
@@ -89,7 +92,17 @@ end
 
 % define magic numbers:
 %k=3; %cut-off is roughly at 3 sigma, see Danuser, 1992 or Rousseeuw & Leroy, 1987
-magicNumber2=1.4826^2; %see same publications
+
+% Scale factor that relates Median absolute deviation (MAD) to standard deviation
+% See mad(X,1)
+mad2stdSq=1.4826^2; %see same publications
+
+% mad2stdSq = 1/norminv(3/4).^2
+% mad2stdSq = 2.198109338317732
+
+% backwards compatible constant
+% sprintf('%0.9g',1.4826^2)
+% mad2stdSq = 2.19810276
 
 % remember data size and reduced dataSize
 dataSize = size(data);
@@ -115,8 +128,8 @@ res2 = bsxfun(@minus,data,medianData).^2;
 medRes2 = max(nanmedian(res2,dim),eps);
 
 %testvalue to calculate weights
-% testValue=res2./repmat(magicNumber2*medRes2,blowUpDataSize);
-testValue = bsxfun(@rdivide,res2,magicNumber2*medRes2);
+% testValue=res2./repmat(mad2stdSq*medRes2,blowUpDataSize);
+testValue = bsxfun(@rdivide,res2,mad2stdSq*medRes2);
 
 % outlierIdx = testValue > k^2;
 % Note: NaNs will always be false in comparison
@@ -164,7 +177,7 @@ else
     if nargout > 1
         % put NaN wherever there are not enough data points to calculate a
         % standard deviation
-        goodIdx = sum(isfinite(res2),dim) > 4;
+%         goodIdx = sum(isfinite(res2),dim) > 4;
     %mkitti, Oct 29 2015
     % I believe the following commented out lines constitute a bug.
     % goodIdx does not correctly index res2 in the expected manner.
@@ -175,7 +188,7 @@ else
         % outlierIdx should send NaN to zeros also so nansum not needed
         res2(outlierIdx) = 0;
         stdSample = sqrt(sum(res2,dim)./(nInliers-4));
-        stdSample(~goodIdx) = NaN;
+        stdSample(nInliers <= 4) = NaN;
     end
     
     %====END LMS=========
