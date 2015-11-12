@@ -1,4 +1,4 @@
-classdef  MovieData < MovieObject
+classdef  MovieData < MovieObject & matlab.mixin.Heterogeneous
     % Concrete implementation of MovieObject for a single movie
     %
     % See also MovieData.MovieData
