@@ -122,11 +122,6 @@ end
 % sprintf('%0.9g',1.4826^2)
 mad2stdSq = 2.19810276;
 
-% remember data size and reduced dataSize
-dataSize = size(data);
-% count how many relevant dimensions we have besides dim
-realDimensions = length(find(dataSize>1));
-
 % calc median - reduce dimension dim to length 1
 if fit
     % minimize the median deviation from the mean
@@ -153,60 +148,40 @@ inlierIdx = testValue <= k^2;
 % New outliers:
 outlierIdx = ~inlierIdx; % Also includes NaNs
 
-if realDimensions == 1;
-    
-    % calculate std of the sample;
-    if nargout > 1
-        nInlier = sum(inlierIdx);
-        if nInlier > 4
-            stdSample=sqrt(sum(res2(inlierIdx))/(nInlier-4));
-        else
-            stdSample = NaN;
-        end
-    end
-    
-    %====END LMS=========
-    
-    %======
-    % MEAN
-    %======
-    
-    finalMean = mean(data(inlierIdx));
-    
-else
-       
-    nInliers = sum(inlierIdx,dim);
-    
-    % calculate std of the sample;
-    if nargout > 1
-        
-     %% Obsolete code block with bug   
-        % put NaN wherever there are not enough data points to calculate a
-        % standard deviation
+% Prior to Nov 2015, there used to be an if/else statement here depending if
+% vector or higher dimensional input was given for data.
+nInliers = sum(inlierIdx,dim);
+
+% calculate std of the sample;
+if nargout > 1
+
+ %% Obsolete code block with bug   
+    % put NaN wherever there are not enough data points to calculate a
+    % standard deviation
 %         goodIdx = sum(isfinite(res2),dim) > 4;
-    %mkitti, Oct 29 2015
-    % I believe the following commented out lines constitute a bug.
-    % goodIdx does not correctly index res2 in the expected manner.
-    % Therefore the second output of robustMean.m when supplied with a
-    % multidimensional input is invalid.
+%mkitti, Oct 29 2015
+% I believe the following commented out lines constitute a bug.
+% goodIdx does not correctly index res2 in the expected manner.
+% Therefore the second output of robustMean.m when supplied with a
+% multidimensional input is invalid.
 %         stdSample = NaN(size(goodIdx));
 %         stdSample(goodIdx)=sqrt(nansum(res2(goodIdx),dim)./(nInliers(goodIdx)-4));
 
-        %% outlierIdx should send NaN to zeros also so nansum not needed
-        res2(outlierIdx) = 0;
-        stdSample = sqrt(sum(res2,dim)./(nInliers-4));
-        stdSample(nInliers <= 4) = NaN;
-    end
-    
-    %====END LMS=========
-    
-    %======
-    % MEAN
-    %======
-    
-    data(outlierIdx) = 0;
-    finalMean = sum(data,dim)./nInliers;
+    %% outlierIdx should send NaN to zeros also so nansum not needed
+    res2(outlierIdx) = 0;
+    stdSample = sqrt(sum(res2,dim)./(nInliers-4));
+    stdSample(nInliers <= 4) = NaN;
 end
+
+%====END LMS=========
+
+%======
+% MEAN
+%======
+
+data(outlierIdx) = 0;
+finalMean = sum(data,dim)./nInliers;
+
 if(nargout > 2 && ~logical_idx)
     % For backwards compatability only
     inlierIdx = find(inlierIdx);
