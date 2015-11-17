@@ -1,4 +1,4 @@
-function [finalMean, stdSample, inlierIdx, outlierIdx] = robustMean(data,dim,k,fit)
+function [finalMean, stdSample, inlierIdx, outlierIdx] = robustMean(data,dim,k,fit,logical_idx)
 %ROBUSTMEAN calculates mean and standard deviation discarding outliers
 %
 % SYNOPSIS [finalMean, stdSample, inlierIdx, outlierIdx] = robustMean(data,dim,k,fit)
@@ -12,6 +12,10 @@ function [finalMean, stdSample, inlierIdx, outlierIdx] = robustMean(data,dim,k,f
 %                  1 : mean is approximated by
 %                      fminsearch(@(x)(median(abs(data-x))),median(data))
 %                      This option is only available for scalar data
+%          logical_idx : (opt) logical indicating whether to return binary
+%                        indicies for inlierIdx and outlierIdx
+%                        false (default): actual idx, but slow due to find
+%                        true           : logical idx, faster
 %
 %
 % OUTPUT   finalMean : robust mean
@@ -23,6 +27,18 @@ function [finalMean, stdSample, inlierIdx, outlierIdx] = robustMean(data,dim,k,f
 % REMARKS  NaN or Inf will be counted as neither in- nor outlier
 %          The code is based on (linear)LeastMedianSquares. It could be changed to
 %          include weights
+%
+% REFERENCES
+%
+% 1. PJ Rousseeuw and AM Leroy. Robust Regression and Outlier Detection.
+%    New York: John Wiley & Sons, 1987. ISBN: 978-0-471-48855-2.
+% 2. PJ Rousseeuw. Least median of squares regression. J. Am. Stat. Ass.
+%    79, 871-880 (1984). DOI: 10.1080/01621459.1984.10477105.
+% 3. G Danuser and M Stricker. Parameteric Model Fitting: From Inlier
+%    Characterization to Outlier Detection. IEEE Trans Pattern Anal. Mach.
+%    Intell. Vol 20, No. 2, March 1998. DOI: 10.1109/34.667884.
+% 4. K Jaqaman and G Danuser. Linking Data to models: data regression.
+%    Nature Rev Mol Cell Bio. 7, 813-819 (Nov 2006). DOI: 10.1038/nrm2030.
 %
 % c: jonas, 04/04
 % Mark Kittisopikul, November 2015
@@ -45,6 +61,7 @@ if nargin<2 || isempty(dim)
     end
 end
 if nargin < 3 || isempty(k)
+    % Cut-off is roughly at 3 sigma (References 1-3) by default
     k = 3;
 end
 % mkitti: was bug? only four parameters possible
@@ -52,6 +69,10 @@ end
 if nargin < 4 || isempty(fit)
     fit = 0;
 end
+if nargin < 5 || isempty(logical_idx)
+    logical_idx = false;
+end
+
 if fit == 1
     % check for vector
     if sum(size(data)>1)>1
@@ -90,26 +111,19 @@ end
 % LEAST MEDIAN SQUARES
 %========================
 
-% define magic numbers:
-%k=3; %cut-off is roughly at 3 sigma, see Danuser, 1992 or Rousseeuw & Leroy, 1987
-
 % Scale factor that relates Median absolute deviation (MAD) to standard deviation
 % See mad(X,1)
-mad2stdSq=1.4826^2; %see same publications
+% mad2stdSq=1.4826^2; %see same publications
 
 % mad2stdSq = 1/norminv(3/4).^2
 % mad2stdSq = 2.198109338317732
 
 % backwards compatible constant
 % sprintf('%0.9g',1.4826^2)
-% mad2stdSq = 2.19810276
+mad2stdSq = 2.19810276;
 
 % remember data size and reduced dataSize
 dataSize = size(data);
-% reducedDataSize = dataSize;
-% reducedDataSize(dim) = 1;
-% need this for later repmats
-% blowUpDataSize = dataSize./reducedDataSize;
 % count how many relevant dimensions we have besides dim
 realDimensions = length(find(dataSize>1));
 
@@ -134,16 +148,15 @@ testValue = bsxfun(@rdivide,res2,mad2stdSq*medRes2);
 % outlierIdx = testValue > k^2;
 % Note: NaNs will always be false in comparison
 inlierIdx = testValue <= k^2;
+% Old outliers: 
+% outlierIdx = find(testValue>k^2); % Does not include NaNs
+% New outliers:
 outlierIdx = ~inlierIdx; % Also includes NaNs
 
 if realDimensions == 1;
-    %goodRows: weight 1, badRows: weight 0
-%     inlierIdx=find(testValue<=k^2);
-%     outlierIdx = find(testValue>k^2);
     
     % calculate std of the sample;
     if nargout > 1
-%         nInlier = length(inlierIdx);
         nInlier = sum(inlierIdx);
         if nInlier > 4
             stdSample=sqrt(sum(res2(inlierIdx))/(nInlier-4));
@@ -161,20 +174,13 @@ if realDimensions == 1;
     finalMean = mean(data(inlierIdx));
     
 else
-    
-    %goodRows: weight 1, badRows: weight 0
-%     inlierIdx=find(testValue<=k^2);
-%     outlierIdx=find(testValue > k^2);
-
-    
-    % mask outliers
-%     res2(outlierIdx) = NaN;
-    % count inliers
-%     nInliers = sum(~isnan(res2),dim);
+       
     nInliers = sum(inlierIdx,dim);
     
     % calculate std of the sample;
     if nargout > 1
+        
+     %% Obsolete code block with bug   
         % put NaN wherever there are not enough data points to calculate a
         % standard deviation
 %         goodIdx = sum(isfinite(res2),dim) > 4;
@@ -185,7 +191,8 @@ else
     % multidimensional input is invalid.
 %         stdSample = NaN(size(goodIdx));
 %         stdSample(goodIdx)=sqrt(nansum(res2(goodIdx),dim)./(nInliers(goodIdx)-4));
-        % outlierIdx should send NaN to zeros also so nansum not needed
+
+        %% outlierIdx should send NaN to zeros also so nansum not needed
         res2(outlierIdx) = 0;
         stdSample = sqrt(sum(res2,dim)./(nInliers-4));
         stdSample(nInliers <= 4) = NaN;
@@ -197,13 +204,20 @@ else
     % MEAN
     %======
     
-%     data(outlierIdx) = NaN;
-%     finalMean = nanmean(data,dim);
     data(outlierIdx) = 0;
     finalMean = sum(data,dim)./nInliers;
 end
-if(nargout > 3)
+if(nargout > 2 && ~logical_idx)
     % For backwards compatability only
+    inlierIdx = find(inlierIdx);
+end
+if(nargout > 3)
+    % For backwards compatability only, exclude NaNs
     % Above, NaNs are included as outliers
-    outlierIdx = testValue > k^2;
+    % Next two line should be equivalent
+%      outlierIdx = testValue > k^2;
+    outlierIdx(outlierIdx) = ~isnan(testValue(outlierIdx));
+    if(~logical_idx)
+        outlierIdx = find(outlierIdx);
+    end
 end
