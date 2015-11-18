@@ -77,8 +77,8 @@ tmp = vertcat(cands.Lmax);
 cands2 = tmp([cands.status]==1,2:-1:1);
 % tmp = (cands2(:,1)-1)*numPixelsY + cands2(:,2);
 tmp = sub2ind([numPixelsY numPixelsX],cands2(:,2),cands2(:,1));
-maxPos0 = zeros(numPixelsY,numPixelsX);
-maxPos0(tmp) = 1;
+maxPos0 = false(numPixelsY,numPixelsX);
+maxPos0(tmp) = true;
 
 %extract the amplitudes of the significant local maxima
 tmp = vertcat(cands.amp);
@@ -107,19 +107,21 @@ image = image(psfRange+1:end-psfRange,psfRange+1:end-psfRange);
 imageAmp = imageAmp(psfRange+1:end-psfRange,psfRange+1:end-psfRange);
 
 %get connectivity between local maximum masks
-[L,nIsland] = bwlabel(image>0);
+% [L,nIsland] = bwlabel(image>0);
+cc = bwconncomp(image > 0);
 
 % initialize clusters (SB)
-clusters(1:nIsland) = struct('numMaxima',[],'maximaPos',[],'maximaAmp',[],'pixels',[]);
+clusters(1:cc.NumObjects) = struct('numMaxima',[],'maximaPos',[],'maximaAmp',[],'pixels',[]);
 
 %find number of local maxima and their centers and amplitudes in each island
-for i=1:nIsland
+for i=1:cc.NumObjects
     
     %get pixels making up island
-    [rc] = find(L(:)==i);
+%     [rc] = find(L(:)==i);
+    rc = cc.PixelIdxList{i};
     
     %find initial position of PSF centers in island (in pixels)
-    rcCenterL = rc(maxPos0(rc)==1);
+    rcCenterL = rc(maxPos0(rc));
     %     rcCenter = [ceil(rcCenterL/numPixelsY) rcCenterL-(ceil(rcCenterL/numPixelsY)-1)*numPixelsY];
     [rcCenterY,rcCenterX] = ind2sub([numPixelsY,numPixelsX],rcCenterL);
     rcCenter = [rcCenterX rcCenterY];
