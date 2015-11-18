@@ -334,6 +334,7 @@ classdef  MovieObject < hgsetget
             ip.addOptional('path', '', @ischar);
             ip.addOptional('filename', '', @ischar);
             ip.addOptional('askUser', true, @isscalar);
+            ip.addOptional('full', true, @isscalar);
             ip.parse(varargin{:});
             askUser = ip.Results.askUser;
 
@@ -346,7 +347,7 @@ classdef  MovieObject < hgsetget
                 % If different path
                 hasDisplay = feature('ShowFigureWindows');
                 if ~strcmp(oldPath, newPath)
-                    full = true;  % flag for full relocation
+                    full = ip.Results.full;  % flag for full relocation
                     if askUser && hasDisplay
                         if isa(obj,'MovieData')
                             type='movie';
