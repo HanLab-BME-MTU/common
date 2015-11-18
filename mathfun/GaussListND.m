@@ -31,67 +31,78 @@ function gaussList = GaussListND(coordList,sigma,center,intNorm,rotation)
 %======================
 
 % check number of input arguments
-nIn = nargin;
+% nIn = nargin;
 % the following doesn't work with Matlab 6.5.0
 % error(nargchk(2,4,nIn,'struct'));
-if nIn < 2 || nIn > 5
+% if nargin < 2 || nargin > 5
+if nargin < 3
     error('wrong number of input arguments!')
 end
 
 % check dimensionality of coordList.
-if isempty(coordList)
+% if isempty(coordList)
+%     error('you have to supply a list of coordinates for GaussList23D')
+% else
+%     [nCoords,nDims] = size(coordList);
+% end
+[nCoords,nDims] = size(coordList);
+if nCoords == 0 || nDims == 0
     error('you have to supply a list of coordinates for GaussList23D')
-else
-    [nCoords,nDims] = size(coordList);
 end
 
 % sigma
-ls = length(sigma);
-switch ls
-    case nDims
-        % make as long as coords
-        sigma = repmat(sigma,[nCoords,1]);
-    case 1
-        sigma = repmat(sigma,[nCoords,nDims]);
-    otherwise
-        error('sigma has to be a scalar or a 1-by-n vector!')
-end
+% ls = length(sigma);
+% switch ls
+%     case nDims
+%         % make as long as coords
+% %         sigma = repmat(sigma,[nCoords,1]);
+%     case 1
+% %         sigma = repmat(sigma,[nCoords,nDims]);
+%     otherwise
+%         error('sigma has to be a scalar or a 1-by-n vector!')
+% end
 
 % center
-if nIn < 3 || isempty(center)
-    center = zeros(nCoords,nDims);
-else
-    lc = length(center);
-    switch lc
-        case nDims
-            center = repmat(center, [nCoords,1]);
-        case 1
-            center = repmat(center, [nCoords,3]);
-        otherwise
-            error('center has to be a scalar or a 1-by-n vector!')
-    end
+if nargin < 3 || isempty(center)
+%     center = zeros(nCoords,nDims);
+    center = 0;
+% else
+%     lc = length(center);
+%     switch lc
+%         case nDims
+% %             center = repmat(center, [nCoords,1]);
+%         case 1
+% %             center = repmat(center, [nCoords,3]);
+%         otherwise
+%             error('center has to be a scalar or a 1-by-n vector!')
+%     end
 end
 
 % intNorm
-if nIn < 4 || isempty(intNorm)
+if nargin < 4 || isempty(intNorm)
     intNorm = 0;
 end
 
 %rotation
-coordDim = size(coordList,2);
-if nIn < 5 || isempty(rotation) || rotation == 0
+% coordDim = size(coordList,2);
+doRotation = true;
+if nargin < 5 || isempty(rotation) || rotation == 0
     rotation = 0;
-    alp = 0;
-    bet = 0;
-    delt = 0;
-elseif rotation == 1 && coordDim <= 2
+    doRotation = false;
+%     alp = 0;
+%     bet = 0;
+%     delt = 0;
+% elseif rotation == 1 && nDims <= 2
+elseif nDims == 2
     rotation = floor(rand(1) * 360);
-elseif rotation == 1 && coordDim == 3
+% elseif rotation == 1 && nDims == 3
+elseif nDims == 3
     alp = floor(rand(1) * 180);
     bet = floor(rand(1) * 180);
     delt = floor(rand(1) * 360);
-end
-if rotation && (nDims < 2 || nDims > 3)
+% end
+% if rotation && (nDims < 2 || nDims > 3)
+else
     error('rotation is only supported for 2-3 dimensions')
 end
 %======================
@@ -105,24 +116,30 @@ end
 % make a coordinate transformation so that we can use sigma=1 in all
 % dimensions
 
-if rotation ~= 0
+if doRotation
     
     %Translate center to origin.
-    coordList = coordList - center;
+%     coordList = coordList - center;
+    coordList = bsxfun(@minus,coordList,center);
     
-    if coordDim == 2
+    if nDims == 2
         
         % 2 Dimension rotation.
         %Rotation.
         %Rotation of the coordinate. x' = xcos@ - ysin@. y' = xsin@ + ycos@.
-        tmpX = coordList(:,1) .* cosd(rotation) - coordList(:,2) .* sind(rotation);
-        tmpY = coordList(:,1) .* sind(rotation) + coordList(:,2) .* cosd(rotation);
+%         tmpX = coordList(:,1) .* cosd(rotation) - coordList(:,2) .* sind(rotation);
+%         tmpY = coordList(:,1) .* sind(rotation) + coordList(:,2) .* cosd(rotation);
+        c1 = cosd(rotation);
+        s1 = sind(rotation);
+        coordList = coordList * [c1 s1; -s1 c1];
         
         %Translation back to original center.
-        coordList(:,1) = tmpX(:,1) + center(:,1);
-        coordList(:,2) = tmpY(:,1) + center(:,2);
+%         coordList(:,1) = tmpX(:,1) + center(:,1);
+%         coordList(:,2) = tmpY(:,1) + center(:,2);
+%         coordList = bsxfun(@plus,[tmpX tmpY],center);
+        coordList = bsxfun(@plus,coordList,center);
         
-    elseif coordDim == 3
+    elseif nDims == 3
         
         % 3 Dimension rotation.
         %Rotation of the coordinate.
@@ -142,9 +159,10 @@ if rotation ~= 0
         %Translation back to original center - KJ addition to make
         %consistent with 2D case
         %otherwise the code returns nonsense
-        coordList(:,1) = tmpX(:,1) + center(:,1);
-        coordList(:,2) = tmpY(:,1) + center(:,2);
-        coordList(:,3) = tmpZ(:,1) + center(:,3);
+%         coordList(:,1) = tmpX(:,1) + center(:,1);
+%         coordList(:,2) = tmpY(:,1) + center(:,2);
+%         coordList(:,3) = tmpZ(:,1) + center(:,3);
+        coordList = bsxfun(@plus,[tmpX tmpY tmpZ],center);
         
     end
  
@@ -155,11 +173,16 @@ end
 % pixel at 1 of a Gaussian with mean 0 and sigma 1
 
 % convert coordList to 0/1
-coordList = (coordList - center)./sigma;
+% coordList = (coordList - center)./sigma;
+coordList = bsxfun(@minus,coordList,center);
+coordList = bsxfun(@rdivide,coordList,sigma);
 
 % double coordList as preparation for erfc
 %fixed bug: must divide the 0.5 by sigma - KJ
-coordList = cat(3,coordList-0.5./sigma, coordList+0.5./sigma);
+% coordList = cat(3,coordList-0.5./sigma, coordList+0.5./sigma);
+halfInvSigma = 0.5./sigma;
+halfInvSigma = cat(3,-halfInvSigma,halfInvSigma);
+coordList = bsxfun(@plus,coordList,halfInvSigma);
 
 % calculate gaussList
 %Jonas was missing the minus sign in erfc. I corrected that - KJ
@@ -171,6 +194,6 @@ switch intNorm
     case 0
         % "un-norm" Gaussian
         gaussList = gaussList*((2*pi)^(0.5*nDims)*prod(sigma(1,:)));
-    case 1
+%     case 1
         % gaussList is already normed
 end
