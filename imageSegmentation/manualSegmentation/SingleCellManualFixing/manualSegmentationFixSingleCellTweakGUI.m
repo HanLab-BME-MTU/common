@@ -80,7 +80,7 @@ end
 global data_get_fgnd_bgnd_seeds_3d_points;
 
 hMainFigure = fsFigure(.75);
-
+data_get_fgnd_bgnd_seeds_3d_points.prevROI =[];
 % Create UI controls
 
     % axis
@@ -177,7 +177,11 @@ hMainFigure = fsFigure(.75);
     %Go button
     data_get_fgnd_bgnd_seeds_3d_points.ui_go = uicontrol('Style','pushbutton','String','Start Fixing',...
                                  'Units' , 'normalized' ,'Position',[0.70 0.42 0.17 0.1],'parent',hMainFigure,'Callback',{@pushGo_Callback});                
-    
+
+    %Use_previous button
+    data_get_fgnd_bgnd_seeds_3d_points.ui_go = uicontrol('Style','pushbutton','String','Add Prev ROI',...
+                                 'Units' , 'normalized' ,'Position',[0.87 0.42 0.12 0.1],'parent',hMainFigure,'Callback',{@pushUsePrev_Callback});                
+                             
     %Slect button
     data_get_fgnd_bgnd_seeds_3d_points.ui_SelectTrack = uicontrol('Style','pushbutton','String','Select & Track',...
                                  'Units' , 'normalized' ,'Position',[0.70 0.80 0.12 0.07],'parent',hMainFigure,'Callback',{@pushSelectTrack_Callback});                
@@ -545,7 +549,29 @@ function [ blnInside ] = IsPointInsideImage( cp , data_get_fgnd_bgnd_seeds_3d_po
     volsize = size( data_get_fgnd_bgnd_seeds_3d_points.im );
     
     blnInside = all( cp <= volsize([2 1]) ) && all( cp >= [1 1] );
-  
+
+function pushUsePrev_Callback(hSrc,eventdata_get_fgnd_bgnd_seeds_3d_points)
+    global data_get_fgnd_bgnd_seeds_3d_points;
+    if isempty(data_get_fgnd_bgnd_seeds_3d_points.prevROI)
+        disp('No previous ROI found!')
+    else
+        data_get_fgnd_bgnd_seeds_3d_points.m(:,:,data_get_fgnd_bgnd_seeds_3d_points.sliceno) = ...
+            data_get_fgnd_bgnd_seeds_3d_points.m(:,:,data_get_fgnd_bgnd_seeds_3d_points.sliceno) | data_get_fgnd_bgnd_seeds_3d_points.prevROI;
+        data_get_fgnd_bgnd_seeds_3d_points.isWorked(data_get_fgnd_bgnd_seeds_3d_points.sliceno)=1;
+    end
+    if data_get_fgnd_bgnd_seeds_3d_points.isWorked(data_get_fgnd_bgnd_seeds_3d_points.sliceno)==1
+        current_mask = data_get_fgnd_bgnd_seeds_3d_points.m(:,:,data_get_fgnd_bgnd_seeds_3d_points.sliceno);
+        [indy,indx] = find(current_mask>0);
+        
+        current_box = ...
+            [max(1,min(indy)) max(1,min(indx))...
+            min(size(current_mask,1),max(indy))...
+            min(size(current_mask,2),max(indx))];
+        data_get_fgnd_bgnd_seeds_3d_points.boxall(data_get_fgnd_bgnd_seeds_3d_points.sliceno,:) =current_box;
+    end
+    
+    imsliceshow(data_get_fgnd_bgnd_seeds_3d_points);    
+    
 function pushGo_Callback(hSrc,eventdata_get_fgnd_bgnd_seeds_3d_points)
 
     global data_get_fgnd_bgnd_seeds_3d_points;
@@ -566,6 +592,7 @@ function pushGo_Callback(hSrc,eventdata_get_fgnd_bgnd_seeds_3d_points)
     
     if ~isempty(fH)
         currROI = fH.createMask;    
+        data_get_fgnd_bgnd_seeds_3d_points.prevROI = currROI;
         
         data_get_fgnd_bgnd_seeds_3d_points.prevm = data_get_fgnd_bgnd_seeds_3d_points.m;
 
@@ -701,7 +728,13 @@ global data_get_fgnd_bgnd_seeds_3d_points;
 
 switch eventdata_get_fgnd_bgnd_seeds_3d_points.Key
     
+    case '.'
+        pushinc_Callback(hSrc,eventdata_get_fgnd_bgnd_seeds_3d_points)        
         
+    case '1'
+        %Call the go button function
+        pushUsePrev_Callback(hSrc,eventdata_get_fgnd_bgnd_seeds_3d_points)
+
     case 'space'
         %Call the go button function
         pushGo_Callback(hSrc,eventdata_get_fgnd_bgnd_seeds_3d_points)

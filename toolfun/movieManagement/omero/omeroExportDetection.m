@@ -75,4 +75,7 @@ end
 
 % Upload ROI to server
 fprintf('Uploading ROI to server\n');
-updateService.saveAndReturnObject(roi);
+groupId = image.getDetails().getGroup().getId().getValue();
+context = java.util.Hashmap;
+context.put('omero.group', java.lang.String(num2str(groupId)));
+updateService.saveAndReturnObject(roi, context);

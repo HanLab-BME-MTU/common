@@ -70,7 +70,11 @@ nChan =  pixels.getSizeC().getValue();
 movieChannels(1,nChan) = Channel();
 
 % Read OMERO channels
-pixels = session.getPixelsService().retrievePixDescription(pixels.getId.getValue);
+context = java.util.HashMap;
+groupId = image.getDetails.getGroup.getId().getValue();
+context.put('omero.group', java.lang.String(num2str(groupId)));
+pixels = session.getPixelsService().retrievePixDescription(...
+    pixels.getId.getValue, context);
 omeroChannels = toMatlabList(pixels.copyChannels);
 
 for i=1:nChan
@@ -133,8 +137,13 @@ end
 
 % Read the lens numerical aperture
 instrument = image.getInstrument();
+context = java.util.HashMap;
+groupId = image.getDetails.getGroup.getId().getValue();
+context.put('omero.group', java.lang.String(num2str(groupId)));
+
 if ~isempty(instrument)
-    instrument = metadataService.loadInstrument(instrument.getId.getValue);
+    instrumentId = instrument.getId().getValue();
+    instrument = metadataService.loadInstrument(instrumentId, context);
     objectives = toMatlabList(instrument.copyObjective());
     if ~isempty(objectives) && ~isempty(objectives(1).getLensNA())
         lensNA = objectives(1).getLensNA().getValue();

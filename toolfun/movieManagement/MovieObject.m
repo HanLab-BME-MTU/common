@@ -334,19 +334,20 @@ classdef  MovieObject < hgsetget
             ip.addOptional('path', '', @ischar);
             ip.addOptional('filename', '', @ischar);
             ip.addOptional('askUser', true, @isscalar);
+            ip.addOptional('full', true, @isscalar);
             ip.parse(varargin{:});
             askUser = ip.Results.askUser;
 
             if ~isempty(ip.Results.path)
                 % Remove ending file separators from paths
-                endingFilesepToken = [regexptranslate('escape',filesep) '$'];
+                endingFilesepToken = [regexptranslate('escape',filesep) '+$'];
                 oldPath = regexprep(obj.getPath(),endingFilesepToken,'');
                 newPath = regexprep(ip.Results.path,endingFilesepToken,'');
                 
                 % If different path
                 hasDisplay = feature('ShowFigureWindows');
                 if ~strcmp(oldPath, newPath)
-                    full = true;  % flag for full relocation
+                    full = ip.Results.full;  % flag for full relocation
                     if askUser && hasDisplay
                         if isa(obj,'MovieData')
                             type='movie';

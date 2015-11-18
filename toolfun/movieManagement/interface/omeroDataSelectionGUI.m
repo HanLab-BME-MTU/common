@@ -22,7 +22,7 @@ function varargout = omeroDataSelectionGUI(varargin)
 
 % Edit the above text to modify the response to help omeroDataSelectionGUI
 
-% Last Modified by GUIDE v2.5 07-Apr-2014 11:18:10
+% Last Modified by GUIDE v2.5 29-Sep-2015 13:54:25
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -60,50 +60,49 @@ ip.addOptional('MD',[],@(x) isa(x,'MovieData'));
 ip.addParamValue('mainFig', -1, @ishandle);
 ip.parse(hObject,eventdata,handles,varargin{:})
 
-% Store inpu
+% Store input
 userData = get(handles.figure1, 'UserData');
 if isempty(userData), userData = struct(); end
 userData.mainFig=ip.Results.mainFig;
 
-
 set(handles.text_copyright, 'String', getLCCBCopyright())
 global session
 
-% List users
-groupId = session.getAdminService().getEventContext().groupId;
-userId = session.getAdminService().getEventContext().userId;
-group = session.getAdminService().getGroup(groupId);
-userData.groupPermissions = group.getDetails().getPermissions();
-if userData.groupPermissions.isGroupRead(),
-    map = toMatlabList(group.copyGroupExperimenterMap());
-    ids = arrayfun(@(x) x.getChild().getId().getValue(), map);
-    names = arrayfun(@(x) [char(x.getChild().getFirstName().getValue())...
-        ' ' char(x.getChild().getLastName().getValue())...
-        ' (' char(x.getChild().getOmeName().getValue()) ')'], map,...
-        'UniformOutput', false);
-    set(handles.popupmenu_user, 'Enable', 'on', 'String', names,...
-        'UserData', ids, 'Value', find(ids == userId));
-else
-    experimenter = session.getAdminService().getExperimenter(userId);
-    name = [char(experimenter.getFirstName().getValue())...
-        ' ' char(experimenter.getLastName().getValue())...
-        ' (' char(experimenter.getOmeName().getValue()) ')'];
-    set(handles.popupmenu_user, 'Enable', 'off', 'String', name,...
-        'UserData', userId, 'Value', 1);
-end
+% Retrieve user
+adminService = session.getAdminService();
+userId = adminService.getEventContext().userId;
+groupId = adminService.getEventContext().groupId;
+userData.experimenter = session.getAdminService().getExperimenter(userId);
 
+% Populate drop-down menu for groups the user is member of
+user = omero.model.ExperimenterI(userId, false);
+groupIds1 = toMatlabList(adminService.getLeaderOfGroupIds(user));
+groupIds2 = toMatlabList(adminService.getMemberOfGroupIds(user));
+groupIds = [groupIds1 groupIds2];
+systemGroupId = adminService.getSecurityRoles().systemGroupId;
+userGroupId = adminService.getSecurityRoles().userGroupId;
+try
+    guestGroupId = adminService.getSecurityRoles().guestGroupId;
+catch
+    guestGroupId = -1;
+end
+% Filter out system groups and update popup menu
+groupIds(ismember(groupIds,...
+    [systemGroupId userGroupId guestGroupId])) = [];
+groupNames = arrayfun(@(x) char(adminService.getGroup(x).getName().getValue),...
+    groupIds, 'UniformOutput', false);
+set(handles.popupmenu_group, 'String', groupNames, 'UserData', groupIds,...
+    'Value', find(groupId == groupIds));
 
 set(hObject, 'UserData', userData);
-refreshDataList(hObject, [], handles);
+
+refreshGroupList(hObject, [], handles);
 
 % Choose default command line output for omeroDataSelectionGUI
 handles.output = hObject;
 
 % Update handles structure
 guidata(hObject, handles);
-
-% UIWAIT makes omeroDataSelectionGUI wait for user response (see UIRESUME)
-% uiwait(handles.figure1);
 
 
 % --- Outputs from this function are returned to the command line.
@@ -116,16 +115,54 @@ function varargout = omeroDataSelectionGUI_OutputFcn(hObject, eventdata, handles
 % Get default command line output from handles structure
 varargout{1} = handles.output;
 
+% --- Executes on selection change in popupmenu_user.
+function refreshGroupList(hObject, eventdata, handles)
+global session
+
+% Retrieve the selected group identifier
+props = get(handles.popupmenu_group, {'Value', 'UserData'});
+groupId = props{2}(props{1});
+
+userData = get(handles.figure1, 'UserData');
+
+adminService = session.getAdminService();
+userId = adminService.getEventContext().userId;
+group = session.getAdminService().getGroup(groupId);       
+userData.groupPermissions = group.getDetails().getPermissions();
+set(handles.figure1, 'UserData', userData);
+
+display_username = @(x) [char(x.getFirstName().getValue())...
+        ' ' char(x.getLastName().getValue())...
+        ' (' char(x.getOmeName().getValue()) ')'];
+if userData.groupPermissions.isGroupRead(),
+    experimenters = toMatlabList(group.linkedExperimenterList);
+    ids = arrayfun(@(x) x.getId().getValue(), experimenters);
+    names = arrayfun(display_username, experimenters, 'UniformOutput', false);
+    set(handles.popupmenu_user, 'Enable', 'on', 'String', names,...
+        'UserData', ids, 'Value', find(ids == userId));
+else
+    name = display_username(userData.experimenter);
+    set(handles.popupmenu_user, 'Enable', 'off', 'String', name,...
+        'UserData', userId, 'Value', 1);
+end
+
+set(handles.figure1, 'UserData', userData);
+refreshUserList(hObject, [], handles);
+
 
 % --- Executes on selection change in popupmenu_user.
-function refreshDataList(hObject, eventdata, handles)
+function refreshUserList(hObject, eventdata, handles)
 
 global session
+
+% Retrieve the selected user and group identifier
+props = get(handles.popupmenu_group, {'Value', 'UserData'});
+groupId = props{2}(props{1});
 props = get(handles.popupmenu_user, {'Value', 'UserData'});
 userId = props{2}(props{1});
 
 userData = get(handles.figure1, 'UserData');
-if isempty(userData), userData = struct(); end
+
 if userId ~= session.getAdminService.getEventContext().userId && ...
         ~userData.groupPermissions.isGroupAnnotate(),
     set(handles.pushbutton_load_images, 'Enable', 'off');
@@ -136,20 +173,10 @@ else
 end
 
 % List projects and orphaned datasets
-p = omero.sys.ParametersI();
-p.exp(rlong(userId));
-p.orphan();
-proxy = session.getContainerService();
-objectList = proxy.loadContainerHierarchy('omero.model.ProjectI', [], p);
-orphanList = java.util.ArrayList();
-for i = objectList.size() - 1 : -1  : 0,
-    if ~isa(objectList.get(i), 'omero.model.ProjectI');
-        orphanList.add(objectList.get(i));
-        objectList.remove(i);
-    end
-end
-projects = sortById(toMatlabList(objectList));
-orphanedDatasets = sortById(toMatlabList(orphanList));
+[projects, orphanedDatasets] = getProjects(...
+    session, 'owner', userId, 'group', groupId); 
+projects = sortById(projects);
+orphanedDatasets = sortById(orphanedDatasets);
 
 
 projectNames = arrayfun(@(x) char(x.getName().getValue()), projects,...
@@ -338,3 +365,18 @@ function objects = sortById(objects)
 objectIds = arrayfun(@(x) x.getId().getValue(), objects);
 [~, sortindex] = sort(objectIds);
 objects =objects(sortindex);
+
+
+% --- Executes on selection change in popupmenu_project.
+function popupmenu_project_Callback(hObject, eventdata, handles)
+refreshDatasetList(hObject, eventdata, handles);
+
+
+% --- Executes on selection change in popupmenu_group.
+function popupmenu_group_Callback(hObject, eventdata, handles)
+refreshGroupList(hObject, eventdata, handles);
+
+
+% --- Executes on selection change in popupmenu_user.
+function popupmenu_user_Callback(hObject, eventdata, handles)
+refreshUserList(hObject, eventdata, handles);

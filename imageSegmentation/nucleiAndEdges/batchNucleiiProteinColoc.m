@@ -24,6 +24,7 @@ end
 pathResults1 = [outputPathFiles filesep 'detectionSummary.csv'];
 pathResults2 = [outputPathFiles filesep 'CD45intensity.csv'];
 pathResults3 = [outputPathFiles filesep 'allData.mat'];
+pathResults4 = [outputPathFiles filesep 'CD45intensityMedian.csv'];
 numFiles = numel(fileImgDAPI);
 nameSlide = cell(numFiles,1);
 numDetectedNuc = zeros(numFiles,1);
@@ -31,6 +32,8 @@ numAllNuc = zeros(numFiles,1);
 ratioDetected = zeros(numFiles,1);
 meanIntenCD45 = cell(numFiles,1);
 meanIntenCD45ND = cell(numFiles,1);
+medianIntenCD45 = cell(numFiles,1);
+medianIntenCD45ND = cell(numFiles,1);
 readCD45 = input('Does CD45 Channel exist (1/0)?');
 thresSignal = input('Threshold value for signal detection (default:3000 for Tra, 2000 for Bstrong)?');
 if isempty(thresSignal)
@@ -43,7 +46,8 @@ end
 %% Run nucleusProteinColoc
 for ii=1:numFiles
     curPathImgDAPI = fullfile(pathImgDAPI,fileImgDAPI{ii});
-    [nameSlide(ii),numDetectedNuc(ii),numAllNuc(ii),ratioDetected(ii),meanIntenCD45{ii},meanIntenCD45ND{ii}]=...
+    [nameSlide(ii),numDetectedNuc(ii),numAllNuc(ii),ratioDetected(ii),meanIntenCD45{ii},meanIntenCD45ND{ii},...
+        medianIntenCD45{ii},medianIntenCD45ND{ii}]=...
         nucleusProteinColoc(pathProject,curPathImgDAPI,thresSignal,readCD45);
 end
 %% Store output in excel format
@@ -53,4 +57,6 @@ writetable(A,pathResults1)
 save(pathResults3)
 B= table(nameSlide,meanIntenCD45, meanIntenCD45ND);
 writetable(B,pathResults2)
+C= table(nameSlide,medianIntenCD45, medianIntenCD45ND);
+writetable(C,pathResults4)
 
