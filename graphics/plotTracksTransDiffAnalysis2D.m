@@ -1,5 +1,5 @@
 function plotTracksTransDiffAnalysis2D(trackedFeatureInfo,diffAnalysisRes,timeRange,...
-    newFigure,image,showConf)
+    newFigure,image,showConf,asymCheck)
 %PLOTTRACKSTRANSDIFFANALYSIS plots tracks in 2D highlighting the different diffusion segments within each track
 %
 %SYNOPSIS plotTracksTransDiffAnalysis2D(trackedFeatureInfo,diffAnalysisRes,timeRange,...
@@ -260,6 +260,189 @@ hold on
 tracksXP = tracksX(timeRange(1):timeRange(2),:);
 tracksYP = tracksY(timeRange(1):timeRange(2),:);
 
+%% New plotting strategy
+%Build new matrix which indicates when tracks change diffusion
+
+base = -2*ones(size(tracksX));
+asymBase = -2*ones(size(tracksX));
+if asymCheck == 0
+for k = 1:length(trackSegmentType)
+
+    for j = 1:size(trackSegmentType(k).momentScalingSpectrum,1)
+    base(trackSegmentType(k).momentScalingSpectrum(j,1):trackSegmentType(k).momentScalingSpectrum(j,2),k) = ...
+    trackSegmentType(k).momentScalingSpectrum(j,3);
+
+    asymBase(trackSegmentType(k).momentScalingSpectrum1D(j,1):trackSegmentType(k).momentScalingSpectrum1D(j,2),k) = ...
+    trackSegmentType(k).momentScalingSpectrum1D(j,3);
+    
+    end
+
+end
+else
+    for k = 1:length(trackSegmentType)
+
+        for j = 1:size(trackSegmentType(k).momentScalingSpectrum,1)
+        base(trackSegmentType(k).momentScalingSpectrum(j,1):trackSegmentType(k).momentScalingSpectrum(j,2),k) = ...
+        trackSegmentType(k).momentScalingSpectrum(j,3);
+        end
+
+    end
+end
+
+numTimePlot = timeRange(2) - timeRange(1) + 1;
+
+%Go through matrix and map what diffusion is present
+%unique
+% %% Temporary part
+%  	base(isnan(base)) = -1;
+%     tracksS = trackedFeatureInfo(:,8:8:end)';
+%     base(isnan(base)) = -1;
+%     colorType{1} = [0 0 0];
+%     colorType{2} = [0.5 0.3 0];
+%     colorType{3} = [0 0 1];
+%     colorType{4} = [0 1 1];
+%     colorType{5} = [1 0 0];
+%     tracksA = trackedFeatureInfo(:,4:8:end)';
+%     tracksI = tracksS.*tracksA;
+%     figure;
+%         for m = 1:184;
+%         diffTypes = unique(base(m,:));
+%             for j = 1:length(diffTypes)
+%             scatter(m,nanmean(tracksI(base(m,:)==diffTypes(j))),'MarkerEdgeColor',colorType{diffTypes(j)+2})
+%             hold on
+%             %      std(tracksS(base(:,m)==diffTypes(j)))
+%             % figure;
+%             %         scatter(ones(length(tracksS(base(1,:)==diffTypes(j))),1),tracksS(base(1,:)==diffTypes(j)))
+%             end
+%         end
+%         hold off
+%         figure; hold on
+asymBase(isnan(asymBase))=-1;
+base(isnan(base))=-1;
+base(base==-2)=NaN;
+asymBase(asymBase==-2)=NaN;
+diffTypes = unique(base(~isnan(base)));
+% diffTypes = unique(base);
+copyR = size(tracksXP,1);
+copyC = size(tracksXP,2);
+for k = 1:length(diffTypes)
+ 	
+    switch diffTypes(k)
+        case -1
+            ind = find(base(:) ==-1);
+            copyX = NaN(copyR,copyC);
+            copyY = NaN(copyR,copyC);
+            copyX(ind) = tracksXP(ind);
+            copyY(ind) = tracksYP(ind);
+        
+            for i=1:numTimePlot-1
+                validData=~all(isnan(copyX(i:i+1,:)),1);
+                lineWithGaps(copyX(i:i+1,validData),copyY(i:i+1,validData), 'Color',[0 0 0]);
+            end 
+           %asym linear and unclassified
+            indA = find(asymBase(ind) ==-1);
+                if ~isempty(indA)
+                    copyX = NaN(copyR,copyC);
+                    copyY = NaN(copyR,copyC);
+                    copyX(indA) = tracksXP(indA);
+                    copyY(indA) = tracksYP(indA);
+
+                    for i=1:numTimePlot-1
+                        validData=~all(isnan(copyX(i:i+1,:)),1);
+                        lineWithGaps(copyX(i:i+1,validData),copyY(i:i+1,validData), 'Color',[0.7 0.7 0.7]);
+                    end 
+                end
+        case 0
+            ind = find(base(:) ==0);
+            copyX = NaN(copyR,copyC);
+            copyY = NaN(copyR,copyC);
+            copyX(ind) = tracksXP(ind);
+            copyY(ind) = tracksYP(ind);
+ 	
+            for i=1:numTimePlot-1
+                validData=~all(isnan(copyX(i:i+1,:)),1);
+                lineWithGaps(copyX(i:i+1,validData),copyY(i:i+1,validData), 'Color',[0.5 0.3 0]);
+            end
+            %Currently not labeling immobile and linear, doesn't make sense
+            %to me
+        case 1
+ 	
+            ind = find(base(:) ==1);
+            copyX = NaN(copyR,copyC);
+            copyY = NaN(copyR,copyC);
+            copyX(ind) = tracksXP(ind);
+            copyY(ind) = tracksYP(ind);
+
+            for i=1:numTimePlot-1
+                validData=~all(isnan(copyX(i:i+1,:)),1);
+                lineWithGaps(copyX(i:i+1,validData),copyY(i:i+1,validData), 'Color',[0 0 1]);
+            end
+            %Asym linear and confined
+            indA = find(asymBase(ind) ==1);
+            if ~isempty(indA)
+                    copyX = NaN(copyR,copyC);
+                    copyY = NaN(copyR,copyC);
+                    copyX(indA) = tracksXP(indA);
+                    copyY(indA) = tracksYP(indA);
+
+                for i=1:numTimePlot-1
+                    validData=~all(isnan(copyX(i:i+1,:)),1);
+                    lineWithGaps(copyX(i:i+1,validData),copyY(i:i+1,validData), 'Color',[1 0.7 0]);
+                end 
+            end
+        case 2
+ 	
+            ind = find(base(:) ==2);
+            copyX = NaN(copyR,copyC);
+            copyY = NaN(copyR,copyC);
+            copyX(ind) = tracksXP(ind);
+            copyY(ind) = tracksYP(ind);
+ 	
+            for i=1:numTimePlot-1
+                validData=~all(isnan(copyX(i:i+1,:)),1);
+                lineWithGaps(copyX(i:i+1,validData),copyY(i:i+1,validData), 'Color','c');
+            end
+           %asym linear and free
+            indA = find(asymBase(ind) ==2);
+            if ~isempty(indA)
+                    copyX = NaN(copyR,copyC);
+                    copyY = NaN(copyR,copyC);
+                    copyX(indA) = tracksXP(indA);
+                    copyY(indA) = tracksYP(indA);
+
+                for i=1:numTimePlot-1
+                    validData=~all(isnan(copyX(i:i+1,:)),1);
+                    lineWithGaps(copyX(i:i+1,validData),copyY(i:i+1,validData), 'Color',[1 0 0]);
+                end 
+            end
+        case 3
+            ind = find(base(:) ==3);
+            copyX = NaN(copyR,copyC);
+            copyY = NaN(copyR,copyC);
+            copyX(ind) = tracksXP(ind);
+            copyY(ind) = tracksYP(ind);
+ 	
+            for i=1:numTimePlot-1
+                validData=~all(isnan(copyX(i:i+1,:)),1);
+                lineWithGaps(copyX(i:i+1,validData),copyY(i:i+1,validData), 'Color','m');
+            end
+ 	           %asym linear and super
+        indA = find(asymBase(ind) ==3);
+            if ~isempty(indA)
+                    copyX = NaN(copyR,copyC);
+                    copyY = NaN(copyR,copyC);
+                    copyX(indA) = tracksXP(indA);
+                    copyY(indA) = tracksYP(indA);
+
+                for i=1:numTimePlot-1
+                    validData=~all(isnan(copyX(i:i+1,:)),1);
+                    lineWithGaps(copyX(i:i+1,validData),copyY(i:i+1,validData), 'Color',[1 1 0]);
+                end 
+            end
+    end
+ 	
+end
+%{
 %plot track segments with their appropriate diffusion type colors
 for i = 1 : numTrackSegments
 
@@ -343,7 +526,7 @@ for i = 1 : numTrackSegments
     end %(for iPart = 1 : size(segmentClass,1))
 
 end %(for i = 1 : numTrackSegments)
-
+%}
 %show merges and splits
 if mergeSplit
 

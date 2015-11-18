@@ -132,30 +132,31 @@ indx4asym = [indx4asym; indxNoDiffCoef];
 alphaAsym = 0.1;
 
 %go over all trajectories in indx4diff that haven't been classified yet
-for iTrack = intersect(indx4diff',indxNotClass)
+if ~isempty(indxNotClass)
+    for iTrack = intersect(indx4diff',indxNotClass)
 
-    %get the particle positions along the track
-    coordX = tracks(iTrack,1:8:end)';
-    coordY = tracks(iTrack,2:8:end)';
-    coordZ = tracks(iTrack,3:8:end)';
-    coordXYZ = [coordX coordY coordZ];
-    
-    %determine whether the track is sufficiently asymmetric
-    [asymParamT,asymFlag] = asymDeterm2D3D(coordXYZ(:,1:probDim),alphaAsym);
+        %get the particle positions along the track
+        coordX = tracks(iTrack,1:8:end)';
+        coordY = tracks(iTrack,2:8:end)';
+        coordZ = tracks(iTrack,3:8:end)';
+        coordXYZ = [coordX coordY coordZ];
 
-    %classify track as ...
-    %3 = directed, if the asymmetry parameter is larger than the threshold
-    %2 = pure Brownian, if the asymmetry parameter is smaller than the
-    %threshold (remember this track's deviation parameter was also smaller
-    %than the deviation threshold)
-    %otherwise, keep track classification as undetermined
-    trackClass(iTrack) = 2 + asymFlag;
+        %determine whether the track is sufficiently asymmetric
+        [asymParamT,asymFlag] = asymDeterm2D3D(coordXYZ(:,1:probDim),alphaAsym);
 
-    %save asymmetry parameter
-    asymParam(iTrack) = asymParamT;
-    
+        %classify track as ...
+        %3 = directed, if the asymmetry parameter is larger than the threshold
+        %2 = pure Brownian, if the asymmetry parameter is smaller than the
+        %threshold (remember this track's deviation parameter was also smaller
+        %than the deviation threshold)
+        %otherwise, keep track classification as undetermined
+        trackClass(iTrack) = 2 + asymFlag;
+
+        %save asymmetry parameter
+        asymParam(iTrack) = asymParamT;
+
+    end
 end
-
 %also go over trajectories that were too short to calculate a diffusion
 %coefficient for them
 for iTrack = indx4asym'

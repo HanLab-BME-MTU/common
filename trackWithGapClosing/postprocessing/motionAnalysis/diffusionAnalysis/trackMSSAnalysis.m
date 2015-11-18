@@ -88,6 +88,9 @@ if nargin < 4 || isempty(alphaMSS)
     [alphaMSSConf,alphaMSSDir,alphaMSSImm] = deal(0.1);
 elseif length(alphaMSS) == 1
         [alphaMSSConf,alphaMSSDir,alphaMSSImm] = deal(alphaMSS);
+elseif length(alphaMSS) == 2 % TEMP BY TONY, until further changes
+    alphaMSSConf = alphaMSS(1);
+    alphaMSSDir = alphaMSS(2);
 elseif length(alphaMSS) == 3
     alphaMSSConf = alphaMSS(1);
     alphaMSSDir = alphaMSS(2);

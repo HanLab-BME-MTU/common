@@ -289,7 +289,7 @@ classdef TrackingProcess < DataProcessingProcess
                     displayTracks(iTrack).yCoord = tracks(i).tracksCoordAmpCG(j, 2:8:end);
                     displayTracks(iTrack).number = i;
                     if isfield(tracks, 'label'),
-                        displayTracks(iTrack).label = tracks(i).label;
+                        displayTracks(iTrack).label = tracks(i).label(j);
                     end
                 end
                 

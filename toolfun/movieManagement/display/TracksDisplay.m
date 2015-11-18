@@ -7,7 +7,7 @@ classdef TracksDisplay < MovieDataDisplay
         Color = 'r';
         MergeColor = 'y';
         MergeMarker = 's';
-        SplitColor = 'g';
+        SplitColor = 'w';
         SplitMarker = 's';
         useDragtail=true;
         dragtailLength=10;

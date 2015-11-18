@@ -214,7 +214,6 @@ trackSegmentClassRes = repmat(struct('asymmetry',NaN(1,3),...
 
 %go over all analyzable track segments
 for iTrack = indx4analysis'
-
     %% Asymmetry analysis to get directed parts of the track segment
 
     %get track segment start, end and life times
@@ -437,6 +436,14 @@ for iTrack = indx4analysis'
                     pointClassMSS = reclassBrownianPoints(pointClassMSS,...
                         mssSlope,windowBrown);
 
+%                     try to reclassify any remaining unclassified subparts
+%                     for the last time %TONY: this was moved before adding
+%                     halfWindowMSS points back due to indexing
+%                     descripencies between mssSlope and pointClassMSS
+                    pointClassMSS = reclassUnclassPoints(pointClassMSS,...
+                        mssSlope,tracks(iTrack,:),halfWindowMSS,probDim,...
+                        momentOrders,alphaValues,0,trackPartStart);
+                    
                     %now add back the first and last halfWindowMSS points
                     %and give them the classification of the immediate
                     %neighboring points, if they haven't been classified
@@ -450,11 +457,11 @@ for iTrack = indx4analysis'
                             ones(halfWindowMSS,1)]; %#ok<AGROW>
                     end
 
-                    %try to reclassify any remaining unclassified subparts
-                    %for the last time
-                    pointClassMSS = reclassUnclassPoints(pointClassMSS,...
-                        mssSlope,tracks(iTrack,:),halfWindowMSS,probDim,...
-                        momentOrders,alphaValues,0,trackPartStart);
+% %                     %try to reclassify any remaining unclassified subparts
+% %                     %for the last time
+% %                     pointClassMSS = reclassUnclassPoints(pointClassMSS,...
+% %                         mssSlope,tracks(iTrack,:),halfWindowMSS,probDim,...
+% %                         momentOrders,alphaValues,0,trackPartStart);
 
                     %for the last time, get switching points and class durations
                     switch123 = getSwitchPointClassDuration(pointClassMSS);
@@ -471,8 +478,8 @@ for iTrack = indx4analysis'
 
                     %go over subparts and get their classification
                     classMSSTmp = NaN(numSubparts,1);
-                    for iSubpart = 1 : numSubparts
-
+                    for iSubpart = 1 : numSubparts %TONY Check what difference this typically makes%
+%
                         %get subpart's start and end points
                         startPoint = 8*(partClassMSS(iSubpart,1)-1)+1;
                         endPoint = 8*partClassMSS(iSubpart,2);
@@ -504,7 +511,7 @@ for iTrack = indx4analysis'
 
                     %now go over subparts and get final diffusion characteristics
                     for iSubpart = 1 : numSubparts
-
+%
                         %get subpart's start and end points
                         startPoint = 8*(partClassMSS(iSubpart,1)-1)+1;
                         endPoint = 8*partClassMSS(iSubpart,2);
@@ -596,13 +603,14 @@ for iTrack = indx4analysis'
 end %(for iTrack = indx4analysis')
 
 %% Store trivial nonclassification information for tracks that are not classifiable
-for iTrack = indxNot4analysis'
+if ~isempty(indxNot4analysis')
+for iTrack = indxNot4analysis' 
     trackSELCurrent = trackSEL(iTrack,:);
     trackSegmentClassRes(iTrack).asymmetry(1:2) = trackSELCurrent(1:2);
     trackSegmentClassRes(iTrack).momentScalingSpectrum(1:2) = trackSELCurrent(1:2);
     trackSegmentClassRes(iTrack).asymmetryAfterMSS(1:2) = trackSELCurrent(1:2);
 end
-
+end
 %% save results in output structure
 
 %reserve memory
@@ -948,6 +956,7 @@ switch123 = [switch123 [pointClassMSS(switch123(1:end-1)); pointClassMSSLast]];
 %get the duration of each class (and with this ignore the imaginary last
 %class)
 classDuration = [diff(switch123(:,1)) switch123(1:end-1,2)];
+% % switch123 = switch123(1:end-1,:);
 
 
 function [confRadTmp,centerTmp] = estimConfRad(tracks,probDim,confRadMin)
