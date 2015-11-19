@@ -54,12 +54,11 @@ svect = [svect{:}];
 opts = statset('maxIter', 200);
 try
     w = warning('off', 'stats:gmdistribution:FailedToConverge');
-    nTestedComponent=5
-    obj = cell(1,nTestedComponent);
-    for n = 1:nTestedComponent
-        obj{n} = gmdistribution.fit(svect', n, 'Options', opts);
+    nTestedComponent=5;
+    obj = cell(1,length(nTestedComponent));
+    for nIdx = 1:length(nTestedComponent)
+        obj{nIdx} = gmdistribution.fit(svect', nTestedComponent(nIdx), 'Options', opts);
     end
-
     [~,bestNComponent] = min(cellfun(@(i) i.BIC, obj));
     bestObj = obj{bestNComponent};
     %svec = sqrt(squeeze(bestObj.Sigma));
