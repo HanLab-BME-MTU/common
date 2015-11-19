@@ -1,10 +1,12 @@
 function ML=indexLSFMData(moviePaths,moviesRoot,varargin)
-% - Batch sort time points in ch0/, ch1/ (and optionnaly deskew, dezip on demand) 
+% - If necessary, batch sort time points in ch0/, ch1/ 
+% - Optionnaly deskew, dezip on demand)
 % - Create movieData and analysis folder for each movie
 % - Print MIP in analysis folder
-% - Create a movieList saved in an anlysis folder below <moviesRoot>
+% - Create a movieList saved in an analysis folder below <moviesRoot>
 %
-% EXAMPLE:  indexLSFMData('/path/to/your/cells/Cell_*/whatever/CAM_0{ch}*.tif','/path/to/your/cells','lateralPixelSize',160,'axialPixelSize',400,'copyFile',true)
+% EXAMPLE1:  indexLSFMData(  '/path/to/your/cells/Cell_*/whatever/CAM_0{ch}*.tif','/path/to/your/cells', ... 
+%                           'lateralPixelSize',160,'axialPixelSize',400,'timeInterval',0.5,'copyFile',true)
 %
 % INPUT:  - moviePaths is either: 
 %              ** A regular expression describing all the file of intereste using the following format: 
@@ -51,46 +53,72 @@ ip.addParamValue('filePattern','Iter_ sample_scan_3p35ms_zp4um_ch{ch}_stack*', @
 ip.parse(moviePaths,moviesRoot,varargin{:});
 
 p=ip.Results;
-
-% Get the list of each Cell folder indirectly specified by the regexp, 
-% if no files are found, check if there is a corresponding
-% 'ch*' channel. 
-filePattern=p.filePattern;
+writeData=p.writeData;
+    
+% Optional regexp processing: 
+% - Define a path per cell <moviePaths> from the regexp
+% - Define a canonical path for each original channel subfolder <channelOriginalFilePattern> (if there is not subfolder, just the file pattern).
+% - Define a cannonical ouput channel subfolder <channelFileOutputPattern> (can be the same as <channelOriginalFilePattern>) (in the non-BF mode).
+channelFileOutputPattern=p.filePattern;
+channelOriginalFilePattern=p.filePattern;
 if(ischar(moviePaths))
+    moviePathsRep=strrep(moviePaths,'{ch}',num2str(p.chStartIdx));
+
+    % Initialize a path for each Cell from the regexp
+    fileDirRegexp=fileparts(moviePathsRep);
+    files=rdir([fileDirRegexp filesep]);    % filesep is important due to a bug in rdir ...
+    moviePathsRes=unique(cellfun(@(x) fileparts(x),{files.name},'unif',0)); 
+
+
+
+    % If {ch} is specified in the folder name then refine the cell folder. 
+    % Otherwise do not change the cell path and creat a subfolder
     [fileDirRegexp,fileRegexp,ext]=fileparts(moviePaths);
-    filePattern=[fileRegexp ext];
-    dirs=rdir([fileDirRegexp filesep]);    % filesep is important due to a bug in rdir ...
-    moviePaths=unique(cellfun(@(x) [fileparts(x)],{dirs.name},'unif',0)); 
+    if(strfind(fileDirRegexp,'{ch}'))
+        channelOriginalFilePattern=[fileRegexp ext];
+        while(strfind(fileDirRegexp,'{ch}'))
+          [fileDirRegexp,fileRegexp,ext]=fileparts(fileDirRegexp);
+           channelOriginalFilePattern=[filesep fileRegexp  filesep channelOriginalFilePattern];
+            moviePathsRes=cellfun(@(x) fileparts(x),moviePathsRes,'unif',0);
+        end
+        channelFileOutputPattern=channelOriginalFilePattern;
+    else
+        filePattern=[fileRegexp,ext];
+        channelFileOutputPattern=[filesep 'ch{ch}' filesep filePattern];
+        channelOriginalFilePattern=[filesep filePattern];
+        % If no file have been found, maybe the user is trying to relaunch
+        % an automated sorting command. 
+        if(isempty(moviePathsRes))
+           files=rdir([fileDirRegexp filesep 'ch' num2str(p.chStartIdx) filesep]);
+           if(~isempty(files))
+                channelFileOutputPattern=[filesep 'ch{ch}' filesep filePattern];
+                channelOriginalFilePattern=channelFileOutputPattern;
+                [moviePathsRes]=unique(cellfun(@(x) [fileparts(fileparts(x)) filesep],{files.name},'unif',0));
+           end
+        end     
+    end
+    
+
+    
+    moviePaths=moviePathsRes;
     if(isempty(moviePaths))
-        dirs=rdir([fileDirRegexp filesep 'ch*' filesep]);
-        moviePaths=unique(cellfun(@(x) [fileparts(fileparts(x))],{dirs.name},'unif',0)); 
+        warning('Files not found')
     end
 end
 
+% Move files if needed, build MovieData and create MIP. 
 MDs=cell(1,length(moviePaths));
 for cellIdx=1:length(moviePaths)
     cPath=moviePaths{cellIdx};
     channelList=[];
-    writeData=p.writeData;
+
     chIdx=ip.Results.chStartIdx;
+    % While there is new channels
     while(true)      
-        if(p.deskew)
-            outputDirCH=[cPath filesep 'deskew' filesep 'ch' num2str(chIdx)];
-        else
-            outputDirCH=[cPath filesep 'ch' num2str(chIdx)];
-        end        
-        if(~isempty(p.newDataPath))
-            outputDirCH=strrep(outputDirCH,p.moviesRoot,p.newDataPath);
-        end
+
         
-        filelistCH=dir([cPath filesep strrep(filePattern,'{ch}',num2str(chIdx))]);
-        
-        % If it is empty, the reason might be that this as already been
-        % carried out. In which case check out the channel folder. 
-        if(isempty(filelistCH))
-            writeData=false;
-            filelistCH=dir([outputDirCH filesep strrep(filePattern,'{ch}',num2str(chIdx)) ] );
-        end
+        filelistCH=dir([cPath filesep strrep(channelOriginalFilePattern,'{ch}',num2str(chIdx))]);
+        outputDirCH=[cPath filesep fileparts(strrep(channelFileOutputPattern,'{ch}',num2str(chIdx)))];
         
         % If this channel does not exist, stop building channels. 
         if(isempty(filelistCH))
@@ -98,10 +126,9 @@ for cellIdx=1:length(moviePaths)
         end
         
         if(~exist(outputDirCH,'dir')) mkdir(outputDirCH); end;
-        if(writeData)
+        if( writeData && (~strcmp(channelOriginalFilePattern,channelFileOutputPattern)))
             for fileIdx=1:length(filelistCH)
                 file=filelistCH(fileIdx).name;
-                
                 if(p.deskew)
                     writeDeskewedFile([cPath filesep file],outputDirCH);
                 else
