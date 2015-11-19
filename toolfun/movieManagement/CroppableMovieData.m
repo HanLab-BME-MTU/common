@@ -19,7 +19,9 @@ classdef CroppableMovieData < MovieData
             % will crop the images from the previous reader
             if(exist(obj.cropDataFile_,'file'))
                 S = load(obj.cropDataFile_);
-                r = CropReader(r,S.positions{end});
+                if(all(S.positions{end}(:,1) <= r.getSizeY) && all(S.positions{end}(:,2) <= r.getSizeX))
+                    r = CropReader(r,S.positions{end});
+                end
             end
         end
         function setReader(obj, r)
