@@ -111,9 +111,54 @@ classdef Process < hgsetget
         function sanityCheck(obj)
             % Perform saniy check on the process
             
+            % Ensure obj.funName_ is a valid function handle
+            if(~isa(obj.funName_,'function_handle'))
+                % If funName_ is a char, convert to function_handle
+                if(ischar(obj.funName_))
+                    obj.funName_ = str2func(obj.funName_);
+                else
+                    error('lccb:Process:sanityCheck:funNameType', ...
+                        '%s is not a char or function_handle.', ...
+                        func2str(obj.funName_));
+                end
+                % Make sure funName_ exists and takes at least one input
+                try
+                    funNameIn = nargin(obj.funName_);
+                    if(funNameIn == 0)
+                        error('lccb:Process:sanityCheck:funNameInput', ...
+                            '%s does not take a MovieObject argument.', ...
+                            func2str(obj.funName_));
+                    end
+                catch err
+                    if(strcmp(err.identifier,'MATLAB:narginout:notValidMfile'))
+                        % funName_ does not exist
+                        error('lccb:Process:sanityCheck:funNameDoesNotExist', ...
+                            '%s does not exist.',func2str(obj.funName_));
+                    else
+                        % funName_ exists but there's another problem
+                        rethrow(err);
+                    end
+                end
+            end
+            
             % Retrieve current process parameters and default parameters
             crtParams = obj.getParameters();
+            % Interpret empty as a struct with no fields
+            if(isempty(crtParams))
+                crtParams = struct();
+            end
+            if(~isstruct(crtParams))
+                error('lccb:Process:sanityCheck:parametersMustBeStruct', ...
+                    'Process parameters must be a struct or empty.');
+            end
             defaultParams = obj.getDefaultParams(obj.getOwner());
+            if(isempty(defaultParams))
+                defaultParams = struct();
+            end
+            if(~isstruct(defaultParams))
+                error('lccb:Process:sanityCheck:defaultParametersMustBeStruct', ...
+                    'Default parameters must be a struct or empty.');
+            end
             crtFields = fieldnames(crtParams);
             defaultFields = fieldnames(defaultParams);
             
@@ -125,7 +170,8 @@ classdef Process < hgsetget
             missingFields = defaultFields(~status);
             for i = 1: numel(missingFields)
                 missingField = missingFields{i};
-                crtParams.(missingField) = defaultParams.(missingField);
+                % Permit struct arrays with missing fields
+                [crtParams.(missingField)] = deal(defaultParams.(missingField));
             end
             obj.setParameters(crtParams);
         end

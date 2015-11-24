@@ -6,7 +6,7 @@ classdef ExternalProcess < Process
         function obj = ExternalProcess(owner, varargin)
             % Input check
             ip = inputParser;
-            ip.addRequired('owner',@(x) isa(x,'MovieData'));
+            ip.addRequired('owner',@(x) isa(x,'MovieObject'));
             ip.addOptional('name',ExternalProcess.getName(),@ischar);
             ip.parse(owner,varargin{:});
             
