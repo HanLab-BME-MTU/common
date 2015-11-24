@@ -121,26 +121,27 @@ classdef Process < hgsetget
                         '%s is not a char or function_handle.', ...
                         func2str(obj.funName_));
                 end
-                % Make sure funName_ exists and takes at least one input
-                try
-                    funNameIn = nargin(obj.funName_);
-                    if(funNameIn == 0)
-                        error('lccb:Process:sanityCheck:funNameInput', ...
-                            '%s does not take a MovieObject argument.', ...
-                            func2str(obj.funName_));
-                    end
-                catch err
-                    if(strcmp(err.identifier,'MATLAB:narginout:notValidMfile'))
-                        % funName_ does not exist
-                        error('lccb:Process:sanityCheck:funNameDoesNotExist', ...
-                            '%s does not exist.',func2str(obj.funName_));
-                    else
-                        % funName_ exists but there's another problem
-                        rethrow(err);
-                    end
-                end
             end
             
+            % Make sure funName_ exists and takes at least one input
+            try
+                funNameIn = nargin(obj.funName_);
+                if(funNameIn == 0)
+                    error('lccb:Process:sanityCheck:funNameInput', ...
+                        '%s does not take a MovieObject argument.', ...
+                        func2str(obj.funName_));
+                end
+            catch err
+                if(strcmp(err.identifier,'MATLAB:narginout:notValidMfile'))
+                    % funName_ does not exist
+                    error('lccb:Process:sanityCheck:funNameDoesNotExist', ...
+                        '%s does not exist.',func2str(obj.funName_));
+                else
+                    % funName_ exists but there's another problem
+                    rethrow(err);
+                end
+            end
+
             % Retrieve current process parameters and default parameters
             crtParams = obj.getParameters();
             % Interpret empty as a struct with no fields
