@@ -185,9 +185,20 @@ classdef Process < hgsetget
             obj.inFilePaths_=paths;
         end
         
-        function setOutFilePaths(obj,paths)
+        function setOutFilePaths(obj,paths,chanNum)
             % Set output file paths
-            obj.outFilePaths_ = paths;
+%             obj.outFilePaths_ = paths;
+            if nargin <3
+                obj.outFilePaths_ = paths;
+            else
+                if obj.checkChanNum(chanNum)
+                    obj.outFilePaths_{1,chanNum} = paths;
+                else
+                    error('lccb:set:fatal','Invalid channel number for detection path!\n\n');
+                end                
+            end
+             
+
         end
         
         function time = getProcessingTime(obj)
