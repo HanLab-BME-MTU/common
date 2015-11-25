@@ -534,7 +534,8 @@ classdef  MovieData < MovieObject & matlab.mixin.Heterogeneous
             for MD = allMovies
                 fullPath = MD.getFullPath();
                 if exist(fullPath,'file')
-                    movefile(fullPath,[fullPath(1:end-3) 'old'],'f');
+                    timestamp = datestr(now,30);
+                    movefile(fullPath,[fullPath(1:end-4) '_' timestamp '.mat'],'f');
                 end
                 save(fullPath, 'MD');
             end
