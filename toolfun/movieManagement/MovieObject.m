@@ -131,6 +131,52 @@ classdef  MovieObject < hgsetget
             end
             
         end
+        %% Backup functions
+        function [backupPath, backupDir, fullPath] = getBackupPath(obj,timestamp)
+            fileName = obj.getFilename();
+            if(isempty(fileName) || isempty(obj.getPath()))
+                backupPath = '';
+                backupDir = '';
+                fullPath = '';
+            else
+                sep = filesep;
+                path = obj.getPath();
+                % Should be equivalent to obj.getFullPath()
+                fullPath = [path sep fileName];
+                if(nargin < 2)
+                    % ISO 8601, number 30
+                    timestamp = datestr(now,'yyyymmddTHHMMSS');
+                end
+                % Append timestamp and move into a backup subdirectory
+                fileName = [timestamp '_' fileName];
+                backupDir = [path sep 'backups'];
+                backupPath = [backupDir sep fileName];
+            end
+        end
+        function success = moveToBackup(obj,varargin)
+            % Move old file to getBackupPath
+            [backupPath, backupDir, fullPath] = obj.getBackupPath(varargin{:});
+            success = false;
+            if ~isempty(fullPath) && ~isempty(backupPath)
+                try
+                    % Make directory if it does not exist
+                    if(~exist(backupDir,'dir'))
+                        mkdir(backupDir);
+                    end
+                    movefile(fullPath,backupPath,'f');
+                    success = true;
+                catch err
+                    % Do not warn if fullPath does not exist
+                    % It usually does, so we catch it rather than pretest
+                    if(~strcmp(err.identifier,'MATLAB:MOVEFILE:FileDoesNotExist'))
+                        warning('MovieObject:saveBackup:Failure', ...
+                            'Failed to save backup\n%s to\n%s', ...
+                            fullPath,backupPath);
+                    end
+                end
+            end
+        end
+
         %% Functions to manipulate process object array
         function addProcess(obj, newprocess)
             % Add new process to the processes list

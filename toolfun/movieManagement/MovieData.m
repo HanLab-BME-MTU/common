@@ -533,10 +533,7 @@ classdef  MovieData < MovieObject & matlab.mixin.Heterogeneous
             % Backup existing file and save each movie in the list
             for MD = allMovies
                 fullPath = MD.getFullPath();
-                if exist(fullPath,'file')
-                    timestamp = datestr(now,30);
-                    movefile(fullPath,[fullPath(1:end-4) '_' timestamp '.mat'],'f');
-                end
+                MD.moveToBackup();
                 save(fullPath, 'MD');
             end
             
@@ -545,6 +542,7 @@ classdef  MovieData < MovieObject & matlab.mixin.Heterogeneous
                 omeroSave(ancestor);
             end
         end
+
         
         function input = getSampledOutput(obj,index)
             % Read process names from parameters
