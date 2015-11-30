@@ -772,8 +772,11 @@ classdef  MovieData < MovieObject & matlab.mixin.Heterogeneous
             
             % Get validator for single property
             validator=MovieData.getPropertyValidator(property);
-            propName = regexprep(regexprep(property,'(_\>)',''),'([A-Z])',' ${lower($1)}');
-            assert(~isempty(validator),['No validator defined for property ' propName]);
+            if(isempty(validator))
+                propName = lower(property(1:end-(property(end) == '_')));
+                error('MovieData:checkValue:noValidator', ...
+                    'No validator defined for property %s',propName);
+            end
             
             % Return result of validation
             status = isempty(value) || validator(value);
