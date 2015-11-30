@@ -38,14 +38,19 @@ classdef  MovieObject < hgsetget
             % Test if the property is unchanged
             if isequal(obj.(property),value), return; end
             
-            propName = regexprep(regexprep(property,'(_\>)',''),'([A-Z])',' ${lower($1)}');
             % Test if the property is writable
-            assert(obj.checkProperty(property),'lccb:set:readonly',...
-                ['The ' propName ' has been set previously and cannot be changed!']);
+            if(~obj.checkProperty(property))
+                propName = lower(property(1:end-(property(end) == '_')));
+                error('lccb:set:readonly',...
+                    ['The ' propName ' has been set previously and cannot be changed!']);
+            end
             
             % Test if the supplied value is valid
-            assert(obj.checkValue(property,value),'lccb:set:invalid',...
-                ['The supplied ' propName ' is invalid!']);
+            if(~obj.checkValue(property,value))
+                propName = lower(property(1:end-(property(end) == '_')));
+                error('lccb:set:invalid',...
+                    ['The supplied ' propName ' is invalid!']);
+            end
         end
         
         function status = checkProperty(obj,property)
