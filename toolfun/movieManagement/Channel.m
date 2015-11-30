@@ -362,8 +362,11 @@ classdef Channel < hgsetget & matlab.mixin.Copyable
             
             % Get validator for single property
             validator=Channel.getPropertyValidator(property);
-            propName = regexprep(regexprep(property,'(_\>)',''),'([A-Z])',' ${lower($1)}');
-            assert(~isempty(validator),['No validator defined for property ' propName]);
+            if(isempty(validator))
+                propName = lower(property(1:end-(property(end) == '_')));
+                error('Channel:checkValue:noValidator', ...
+                    'No validator defined for property %s',propName);
+            end
             
             % Return result of validation
             status = isempty(value) || validator(value);
