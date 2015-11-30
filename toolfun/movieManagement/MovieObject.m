@@ -450,7 +450,7 @@ classdef  MovieObject < hgsetget
     
     methods(Static)
 
-        function [obj, filepath] = loadMatFile(class, filepath)
+        function [obj, filepath] = loadMatFile(classname, filepath)
             % Load a movie object saves as a MAT file on disk
             
             % Retrieve the absolute path
@@ -459,27 +459,29 @@ classdef  MovieObject < hgsetget
             
             % Import movie object from MAT file
             try
-                % List variables in the path
-                vars = whos('-file', filepath);
+                 % Load movie object
+                 % (takes same time as checking vars via whos)
+                data = load(filepath, '-mat');
             catch whosException
                 ME = MException('lccb:movieObject:load', 'Fail to open file. Make sure it is a MAT file.');
                 ME = ME.addCause(whosException);
                 throw(ME);
             end
             
+            vars = fieldnames(data);
+            classes = structfun(@class,data,'UniformOutput',false);
+            
             % Check if a single movie object is in the variables
-            isMovie = cellfun(@(x) strcmp(x, class) || ...
-                any(strcmp(superclasses(x), class)),{vars.class});
+            isMovie = cellfun(@(x) strcmp(x, classname) || ...
+                any(strcmp(superclasses(x), classname)),struct2cell(classes));
             assert(any(isMovie),'lccb:movieObject:load', ...
-                'No object of type %s is found in selected MAT file.', class);
+                'No object of type %s is found in selected MAT file.', classname);
             assert(sum(isMovie)==1,'lccb:movieObject:load', ...
                 'Multiple objects are found in selected MAT file.');
-            assert(isequal(prod(vars(isMovie).size), 1),'lccb:movieObject:load', ...
+            assert(isequal(prod(cellfun('prodofsize',struct2cell(data))), 1),'lccb:movieObject:load', ...
                 'Multiple objects are found in selected MAT file.');
             
-            % Load movie object
-            data = load(filepath, '-mat', vars(isMovie).name);
-            obj= data.(vars(isMovie).name);
+            obj= data.(vars{isMovie});
         end
         
         function validator = getPropertyValidator(property)
