@@ -492,10 +492,13 @@ classdef  MovieObject < hgsetget
         function validator = getPropertyValidator(property)
             % Retrieve the validator for the specified property
             validator=[];
-            if ismember(property,{'outputDirectory_','notes_'})
-                validator=@ischar;
-            elseif strcmp(property, 'omeroId_')
-                validator = @isposint;
+            switch(property)
+                case 'outputDirectory_'
+                    validator = @ischar;
+                case 'notes_'
+                    validator = @ischar;
+                case 'omeroId_'
+                    validator = @isposint;
             end
         end
         
