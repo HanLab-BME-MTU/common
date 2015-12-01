@@ -370,10 +370,11 @@ if ~isempty(indxConf)
         principalComponents = [-0.3059 0.9518; 0.9518 0.3059];
         traj = xyzCoord(:,1:2);
         trajLength = length(traj);
+        trackCenter(iTrack,:) = nanmean(xyzCoord(:,1:probDim));
         if trajLength <= 100 %Could even go up to 100, look into further
-            trajMean = nanmean(xyzCoord(:,1:probDim));
-            distXYConf = traj- repmat(trajMean,trajLength,1);
-            distConf = sqrt(sum(distXYConf.^2,2));
+            distXYConf = traj- repmat(trackCenter(iTrack,:),trajLength,1);
+            % unused
+            % distConf = sqrt(sum(distXYConf.^2,2));
             posXYConf = distXYConf > 0;
             numSwitchConf = length(find(sum(diff(posXYConf),2) > 0));
             fracSwitchConf = numSwitchConf / (trajLength-1);
