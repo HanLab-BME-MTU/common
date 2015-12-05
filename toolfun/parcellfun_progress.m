@@ -53,7 +53,7 @@ function [ varargout ] = parcellfun_progress( func, varargin )
     ip.StructExpand = true;
     ip.KeepUnmatched = true;
     ip.addParameter('UniformOutput',true,@islogical);
-    ip.addParameter('ErrorHandler',@rethrow,@(x) isa(x,'function_handle'));
+    ip.addParameter('ErrorHandler',@defaultErrorHandler,@(x) isa(x,'function_handle'));
     ip.addParameter('UpdateInterval',1,@(x) validateattributes(x,{'numeric'},{'scalar'}));
     ip.addParameter('DisplayFunc',@defaultDisplayFunc,@(x) isa(x,'function_handle') || ischar(x));
     ip.addParameter('ParallelPool',[]);
@@ -94,7 +94,7 @@ function [ varargout ] = parcellfun_progress( func, varargin )
     end
 
     if(isempty(in.UseErrorStruct))
-        if(nargin(in.ErrorFunc) == 1)
+        if(nargin(in.ErrorHandler) == 1)
             in.UseErrorStruct = true;
         else
             in.UseErrorStruct = false;
@@ -140,23 +140,31 @@ function [ varargout ] = parcellfun_progress( func, varargin )
     while(d.nCompleted < d.nRuns)
         d.completedIdx = -1;
         % Process finished workers available at the moment
-        while(~isempty(d.completedIdx))
+        while(~isempty(d.completedIdx) && d.nCompleted < d.nRuns)
             currentOut = cell(1,nout);
             try
                 [d.completedIdx,currentOut{:}] = fetchNext(F,in.UpdateInterval);
             catch err
                 d.nErrors = d.nErrors + 1;
                 d.completedIdx = find([F.Read] & d.notComplete',1);
-                if(useErrorStruct)
+                if(in.UseErrorStruct)
                     % For backwards compatability
                     s.identifier = err.identifier;
                     s.message = err.message;
-                    s.index = completedIdx;
+                    s.index = d.completedIdx;
                     s.d = d;
-                    [currentOut{:}] = in.ErrorHandler(err);
+                    if(nargout(in.ErrorHandler))
+                        [currentOut{1:nargout(in.ErrorHandler)}] = in.ErrorHandler(s);
+                    else
+                        in.ErrorHandler(s);
+                    end
                 else
                     % Passes a MException and the full status data structure
-                    [currentOut{:}] = in.ErrorHandler(err,d);
+                    if(nargout(in.ErrorHandler))
+                        [currentOut{:}] = in.ErrorHandler(err,d);
+                    else
+                        in.ErrorHandler(err,d);
+                    end
                 end
             end
             if(~isempty(d.completedIdx))
@@ -194,7 +202,9 @@ function [ varargout ] = parcellfun_progress( func, varargin )
         F = parfeval(in.ParallelPool,func,nout,varargin{:});
     end
 end
-
+function defaultErrorHandler(exception, d)
+    rethrow(exception);
+end
 function nProgressOut = defaultDisplayFunc(d)
     bp = repmat('\b',1,d.nProgressOut);
     nowDT = datetime('now');
