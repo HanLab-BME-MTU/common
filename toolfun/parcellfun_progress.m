@@ -47,7 +47,8 @@ function [ varargout ] = parcellfun_progress( func, varargin )
 % See also cellfun, distributed.cellfun, parfor
 
 % Mark Kittisopikul, December 2015
-    nout = nargout;
+
+    %% Process Input
 
     ip = inputParser;
     ip.StructExpand = true;
@@ -101,7 +102,9 @@ function [ varargout ] = parcellfun_progress( func, varargin )
         end
     end
 
-    % Initialize variables
+    %% Initialize variables
+    % Number of outputs
+    nout = nargout;
     % Size of cell input
     inSize = size(varargin{1});
     % Number of elements in cell input (number of parallel tasks)
@@ -110,9 +113,21 @@ function [ varargout ] = parcellfun_progress( func, varargin )
     out = cell(d.nRuns,nout);
     % Logical array to mark which jobs have completed
     d.notComplete = true(d.nRuns,1);
+    % Number of workers completed
+    d.nCompleted = 0;
+    % Time it took to complete d.nCompletedTime
+    d.nCompletedTime = 0;
+    % Number of errors
+    d.nErrors = 0;  
+    % Number of bytes output by progress, for backspacing
+    d.nProgressOut = 0;
+    % cache number of workers
+    nWorkers = in.ParallelPool.NumWorkers;
+    % Index from 1 to nRuns in case we need to figure out d.completedIdx
+    idx = 1:d.nRuns;
     
-    % Start parallel execution
-    d.startDT = datetime('now');
+    %% Start parallel execution
+    d.startTimerVal = tic;
     F = cellfun(@parfunc,varargin{1:paramIdx-1},'UniformOutput',false);
     F = [F{:}];
     
@@ -120,21 +135,12 @@ function [ varargout ] = parcellfun_progress( func, varargin )
     % cleanup
     cleanup = onCleanup(@()  cancel(F));
 
-    % Number of workers completed
-    d.nCompleted = 0;
-    % Time it took to complete d.nCompletedTime
-    d.nCompletedTime = d.startDT;
-    % Number of errors
-    d.nErrors = 0;
-    
-    % Number of bytes output by progress, for backspacing
-    d.nProgressOut = 0;
+    % Initial display function
     d.nProgressOut = in.DisplayFunc(d);
     
     % We will not update the estimate until we have processed all finished
     % workers, so store a copy of the structure
     dlast = d;
-   
     
     % Main output checking loop
     while(d.nCompleted < d.nRuns)
@@ -143,12 +149,26 @@ function [ varargout ] = parcellfun_progress( func, varargin )
         % Otherwise the estimate would update too frequently when multiple
         % workers return at the same time.
         while(~isempty(d.completedIdx) && d.nCompleted < d.nRuns)
+            % We do not know completedIdx Yet
             currentOut = cell(1,nout);
             try
                 [d.completedIdx,currentOut{:}] = fetchNext(F,in.UpdateInterval);
             catch err
                 d.nErrors = d.nErrors + 1;
-                d.completedIdx = find([F.Read] & d.notComplete',1);
+                % Find d.completedIdx
+                notCompleteIdx = idx(d.notComplete);
+                % Calls to parallel.Future.Read are expensive
+                % Minimize calls to F.Read by using a for loop
+                % Also, jobs are likely to complete sequentially, so we
+                %   will probably find the answer quickly.
+                for i=notCompleteIdx
+                    if(F(i).Read)
+                        d.completedIdx = i;
+                        break;
+                    end
+                end
+                % Functionally quivalent to the above, but not as fast
+                % d.completedIdx = notCompleteIdx([F(d.notComplete).Read]);
                 if(in.UseErrorStruct)
                     % For backwards compatability
                     s.identifier = err.identifier;
@@ -174,9 +194,10 @@ function [ varargout ] = parcellfun_progress( func, varargin )
                 d.notComplete(d.completedIdx) = false;
                 out(d.completedIdx,:) = currentOut;
                 d.nCompleted = d.nCompleted + 1;
-                d.nCompletedTime = datetime('now');
+                d.nCompletedTime = toc(d.startTimerVal);
             end
-            if(d.nCompleted - dlast.nCompleted > in.ParallelPool.NumWorkers)
+            if(d.nCompleted - dlast.nCompleted > nWorkers)
+                % Force estimate update after nWorkers have finished
                 d.completedIdx = [];
             else
                 d.nProgressOut = in.DisplayFunc(dlast);
@@ -209,18 +230,19 @@ function defaultErrorHandler(exception, d)
     rethrow(exception);
 end
 function nProgressOut = defaultDisplayFunc(d)
+    % Prepare to erase previous output
     bp = repmat('\b',1,d.nProgressOut);
-    nowDT = datetime('now');
-    sinceStart = nowDT - d.startDT;
+    sinceStart = duration(0,0,toc(d.startTimerVal));
     if(~d.nCompleted)
         estDuration = 'hh:mm:ss';
         remaining = 'hh:mm:ss';
     else
-        estDuration = (d.nCompletedTime-d.startDT)*d.nRuns/d.nCompleted;
+        estDuration = duration(0,0,d.nCompletedTime*d.nRuns/d.nCompleted);
         remaining = estDuration - sinceStart;
     end
     if(d.nRuns ~= d.nCompleted)
         if(d.nErrors > 0)
+            % Count errors
             nProgressOut = fprintf([bp ...
                 ' %g / %g = %3.0f%%\n' ...
                 'Errors: %g / %g = %3.0f%%\n' ...
@@ -248,7 +270,9 @@ function nProgressOut = defaultDisplayFunc(d)
                 ) - d.nProgressOut;
         end
     else
+        % Final display when finishing
         if(d.nErrors > 0)
+            % Show nErrors
             nProgressOut = fprintf([bp ...
                 ' %g / %g' ...
                 '; # of errors: %g (%2.0f%%).' ...
