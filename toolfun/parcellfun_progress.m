@@ -139,7 +139,9 @@ function [ varargout ] = parcellfun_progress( func, varargin )
     % Main output checking loop
     while(d.nCompleted < d.nRuns)
         d.completedIdx = -1;
-        % Process finished workers available at the moment
+        % Process finished workers available at the moment.
+        % Otherwise the estimate would update too frequently when multiple
+        % workers return at the same time.
         while(~isempty(d.completedIdx) && d.nCompleted < d.nRuns)
             currentOut = cell(1,nout);
             try
@@ -168,12 +170,13 @@ function [ varargout ] = parcellfun_progress( func, varargin )
                 end
             end
             if(~isempty(d.completedIdx))
+                % Worker returned output
                 d.notComplete(d.completedIdx) = false;
                 out(d.completedIdx,:) = currentOut;
                 d.nCompleted = d.nCompleted + 1;
                 d.nCompletedTime = datetime('now');
             end
-            if(in.UpdateInterval > 1)
+            if(d.nCompleted - dlast.nCompleted > in.ParallelPool.NumWorkers)
                 d.completedIdx = [];
             else
                 d.nProgressOut = in.DisplayFunc(dlast);
