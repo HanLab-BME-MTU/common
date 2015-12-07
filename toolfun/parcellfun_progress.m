@@ -24,6 +24,7 @@ function [ varargout ] = parcellfun_progress( func, varargin )
 %    .startDT - datetime object indicating when parallel calls were queued
 %    .notCompleted - logical array that is true if an element is not complete
 %    .completedIdx - the last index of the completed feature
+%    .F parallel.FevalFuture objects
 %    Output will be the number of characters printed by this function that is solely
 %      passed back into the function on the next iteration
 %
@@ -36,6 +37,10 @@ function [ varargout ] = parcellfun_progress( func, varargin )
 %  Heading - optional char to be output by fprintf before iterating
 %  UseErrorStruct - true: pass error struct as defined in cellfun
 %                  false: pass MException and same structure as DisplayFunc
+%  NumOutputs - specify number of outputs
+%  ReturnFutures - parallel.FevalFuture objects as first output
+%                  and cell array of func outputs as second output
+%  DisplayDiaries - display output of func as it's output is retrieved
 %
 % OUTPUT
 % Variable output as in cellfun
@@ -60,6 +65,12 @@ function [ varargout ] = parcellfun_progress( func, varargin )
     ip.addParameter('ParallelPool',[]);
     ip.addParameter('Heading','',@ischar);
     ip.addParameter('UseErrorStruct',[],@islogical);
+    ip.addParameter('NumOutputs',[],@(x) validateattributes(x,{'numeric'},{'scalar'}));
+    ip.addParameter('ReturnFutures',false,@islogical);
+    ip.addParameter('DisplayDiaries',false,@islogical);
+    
+    narginchk(2,Inf);
+        
 
     % Find first non-cell input to begin parsing parameters
     for inIdx = 1:length(varargin)
@@ -101,10 +112,19 @@ function [ varargout ] = parcellfun_progress( func, varargin )
             in.UseErrorStruct = false;
         end
     end
+    
+    if(isempty(in.NumOutputs))
+        in.NumOutputs = nargout - in.ReturnFutures;
+    end
+    
+    if(nargout > in.NumOutputs + in.ReturnFutures)
+        error('parcellfun_progress:InvalidNumOutputsVsNargout', ...
+            'NumOutputs cannot be less than the requested number of outputs');
+    end
 
     %% Initialize variables
     % Number of outputs
-    nout = nargout;
+    nout = in.NumOutputs;
     % Size of cell input
     inSize = size(varargin{1});
     % Number of elements in cell input (number of parallel tasks)
@@ -128,12 +148,12 @@ function [ varargout ] = parcellfun_progress( func, varargin )
     
     %% Start parallel execution
     d.startTimerVal = tic;
-    F = cellfun(@parfunc,varargin{1:paramIdx-1},'UniformOutput',false);
-    F = [F{:}];
+    d.F = cellfun(@parfunc,varargin{1:paramIdx-1},'UniformOutput',false);
+    d.F = [d.F{:}];
     
     % When this function completes, user quits, or exception occurs,
     % cleanup
-    cleanup = onCleanup(@()  cancel(F));
+    cleanup = onCleanup(@()  cancel(d.F));
 
     % Initial display function
     d.nProgressOut = in.DisplayFunc(d);
@@ -150,9 +170,10 @@ function [ varargout ] = parcellfun_progress( func, varargin )
         % workers return at the same time.
         while(~isempty(d.completedIdx) && d.nCompleted < d.nRuns)
             % We do not know completedIdx Yet
+            % Define currentout, there is no nargout bump
             currentOut = cell(1,nout);
             try
-                [d.completedIdx,currentOut{:}] = fetchNext(F,in.UpdateInterval);
+                [d.completedIdx,currentOut{1:nout}] = fetchNext(d.F,in.UpdateInterval);
             catch err
                 d.nErrors = d.nErrors + 1;
                 % Find d.completedIdx
@@ -162,13 +183,13 @@ function [ varargout ] = parcellfun_progress( func, varargin )
                 % Also, jobs are likely to complete sequentially, so we
                 %   will probably find the answer quickly.
                 for i=notCompleteIdx
-                    if(F(i).Read)
+                    if(d.F(i).Read)
                         d.completedIdx = i;
                         break;
                     end
                 end
                 % Functionally quivalent to the above, but not as fast
-                % d.completedIdx = notCompleteIdx([F(d.notComplete).Read]);
+                % d.completedIdx = notCompleteIdx([d.F(d.notComplete).Read]);
                 if(in.UseErrorStruct)
                     % For backwards compatability
                     s.identifier = err.identifier;
@@ -176,14 +197,14 @@ function [ varargout ] = parcellfun_progress( func, varargin )
                     s.index = d.completedIdx;
                     s.d = d;
                     if(nargout(in.ErrorHandler))
-                        [currentOut{1:nargout(in.ErrorHandler)}] = in.ErrorHandler(s);
+                        [currentOut{1:nout}] = in.ErrorHandler(s);
                     else
                         in.ErrorHandler(s);
                     end
                 else
                     % Passes a MException and the full status data structure
                     if(nargout(in.ErrorHandler))
-                        [currentOut{:}] = in.ErrorHandler(err,d);
+                        [currentOut{1:nout}] = in.ErrorHandler(err,d);
                     else
                         in.ErrorHandler(err,d);
                     end
@@ -195,6 +216,13 @@ function [ varargout ] = parcellfun_progress( func, varargin )
                 out(d.completedIdx,:) = currentOut;
                 d.nCompleted = d.nCompleted + 1;
                 d.nCompletedTime = toc(d.startTimerVal);
+                if(in.DisplayDiaries)
+                    fprintf('=> Diary of Index %d\n\n',d.completedIdx);
+                    disp(d.F(d.completedIdx).Diary);
+                    d.nProgressOut = 0;
+                    dlast.nProgressOut = 0;
+                    fprintf('\n\n<= Diary of Index %d\n\n',d.completedIdx);
+                end
             end
             if(d.nCompleted - dlast.nCompleted > nWorkers)
                 % Force estimate update after nWorkers have finished
@@ -211,7 +239,7 @@ function [ varargout ] = parcellfun_progress( func, varargin )
     
     % Convert 2D cell array into a 1D cell array of cells
     varargout = num2cell(out,1);
-    if(in.UniformOutput)
+    if(in.UniformOutput && nout ~= 0)
         varargout = cellfun(@cell2mat,varargout,'UniformOutput',false);
         nArgOut = cellfun('prodofsize',varargout);
         assert(numel(nArgOut) == 1 && all(nArgOut(1) == nArgOut(2:end)), ...
@@ -220,6 +248,10 @@ function [ varargout ] = parcellfun_progress( func, varargin )
     end
     % Make output reflect size of input
     varargout = cellfun(@(out) reshape(out,inSize),varargout,'UniformOutput',false);
+    
+    if(in.ReturnFutures)
+        varargout = [ {d.F} varargout];
+    end
         
     % Wrap func in parfeval for evaluation
     function F = parfunc(varargin)
