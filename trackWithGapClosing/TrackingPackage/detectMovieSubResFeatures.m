@@ -42,7 +42,7 @@ p = parseProcessParams(subResDetProc,paramsIn);
 %% --------------- Initialization ---------------%%
 
 nChan=numel(movieData.channels_);
-% Set up the input directories
+%Set up the input directories
 inFilePaths = cell(1,nChan);
 for i = p.ChannelIndex
     inFilePaths{1,i} = movieData.getChannelPaths{i};
@@ -52,14 +52,17 @@ subResDetProc.setInFilePaths(inFilePaths);
 % Set up the output directories
 outFilePaths = cell(1,nChan);
 saveResults(nChan,1)=struct();
+dName = 'detections_for_channel_';
 for i = p.ChannelIndex;    
-    saveResults(i).dir = p.OutputDirectory ;
+    currDir = [p.OutputDirectory filesep dName num2str(i)];
+    saveResults(i).dir = currDir;
     saveResults(i).filename = ['Channel_' num2str(i) '_detection_result.mat'];
     %Create string for current directory
     outFilePaths{1,i} = [saveResults(i).dir filesep saveResults(i).filename ];
+    subResDetProc.setOutFilePaths(outFilePaths{1,i},i);
+    mkClrDir(currDir);
 end
-mkClrDir(p.OutputDirectory);
-subResDetProc.setOutFilePaths(outFilePaths);
+
 
 %% --------------- Sub-resolution object detection ---------------%%% 
 disp('Starting detecting diffraction-limited objects...')

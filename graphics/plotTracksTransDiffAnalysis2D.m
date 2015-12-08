@@ -260,7 +260,78 @@ hold on
 tracksXP = tracksX(timeRange(1):timeRange(2),:);
 tracksYP = tracksY(timeRange(1):timeRange(2),:);
 
+
+%% New plotting strategy
+
+%Build new matrix which indicates when tracks change diffusion
+
+base = NaN(size(tracksX));
+for k = 1:length(trackSegmentType)
+    for j = 1:size(trackSegmentType(k).momentScalingSpectrum,1)
+    base(trackSegmentType(k).momentScalingSpectrum(j,1):trackSegmentType(k).momentScalingSpectrum(j,2),k) = ...
+    trackSegmentType(k).momentScalingSpectrum(j,3);
+    end
+end
+numTimePlot = timeRange(2) - timeRange(1) + 1;
+%Go through matrix and map what diffusion is present
+%unique
+diffTypes = unique(base);
+
+for k = 1:length(diffTypes)
+    switch diffTypes(k)
+        case 0
+            ind = find(base(:) ~=0);
+            copyX = tracksXP;
+            copyY = tracksYP;
+            copyX(ind) = NaN;
+            copyY(ind) = NaN;
+            for i=1:numTimePlot-1
+                validData=~all(isnan(copyX(i:i+1,:)),1);
+                lineWithGaps(copyX(i:i+1,validData), ...
+                copyY(i:i+1,validData), ...
+                'Color',[0.5 0.3 0]);
+            end
+        case 1
+            ind = find(base(:) ~=1);
+            copyX = tracksXP;
+            copyY = tracksYP;
+            copyX(ind) = NaN;
+            copyY(ind) = NaN;
+            for i=1:numTimePlot-1
+                validData=~all(isnan(copyX(i:i+1,:)),1);
+                lineWithGaps(copyX(i:i+1,validData), ...
+                copyY(i:i+1,validData), ...
+                'Color',[0 0 1]);
+            end
+        case 2
+            ind = find(base(:) ~=2);
+            copyX = tracksXP;
+            copyY = tracksYP;
+            copyX(ind) = NaN;
+            copyY(ind) = NaN;
+            for i=1:numTimePlot-1
+                validData=~all(isnan(copyX(i:i+1,:)),1);
+                lineWithGaps(copyX(i:i+1,validData), ...
+                copyY(i:i+1,validData), ...
+                'Color','c');
+            end
+        case 3
+    
+            ind = find(base(:) ~=3);
+            copyX = tracksXP;
+            copyY = tracksYP;
+            copyX(ind) = NaN;
+            copyY(ind) = NaN;
+            for i=1:numTimePlot-1
+                validData=~all(isnan(copyX(i:i+1,:)),1);
+                lineWithGaps(copyX(i:i+1,validData), ...
+                copyY(i:i+1,validData), ...
+                'Color','m');
+            end
+    end
+end
 %plot track segments with their appropriate diffusion type colors
+%{
 for i = 1 : numTrackSegments
 
     %missing intervals are indicated by a dotted black line
@@ -298,6 +369,11 @@ for i = 1 : numTrackSegments
     for iPart = 1 : size(segmentClass,1)
 
         switch segmentClass(iPart,3)
+            
+            case 0 %immobile based on MSS
+                plot(tracksXP(segmentClass(iPart,1):segmentClass(iPart,2),i),...
+                    tracksYP(segmentClass(iPart,1):segmentClass(iPart,2),i),'Color',[0.5 0.3 0]);
+            
 
             case -1 %linear based on asymmetry
                 plot(tracksXP(segmentClass(iPart,1):segmentClass(iPart,2),i),...
@@ -343,7 +419,7 @@ for i = 1 : numTrackSegments
     end %(for iPart = 1 : size(segmentClass,1))
 
 end %(for i = 1 : numTrackSegments)
-
+%}
 %show merges and splits
 if mergeSplit
 

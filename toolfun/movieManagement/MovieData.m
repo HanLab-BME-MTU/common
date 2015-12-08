@@ -1,4 +1,4 @@
-classdef  MovieData < MovieObject
+classdef  MovieData < MovieObject & matlab.mixin.Heterogeneous
     % Concrete implementation of MovieObject for a single movie
     %
     % See also MovieData.MovieData
@@ -533,9 +533,7 @@ classdef  MovieData < MovieObject
             % Backup existing file and save each movie in the list
             for MD = allMovies
                 fullPath = MD.getFullPath();
-                if exist(fullPath,'file')
-                    movefile(fullPath,[fullPath(1:end-3) 'old'],'f');
-                end
+                MD.moveToBackup();
                 save(fullPath, 'MD');
             end
             
@@ -544,6 +542,7 @@ classdef  MovieData < MovieObject
                 omeroSave(ancestor);
             end
         end
+
         
         function input = getSampledOutput(obj,index)
             % Read process names from parameters

@@ -810,12 +810,14 @@ if numSigmaIter
         numCalcs = length(psfSigma);
         if numCalcs > 0
             
-            [psfSigma,sigmaStd,inlierIndx] = robustMean(psfSigma);
+            [psfSigma,~,inlierIndx] = robustMean(psfSigma,[],3,0,true);
+            
+            numInlierIndx = sum(inlierIndx);
             
             %accept new sigma if there are enough observations and inliers
-            acceptCalc = (numCalcs >= 100 && length(inlierIndx) >= 0.7*numCalcs) || ...
-                (numCalcs >= 50 && length(inlierIndx) >= 0.9*numCalcs) || ...
-                (numCalcs >= 10 && length(inlierIndx) == numCalcs);
+            acceptCalc = (numCalcs >= 100 && numInlierIndx >= 0.7*numCalcs) || ...
+                (numCalcs >= 50 && numInlierIndx >= 0.9*numCalcs) || ...
+                (numCalcs >= 10 && numInlierIndx == numCalcs);
             
         else
             
@@ -825,8 +827,8 @@ if numSigmaIter
         
         %show new sigma if estimation is accepted
         if acceptCalc
-            disp(sprintf('PSF sigma = %1.3f (%d inliers out of %d observations)',...
-                psfSigma,length(inlierIndx),numCalcs));
+            fprintf('PSF sigma = %1.3f (%d inliers out of %d observations)',...
+                psfSigma,numInlierIndx,numCalcs);
         else %otherwise alert user that input sigma was retained
             psfSigma = psfSigmaIn;
             disp('Not enough observations to change PSF sigma, using input PSF sigma');

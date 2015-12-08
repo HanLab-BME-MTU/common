@@ -6,15 +6,22 @@ classdef  TiffSeriesReader < Reader
     properties
         paths
         filenames
+        force3D
     end
     
     methods
         
         % Constructor
-        function obj = TiffSeriesReader(channelPaths)
+        function obj = TiffSeriesReader(channelPaths,varargin)
+            ip = inputParser;
+            ip.CaseSensitive = false;
+            ip.addParamValue('force3D',false, @islogical);
+            ip.parse(varargin{:});
+            
             obj.paths = channelPaths;
             obj.sizeC = numel(channelPaths);
             obj.filenames = cell(obj.sizeC, 1);
+            obj.force3D = ip.Results.force3D;
         end
         
         function checkPath(obj, iChan)
@@ -39,9 +46,15 @@ classdef  TiffSeriesReader < Reader
                     sizeZ(iChan) = unique(cellfun(@numel, imInfo));
                     sizeT(iChan) = length(fileNames);
                 else % if single file, assume stack and check for # of files
-                    info = imfinfo(fullfile(obj.paths{iChan}, fileNames{1}));
-                    sizeT(iChan) = numel(info);
-                    sizeZ(iChan) = 1;                    
+                    if(obj.force3D)
+                        info = imfinfo(fullfile(obj.paths{iChan}, fileNames{1}));
+                        sizeT(iChan) = 1;
+                        sizeZ(iChan) = numel(info);                    
+                    else
+                        info = imfinfo(fullfile(obj.paths{iChan}, fileNames{1}));
+                        sizeT(iChan) = numel(info);   
+                        sizeZ(iChan) = 1;  
+                    end
                 end
                 bitDepth(iChan) = unique(cellfun(@(x)(x.BitDepth), imInfo));
             end
