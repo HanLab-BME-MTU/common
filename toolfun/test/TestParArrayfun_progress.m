@@ -27,6 +27,8 @@ classdef TestParArrayfun_progress < TestParCellfun_progress
             end
         end
         function testInputVersusParam(self)
+            % Can pararrayfun_progress tell the difference between
+            % 'UniformOutput' as an input versus a parameter?
             out = self.func(@self.identity,'UniformOutput');
             assertEqual(out,'UniformOutput');
             out = self.func(@self.identity,'UniformOutput','UniformOutput',false);

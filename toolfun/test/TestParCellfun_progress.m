@@ -1,11 +1,16 @@
 classdef TestParCellfun_progress < TestCase
+    %TestParCellfun_progress Tests function pararrayfun_progress
     properties
+        % parallel.pool object to clean up on delete
         pool
+        % sample inputs
         A
         B
+        % parallel fucntion
         func
+        % Use nonparfunc for comparison so we can run the same tests for
+        % cellfun and arrayfun
         nonparfunc
-        cleanup
     end
     methods
         function self = TestParCellfun_progress(name)
@@ -30,6 +35,7 @@ classdef TestParCellfun_progress < TestCase
             end
         end
         function tearDown(self)
+            % Keep the parallel pool until object is dereferenced
 %             delete(self.pool);
         end
         function testIdentity(self)
@@ -103,10 +109,15 @@ classdef TestParCellfun_progress < TestCase
             self.func(@disp,self.A,'DisplayDiaries',true);
         end
         function testUseErrorStruct(self)
+            % The default backwards compatible behavior with cellfun is to use an
+            % old-style Exception structure
             out = self.func(@self.badFunction,self.A, ...
                 'UseErrorStruct',true, ...
                 'ErrorHandler',@(varargin) isa(varargin{1},'MException'));
             assertEqual(out,false(size(self.A)));
+            % This function allows you to use the new-style MException
+            % object if you want to turn it on. Plus you get access to the
+            % data structure
             out = self.func(@self.badFunction,self.A, ...
                 'UseErrorStruct',false, ...
                 'ErrorHandler',@(varargin) isa(varargin{1},'MException'));
