@@ -1,4 +1,4 @@
-function ML=indexLSFMData(moviePaths,moviesRoot,varargin)
+function ML=indexLSFMData(moviePaths,movieListAnalysisDir,varargin)
 % - If necessary, batch sort time points in ch0/, ch1/ 
 % - Optionnaly deskew, dezip on demand)
 % - Create movieData and analysis folder for each movie
@@ -38,7 +38,7 @@ ip = inputParser;
 ip.CaseSensitive = false;
 ip.KeepUnmatched = true;
 ip.addRequired('moviePaths', @(x)(iscell(x)||ischar(x)));
-ip.addRequired('moviesRoot', @ischar);
+ip.addRequired('movieListAnalysisDir', @ischar);
 ip.addParamValue('movieListName','movieList.mat', @ischar);
 ip.addParamValue('deskew',false, @islogical);
 ip.addParamValue('writeData',true, @islogical);
@@ -50,7 +50,7 @@ ip.addParamValue('timeInterval',1, @isfloat);
 ip.addParamValue('newDataPath',[], @ischar);
 ip.addParamValue('chStartIdx',1, @isnumeric);
 ip.addParamValue('filePattern','Iter_ sample_scan_3p35ms_zp4um_ch{ch}_stack*', @ischar); 
-ip.parse(moviePaths,moviesRoot,varargin{:});
+ip.parse(moviePaths,movieListAnalysisDir,varargin{:});
 
 p=ip.Results;
 writeData=p.writeData;
@@ -169,8 +169,8 @@ for cellIdx=1:length(moviePaths)
 end
 
 
-mkdir([moviesRoot filesep 'analysis']);
-ML=MovieList(MDs,[moviesRoot filesep 'analysis'],'movieListFileName_',p.movieListName,'movieListPath_',[moviesRoot filesep 'analysis']);
+mkdir([movieListAnalysisDir filesep 'analysis']);
+ML=MovieList(MDs,[movieListAnalysisDir filesep 'analysis'],'movieListFileName_',p.movieListName,'movieListPath_',[movieListAnalysisDir filesep 'analysis']);
 ML.save();
 
 
