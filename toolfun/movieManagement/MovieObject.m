@@ -168,7 +168,12 @@ classdef  MovieObject < hgsetget
                 catch err
                     % Do not warn if fullPath does not exist
                     % It usually does, so we catch it rather than pretest
-                    if(~strcmp(err.identifier,'MATLAB:MOVEFILE:FileDoesNotExist'))
+                    if(strcmp(err.identifier,'MATLAB:MOVEFILE:OSError') && ...
+                       exist(fullPath,'file') ~= 2)
+                    % MATLAB:MOVIEFILE:OSError is an undocumented error if
+                    % the file does not exist
+                    % do nothing
+                    elseif(~strcmp(err.identifier,'MATLAB:MOVEFILE:FileDoesNotExist'))
                         warning('MovieObject:saveBackup:Failure', ...
                             'Failed to save backup\n%s to\n%s', ...
                             fullPath,backupPath);
