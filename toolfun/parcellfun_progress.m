@@ -197,9 +197,9 @@ function [ varargout ] = parcellfun_progress( func, varargin )
                     s.index = d.completedIdx;
                     s.d = d;
                     if(nargout(in.ErrorHandler))
-                        [currentOut{1:nout}] = in.ErrorHandler(s);
+                        [currentOut{1:nout}] = in.ErrorHandler(s,d.InputArguments{:});
                     else
-                        in.ErrorHandler(s);
+                        in.ErrorHandler(s,d.InputArguments{:});
                     end
                 else
                     % Passes a MException and the full status data structure
