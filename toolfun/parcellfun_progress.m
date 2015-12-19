@@ -148,15 +148,17 @@ function [ varargout ] = parcellfun_progress( func, varargin )
     
     %% Start parallel execution
     d.startTimerVal = tic;
+    
+    % Initial display function
+    d.nProgressOut = in.DisplayFunc(d);
+    drawnow;
+    
     d.F = cellfun(@parfunc,varargin{1:paramIdx-1},'UniformOutput',false);
     d.F = [d.F{:}];
     
     % When this function completes, user quits, or exception occurs,
     % cleanup
     cleanup = onCleanup(@()  cancel(d.F));
-
-    % Initial display function
-    d.nProgressOut = in.DisplayFunc(d);
     
     % We will not update the estimate until we have processed all finished
     % workers, so store a copy of the structure
