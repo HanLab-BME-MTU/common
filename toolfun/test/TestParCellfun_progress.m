@@ -77,8 +77,8 @@ classdef TestParCellfun_progress < TestCase
             assert(errorCaught);
             errorCaught = false;
             try
-                parout = self.func(@self.badFunction,self.A,'ErrorHandler',@(varagin) NaN);
-            catch
+                parout = self.func(@self.badFunction,self.A,'ErrorHandler',@(varargin) NaN);
+            catch err
                 errorCaught = true;
             end
             assert(~errorCaught);

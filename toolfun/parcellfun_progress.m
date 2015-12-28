@@ -192,6 +192,7 @@ function [ varargout ] = parcellfun_progress( func, varargin )
                 end
                 % Functionally quivalent to the above, but not as fast
                 % d.completedIdx = notCompleteIdx([d.F(d.notComplete).Read]);
+                d.InputArguments = d.F(d.completedIdx).InputArguments;
                 if(in.UseErrorStruct)
                     % For backwards compatability
                     s.identifier = err.identifier;
@@ -266,13 +267,18 @@ end
 function nProgressOut = defaultDisplayFunc(d)
     % Prepare to erase previous output
     bp = repmat('\b',1,d.nProgressOut);
-    sinceStart = duration(0,0,toc(d.startTimerVal));
+    sinceStart = toc(d.startTimerVal);
     if(~d.nCompleted)
         estDuration = 'hh:mm:ss';
         remaining = 'hh:mm:ss';
+        sinceStart = duration_shim(0,0,sinceStart);
     else
-        estDuration = duration(0,0,d.nCompletedTime*d.nRuns/d.nCompleted);
+        estDuration = d.nCompletedTime*d.nRuns/d.nCompleted;
+        estDuration = max(estDuration,sinceStart);
         remaining = estDuration - sinceStart;
+        estDuration = duration_shim(0,0,estDuration);
+        remaining = duration_shim(0,0,remaining);
+        sinceStart = duration_shim(0,0,sinceStart);
     end
     if(d.nRuns ~= d.nCompleted)
         if(d.nErrors > 0)
@@ -377,5 +383,15 @@ function nProgressOut = emulate_parfor_progress(d) %#ok<DEFNU>
         parfor_progress(0);
     end
 end
+function str = duration_shim(hours,minutes,seconds)
+    totalSeconds = hours*3600 + minutes*60 + seconds;
+    hour=uint8(floor(totalSeconds/3600.0));
+    minutes=uint8(floor(mod((totalSeconds/60.0), 60.0)));
+    seconds=uint8(floor(mod(totalSeconds,60.0)));
 
-
+    str=sprintf('%02d:%02d:%02d',...
+        hour,...
+        minutes,...
+        seconds ...
+    );
+end
