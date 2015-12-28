@@ -190,6 +190,7 @@ function [ varargout ] = parcellfun_progress( func, varargin )
                 end
                 % Functionally quivalent to the above, but not as fast
                 % d.completedIdx = notCompleteIdx([d.F(d.notComplete).Read]);
+                d.InputArguments = d.F(d.completedIdx).InputArguments;
                 if(in.UseErrorStruct)
                     % For backwards compatability
                     s.identifier = err.identifier;
