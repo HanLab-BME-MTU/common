@@ -1,4 +1,4 @@
-function cumDistrNGauss = calcCumDistrNGauss(param,abscissa,variableMean,...
+function [cumDistrNGauss,J] = calcCumDistrNGauss(param,abscissa,variableMean,...
     variableStd,logData,gaussParamIn,ratioTol)
 %CALCCUMDISTRNGAUSS calculates the cumulative distribution of N Gaussians
 %
@@ -63,6 +63,8 @@ function cumDistrNGauss = calcCumDistrNGauss(param,abscissa,variableMean,...
 %Khuloud Jaqaman, August 2006; major updates in 2014 and 2015
 
 %% Output
+% cumDistrNGauss    : cumulative sum of N gaussians, same size as abscissa
+% J                 : Jacobian, length(absicissa) x length(param)
 
 cumDistrNGauss = [];
 
@@ -168,11 +170,20 @@ switch variableMean
                     gaussMean = (firstGauss:numGauss+firstGauss-1)' * tmpMean;
                     gaussStd  = repmat(param(2),numGauss,1);
                 else
+                    % mu = log(m / sqrt(1 + v/m^2)) = log(m^2 / sqrt(m^2 + v)
+                    % sigma = sqrt(log(1 + v/m^2)) 
+                    % calculate mean of the non-logarithmized sample,m
+                    % m = exp(mu + sigma^2) = exp(mu)*exp(sigma^2)
                     dataMean1 = exp(param(1)+param(2)^2/2);
                     dataMean1 = dataMean1 / firstGauss;
+                    % calculate variance of the non-logarithmized sample,v
+                    % v = exp(sigma^2 + 2*mu)*[exp(sigma^2)-1]
+                    %   = m^2 * [v/m^2]
                     dataVar1 = exp(param(2)^2+2*param(1))*(exp(param(2)^2)-1);
+                    % means of other gaussians are multiples of first mean
                     dataMeanN = (firstGauss:numGauss+firstGauss-1)'*dataMean1;
                     dataVarN = repmat(dataVar1,numGauss,1);
+                    % compute the expected logarithmic mean and std
                     gaussMean = log(dataMeanN.^2./sqrt(dataVarN+dataMeanN.^2));
                     gaussStd = sqrt(log(dataVarN./dataMeanN.^2+1));
                 end
@@ -206,6 +217,7 @@ switch variableMean
                     %get their means, stds and amplitudes
                     param = reshape(param,numGauss,3);
                     if ~logData
+                        % mktiti: What is firstMode? firstGauss maybe?
                         tmpMean = param(1,1) / firstMode;
                         gaussMean = [firstGauss; param(2:end,1)] * tmpMean;
                     else
@@ -286,12 +298,17 @@ switch variableMean
                     else
                         dataMean1 = exp(param(1)+param(2)^2/2);
                         dataMean1 = dataMean1 / firstGauss;
-                        dataVar1 = exp(param(2)^2+2*param(1))*(exp(param(2)^2)-1);
-                        dataVar1 = dataVar1 / (firstGauss^2);
+%                         dataVar1 = exp(param(2)^2+2*param(1))*(exp(param(2)^2)-1);
+%                         dataVar1 = dataVar1 / (firstGauss^2);
                         dataMeanN = (firstGauss:numGauss+firstGauss-1)' * dataMean1;
-                        dataVarN = (firstGauss:numGauss+firstGauss-1)'.^2 * dataVar1;
-                        gaussMean = log(dataMeanN.^2./sqrt(dataVarN+dataMeanN.^2));
-                        gaussStd = sqrt(log(dataVarN./dataMeanN.^2+1));
+%                         dataVarN = (firstGauss:numGauss+firstGauss-1)'.^2 * dataVar1;
+%                         gaussMean = log(dataMeanN.^2./sqrt(dataVarN+dataMeanN.^2));
+                        % mkitti: param(2) is gaussStd for all gaussians
+                        gaussMean = log(dataMeanN) - param(2)^2/2;
+                        % umm isn't all(gaussStd(:) == gaussStd(1)) ?? yes
+                        % gaussStd = sqrt(log(dataVarN./dataMeanN.^2+1));
+                        % mkitti: gaussStd is same for all gaussians
+                        gaussStd = repmat(param(2),numGauss,1);
                     end
                     gaussAmp  = param(3:end);
                     
@@ -325,12 +342,139 @@ switch variableMean
         
 end %(switch variableMean)
 
+%% mkitti original code
 %calculate the cumulative distribution
-cumDistrNGauss = zeros(size(abscissa));
-for i=1:numGauss
-    cumDistrNGauss = cumDistrNGauss + gaussAmp(i)*normcdf(abscissa,...
-        gaussMean(i),gaussStd(i));
+% cumDistrNGauss = zeros(size(abscissa));
+% for i=1:numGauss
+%     cumDistrNGauss = cumDistrNGauss + gaussAmp(i)*normcdf(abscissa,...
+%         gaussMean(i),gaussStd(i));
+% end
+
+%% mkitti: vectorization of normcdf
+% abscissaSize = size(abscissa);
+% nAbscissa = prod(abscissaSize);
+% abscissa = abscissa(:);
+% % gaussMean, gaussStd should be a 1 x numGauss row vectors
+% gaussMean = gaussMean(:)';
+% gaussStd = gaussStd(:)';
+% % expand to match
+% abscissa = abscissa(:,ones(1,numGauss));
+% nAbscissaOnes = ones(1,nAbscissa);
+% gaussMean = gaussMean(nAbscissaOnes,:);
+% gaussStd = gaussStd(nAbscissaOnes,:);
+% % produce a numel(abscissa) X numGauss matrix
+% cumDistrNGauss = ...
+%      normcdf(    abscissa ...
+%               , gaussMean ...
+%               ,  gaussStd ...
+%               );
+
+% %% mkitti: inlining normcdf
+% % TODO: Check if gaussStd == 0
+abscissaSize = size(abscissa);
+% nAbscissa = prod(abscissaSize);
+abscissa = abscissa(:);
+% gaussMean, gaussStd should be a 1 x numGauss row vectors
+gaussMean = gaussMean(:)';
+gaussStd = gaussStd(:)';
+% z = (x-mu) ./ sigma
+z = bsxfun(@rdivide,bsxfun(@minus,abscissa,gaussMean),gaussStd);
+% sqrt because we want the normalized cdf
+cumDistrNGauss = 0.5 * erfc(-z ./ sqrt(2));
+% check for zeros
+gaussStdEqZero = ~gaussStd;
+if(any(gaussStdEqZero))
+    cumDistrNGauss(:,gaussStdEqZero) = bsxfun(@ge,abscissa,gaussMean(gaussStdEqZero));
 end
 
-%% %%% ~~ the end ~~ %%%%%
 
+%% Calculate Jacobian
+if(nargout > 1)
+    % d(erfc(z)) / dz = -2e^{-z^2} / sqrt(pi)
+    % d(cumDistrNGauss) / dz = e^{-z^2/2} / sqrt(2*pi)
+    dcumDistrNGauss_dz = exp(-z.^2/2)./sqrt(2*pi);
+    % d(z) / d(abscissa)  = 1 / gaussStd
+    % d(z) / d(gaussMean) = - 1 / gaussStd
+    % d(cumDistrNGauss) / d(gaussMean) = d(cumDistrNGauss) / dz * -1/gaussStd
+    dcumDistrNGauss_dgaussMean = -bsxfun(@times,dcumDistrNGauss_dz,gaussAmp(:)'./gaussStd);
+    % d(z) / d(gaussStd)  = -(abscissa - gaussMean)/gaussStd.^2
+    %                     = -z/gaussStd
+    % d(cumDistrNGauss) / d(gaussStd) = d(cumDistrNGauss) / dz * -z/gaussStd
+    % dcumDistrNGauss_dgaussStd = bsxfun(@rdivide,dcumDistrNGauss_dz.*z,gaussStd);
+    %
+    % d(cumDistrNGauss) / d(gaussStd) = d(cumDistrNGauss) / d(gaussMean) * z
+    
+    % Maximum relative difference between user-supplied and
+    % finite-difference derivatives exceeds 1e-6 for the Std calculation
+    dcumDistrNGauss_dgaussStd = dcumDistrNGauss_dgaussMean .* z;
+    dcumDistrNGauss_dgaussAmp = cumDistrNGauss;
+
+    if(variableMean == -1 || variableStd == -1)
+            J = dcumDistrNGauss_dgaussAmp;
+    else
+        % caseCode in decimal: LMSR (we should use this above)
+        caseCode = logData*1000 + (variableMean == 1)*100 + variableStd*10 + (sum(ratioTol)~=0);
+        switch(caseCode)
+%                 case 0100
+%                         % variableMean
+%                         % J = nAbscissa x 2 numGauss + 1 = nX x (nGaussMean,1 gaussStd, nGaussAmp)
+%                         J = [dcumDistrNGauss_dgaussMean sum(dcumDistrNGauss_dgaussStd,2) dcumDistrNGauss_dgaussAmp];
+%                 case 0110
+%                         % variableMean and variableStd
+%                         % J = nAbscissa x 3 numGauss = nX x (nGaussMean,nGaussStd,nGaussAmp)
+%                         J = [dcumDistrNGauss_dgaussMean dcumDistrNGauss_dgaussStd dcumDistrNGauss_dgaussAmp];
+%                 case 0000
+%                         % constrained mean and single std
+%                         % J = nAbscissa x 2 + numGauss = nX x (gaussMean, gaussStd, nGaussAmp)
+%                         J = [dcumDistrNGauss_dguassMean*(1+(0:numGauss-1)/firstGauss)' sum(dcumDistrNGauss_dgaussStd,2) dcumDistrNGauss_dgaussAmp];
+%                 case 1000
+%                         % logData constrained mean, single std
+%                         J = [sum(dcumDistrNGauss_dguassMean,2) sum(dcumDistrNGauss_dgaussStd,2) dcumDistrNGauss_dgaussAmp];
+%                 case 0010
+%                         % constrained mean, variable std
+%                         % J = nAbscissa x 1 + 2*numGAuss = nX x (guassMean, nGaussStd, nGaussAmp)
+%                         J = [dcumDistrNGauss_dguassMean*(1+(0:numGauss-1)/firstGauss)' dcumDistrNGauss_dgaussStd dcumDistrNGauss_dgaussAmp];
+%                 case 1010
+%                         % logData, constrained mean, variable std
+%                         J = [sum(dcumDistrNGauss_dguassMean,2) dcumDistrNGauss_dgaussStd dcumDistrNGauss_dgaussAmp];
+%                 case 0011
+%                         % constrained mean, variable std, wiggle room
+%                         % J = nAbscissa x 3 numGauss = nX x (nGaussMean,nGaussStd,nGaussAmp)
+%                         J = [dcumDistrNGauss_dgaussMean dcumDistrNGauss_dgaussStd dcumDistrNGauss_dgaussAmp];
+%                 case 0020
+%                         % J = nAbscissa x 2 + numGauss
+%                         %   = nX x (gaussMean,gaussStd,nGaussAmp)
+%                         J = [dcumDistrNGauss_dguassMean*(1+(0:numGauss-1)/firstGauss)' dcumDistrNGauss_dgaussStd*sqrt(1+(0:numGauss-1)/firstGauss)' dcumDistrNGauss_dgaussAmp];
+%                 case 0021
+%                         % J = nAbscissa x 3 numGauss = nX x (nGaussMean,nGaussStd,nGaussAmp)
+%                         J = [dcumDistrNGauss_dgaussMean dcumDistrNGauss_dgaussStd*[1 sqrt(param(2:end,2)/firstGauss)]' bsxfun(@rdivide,dcumDistrNGauss_dgaussStd(:,2:end),param(2:end,2)')/2 dcumDistrNGauss_dgaussAmp];
+%                 case 0030
+%                         % J = nAbscissa x (2 + numGauss )
+%                         %   = nAbscissa x (gaussMean,gaussStd,nGaussAmp)
+%                         J = [dcumDistrNGauss_dgaussMean*(1+(0:numGauss-1)/firstGauss)' dcumDistrNGauss_dgaussStd*(1+(0:numGauss-1)/firstGauss)' dcumDistrNGauss_dgaussAmp];
+                case 1030
+                        % J = nAbscissa x (2 + numGauss )
+                        %   = nAbscissa x (gaussMean,gaussStd,nGaussAmp)
+                        J = [sum(dcumDistrNGauss_dgaussMean,2) sum(dcumDistrNGauss_dgaussStd,2) dcumDistrNGauss_dgaussAmp];
+                        assert(~any(isnan(J(:))));
+%                 case 0031
+%                         % J = nAbscissa x 3 numGauss = nX x (nGaussMean,nGaussStd,nGaussAmp)
+%                         J = [dcumDistrNGauss_dgaussMean dcumDistrNGauss_dgaussStd dcumDistrNGauss_dgaussAmp];
+%                 case 1031
+%                         % J = nAbscissa x 3 numGauss = nX x (nGaussMean,nGaussStd,nGaussAmp)
+%                         J = [dcumDistrNGauss_dgaussMean dcumDistrNGauss_dgaussStd dcumDistrNGauss_dgaussAmp];
+                otherwise
+                        error('calcCumDistrNGauss:JacobianCaseNotImplemented', ...
+                                'The Jacobian has not been implemented for this input case');
+        end
+    end
+
+end
+
+%% mkitti: Finish vectorization / inlining by summing gaussians together
+% gaussAmp(:) should be a numGauss x 1 column vector
+% product should be a numel(abscissa) x 1 column vector
+cumDistrNGauss = cumDistrNGauss * gaussAmp(:);
+cumDistrNGauss = reshape(cumDistrNGauss,abscissaSize);
+
+%% %%% ~~ the end ~~ %%%%%
