@@ -130,7 +130,7 @@ switch variableMean
         switch variableStd
 
             case 0 %if std is constrained to all stds are equal
-
+                %caseCode = 0100
                 %get number of Gaussians
                 numGauss = floor(length(param)/2);
 
@@ -140,7 +140,7 @@ switch variableMean
                 gaussAmp  = param(numGauss+2:end);
 
             case 1 %if std is variable
-
+                %caseCode = 0110
                 %get number of Gaussians
                 numGauss = length(param)/3;
 
@@ -166,10 +166,12 @@ switch variableMean
                 
                 %get their means, stds and amplitudes
                 if ~logData
+                    %caseCode = 0000
                     tmpMean = param(1)/firstGauss;
                     gaussMean = (firstGauss:numGauss+firstGauss-1)' * tmpMean;
                     gaussStd  = repmat(param(2),numGauss,1);
                 else
+                    %caseCode = 1000
                     % mu = log(m / sqrt(1 + v/m^2)) = log(m^2 / sqrt(m^2 + v)
                     % sigma = sqrt(log(1 + v/m^2)) 
                     % calculate mean of the non-logarithmized sample,m
@@ -192,25 +194,26 @@ switch variableMean
             case 1 %if std is variable
                 
                 if sum(ratioTol) == 0 %if strict ratio
-                    
                     %get number of Gaussians
                     numGauss = floor(length(param)/2);
                     
                     %get their means, stds and amplitudes
                     if ~logData
+                        %caseCode = 0010
                         tmpMean = param(1)/firstGauss;
                         gaussMean = (firstGauss:numGauss+firstGauss-1)' * tmpMean;
                     else
+                        %caseCode = 1010
                         dataMean1= exp(param(1)+param(2)^2/2);
                         dataMean1 = dataMean1 / firstGauss;
-                        dataMeanN = (firstGauss:numGaussT+firstGauss-1)' * dataMean1;
-                        gaussMean = log(dataMeanN) - param(2:numGaussT+1).^2/2;
+                        dataMeanN = (firstGauss:numGauss+firstGauss-1)' * dataMean1;
+                        gaussMean = log(dataMeanN) - param(2:numGauss+1).^2/2;
                     end
                     gaussStd  = param(2:numGauss+1);
                     gaussAmp  = param(numGauss+2:end);
                     
                 else %if there is wiggle room
-                
+                    %caseCode = 0011
                     %get number of Gaussians
                     numGauss = length(param)/3;
                     
@@ -240,11 +243,13 @@ switch variableMean
                     
                     %get their means, stds and amplitudes
                     if ~logData
+                        %caseCode = 0020
                         tmpMean = param(1)/firstGauss;
                         gaussMean = (firstGauss:numGauss+firstGauss-1)' * tmpMean;
                         tmpStd = param(2) / sqrt(firstGauss);
                         gaussStd  = sqrt(firstGauss:numGauss+firstGauss-1)' * tmpStd;
                     else
+                        %caseCode = 1020
                         dataMean1 = exp(param(1)+param(2)^2/2);
                         dataMean1 = dataMean1 / firstGauss;
                         dataVar1 = exp(param(2)^2+2*param(1))*(exp(param(2)^2)-1);
@@ -264,11 +269,13 @@ switch variableMean
                     %get their means, stds and amplitudes
                     param = reshape(param,numGauss,3);
                     if ~logData
+                        %caseCode = 0021
                         tmpMean = param(1,1) / firstGauss;
                         gaussMean = [firstGauss; param(2:end,1)] * tmpMean;
                         tmpStd = param(1,2) / sqrt(firstGauss);
                         gaussStd = sqrt([firstGauss; param(2:end,2)]) * tmpStd;
                     else
+                        %caseCode = 1021
                         dataMean1 = exp(param(1,1)+param(1,2)^2/2);
                         dataMean1 = dataMean1 / firstGauss;
                         dataVar1 = exp(param(1,2)^2+2*param(1,1))*(exp(param(1,2)^2)-1);
@@ -291,11 +298,13 @@ switch variableMean
                     
                     %get their means, stds and amplitudes
                     if ~logData
+                        %caseCode = 0030
                         tmpMean = param(1)/firstGauss;
                         gaussMean = (firstGauss:numGauss+firstGauss-1)' * tmpMean;
                         tmpStd = param(2) / firstGauss;
                         gaussStd  = (firstGauss:numGauss+firstGauss-1)' * tmpStd;
                     else
+                        %caseCode = 1030
                         dataMean1 = exp(param(1)+param(2)^2/2);
                         dataMean1 = dataMean1 / firstGauss;
 %                         dataVar1 = exp(param(2)^2+2*param(1))*(exp(param(2)^2)-1);
@@ -320,11 +329,13 @@ switch variableMean
                     %get their means, stds and amplitudes
                     param = reshape(param,numGauss,3);
                     if ~logData
+                        %caseCode = 0031
                         tmpMean = param(1,1) / firstGauss;
                         gaussMean = [firstGauss; param(2:end,1)] * tmpMean;
                         tmpStd = param(1,2) / firstGauss;
                         gaussStd = [firstGauss; param(2:end,2)] * tmpStd;
                     else
+                        %caseCode = 1031
                         dataMean1 = exp(param(1,1)+param(1,2)^2/2);
                         dataMean1 = dataMean1 / firstGauss;
                         dataVar1 = exp(param(1,2)^2+2*param(1,1))*(exp(param(1,2)^2)-1);
@@ -445,9 +456,11 @@ if(nargout > 1)
 %                         % J = nAbscissa x 2 + numGauss
 %                         %   = nX x (gaussMean,gaussStd,nGaussAmp)
 %                         J = [dcumDistrNGauss_dguassMean*(1+(0:numGauss-1)/firstGauss)' dcumDistrNGauss_dgaussStd*sqrt(1+(0:numGauss-1)/firstGauss)' dcumDistrNGauss_dgaussAmp];
+%                 case 1020
 %                 case 0021
 %                         % J = nAbscissa x 3 numGauss = nX x (nGaussMean,nGaussStd,nGaussAmp)
 %                         J = [dcumDistrNGauss_dgaussMean dcumDistrNGauss_dgaussStd*[1 sqrt(param(2:end,2)/firstGauss)]' bsxfun(@rdivide,dcumDistrNGauss_dgaussStd(:,2:end),param(2:end,2)')/2 dcumDistrNGauss_dgaussAmp];
+%                 case 1021
 %                 case 0030
 %                         % J = nAbscissa x (2 + numGauss )
 %                         %   = nAbscissa x (gaussMean,gaussStd,nGaussAmp)
