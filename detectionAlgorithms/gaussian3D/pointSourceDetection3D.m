@@ -134,7 +134,8 @@ mask(:,[1 2 end-1 end],:) = 0;
 mask(:,:,[1 2 end-1 end]) = 0;
 
 % all local max
-allMax = locmax3d(imgLoG, roundOddOrEven(2*sigma([1 1 2]),'odd'), 'ClearBorder', false);
+lmWindowSize=max(3,odd(ceil(2*sigma([1 1 2]))));
+allMax = locmax3d(imgLoG, lmWindowSize, 'ClearBorder', false);
 
 % local maxima above threshold in image domain
 imgLM = allMax .* mask;
