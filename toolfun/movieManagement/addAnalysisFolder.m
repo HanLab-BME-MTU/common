@@ -4,8 +4,7 @@ function MLorMDOut=addAnalysisFolder(MLorMD,currentAnalysisRoot,newAnalysisRoot,
 % channels.
 %
 % Optionnaly the channel can be relocated to using the options
-% oldRawDataRoot and newRawDataRoot. This is useful if the data has been
-% relocated to a read only folder. 
+% oldRawDataRoot and newRawDataRoot.
 ip = inputParser;
 ip.CaseSensitive = false;
 ip.KeepUnmatched=true;
