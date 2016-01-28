@@ -205,9 +205,28 @@ classdef TestBFMovieData < TestMovieData & TestCase
             assertElementsAlmostEqual(self.movie.pixelSize_, 300.0);
         end
         
+        function testPixelsSizeXY(self)
+            self.fakename = 'test&physicalSizeX=.3&physicalSizeY=.3.fake';
+            self.setUpMovie();
+            assertElementsAlmostEqual(self.movie.pixelSize_, 300.0);
+        end
+        
+        function testPixelsSizeMismatchingXY(self)
+            % Mismatching physical sizes should throw an exception
+            self.fakename = 'test&physicalSizeX=1&physicalSizeY=.3.fake';
+            assertExceptionThrown(@() self.setUpMovie(), '');
+        end
+        
         function testPixelsSizeZ(self)
             self.fakename = 'test&physicalSizeZ=.3.fake';
             self.setUpMovie();
+            assertElementsAlmostEqual(self.movie.pixelSizeZ_, 300.0);
+        end
+        
+        function testPixelsSizeXYZ(self)
+            self.fakename = 'test&physicalSizeX=.3&physicalSizeY=.3&physicalSizeZ=.3.fake';
+            self.setUpMovie();
+            assertElementsAlmostEqual(self.movie.pixelSize_, 300.0);
             assertElementsAlmostEqual(self.movie.pixelSizeZ_, 300.0);
         end
         
