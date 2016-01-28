@@ -262,8 +262,8 @@ classdef Package < hgsetget
             % as well as all non-empty optional parent processes as defined
             % by the package dependency matrix
             % See also GETDEPENDENCYMATRIX.
-            reqParentIndex = find(obj.getDependencyMatrix(procID,:)==1);
-            optParentIndex = find(obj.getDependencyMatrix(procID,:)==2);
+            reqParentIndex = find(obj.getDependencyMatrix(procID,':')==1);
+            optParentIndex = find(obj.getDependencyMatrix(procID,':')==2);
             isValidOptParent = ~cellfun(@isempty,obj.processes_(optParentIndex));
             validOptParentIndex = optParentIndex(isValidOptParent);
             parentID=sort([reqParentIndex,validOptParentIndex]);
