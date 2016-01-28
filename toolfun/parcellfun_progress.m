@@ -95,6 +95,10 @@ function [ varargout ] = parcellfun_progress( func, varargin )
     % Initialize parallel pool
     if(isempty(in.ParallelPool))
         in.ParallelPool = gcp;
+        if(isempty(in.ParallelPool))
+            error('parcellfun_progress:CannotObtainParallelPool', ...
+                'Cannot obtain parallel pool.');
+        end
     end
     
     if(ischar(in.DisplayFunc))
@@ -142,21 +146,23 @@ function [ varargout ] = parcellfun_progress( func, varargin )
     % Number of bytes output by progress, for backspacing
     d.nProgressOut = 0;
     % cache number of workers
-    nWorkers = in.ParallelPool.NumWorkers;
+    d.nWorkers = in.ParallelPool.NumWorkers;
     % Index from 1 to nRuns in case we need to figure out d.completedIdx
     idx = 1:d.nRuns;
     
     %% Start parallel execution
     d.startTimerVal = tic;
+    
+    % Initial display function
+    d.nProgressOut = in.DisplayFunc(d);
+    drawnow;
+    
     d.F = cellfun(@parfunc,varargin{1:paramIdx-1},'UniformOutput',false);
     d.F = [d.F{:}];
     
     % When this function completes, user quits, or exception occurs,
     % cleanup
     cleanup = onCleanup(@()  cancel(d.F));
-
-    % Initial display function
-    d.nProgressOut = in.DisplayFunc(d);
     
     % We will not update the estimate until we have processed all finished
     % workers, so store a copy of the structure
@@ -225,7 +231,7 @@ function [ varargout ] = parcellfun_progress( func, varargin )
                     fprintf('\n\n<= Diary of Index %d\n\n',d.completedIdx);
                 end
             end
-            if(d.nCompleted - dlast.nCompleted > nWorkers)
+            if(d.nCompleted - dlast.nCompleted > d.nWorkers)
                 % Force estimate update after nWorkers have finished
                 d.completedIdx = [];
             else
@@ -271,7 +277,8 @@ function nProgressOut = defaultDisplayFunc(d)
         remaining = 'hh:mm:ss';
         sinceStart = duration_shim(0,0,sinceStart);
     else
-        estDuration = d.nCompletedTime*d.nRuns/d.nCompleted;
+        fracCompleted = d.nCompleted / ceil(d.nRuns/d.nWorkers) / d.nWorkers;
+        estDuration = d.nCompletedTime / fracCompleted;
         estDuration = max(estDuration,sinceStart);
         remaining = estDuration - sinceStart;
         estDuration = duration_shim(0,0,estDuration);

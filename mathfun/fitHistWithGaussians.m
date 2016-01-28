@@ -732,6 +732,8 @@ switch isR
                                 ub = [ub(1,1:2)'; ub(:,3)];
                                 
                                 %estimate unknown parameters
+                                options.Jacobian = 'on';
+%                                 options.DerivativeCheck = 'on';
                                 [param,~,residualsT] = lsqcurvefit(@calcCumDistrNGauss,x0,...
                                     binCenter,cumHist,lb,ub,options,variableMean,variableStd,logData);
                                 residualsT = -residualsT;
