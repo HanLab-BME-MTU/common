@@ -20,6 +20,7 @@
 %   'RefineMaskValid' : true|{false}. Return only mask regions where a significant signal was localized.
 %        'ConfRadius' : Confidence radius for positions, beyond which the fit is rejected. Default: 2*sigma
 %        'WindowSize' : Window size for the fit. Default: 2*sigma, i.e., [-2*sigma ... 2*sigma]^2
+%'LocalMaxWindowSize' : Window size for locmax3d. Default: max(3,odd(ceil(2*sigma([1 1 2]))))
 %
 % Outputs:  
 %             pstruct : output structure with Gaussian parameters, standard deviations, p-values
@@ -49,6 +50,7 @@ ip.addParamValue('RefineMaskLoG', false, @islogical);
 ip.addParamValue('RefineMaskValid', false, @islogical);
 ip.addParamValue('ConfRadius', []); % Default: 2*sigma, see fitGaussians3D.
 ip.addParamValue('WindowSize', []); % Default: 2*sigma, see fitGaussians3D.
+ip.addParamValue('LocalMaxWindowSize',[]); % Default: max(3,odd(ceil(2*sigma([1 1 2]))))
 ip.parse(vol, sigma, varargin{:});
 
 if isempty(ip.Results.AlphaLocalMaxima)
@@ -72,6 +74,12 @@ if isempty(ws)
 elseif numel(ws)==1
     ws = [ws ws];
 end
+
+localMaxWindowSize = ip.Results.LocalMaxWindowSize;
+if(isempty(localMaxWindowSize))
+    localMaxWindowSize=max(3,roundOddOrEven(ceil(2*sigma([1 1 2])),'odd'));
+end
+
 
 %-------------------------------------------------------------------------------------------
 % Convolutions
@@ -134,8 +142,7 @@ mask(:,[1 2 end-1 end],:) = 0;
 mask(:,:,[1 2 end-1 end]) = 0;
 
 % all local max
-lmWindowSize=max(3,odd(ceil(2*sigma([1 1 2]))));
-allMax = locmax3d(imgLoG, lmWindowSize, 'ClearBorder', false);
+allMax = locmax3d(imgLoG, localMaxWindowSize, 'ClearBorder', false);
 
 % local maxima above threshold in image domain
 imgLM = allMax .* mask;
