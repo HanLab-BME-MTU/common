@@ -20,7 +20,7 @@
 %   'RefineMaskValid' : true|{false}. Return only mask regions where a significant signal was localized.
 %        'ConfRadius' : Confidence radius for positions, beyond which the fit is rejected. Default: 2*sigma
 %        'WindowSize' : Window size for the fit. Default: 2*sigma, i.e., [-2*sigma ... 2*sigma]^2
-%'LocalMaxWindowSize' : Window size for locmax3d. Default: max(3,odd(ceil(2*sigma([1 1 2]))))
+%'LocalMaxWindowSize' : Window size for locmax3d. Default: max(3,roundOddOrEven(ceil(2*sigma([1 1 2])),'odd'))
 %
 % Outputs:  
 %             pstruct : output structure with Gaussian parameters, standard deviations, p-values
@@ -50,7 +50,7 @@ ip.addParamValue('RefineMaskLoG', false, @islogical);
 ip.addParamValue('RefineMaskValid', false, @islogical);
 ip.addParamValue('ConfRadius', []); % Default: 2*sigma, see fitGaussians3D.
 ip.addParamValue('WindowSize', []); % Default: 2*sigma, see fitGaussians3D.
-ip.addParamValue('LocalMaxWindowSize',[]); % Default: max(3,odd(ceil(2*sigma([1 1 2]))))
+ip.addParamValue('LocalMaxWindowSize',[]); % Default: max(3,roundOddOrEven(ceil(2*sigma([1 1 2])),'odd'))
 ip.parse(vol, sigma, varargin{:});
 
 if isempty(ip.Results.AlphaLocalMaxima)
