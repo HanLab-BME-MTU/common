@@ -77,7 +77,7 @@ end
 
 localMaxWindowSize = ip.Results.LocalMaxWindowSize;
 if(isempty(localMaxWindowSize))
-    localMaxWindowSize=max(3,odd(ceil(2*sigma([1 1 2]))));
+    localMaxWindowSize=max(3,roundOddOrEven(ceil(2*sigma([1 1 2])),'odd'));
 end
 
 
