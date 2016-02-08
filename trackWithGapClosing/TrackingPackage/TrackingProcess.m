@@ -376,12 +376,7 @@ classdef TrackingProcess < DataProcessingProcess
                 splitEventTimes = splitEventTimes(splitEventTimes < nFrames,:);
                 iTrack1 = splitEvents(:,3);
                 iTrack2 = splitEvents(:,4);
-                
-                % For backwards-compatability only
-                events = char(zeros(size(xCoords)));
-                events(sub2ind(size(events),iTrack1,splitEventTimes)) = 's';
-                events(sub2ind(size(events),iTrack2,splitEventTimes)) = 's';
-                
+                               
                 % Use accumarray to gather the splitEventTimes into cell
                 % arrays
                 if(~isempty(splitEventTimes))
@@ -390,8 +385,10 @@ classdef TrackingProcess < DataProcessingProcess
                     splitEventTimeCell = cell(size(xCoords,1),1);
                 end
                 
-                xCoords(sub2ind(size(xCoords),iTrack1,splitEventTimes)) = xCoords(sub2ind(size(xCoords),iTrack2,splitEventTimes));
-                yCoords(sub2ind(size(xCoords),iTrack1,splitEventTimes)) = yCoords(sub2ind(size(xCoords),iTrack2,splitEventTimes));
+                leftIdx = sub2ind(size(xCoords),iTrack1,splitEventTimes);
+                rightIdx = sub2ind(size(xCoords),iTrack2,splitEventTimes);
+                xCoords(leftIdx) = xCoords(rightIdx);
+                yCoords(leftIdx) = yCoords(rightIdx);
                 
                 %% Merges
                 % The 2nd column indicates split (1) or merge(2)
@@ -403,40 +400,24 @@ classdef TrackingProcess < DataProcessingProcess
                 iTrack1 = mergeEvents(:,3);
                 iTrack2 = mergeEvents(:,4);
                 
-                % For backwards-compatability only
-                events(sub2ind(size(events),iTrack1,mergeEventTimes)) = 'm';
-                events(sub2ind(size(events),iTrack2,mergeEventTimes)) = 'm';
-                
                 if(~isempty(mergeEventTimes))
                     mergeEventTimeCell = accumarray([iTrack1 ; iTrack2], [mergeEventTimes ; mergeEventTimes ],[size(xCoords,1) 1],@(x) {x'},{});
                 else
                     mergeEventTimeCell = cell(size(xCoords,1),1);
                 end
-                               
-                xCoords(sub2ind(size(xCoords),iTrack1,mergeEventTimes)) = xCoords(sub2ind(size(xCoords),iTrack2,mergeEventTimes));
-                yCoords(sub2ind(size(xCoords),iTrack1,mergeEventTimes)) = yCoords(sub2ind(size(xCoords),iTrack2,mergeEventTimes));
 
-                %% Pack data into cells to facilitate assignment to structs
-                % (Do we really need the structs?)
-                iTrackNumber = num2cell(sTrackIdx(idx));
-                
-                xCoords = num2cell(xCoords,2);
-                yCoords = num2cell(yCoords,2);
-                
-                events = num2cell(events,2);
-                
-                % Backwards compatability glue only
-                events = regexp(events,'^(.*[ms])\W*','tokens','once');
-                emptyEvents = cellfun('isempty',events);
-                [events{emptyEvents}] = deal([]);
-                [events(~emptyEvents)] = cellfun(@(x) x{1},events(~emptyEvents),'UniformOutput',false);
-                
-
+                leftIdx = sub2ind(size(xCoords),iTrack1,mergeEventTimes);
+                rightIdx = sub2ind(size(xCoords),iTrack2,mergeEventTimes);
+                xCoords(leftIdx) = xCoords(rightIdx);
+                yCoords(leftIdx) = yCoords(rightIdx);
+                          
                 %% Load cells into struct fields
-                [displayTracks(iTracks).xCoord] = xCoords{:};
-                [displayTracks(iTracks).yCoord] = yCoords{:};               
-                [displayTracks(iTracks).number] = iTrackNumber{:};               
-                [displayTracks(iTracks).events] = events{:};
+                for i=1:length(iTracks)
+                    iTrack = iTracks(i);
+                    displayTracks(iTrack).xCoord = xCoords(i,:);
+                    displayTracks(iTrack).yCoord = yCoords(i,:);
+                    displayTracks(iTrack).number = sTrackIdx(idx(i));
+                end            
                 
                 if(~isempty(splitEventTimeCell))
                     [displayTracks(iTracks).splitEvents] = splitEventTimeCell{:};

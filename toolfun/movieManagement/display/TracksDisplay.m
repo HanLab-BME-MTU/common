@@ -27,12 +27,12 @@ classdef TracksDisplay < MovieDataDisplay
         function h=initDraw(obj, tracks, tag, varargin)
             if isempty(tracks), h = -1; return; end
             % Get track length and filter valid tracks
-            trackLengths = cellfun(@numel,{tracks.xCoord});
-            validTracks = find(trackLengths>0);
+            trackLengths = cellfun('prodofsize',{tracks.xCoord});
+            validTracks = trackLengths>0;
             tracks = tracks(validTracks);
             trackLengths = trackLengths(validTracks);
             
-            nTracks = numel(validTracks);
+            nTracks = numel(tracks);
             
             % Constraing the dragtail length between 2 and the maximum
             % track length
@@ -45,12 +45,20 @@ classdef TracksDisplay < MovieDataDisplay
             % Concatenate data in a matrix of size dragtailLength x nTracks
             xData = NaN(dLength, nTracks);
             yData = NaN(dLength, nTracks);
+            for i = 1 : max(trackLengths)
+                selected = trackLengths == i;
+                xTemp = vertcat(tracks(selected).xCoord)';
+                yTemp = vertcat(tracks(selected).yCoord)';
+                if(i < dLength)
+                    xData(1:i,selected) = xTemp;
+                    yData(1:i,selected) = yTemp;
+                else
+                    xData(:,selected) = xTemp(end-dLength+1:end,:);
+                    yData(:,selected) = yTemp(end-dLength+1:end,:);
+                end
+            end
             displayLength = trackLengths;
             displayLength(trackLengths > dLength) = dLength;
-            for i = 1 : nTracks
-                xData(1:displayLength(i), i) = tracks(i).xCoord(end-displayLength(i)+1:end);
-                yData(1:displayLength(i), i) = tracks(i).yCoord(end-displayLength(i)+1:end);
-            end
             
             % Initialize matrix for gaps
             xGapData = NaN(size(xData));
@@ -62,28 +70,63 @@ classdef TracksDisplay < MovieDataDisplay
             I = reshape(I, size(I,1)/2, size(I,2)*2);
             I = [zeros(size(I,1), 1) I];
             I = imclearborder(I);
-            I = bwlabel(I);
-            I = I(:, 2:2:end);
             
-            % Fill gaps x and y data
-            for i = unique(nonzeros(I))'
-                iFirst = find(I == i, 1, 'first')-1;
-                iLast = find(I == i, 1, 'last')+1;
-                xGapData(iFirst:iLast) = linspace(xData(iFirst), xData(iLast), iLast - iFirst +1);
-                yGapData(iFirst:iLast) = linspace(yData(iFirst), yData(iLast), iLast - iFirst +1);
+            cc = bwconncomp(I);
+            gapLengths = cellfun('length',cc.PixelIdxList);
+
+            % Obtain first and last coordinate indices
+            iFirstLast = zeros(2,cc.NumObjects);
+            uGapLengths = unique(gapLengths);
+            for i=uGapLengths(:)'
+                s = i == gapLengths;
+                temp = [cc.PixelIdxList{s}];
+                iFirstLast(:,s) = temp([1 i],:);
             end
 
+            % Remove extra columns by adjusting index
+            m = mod(iFirstLast,cc.ImageSize(1));
+            iFirstLast = (iFirstLast + m - cc.ImageSize(1))/2;
+            
+            
+            iFirst = iFirstLast(1,:) - 1;
+            iLast = iFirstLast(2,:) + 1;
+            xFirst = xData(iFirst);
+            xLast = xData(iLast);
+            yFirst = yData(iFirst);
+            yLast = yData(iLast);
+            
+            % Fill gaps
+            for gapLength = 1 : max(gapLengths)
+                s = gapLengths == gapLength;
+                px = [cc.PixelIdxList{s}];
+                
+                % Remove extra columns by adjusting index
+                m = mod(px,cc.ImageSize(1));
+                px = (px + m - cc.ImageSize(1))/2;
+                
+                a = (1:gapLength)'/(gapLength+1);
+                xGapData(iFirst) = xFirst;
+                xGapData(iLast) = xLast;
+                yGapData(iFirst) = yFirst;
+                yGapData(iLast) = yLast;
+                xGapData(px) = ...
+                    bsxfun(@plus,bsxfun(@times,a,xLast(s) - xFirst(s)),xFirst(s));
+                yGapData(px) = ...
+                    bsxfun(@plus,bsxfun(@times,a,yLast(s) - yFirst(s)),yFirst(s));
+            end
+            
+            eventsExist = isfield(tracks,'splitEvents') || isfield(tracks,'mergeEvents');
+
             % Initialize matrix for split events
-            if(isfield(tracks,'events'))
-                hasSplitEvents = arrayfun(@(x) ~isempty(strfind(x.events,'s')),tracks);
-            else
-                hasSplitEvents = false(size(tracks));
+            if(eventsExist)
+                hasSplitEvents = ~cellfun('isempty',{tracks.splitEvents})';
             end
             xSplitData = NaN(dLength, nTracks);
             ySplitData = NaN(dLength, nTracks);
             for i = find(hasSplitEvents)'
-                eventTimes = tracks(i).events == 's';
-                eventTimes = find([ eventTimes false ] | [false eventTimes]);
+                eventTimes = false;
+                eventTimes([tracks(i).splitEvents tracks(i).splitEvents+1]) = true;
+                eventTimes = find(eventTimes);
                 dragtailWindow = [trackLengths(i) - displayLength(i) + 1 trackLengths(i)];
                 eventTimes = eventTimes(eventTimes >= dragtailWindow(1) & eventTimes <= dragtailWindow(2));
                 xSplitData(eventTimes - dragtailWindow(1) +1, i) = tracks(i).xCoord(eventTimes);
@@ -92,16 +135,15 @@ classdef TracksDisplay < MovieDataDisplay
             
             % Initialize matrix for split events
 
-            if(isfield(tracks,'events'))
-                hasMergeEvents = arrayfun(@(x) ~isempty(strfind(x.events,'m')),tracks);
-            else
-                hasMergeEvents = false(size(tracks));
+            if(eventsExist)
+                hasMergeEvents = ~cellfun('isempty',{tracks.mergeEvents})';
             end
             xMergeData = NaN(dLength, nTracks);
             yMergeData = NaN(dLength, nTracks);
             for i = find(hasMergeEvents)'
-                eventTimes = tracks(i).events == 'm';
-                eventTimes = find([ eventTimes false ] | [false eventTimes])-1;
+                eventTimes = false;
+                eventTimes([tracks(i).mergeEvents tracks(i).mergeEvents+1]) = true;
+                eventTimes = find(eventTimes)-1;
                 dragtailWindow = [trackLengths(i) - displayLength(i) + 1 trackLengths(i)];
                 eventTimes = eventTimes(eventTimes >= dragtailWindow(1) & eventTimes <= dragtailWindow(2));
                 xMergeData(eventTimes - dragtailWindow(1) +1, i) = tracks(i).xCoord(eventTimes);
