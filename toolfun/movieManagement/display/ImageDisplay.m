@@ -39,7 +39,11 @@ classdef ImageDisplay < MovieDataDisplay
         end
         
         function updateDraw(obj,h,data)
-            set(h,'CData',data/obj.ScaleFactor)
+            if(obj.ScaleFactor ~= 1)
+                set(h,'CData',data/obj.ScaleFactor)
+            else
+                set(h,'CData',data);
+            end
             obj.applyImageOptions(h)
         end
         

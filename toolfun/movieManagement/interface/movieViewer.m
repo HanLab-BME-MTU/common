@@ -761,13 +761,30 @@ redrawImage(handles);
 redrawOverlays(handles);
 
 function h= getFigure(handles,figName)
-
-h = findobj(0,'-regexp','Name',['^' figName '$']);
-if ~isempty(h), figure(h); return; end
+    
+userData = get(handles.figure1,'UserData');
+    
+if(~isfield(userData,'figures'))
+    userData.figures = struct();
+end
+   
+if(isfield(userData.figures,figName) ...
+        && ishandle(userData.figures.(figName)) ...
+        && isvalid(userData.figures.(figName)))
+    h = userData.figures.(figName);
+else
+    h = findobj(0,'-regexp','Name',['^' figName '$']);;
+end
+if ~isempty(h)
+    figure(h);
+    userData.figures.(figName) = h;
+    set(handles.figure1,'UserData',userData);
+    return;
+end
 
 %Create a figure
 if strcmp(figName,'Movie')
-    userData = get(handles.figure1,'UserData');
+    
     sz=get(0,'ScreenSize');
     nx=userData.MO.imSize_(2);
     ny=userData.MO.imSize_(1);
@@ -788,6 +805,7 @@ if strcmp(figName,'Movie')
     
     axes('Parent',h,'XLim',[0 userData.MO.imSize_(2)],...
         'YLim',[0 userData.MO.imSize_(1)],'Position',[0.05 0.05 .9 .9]);
+    userData.figures.Movie = h;
     set(handles.figure1,'UserData',userData);
     
     % Set the zoom properties
