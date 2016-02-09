@@ -176,10 +176,14 @@ classdef MovieList < MovieObject
             assert(~isempty(fullPath), 'Invalid path');
             
             % Backup existing file and save the movie list
+            try
             if exist(fullPath,'file')
-                movefile(fullPath,[fullPath(1:end-3) 'old'],'f');
+                movefile(fullPath,[fullPath(1:end-3) 'old' '.' datestr(now,'yyyymmddTHHMMSS')],'f');
             end
             save(fullPath, 'ML');
+            catch err
+                disp(getReport(err))
+            end
             
             % Save to OMERO if OMERO object
             if ML.isOmero() && ML.canUpload(),

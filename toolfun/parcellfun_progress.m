@@ -35,7 +35,7 @@ function [ varargout ] = parcellfun_progress( func, varargin )
 %      See @parcellfun_progress/emulate_{DisplayFunc} for more details
 %  ParallelPool - parallel.pool to use with parfeval
 %  Heading - optional char to be output by fprintf before iterating
-%  UseErrorStruct - true: pass error struct as defined in cellfun
+%  UseErrorStruct - true: pass error struct as defined in cellfun (default)
 %                  false: pass MException and same structure as DisplayFunc
 %  NumOutputs - specify number of outputs
 %  ReturnFutures - parallel.FevalFuture objects as first output
@@ -64,7 +64,7 @@ function [ varargout ] = parcellfun_progress( func, varargin )
     ip.addParameter('DisplayFunc',@defaultDisplayFunc,@(x) isa(x,'function_handle') || ischar(x));
     ip.addParameter('ParallelPool',[]);
     ip.addParameter('Heading','',@ischar);
-    ip.addParameter('UseErrorStruct',[],@islogical);
+    ip.addParameter('UseErrorStruct',true,@islogical);
     ip.addParameter('NumOutputs',[],@(x) validateattributes(x,{'numeric'},{'scalar'}));
     ip.addParameter('ReturnFutures',false,@islogical);
     ip.addParameter('DisplayDiaries',false,@islogical);
@@ -108,15 +108,7 @@ function [ varargout ] = parcellfun_progress( func, varargin )
     if(~isempty(in.Heading))
         fprintf(in.Heading);
     end
-
-    if(isempty(in.UseErrorStruct))
-        if(nargin(in.ErrorHandler) == 1)
-            in.UseErrorStruct = true;
-        else
-            in.UseErrorStruct = false;
-        end
-    end
-    
+   
     if(isempty(in.NumOutputs))
         in.NumOutputs = nargout - in.ReturnFutures;
     end
