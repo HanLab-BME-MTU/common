@@ -105,6 +105,10 @@ function [ varargout ] = parcellfun_progress( func, varargin )
         in.DisplayFunc = str2func(['emulate_' in.DisplayFunc]);
     end
     
+    if(isequal(in.ErrorHandler,@defaultErrorHandler))
+        in.UseErrorStruct = false;
+    end
+    
     if(~isempty(in.Heading))
         fprintf(in.Heading);
     end
@@ -257,7 +261,7 @@ function [ varargout ] = parcellfun_progress( func, varargin )
         F = parfeval(in.ParallelPool,func,nout,varargin{:});
     end
 end
-function defaultErrorHandler(exception, d)
+function defaultErrorHandler(exception, varargin)
     rethrow(exception);
 end
 function nProgressOut = defaultDisplayFunc(d)
