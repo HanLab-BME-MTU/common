@@ -11,7 +11,7 @@ ip.parse(MD);
 warning('off', 'MATLAB:imagesci:tifftagsread:expectedAsciiDataFormat');
 
 if(MD.zSize_==1)
-    error('This seems to be a 2D movie, printing a MIP is not smart.');
+    error('This seems to be a 2D movie, No MIP produced.');
 end
 
 savePath=[MD.outputDirectory_ filesep 'MIP'];
@@ -26,11 +26,19 @@ nameCells=MD.getChannel(1).getImageFileNames;
 % fprintf('printing MIP:');
 % fprintf(['\n' repmat('.',1,MD.nFrames_) '\n\n']);
 ZXRatio=MD.pixelSizeZ_/MD.pixelSize_;
+minIntensityNorm=[];
+maxIntensityNorm=[];
+for chIdx=1:length(MD.channels_)
+    vol=MD.getChannel(chIdx).loadStack(1);
+    minIntensityNorm=[ minIntensityNorm min(vol(:))];
+    maxIntensityNorm=[ maxIntensityNorm max(vol(:))];
+end
+
 for frameIdx=1:MD.nFrames_
     maxXY=[];maxZY=[];maxZX=[];three=[];
     for chIdx=1:length(MD.channels_)
         vol=MD.getChannel(chIdx).loadStack(frameIdx);  
-        [cmaxXY,cmaxZY,cmaxZX,cthree]=computeMIPs(vol,ZXRatio);
+        [cmaxXY,cmaxZY,cmaxZX,cthree]=computeMIPs(vol,ZXRatio,minIntensityNorm(chIdx),maxIntensityNorm(chIdx));
         maxXY=[ maxXY cmaxXY];
         maxZY=[ maxZY cmaxZY];
         maxZX=[ maxZX cmaxZX];
@@ -45,7 +53,7 @@ for frameIdx=1:MD.nFrames_
 end
 
 
-function [maxXY,maxZY,maxZX,three]=computeMIPs(vol,ZXRatio)
+function [maxXY,maxZY,maxZX,three]=computeMIPs(vol,ZXRatio,minInt,maxInt)
 
 % set other parameters
 stripeSize = 8; % the width of the stripes in the image that combines all three maximum intensity projections
@@ -62,7 +70,7 @@ threeTop = [maxXY, stripeColor*ones(size(vol,1), stripeSize), maxZY];
 threeBottom = [maxZX', stripeColor*ones(ScaledZ, ScaledZ+stripeSize)];
 three = [threeTop; stripeColor*ones(stripeSize, size(vol,2)+ScaledZ+stripeSize); threeBottom];
 
-maxXY = uint8((2^8-1)*mat2gray(maxXY));
-maxZY = uint8((2^8-1)*mat2gray(maxZY));
-maxZX = uint8((2^8-1)*mat2gray(maxZX));
-three = uint8((2^8-1)*mat2gray(three));
+maxXY = uint8((2^8-1)*mat2gray(maxXY,double([minInt,maxInt])));
+maxZY = uint8((2^8-1)*mat2gray(maxZY,double([minInt,maxInt])));
+maxZX = uint8((2^8-1)*mat2gray(maxZX,double([minInt,maxInt])));
+three = uint8((2^8-1)*mat2gray(three,double([minInt,maxInt])));
