@@ -143,24 +143,7 @@ classdef TracksDisplay < MovieDataDisplay
                 xSplitData(idx) = xData(idx);
                 ySplitData(idx) = yData(idx);
             end
-            
-            %% Deprecated slow section for verificaiton
-            xSplitDataNew = xSplitData;
-            ySplitDataNew = ySplitData;
-            xSplitData = NaN(dLength, nTracks);
-            ySplitData = NaN(dLength, nTracks);            
-            for i = find(hasSplitEvents)'
-                eventTimes = false;
-                eventTimes([tracks(i).splitEvents tracks(i).splitEvents+1]) = true;
-                eventTimes = find(eventTimes);
-%                 dragtailWindow = [trackLengths(i) - displayLength(i) + 1 trackLengths(i)];
-                eventTimes = eventTimes(eventTimes >= dragtailWindows(1,i) & eventTimes <= dragtailWindows(2,i));
-                xSplitData(eventTimes - dragtailWindows(1,i) +1, i) = tracks(i).xCoord(eventTimes);
-                ySplitData(eventTimes - dragtailWindows(1,i) +1, i) = tracks(i).yCoord(eventTimes);
-            end
-            assertEqual(xSplitDataNew,xSplitData);
-            assertEqual(ySplitDataNew,ySplitData);
-            
+                        
             %% Initialize matrix for split events
 
             if(eventsExist)
@@ -186,24 +169,7 @@ classdef TracksDisplay < MovieDataDisplay
                 xMergeData(idx) = xData(idx);
                 yMergeData(idx) = yData(idx);
             end
-            
-            %% Deprecated slow section for verificaiton
-            xMergeDataNew = xMergeData;
-            yMergeDataNew = yMergeData;
-            xMergeData = NaN(dLength, nTracks);
-            yMergeData = NaN(dLength, nTracks);  
-            for i = find(hasMergeEvents)'
-                eventTimes = false;
-                eventTimes([tracks(i).mergeEvents tracks(i).mergeEvents+1]) = true;
-                eventTimes = find(eventTimes)-1;
-%                 dragtailWindow = [trackLengths(i) - displayLength(i) + 1 trackLengths(i)];
-                eventTimes = eventTimes(eventTimes >= dragtailWindows(1,i) & eventTimes <= dragtailWindows(2,i));
-                xMergeData(eventTimes - dragtailWindows(1,i) +1, i) = tracks(i).xCoord(eventTimes);
-                yMergeData(eventTimes - dragtailWindows(1,i) +1, i) = tracks(i).yCoord(eventTimes);
-            end
-            assertEqual(xMergeDataNew,xMergeData);
-            assertEqual(yMergeDataNew,yMergeData);
-            
+                       
             %% Plot tracks
             if isfield(tracks,'label') % If track is classified
                 nColors = size(obj.Color,1);
