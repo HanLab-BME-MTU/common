@@ -312,6 +312,9 @@ classdef TrackingProcess < DataProcessingProcess
             % mergeEvents: times when merges occur
             displayTracks(nTracks,1) = struct('xCoord', [], 'yCoord', [], 'number', [], 'splitEvents', [], 'mergeEvents', []);
             
+            hasSeqOfEvents = isfield(tracks,'seqOfEvents');
+            hasLabels = isfield(tracks, 'label');
+
             % Batch by unique trackLengths
             for trackLength = uTrackLengths'
                 %% Select original track numbers
@@ -320,9 +323,6 @@ classdef TrackingProcess < DataProcessingProcess
                 sTrackCoordAmpCG = vertcat(sTracks.tracksCoordAmpCG);
                 % track number relative to input struct array
                 sTrackIdx = trackIdx(selection);
-                if isfield(tracks,'label')
-                    sTrackLabels = {sTracks.label};
-                end
                 % index of selected tracks
                 siTracks = nTracksTot(selection);
                 
@@ -346,7 +346,7 @@ classdef TrackingProcess < DataProcessingProcess
                 yCoords = sTrackCoordAmpCG(:,2:8:end);
                 
                 %% Process sequence of events
-                if(isfield(sTracks,'seqOfEvents'))
+                if(hasSeqOfEvents)
                     % make sequence of events matrix
                     seqOfEvents = vertcat(sTracks.seqOfEvents);
                     nSelectedEvents = nEvents(selection);
@@ -390,8 +390,10 @@ classdef TrackingProcess < DataProcessingProcess
                         splitEventTimeCell = cell(size(xCoords,1),1);
                     end
 
-                    leftIdx = sub2ind(size(xCoords),iTrack1,splitEventTimes);
-                    rightIdx = sub2ind(size(xCoords),iTrack2,splitEventTimes);
+%                     leftIdx = sub2ind(size(xCoords),iTrack1,splitEventTimes);
+%                     rightIdx = sub2ind(size(xCoords),iTrack2,splitEventTimes);
+                    leftIdx = (splitEventTimes-1)*size(xCoords,1) + iTrack1;
+                    rightIdx = (splitEventTimes-1)*size(xCoords,1) + iTrack2;
                     xCoords(leftIdx) = xCoords(rightIdx);
                     yCoords(leftIdx) = yCoords(rightIdx);
 
@@ -411,8 +413,10 @@ classdef TrackingProcess < DataProcessingProcess
                         mergeEventTimeCell = cell(size(xCoords,1),1);
                     end
 
-                    leftIdx = sub2ind(size(xCoords),iTrack1,mergeEventTimes);
-                    rightIdx = sub2ind(size(xCoords),iTrack2,mergeEventTimes);
+%                     leftIdx = sub2ind(size(xCoords),iTrack1,mergeEventTimes);
+%                     rightIdx = sub2ind(size(xCoords),iTrack2,mergeEventTimes);
+                    leftIdx = (mergeEventTimes-1)*size(xCoords,1) + iTrack1;
+                    rightIdx = (mergeEventTimes-1)*size(xCoords,1) + iTrack2;
                     xCoords(leftIdx) = xCoords(rightIdx);
                     yCoords(leftIdx) = yCoords(rightIdx);
                 end
@@ -425,14 +429,13 @@ classdef TrackingProcess < DataProcessingProcess
                     displayTracks(iTrack).number = sTrackIdx(idx(i));
                 end            
                 
-                if(isfield(sTracks,'seqOfEvents'))
+                if(hasSeqOfEvents)
                     [displayTracks(iTracks).splitEvents] = splitEventTimeCell{:};
                     [displayTracks(iTracks).mergeEvents] = mergeEventTimeCell{:};
                 end
                 
-                if isfield(tracks, 'label')
-                    labels = sTrackLabels(idx);
-                    [displayTracks(iTracks).label] = labels{:};
+                if hasLabels
+                    [displayTracks(iTracks).label] = sTracks(idx).label;
                 end
             end
         end
