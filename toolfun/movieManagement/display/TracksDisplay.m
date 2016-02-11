@@ -45,7 +45,8 @@ classdef TracksDisplay < MovieDataDisplay
             % Concatenate data in a matrix of size dragtailLength x nTracks
             xData = NaN(dLength, nTracks);
             yData = NaN(dLength, nTracks);
-            for i = 1 : max(trackLengths)
+            uTrackLengths = unique(trackLengths);
+            for i = uTrackLengths(:)'
                 selected = trackLengths == i;
                 xTemp = vertcat(tracks(selected).xCoord)';
                 yTemp = vertcat(tracks(selected).yCoord)';
@@ -171,7 +172,8 @@ classdef TracksDisplay < MovieDataDisplay
             end
                        
             %% Plot tracks
-            if isfield(tracks,'label') % If track is classified
+            hasLabels = isfield(tracks,'label');
+            if hasLabels % If track is classified
                 nColors = size(obj.Color,1);
                 h = -ones(nColors,2);
                 for iColor = 1:nColors
@@ -202,21 +204,52 @@ classdef TracksDisplay < MovieDataDisplay
             
             % Display track numbers if option is selected
             if obj.showLabel
-                hlabels = -ones(nTracks,1);
-                for i = find(~all(isnan(xData),1))
-                    trackNr = num2str(tracks(i).number);
-                    % Find last non-NaN coordinate
-                    index = find(~isnan(xData(:,i)),1,'last');
-                    if isfield(tracks,'label')
-                        iColor = mod(tracks(i).label, nColors) + 1;
-                        hlabels(i) = text(xData(index,i)+2, yData(index,i)+2, trackNr,...
-                            'Color', obj.Color(iColor,:));
-                    else
-                        hlabels(i) = text(xData(index,i)+2, yData(index,i)+2, trackNr,...
-                            'Color', obj.Color);
+                % Convert track numbers to text
+                trackNr = sprintf('%.0f\n',tracks.number);
+                % Produces an extra string, but we ignore it
+                [trackNr,~] = regexp(trackNr,'\n','split','match');
+                % Offset the text by two pixels in x and y
+                xDataOffset = xData + 2;
+                yDataOffset = yData + 2;
+                % Find last non-NaN coordinate
+                isDataNaN = isnan(xData);
+                lastIdx = zeros(1,size(xData,2));
+                [r,c] = find(~isDataNaN);
+                lastIdx(c) = r;
+                % Like sub2ind
+                lastLinIdx = lastIdx + (0:size(xDataOffset,2)-1)*size(xDataOffset,1);
+
+                % Filter by those tracks present
+                f = lastLinIdx ~= 0;
+                lastLinIdx = lastLinIdx(f);
+                trackNr = trackNr(f);
+
+                if hasLabels
+                    iColors = mod([tracks(f).label]-1, nColors) + 1;
+                    uiColors = unique(iColors);
+                    hlabels = cell(1,nColors);
+                    % Call text once per color
+                    for iColor = uiColors
+                        s = iColors == iColor;
+                        hlabels{iColor} = text( ...
+                            xDataOffset(lastLinIdx(s)), ...
+                            yDataOffset(lastLinIdx(s)), ...
+                            trackNr(s), ...
+                            'Color',obj.Color(iColor,:), ...
+                            'Clipping','on', ...
+                            'hittest','off');
                     end
+                    hlabels = vertcat(hlabels{:});
+                else
+                    hlabels = text( ...
+                        xDataOffset(lastLinIdx), ...
+                        yDataOffset(lastLinIdx), ...
+                        trackNr, ...
+                        'Color',obj.Color, ...
+                        'Clipping','on', ...
+                        'hittest','off');
                 end
-                h = [h(:) ; hlabels ];
+                h = [h(:) ; double(hlabels) ];
             end
             
             % Set tag
