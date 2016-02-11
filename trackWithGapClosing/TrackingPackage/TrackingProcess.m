@@ -70,9 +70,13 @@ classdef TrackingProcess < DataProcessingProcess
                     validTracks = (iFrame>=trackSEL(:,1) &iFrame<=trackSEL(:,2));
                     [varargout{i}(~validTracks).tracksCoordAmpCG]=deal([]);
                     
-                    for j=find(validTracks)'
-                        varargout{i}(j).tracksCoordAmpCG = varargout{i}(j).tracksCoordAmpCG(:,1:8*(iFrame-trackSEL(j,1)+1));
+                    nFrames = iFrame-trackSEL(validTracks,1)+1;
+                    nCoords = nFrames*8;
+                    validOut = varargout{i}(validTracks);
+                    for j=1:length(validOut)
+                        validOut(j).tracksCoordAmpCG = validOut(j).tracksCoordAmpCG(:,1:nCoords(j));
                     end
+                    varargout{i}(validTracks) = validOut;
                 end
             end
         end
@@ -306,7 +310,7 @@ classdef TrackingProcess < DataProcessingProcess
             % track number
             % splitEvents: times when splits occur
             % mergeEvents: times when merges occur
-            displayTracks(nTracks,1) = struct('xCoord', [], 'yCoord', [], 'events' ,[], 'number', [], 'splitEvents', [], 'mergeEvents', []);
+            displayTracks(nTracks,1) = struct('xCoord', [], 'yCoord', [], 'number', [], 'splitEvents', [], 'mergeEvents', []);
             
             % Batch by unique trackLengths
             for trackLength = uTrackLengths'
@@ -342,74 +346,76 @@ classdef TrackingProcess < DataProcessingProcess
                 yCoords = sTrackCoordAmpCG(:,2:8:end);
                 
                 %% Process sequence of events
-                % make sequence of events matrix
-                seqOfEvents = vertcat(sTracks.seqOfEvents);
-                nSelectedEvents = nEvents(selection);
-                iStartEvents = [1 cumsum(nSelectedEvents(1:end-1))+1];
-                
-                % The fifth column is the start frame for each track
-                seqOfEvents(iStartEvents,5) = [seqOfEvents(1) ; diff(seqOfEvents(iStartEvents,1))];
-                seqOfEvents(:,5) = cumsum(seqOfEvents(:,5));
-                
-                % The sixth column is the offset for the current selected
-                % tracks
-                seqOfEvents(iStartEvents,6) = [0; snCompoundTracks(1:end-1)];
-                seqOfEvents(:,6) = cumsum(seqOfEvents(:,6));
-                
-                % Isolate merges and splits
-                seqOfEvents = seqOfEvents(~isnan(seqOfEvents(:,4)),:);
-                
-                % Apply offset 
-                seqOfEvents(:,3) = seqOfEvents(:,3) + seqOfEvents(:,6);
-                seqOfEvents(:,4) = seqOfEvents(:,4) + seqOfEvents(:,6);
-                
-                % Number of Frames
-                nFrames = trackLength/8;
-                
-                %% Splits
-                % The 2nd column indicates split (1) or merge(2)
-                splitEvents = seqOfEvents(seqOfEvents(:,2) == 1,:);
-                % Evaluate time relative to start of track
-                splitEventTimes = splitEvents(:,1) - splitEvents(:,5);
-                % Time should not exceed the number of coordinates we have
-                splitEvents = splitEvents(splitEventTimes < nFrames,:);
-                splitEventTimes = splitEventTimes(splitEventTimes < nFrames,:);
-                iTrack1 = splitEvents(:,3);
-                iTrack2 = splitEvents(:,4);
-                               
-                % Use accumarray to gather the splitEventTimes into cell
-                % arrays
-                if(~isempty(splitEventTimes))
-                    splitEventTimeCell = accumarray([iTrack1 ; iTrack2], [splitEventTimes ; splitEventTimes ],[size(xCoords,1) 1],@(x) {x'},{});
-                else
-                    splitEventTimeCell = cell(size(xCoords,1),1);
-                end
-                
-                leftIdx = sub2ind(size(xCoords),iTrack1,splitEventTimes);
-                rightIdx = sub2ind(size(xCoords),iTrack2,splitEventTimes);
-                xCoords(leftIdx) = xCoords(rightIdx);
-                yCoords(leftIdx) = yCoords(rightIdx);
-                
-                %% Merges
-                % The 2nd column indicates split (1) or merge(2)
-                mergeEvents = seqOfEvents(seqOfEvents(:,2) == 2,:);
-                mergeEventTimes = mergeEvents(:,1) - mergeEvents(:,5);
-                mergeEvents = mergeEvents(mergeEventTimes < nFrames,:);
-                mergeEventTimes = mergeEventTimes(mergeEventTimes < nFrames,:);
-                mergeEventTimes = mergeEventTimes + 1;
-                iTrack1 = mergeEvents(:,3);
-                iTrack2 = mergeEvents(:,4);
-                
-                if(~isempty(mergeEventTimes))
-                    mergeEventTimeCell = accumarray([iTrack1 ; iTrack2], [mergeEventTimes ; mergeEventTimes ],[size(xCoords,1) 1],@(x) {x'},{});
-                else
-                    mergeEventTimeCell = cell(size(xCoords,1),1);
-                end
+                if(isfield(sTracks,'seqOfEvents'))
+                    % make sequence of events matrix
+                    seqOfEvents = vertcat(sTracks.seqOfEvents);
+                    nSelectedEvents = nEvents(selection);
+                    iStartEvents = [1 cumsum(nSelectedEvents(1:end-1))+1];
 
-                leftIdx = sub2ind(size(xCoords),iTrack1,mergeEventTimes);
-                rightIdx = sub2ind(size(xCoords),iTrack2,mergeEventTimes);
-                xCoords(leftIdx) = xCoords(rightIdx);
-                yCoords(leftIdx) = yCoords(rightIdx);
+                    % The fifth column is the start frame for each track
+                    seqOfEvents(iStartEvents,5) = [seqOfEvents(1) ; diff(seqOfEvents(iStartEvents,1))];
+                    seqOfEvents(:,5) = cumsum(seqOfEvents(:,5));
+
+                    % The sixth column is the offset for the current selected
+                    % tracks
+                    seqOfEvents(iStartEvents,6) = [0; snCompoundTracks(1:end-1)];
+                    seqOfEvents(:,6) = cumsum(seqOfEvents(:,6));
+
+                    % Isolate merges and splits
+                    seqOfEvents = seqOfEvents(~isnan(seqOfEvents(:,4)),:);
+
+                    % Apply offset 
+                    seqOfEvents(:,3) = seqOfEvents(:,3) + seqOfEvents(:,6);
+                    seqOfEvents(:,4) = seqOfEvents(:,4) + seqOfEvents(:,6);
+
+                    % Number of Frames
+                    nFrames = trackLength/8;
+
+                    %% Splits
+                    % The 2nd column indicates split (1) or merge(2)
+                    splitEvents = seqOfEvents(seqOfEvents(:,2) == 1,:);
+                    % Evaluate time relative to start of track
+                    splitEventTimes = splitEvents(:,1) - splitEvents(:,5);
+                    % Time should not exceed the number of coordinates we have
+                    splitEvents = splitEvents(splitEventTimes < nFrames,:);
+                    splitEventTimes = splitEventTimes(splitEventTimes < nFrames,:);
+                    iTrack1 = splitEvents(:,3);
+                    iTrack2 = splitEvents(:,4);
+
+                    % Use accumarray to gather the splitEventTimes into cell
+                    % arrays
+                    if(~isempty(splitEventTimes))
+                        splitEventTimeCell = accumarray([iTrack1 ; iTrack2], [splitEventTimes ; splitEventTimes ],[size(xCoords,1) 1],@(x) {x'},{});
+                    else
+                        splitEventTimeCell = cell(size(xCoords,1),1);
+                    end
+
+                    leftIdx = sub2ind(size(xCoords),iTrack1,splitEventTimes);
+                    rightIdx = sub2ind(size(xCoords),iTrack2,splitEventTimes);
+                    xCoords(leftIdx) = xCoords(rightIdx);
+                    yCoords(leftIdx) = yCoords(rightIdx);
+
+                    %% Merges
+                    % The 2nd column indicates split (1) or merge(2)
+                    mergeEvents = seqOfEvents(seqOfEvents(:,2) == 2,:);
+                    mergeEventTimes = mergeEvents(:,1) - mergeEvents(:,5);
+                    mergeEvents = mergeEvents(mergeEventTimes < nFrames,:);
+                    mergeEventTimes = mergeEventTimes(mergeEventTimes < nFrames,:);
+                    mergeEventTimes = mergeEventTimes + 1;
+                    iTrack1 = mergeEvents(:,3);
+                    iTrack2 = mergeEvents(:,4);
+
+                    if(~isempty(mergeEventTimes))
+                        mergeEventTimeCell = accumarray([iTrack1 ; iTrack2], [mergeEventTimes ; mergeEventTimes ],[size(xCoords,1) 1],@(x) {x'},{});
+                    else
+                        mergeEventTimeCell = cell(size(xCoords,1),1);
+                    end
+
+                    leftIdx = sub2ind(size(xCoords),iTrack1,mergeEventTimes);
+                    rightIdx = sub2ind(size(xCoords),iTrack2,mergeEventTimes);
+                    xCoords(leftIdx) = xCoords(rightIdx);
+                    yCoords(leftIdx) = yCoords(rightIdx);
+                end
                           
                 %% Load cells into struct fields
                 for i=1:length(iTracks)
@@ -419,10 +425,8 @@ classdef TrackingProcess < DataProcessingProcess
                     displayTracks(iTrack).number = sTrackIdx(idx(i));
                 end            
                 
-                if(~isempty(splitEventTimeCell))
+                if(isfield(sTracks,'seqOfEvents'))
                     [displayTracks(iTracks).splitEvents] = splitEventTimeCell{:};
-                end
-                if(~isempty(mergeEventTimeCell))
                     [displayTracks(iTracks).mergeEvents] = mergeEventTimeCell{:};
                 end
                 
