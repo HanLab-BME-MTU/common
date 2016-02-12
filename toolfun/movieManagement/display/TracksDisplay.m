@@ -25,7 +25,17 @@ classdef TracksDisplay < MovieDataDisplay
             end
         end
         function h=initDraw(obj, tracks, tag, varargin)
-            if isempty(tracks), h = -1; return; end
+            if(~ishandle(varargin{1}))
+                hIn = [];
+            else
+                hIn = varargin{1};
+                varargin = varargin(2:end);
+            end
+            if isempty(tracks)
+                set(hIn,'Visible','off');
+                h = -1;
+                return;
+            end
             % Get track length and filter valid tracks
             trackLengths = cellfun('prodofsize',{tracks.xCoord});
             validTracks = trackLengths>0;
@@ -173,9 +183,14 @@ classdef TracksDisplay < MovieDataDisplay
                        
             %% Plot tracks
             hasLabels = isfield(tracks,'label');
+            hlinesIn = findobj(hIn,'Type','Line');
             if hasLabels % If track is classified
                 nColors = size(obj.Color,1);
                 h = -ones(nColors,2);
+                % Attempt to reuse line objects, delete the rest
+                idx = 1:min(numel(hlinesIn),numel(h));
+                h(idx) = double(hlinesIn(idx));
+                delete(hlinesIn(numel(h)+1:end));
                 for iColor = 1:nColors
                     iTracks = mod([tracks.label]-1, nColors) +1 == iColor;
                     h(iColor,1)=plotFast(h(iColor,1),xData(:,iTracks),yData(:,iTracks),'Linestyle',obj.Linestyle,...
@@ -186,6 +201,10 @@ classdef TracksDisplay < MovieDataDisplay
             else
                 % Plot links and gaps
                 h=-ones(4,1);
+                % Attempt to reuse line objects, delete the rest
+                idx = 1:min(numel(hlinesIn),numel(h));
+                h(idx) = double(hlinesIn(idx));
+                delete(hlinesIn(numel(h)+1:end));
                 splitMarker = 'none';
                 mergeMarker = 'none';
                 if(obj.markMergeSplit)
@@ -193,9 +212,9 @@ classdef TracksDisplay < MovieDataDisplay
                     mergeMarker = obj.MergeMarker;
                 end
                 h(1) = plotFast(h(1),xData, yData, 'Linestyle', obj.Linestyle,...
-                    'Linewidth', obj.Linewidth, 'Color',obj.Color,varargin{:});
+                    'Linewidth', obj.Linewidth, 'Color',obj.Color, 'Marker', 'none', varargin{:});
                 h(2) = plotFast(h(2),xGapData, yGapData, 'Linestyle', obj.GapLinestyle',...
-                    'Linewidth', obj.Linewidth, 'Color',[1 1 1] - obj.Color, varargin{:});
+                    'Linewidth', obj.Linewidth, 'Color',[1 1 1] - obj.Color, 'Marker', 'none', varargin{:});
                 h(3) = plotFast(h(3),xSplitData, ySplitData, 'Linestyle', obj.Linestyle,...
                     'Linewidth', obj.Linewidth, 'Color', obj.SplitColor , 'Marker', splitMarker , varargin{:});
                 h(4) = plotFast(h(4),xMergeData, yMergeData, 'Linestyle', obj.Linestyle,...
@@ -203,6 +222,7 @@ classdef TracksDisplay < MovieDataDisplay
             end
             
             % Display track numbers if option is selected
+            hTextIn = findobj(hIn,'Type','Text');
             if obj.showLabel
                 % Convert track numbers to text
                 trackNr = sprintf('%.0f\n',tracks.number);
@@ -223,33 +243,57 @@ classdef TracksDisplay < MovieDataDisplay
                 f = lastLinIdx ~= 0;
                 lastLinIdx = lastLinIdx(f);
                 trackNr = trackNr(f);
+                if(numel(trackNr) > numel(hTextIn))
+                    hlabels = hTextIn;
+                    idx = 1:numel(hTextIn);
+                    % Reposition existing labels
+                    set(hlabels(idx),{'Position','String'}, ...
+                        [num2cell( ...
+                            [xDataOffset(lastLinIdx(idx)) ; ...
+                            yDataOffset(lastLinIdx(idx))]', ...
+                            2) ...
+                         trackNr(idx)'] ...
+                        );
+                    set(hlabels(idx),'Visible','on');
+                    % Create new labels
+                    idx = numel(hTextIn)+1:numel(trackNr);
+                    hlabels(idx) = text( ...
+                        xDataOffset(lastLinIdx(idx)), ...
+                        yDataOffset(lastLinIdx(idx)), ...
+                        trackNr(idx), ...
+                        'Clipping','on', ...
+                        'HitTest','off' ...
+                    );
+                else
+                    hlabels = hTextIn;
+                    % Reposition existing labels
+                    idx = 1:numel(trackNr);
+                    set(hlabels(idx),{'Position','String'}, ...
+                        [num2cell( ...
+                            [xDataOffset(lastLinIdx(idx)) ; ...
+                            yDataOffset(lastLinIdx(idx))]', ...
+                            2) ...
+                         trackNr(idx)'] ...
+                        );
+                    set(hlabels(idx),'Visible','on');
+                    % Make unsused labels invisible
+                    set(hlabels(numel(trackNr)+1:end),'Visible','off');
+                end
 
                 if hasLabels
                     iColors = mod([tracks(f).label]-1, nColors) + 1;
                     uiColors = unique(iColors);
-                    hlabels = cell(1,nColors);
-                    % Call text once per color
+                    % Set once per color
                     for iColor = uiColors
                         s = iColors == iColor;
-                        hlabels{iColor} = text( ...
-                            xDataOffset(lastLinIdx(s)), ...
-                            yDataOffset(lastLinIdx(s)), ...
-                            trackNr(s), ...
-                            'Color',obj.Color(iColor,:), ...
-                            'Clipping','on', ...
-                            'hittest','off');
+                        set(hlabels(s),'Color',obj.Color(iColor,:));
                     end
-                    hlabels = vertcat(hlabels{:});
                 else
-                    hlabels = text( ...
-                        xDataOffset(lastLinIdx), ...
-                        yDataOffset(lastLinIdx), ...
-                        trackNr, ...
-                        'Color',obj.Color, ...
-                        'Clipping','on', ...
-                        'hittest','off');
+                    set(hlabels,'Color',obj.Color);
                 end
-                h = [h(:) ; double(hlabels) ];
+                h = [h(:) ; double(hlabels(:)) ];
+            else
+                delete(hTextIn);
             end
             
             % Set tag
@@ -258,8 +302,7 @@ classdef TracksDisplay < MovieDataDisplay
         
         function updateDraw(obj, h, data)
             tag=get(h(1),'Tag');
-            delete(h);
-            obj.initDraw(data,tag);
+            obj.initDraw(data,tag,h);
             return;
             
         end
