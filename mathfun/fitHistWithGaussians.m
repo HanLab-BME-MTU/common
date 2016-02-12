@@ -1,11 +1,11 @@
-function [numObsPerBinP,binCenterP,modeParam,errFlag] = fitHistWithGaussians(...
-    observations,alpha,variableMean,variableStd,showPlot,numModeMinMax,...
-    binStrategy,plotName,logData,modeParamIn,ratioTol)
+function [numObsPerBinP,binCenterP,modeParam,errFlag,fitRes] = ...
+    fitHistWithGaussians(observations,alpha,variableMean,variableStd,...
+    showPlot,numModeMinMax,binStrategy,plotName,logData,modeParamIn,ratioTol)
 %FITHISTWITHGAUSSIANS determines the number of Gaussians + their characteristics to fit a histogram
 %
-%SYNOPSIS [numObsPerBinP,binCenterP,modeParam,errFlag] = fitHistWithGaussians(...
-%    observations,alpha,variableMean,variableStd,showPlot,numModeMinMax,...
-%    binStrategy,plotName,logData,modeParamIn,ratioTol)
+%SYNOPSIS [numObsPerBinP,binCenterP,modeParam,errFlag,fitRes] = ...
+%    fitHistWithGaussians(observations,alpha,variableMean,variableStd,...
+%    showPlot,numModeMinMax,binStrategy,plotName,logData,modeParamIn,ratioTol)
 %
 %NOTE: "R" OPTION DISABLED AT THE MOMENT. CODE NEEDS UPDATING TO USE "R".
 %    If/when "R" option is enabled: 
@@ -13,8 +13,10 @@ function [numObsPerBinP,binCenterP,modeParam,errFlag] = fitHistWithGaussians(...
 %    observations,'R',showPlot,numModeMinMax)
 %
 %INPUT  observations: Vector of observations whose histogram is to be fitted.
-%       alpha       : Alpha-value for the statistical test that compares the
+%       alpha       : Alpha-value for the F-test that compares the
 %                     fit of n+1 Gaussians to the fit of n Gaussians.
+%                     If alpha=1, the BIC is used instead of the F-test to
+%                     determine number of Gaussians.
 %                     If 'R' instead of numerical value, the program will
 %                     call the function mclust in the statistical package
 %                     R. For this, you will need the toolbox matlab2R,
@@ -100,6 +102,11 @@ function [numObsPerBinP,binCenterP,modeParam,errFlag] = fitHistWithGaussians(...
 %                     with an entry in the first row stores the mean square
 %                     residual of the fit.
 %       errFlag     : 0 if function executes normally, 1 otherwise.
+%       fitRes      : Structure array with fitting results for the whole
+%                     range of fitted Gaussians (from min to max). This is
+%                     output in case user wants to post-process the fitting
+%                     results in an application-specific manner outside of
+%                     this function.
 %
 %REMARKS The fitted Gaussians are normalized. Thus, the contribution of one
 %Gaussian is given by
@@ -402,24 +409,19 @@ switch isR
                 
         end
         
-        %initialize variables indicating number of fitted Gaussians and their parameters
-        numGauss = minNumGauss-1;
-        modeParam = [];
-        
-        %logical variable indicating whether to attempt to fit
-        fit = 1;
-        
         %set some optimization options
         options = optimset('MaxFunEvals',100000,'MaxIter',10000,'TolFun',1e-5,'Display','off');
         
-        %fit the cumulative histogram with as many Gaussians as necessary
-        while fit
-            
-            %add another Gaussian to the fit
-            numGaussT = numGauss + 1;
-            
+        %initialize structure of fitting results
+        fitRes = repmat(struct('numMode',NaN,'modeParam',[],'residuals',[],...
+            'numParam',NaN,'numData',NaN,'numDegFree',NaN,...
+            'valueBIC',NaN,'pValueFTest',NaN),maxNumGauss,1);
+
+        %fit the cumulative histogram with the whole range of number of Gaussians
+        for numGaussT = minNumGauss : maxNumGauss
+                        
             %assign parameter initial guesses
-            tmp = linspace(min(observations),max(observations),numGaussT+2);
+            tmp = prctile(observations,linspace(10,90,numGaussT+2));
             meanInitialGuess = tmp(2:end-1)';
             stdInitialGuess = nanstd(observations)/sqrt(numGaussT)*ones(numGaussT,1);
             ampInitialGuess = numObservations/numGaussT*ones(numGaussT,1);
@@ -429,10 +431,10 @@ switch isR
             end
             
             %assign parameter lower bounds
-            lb = [min(observations)*ones(numGaussT,1) -Inf(numGaussT,1) zeros(numGaussT,1)];
+            lb = [min(observations)*ones(numGaussT,1) zeros(numGaussT,1) zeros(numGaussT,1)];
             
             %assign parameter upper bounds
-            ub = [max(observations)*ones(numGaussT,1) Inf(numGaussT,1) Inf(numGaussT,1)];
+            ub = [max(observations)*ones(numGaussT,1) 5*nanstd(observations)*ones(numGaussT,1) 2*numObservations*ones(numGaussT,1)];
             
             switch variableMean
                 
@@ -442,8 +444,9 @@ switch isR
                         
                         case -1 %if std is given
                             
-                            %calculate number of degrees of freedom
-                            numDegFreeT = numBins - numGaussT;
+                            %calculate number of parameters and number of degrees of freedom
+                            numParamT = numGaussT;
+                            numDegFreeT = numBins - numParamT;
                             
                             %assign parameter initial values
                             x0 = modeParamT(:,3);
@@ -468,8 +471,9 @@ switch isR
                         
                         case 0 %if std is constrained to all stds are equal
                             
-                            %calculate number of degrees of freedom
-                            numDegFreeT = numBins - 2*numGaussT - 1;
+                            %calculate number of parameters and number of degrees of freedom
+                            numParamT = 2*numGaussT + 1;
+                            numDegFreeT = numBins - numParamT;
                             
                             %assign parameter initial values
                             x0 = [modeParamT(:,1); modeParamT(1,2); modeParamT(:,3)];
@@ -490,8 +494,9 @@ switch isR
                             
                         case 1 %if std is variable
                             
-                            %calculate number of degrees of freedom
-                            numDegFreeT = numBins - 3*numGaussT;
+                            %calculate number of parameters and number of degrees of freedom
+                            numParamT = 3*numGaussT;
+                            numDegFreeT = numBins - numParamT;
                             
                             %assign parameter initial values
                             x0 = modeParamT(:);
@@ -532,8 +537,9 @@ switch isR
                         
                         case 0 %if std is constrained to all stds are equal
                             
-                            %calculate number of degrees of freedom
-                            numDegFreeT = numBins - numGaussT - 2;
+                            %calculate number of parameters and number of degrees of freedom
+                            numParamT = numGaussT + 2;
+                            numDegFreeT = numBins - numParamT;
                             
                             %assign parameter initial values
                             x0 = [modeParamT(1,1:2)'; modeParamT(:,3)];
@@ -568,8 +574,9 @@ switch isR
                             
                             if sum(ratioTol) == 0 %if strict ratio
                                 
-                                %calculate number of degrees of freedom
-                                numDegFreeT = numBins - 2*numGaussT - 1;
+                                %calculate number of parameters and number of degrees of freedom
+                                numParamT = 2*numGaussT + 1;
+                                numDegFreeT = numBins - numParamT;
                                 
                                 %assign parameter initial values
                                 x0 = [modeParamT(1,1); modeParamT(:,2); modeParamT(:,3)];
@@ -597,8 +604,9 @@ switch isR
                                 
                             else %if there is wiggle room
                                 
-                                %calculate number of degrees of freedom
-                                numDegFreeT = numBins - 3*numGaussT;
+                                %calculate number of parameters and number of degrees of freedom
+                                numParamT = 3*numGaussT;
+                                numDegFreeT = numBins - numParamT;
                                 
                                 %assign parameter initial values
                                 x0 = modeParamT;
@@ -637,8 +645,9 @@ switch isR
                             
                             if sum(ratioTol) == 0 %if strict ratio
                                 
-                                %calculate number of degrees of freedom
-                                numDegFreeT = numBins - numGaussT - 2;
+                                %calculate number of parameters and number of degrees of freedom
+                                numParamT = numGaussT + 2;
+                                numDegFreeT = numBins - numParamT;
                                 
                                 %assign parameter initial values
                                 x0 = [modeParamT(1,1:2)'; modeParamT(:,3)];
@@ -672,8 +681,9 @@ switch isR
                                 
                             else %if there is wiggle room
                                 
-                                %calculate number of degrees of freedom
-                                numDegFreeT = numBins - 3*numGaussT;
+                                %calculate number of parameters and number of degrees of freedom
+                                numParamT = 3*numGaussT;
+                                numDegFreeT = numBins - numParamT;
                                 
                                 %assign parameter initial values
                                 x0 = modeParamT;
@@ -721,8 +731,9 @@ switch isR
                             
                             if sum(ratioTol) == 0 %if strict ratio
                                 
-                                %calculate number of degrees of freedom
-                                numDegFreeT = numBins - numGaussT - 2;
+                                %calculate number of parameters and number of degrees of freedom
+                                numParamT = numGaussT + 2;
+                                numDegFreeT = numBins - numParamT;
                                 
                                 %assign parameter initial values
                                 x0 = [modeParamT(1,1:2)'; modeParamT(:,3)];
@@ -758,8 +769,9 @@ switch isR
                                 
                             else %if there is wiggle room
                                 
-                                %calculate number of degrees of freedom
-                                numDegFreeT = numBins - 3*numGaussT;
+                                %calculate number of parameters and number of degrees of freedom
+                                numParamT = 3*numGaussT;
+                                numDegFreeT = numBins - numParamT;
                                 
                                 %assign parameter initial values
                                 x0 = modeParamT;
@@ -807,39 +819,55 @@ switch isR
                     
             end %(switch variableMean)
             
-            %check whether addition of 1 Gaussian has significantly improved the fit
-            if numGaussT > minNumGauss %if this is not the first fit
+            %calculate BIC value for this fit
+            valueBIC = numBins*log(sum(residualsT.^2)/numBins) + log(numBins)*numParamT;
+            
+            %calculate F-test p-value from comparing this fit to previous one
+            if numGaussT == minNumGauss
+                
+                pValueFTest = 0; %give fake p-value of 0, as at least first fit should be accepted in this scheme
+                
+            else
                 
                 %get test statistic, which is F-distributed
                 testStat = (sum(residualsT.^2)/numDegFreeT)/...
-                    (sum(residuals.^2)/numDegFree);
+                    (sum(fitRes(numGaussT-1).residuals.^2)/fitRes(numGaussT-1).numDegFree);
                 
                 %get p-value of test statistic
-                pValue = fcdf(testStat,numDegFree,numDegFreeT);
-                
-                %compare p-value to alpha
-                %1-sided F-test: H0: F=1, H1: F<1
-                if pValue <= alpha && numGaussT <= maxNumGauss %if p-value is smaller and the limit of Gaussians isn't reached
-                    fit = 1; %accept this fit and attempt another fit with an additional Gaussian
-                else %if p-value is larger
-                    fit = 0; %do not accept this fit and exit
-                end
-                
-            end %(if numGaussT > 1)
-            
-            %if this fit is accepted, update some variables
-            if fit
-                numGauss = numGaussT;
-                modeParam = modeParamT;
-                residuals = residualsT;
-                numDegFree = numDegFreeT;
+                pValueFTest = fcdf(testStat,fitRes(numGaussT-1).numDegFree,numDegFreeT);
+                                
             end
             
-            if ~isempty(modeParamIn) || minNumGauss == maxNumGauss
-                fit = 0;
-            end
+            %save results of this fit
+            fitRes(numGaussT).numMode     = numGaussT;
+            fitRes(numGaussT).modeParam   = modeParamT;
+            fitRes(numGaussT).residuals   = residualsT;
+            fitRes(numGaussT).numParam    = numParamT;
+            fitRes(numGaussT).numData     = numBins;
+            fitRes(numGaussT).numDegFree  = numDegFreeT;
+            fitRes(numGaussT).valueBIC    = valueBIC;
+            fitRes(numGaussT).pValueFTest = pValueFTest;
             
-        end %(while fit)
+            
+        end %(for numGaussT = minNumGauss : maxNumGauss)
+        
+        %determine the best model
+        if alpha == 1 %BIC            
+            valueBIC = vertcat(fitRes.valueBIC);
+            indxBestFit = find(valueBIC == min(valueBIC));
+        else %F-test
+            pValueFTest = vertcat(fitRes.pValueFTest);
+            indxBestFit = find(pValueFTest>alpha,1,'first') - 1;
+            if isempty(indxBestFit)
+                indxBestFit = maxNumGauss;
+            end
+        end
+        
+        %output its parameters
+        numGauss = fitRes(indxBestFit).numMode;
+        modeParam = fitRes(indxBestFit).modeParam;
+        residuals = fitRes(indxBestFit).residuals;
+        numDegFree = fitRes(indxBestFit).numDegFree;
         
         % ----- R ------
     case 1
