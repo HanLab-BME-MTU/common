@@ -44,6 +44,7 @@ ip.addParamValue('movieDataName','movieData.mat', @ischar);
 ip.addParamValue('deskew',false, @islogical);
 ip.addParamValue('writeData',true, @islogical);
 ip.addParamValue('copyFile',false, @islogical);
+ip.addParamValue('translocateMovieData',false, @islogical);
 ip.addParamValue('createMIP',true, @islogical);
 ip.addParamValue('is3D',true, @islogical);
 ip.addParamValue('lateralPixelSize',1, @isfloat);
@@ -151,6 +152,7 @@ for cellIdx=1:length(moviePaths)
     if(~exist([cPath filesep 'analysis'],'dir')) mkdir([cPath filesep 'analysis']); end
     %%
     MD=[];
+    try
     if(~isempty(channelList))
         %%
         MD=MovieData(channelList,[cPath filesep 'analysis'],'movieDataFileName_','movieData.mat','movieDataPath_',[cPath filesep 'analysis'], ...
@@ -173,8 +175,14 @@ for cellIdx=1:length(moviePaths)
     end;
 
     MDs{cellIdx}=MD;
+    catch
+        warning(['Movie building fail, exluding ' cPath ]);
+        MDs{cellIdx}=[];
+    end
+        
 end
-
+builtMovies=cellfun(@(x) ~isempty(x),MDs)
+MDs=[MDs{builtMovies}];
 
 mkdir([moviesRoot filesep 'analysis']);
 ML=MovieList(MDs,[moviesRoot filesep 'analysis'],'movieListFileName_',p.movieListName,'movieListPath_',[moviesRoot filesep 'analysis']);
