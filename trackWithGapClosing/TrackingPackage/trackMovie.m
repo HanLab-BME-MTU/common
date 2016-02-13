@@ -9,13 +9,18 @@ ip = inputParser;
 ip.CaseSensitive = false;
 ip.addRequired('movieData', @(x) isa(x,'MovieData'));
 ip.addOptional('paramsIn',[], @isstruct);
+ip.addParameter('ProcessIndex',[],@isnumeric);
 ip.parse(movieData,varargin{:});
 paramsIn=ip.Results.paramsIn;
 
 
 
 %Get the indices of any previous tracking processes from this function                                                                              
-iProc = movieData.getProcessIndex('TrackingProcess',1,0);
+if(isempty(ip.Results.ProcessIndex))
+    iProc = movieData.getProcessIndex('TrackingProcess',1,0);
+else
+    iProc = ip.Results.ProcessIndex;
+end
 
 %If the process doesn't exist, create it
 if isempty(iProc)
