@@ -54,6 +54,8 @@ else
     excludefilters = [{'toolbox'},ip.Results.excludefilters{:}];
 end
 
+use_depfun = verLessThan('matlab','R2014a');
+
 % Get the initial set of file dependencies
 filesList=cellfun(@which,funList(:),'UniformOutput',false);
 depList={};
@@ -63,7 +65,11 @@ filter = @(f, l) cellfun(@(x)(isempty(regexp(x,f,'once'))), l);
 
 while true
     %Find dependencies of current list
-    newFiles = matlab.codetools.requiredFilesAndProducts(filesList,'toponly');
+    if(use_depfun)
+        newFiles = depfun(filesList{:},'-toponly','-quiet');
+    else
+        newFiles = matlab.codetools.requiredFilesAndProducts(filesList,'toponly');
+    end
         
     % Filter new found files using regular expression
     for i = 1:numel(excludefilters)
@@ -79,9 +85,22 @@ while true
     if isempty(newFiles) || nFiles==numel(depList), break; end
 end
 
+if(use_depfun)
 % Matlab toolbox files are named '*/toolbox/name_of_toolbox/*'
-[~,productList] = matlab.codetools.requiredFilesAndProducts(depList(:),'toponly');
-toolboxes = {productList.Name}';
+    allDepFiles = depfun(depList{:},'-toponly','-quiet');
+    toolboxToken = ['toolbox' regexptranslate('escape',filesep) '(\w+)' regexptranslate('escape',filesep)];
+    foundTokens=regexp(allDepFiles,toolboxToken,'tokens','once');
+    tb_namespaces = unique(vertcat(foundTokens{:}));
+
+    % Remove the "toolboxes" that come with MATLAB by default
+    v = cellfun(@ver, tb_namespaces, 'UniformOutput', false);
+    v = v(~cellfun(@isempty, v));
+    tb_names = cellfun(@(x) x.Name, v, 'UniformOutput', false);
+    toolboxes = tb_names(~cellfun(@isempty, tb_names));
+else
+    [~,productList] = matlab.codetools.requiredFilesAndProducts(depList(:),'toponly');
+    toolboxes = {productList.Name}';
+end
 
 if ip.Results.allMex
     %Find any mex binaries.
