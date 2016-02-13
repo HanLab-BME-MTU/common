@@ -25,7 +25,17 @@ classdef TracksDisplay < MovieDataDisplay
             end
         end
         function h=initDraw(obj, tracks, tag, varargin)
-            if isempty(tracks), h = -1; return; end
+            if(~ishandle(varargin{1}))
+                hIn = [];
+            else
+                hIn = varargin{1};
+                varargin = varargin(2:end);
+            end
+            if isempty(tracks)
+                set(hIn,'Visible','off');
+                h = -1;
+                return;
+            end
             % Get track length and filter valid tracks
             trackLengths = cellfun('prodofsize',{tracks.xCoord});
             validTracks = trackLengths>0;
@@ -45,7 +55,8 @@ classdef TracksDisplay < MovieDataDisplay
             % Concatenate data in a matrix of size dragtailLength x nTracks
             xData = NaN(dLength, nTracks);
             yData = NaN(dLength, nTracks);
-            for i = 1 : max(trackLengths)
+            uTrackLengths = unique(trackLengths);
+            for i = uTrackLengths(:)'
                 selected = trackLengths == i;
                 xTemp = vertcat(tracks(selected).xCoord)';
                 yTemp = vertcat(tracks(selected).yCoord)';
@@ -116,44 +127,70 @@ classdef TracksDisplay < MovieDataDisplay
             end
             
             eventsExist = isfield(tracks,'splitEvents') || isfield(tracks,'mergeEvents');
-
-            % Initialize matrix for split events
+            dragtailWindows = [trackLengths - displayLength + 1 ; trackLengths];
+            
+            %% Initialize matrix for split events
             if(eventsExist)
                 hasSplitEvents = ~cellfun('isempty',{tracks.splitEvents})';
             end
             xSplitData = NaN(dLength, nTracks);
             ySplitData = NaN(dLength, nTracks);
-            for i = find(hasSplitEvents)'
-                eventTimes = false;
-                eventTimes([tracks(i).splitEvents tracks(i).splitEvents+1]) = true;
-                eventTimes = find(eventTimes);
-                dragtailWindow = [trackLengths(i) - displayLength(i) + 1 trackLengths(i)];
-                eventTimes = eventTimes(eventTimes >= dragtailWindow(1) & eventTimes <= dragtailWindow(2));
-                xSplitData(eventTimes - dragtailWindow(1) +1, i) = tracks(i).xCoord(eventTimes);
-                ySplitData(eventTimes - dragtailWindow(1) +1, i) = tracks(i).yCoord(eventTimes);
+
+
+            eventTimes = [tracks(hasSplitEvents).splitEvents];
+            eventTracks = zeros(size(eventTimes));
+            eventTrackIdx = cumsum([1 cellfun('length',{tracks(hasSplitEvents).splitEvents})]);
+            hasSplitEventsIdx = find(hasSplitEvents);
+            if(~isempty(hasSplitEventsIdx))
+                eventTracks(eventTrackIdx(1:end-1)) = [hasSplitEventsIdx(1);  diff(hasSplitEventsIdx)];
+                eventTracks = cumsum(eventTracks);
+
+                eventTimes = [eventTimes eventTimes+1];
+                eventTracks = [eventTracks eventTracks];
+                f = eventTimes >= dragtailWindows(1,eventTracks) & eventTimes <= dragtailWindows(2,eventTracks);
+                eventTimes = eventTimes(f);
+                eventTracks = eventTracks(f);
+                idx = sub2ind(size(xSplitData),eventTimes - dragtailWindows(1,eventTracks) + 1,eventTracks);
+                xSplitData(idx) = xData(idx);
+                ySplitData(idx) = yData(idx);
             end
-            
-            % Initialize matrix for split events
+                        
+            %% Initialize matrix for split events
 
             if(eventsExist)
                 hasMergeEvents = ~cellfun('isempty',{tracks.mergeEvents})';
             end
             xMergeData = NaN(dLength, nTracks);
             yMergeData = NaN(dLength, nTracks);
-            for i = find(hasMergeEvents)'
-                eventTimes = false;
-                eventTimes([tracks(i).mergeEvents tracks(i).mergeEvents+1]) = true;
-                eventTimes = find(eventTimes)-1;
-                dragtailWindow = [trackLengths(i) - displayLength(i) + 1 trackLengths(i)];
-                eventTimes = eventTimes(eventTimes >= dragtailWindow(1) & eventTimes <= dragtailWindow(2));
-                xMergeData(eventTimes - dragtailWindow(1) +1, i) = tracks(i).xCoord(eventTimes);
-                yMergeData(eventTimes - dragtailWindow(1) +1, i) = tracks(i).yCoord(eventTimes);
-            end
             
-            % Plot tracks
-            if isfield(tracks,'label') % If track is classified
+            eventTimes = [tracks(hasMergeEvents).mergeEvents];
+            eventTracks = zeros(size(eventTimes));
+            eventTrackIdx = cumsum([1 cellfun('length',{tracks(hasMergeEvents).mergeEvents})]);
+            hasMergeEventsIdx = find(hasMergeEvents);
+            if(~isempty(hasMergeEventsIdx))
+                eventTracks(eventTrackIdx(1:end-1)) = [hasMergeEventsIdx(1);  diff(hasMergeEventsIdx)];
+                eventTracks = cumsum(eventTracks);
+
+                eventTimes = [eventTimes-1 eventTimes];
+                eventTracks = [eventTracks eventTracks];
+                f = eventTimes >= dragtailWindows(1,eventTracks) & eventTimes <= dragtailWindows(2,eventTracks);
+                eventTimes = eventTimes(f);
+                eventTracks = eventTracks(f);
+                idx = sub2ind(size(xMergeData),eventTimes - dragtailWindows(1,eventTracks) + 1,eventTracks);
+                xMergeData(idx) = xData(idx);
+                yMergeData(idx) = yData(idx);
+            end
+                       
+            %% Plot tracks
+            hasLabels = isfield(tracks,'label');
+            hlinesIn = findobj(hIn,'Type','Line');
+            if hasLabels % If track is classified
                 nColors = size(obj.Color,1);
                 h = -ones(nColors,2);
+                % Attempt to reuse line objects, delete the rest
+                idx = 1:min(numel(hlinesIn),numel(h));
+                h(idx) = double(hlinesIn(idx));
+                delete(hlinesIn(numel(h)+1:end));
                 for iColor = 1:nColors
                     iTracks = mod([tracks.label]-1, nColors) +1 == iColor;
                     h(iColor,1)=plotFast(h(iColor,1),xData(:,iTracks),yData(:,iTracks),'Linestyle',obj.Linestyle,...
@@ -164,6 +201,10 @@ classdef TracksDisplay < MovieDataDisplay
             else
                 % Plot links and gaps
                 h=-ones(4,1);
+                % Attempt to reuse line objects, delete the rest
+                idx = 1:min(numel(hlinesIn),numel(h));
+                h(idx) = double(hlinesIn(idx));
+                delete(hlinesIn(numel(h)+1:end));
                 splitMarker = 'none';
                 mergeMarker = 'none';
                 if(obj.markMergeSplit)
@@ -171,9 +212,9 @@ classdef TracksDisplay < MovieDataDisplay
                     mergeMarker = obj.MergeMarker;
                 end
                 h(1) = plotFast(h(1),xData, yData, 'Linestyle', obj.Linestyle,...
-                    'Linewidth', obj.Linewidth, 'Color',obj.Color,varargin{:});
+                    'Linewidth', obj.Linewidth, 'Color',obj.Color, 'Marker', 'none', varargin{:});
                 h(2) = plotFast(h(2),xGapData, yGapData, 'Linestyle', obj.GapLinestyle',...
-                    'Linewidth', obj.Linewidth, 'Color',[1 1 1] - obj.Color, varargin{:});
+                    'Linewidth', obj.Linewidth, 'Color',[1 1 1] - obj.Color, 'Marker', 'none', varargin{:});
                 h(3) = plotFast(h(3),xSplitData, ySplitData, 'Linestyle', obj.Linestyle,...
                     'Linewidth', obj.Linewidth, 'Color', obj.SplitColor , 'Marker', splitMarker , varargin{:});
                 h(4) = plotFast(h(4),xMergeData, yMergeData, 'Linestyle', obj.Linestyle,...
@@ -181,22 +222,78 @@ classdef TracksDisplay < MovieDataDisplay
             end
             
             % Display track numbers if option is selected
+            hTextIn = findobj(hIn,'Type','Text');
             if obj.showLabel
-                hlabels = -ones(nTracks,1);
-                for i = find(~all(isnan(xData),1))
-                    trackNr = num2str(tracks(i).number);
-                    % Find last non-NaN coordinate
-                    index = find(~isnan(xData(:,i)),1,'last');
-                    if isfield(tracks,'label')
-                        iColor = mod(tracks(i).label, nColors) + 1;
-                        hlabels(i) = text(xData(index,i)+2, yData(index,i)+2, trackNr,...
-                            'Color', obj.Color(iColor,:));
-                    else
-                        hlabels(i) = text(xData(index,i)+2, yData(index,i)+2, trackNr,...
-                            'Color', obj.Color);
-                    end
+                % Convert track numbers to text
+                trackNr = sprintf('%.0f\n',tracks.number);
+                % Produces an extra string, but we ignore it
+                [trackNr,~] = regexp(trackNr,'\n','split','match');
+                % Offset the text by two pixels in x and y
+                xDataOffset = xData + 2;
+                yDataOffset = yData + 2;
+                % Find last non-NaN coordinate
+                isDataNaN = isnan(xData);
+                lastIdx = zeros(1,size(xData,2));
+                [r,c] = find(~isDataNaN);
+                lastIdx(c) = r;
+                % Like sub2ind
+                lastLinIdx = lastIdx + (0:size(xDataOffset,2)-1)*size(xDataOffset,1);
+
+                % Filter by those tracks present
+                f = lastLinIdx ~= 0;
+                lastLinIdx = lastLinIdx(f);
+                trackNr = trackNr(f);
+                if(numel(trackNr) > numel(hTextIn))
+                    hlabels = hTextIn;
+                    idx = 1:numel(hTextIn);
+                    % Reposition existing labels
+                    set(hlabels(idx),{'Position','String'}, ...
+                        [num2cell( ...
+                            [xDataOffset(lastLinIdx(idx)) ; ...
+                            yDataOffset(lastLinIdx(idx))]', ...
+                            2) ...
+                         trackNr(idx)'] ...
+                        );
+                    set(hlabels(idx),'Visible','on');
+                    % Create new labels
+                    idx = numel(hTextIn)+1:numel(trackNr);
+                    hlabels(idx) = text( ...
+                        xDataOffset(lastLinIdx(idx)), ...
+                        yDataOffset(lastLinIdx(idx)), ...
+                        trackNr(idx), ...
+                        'Clipping','on', ...
+                        'HitTest','off' ...
+                    );
+                else
+                    hlabels = hTextIn;
+                    % Reposition existing labels
+                    idx = 1:numel(trackNr);
+                    set(hlabels(idx),{'Position','String'}, ...
+                        [num2cell( ...
+                            [xDataOffset(lastLinIdx(idx)) ; ...
+                            yDataOffset(lastLinIdx(idx))]', ...
+                            2) ...
+                         trackNr(idx)'] ...
+                        );
+                    set(hlabels(idx),'Visible','on');
+                    % Make unsused labels invisible
+                    set(hlabels(numel(trackNr)+1:end),'Visible','off');
                 end
-                h = [h(:) ; hlabels ];
+
+                if hasLabels
+                    iColors = mod([tracks(f).label]-1, nColors) + 1;
+                    uiColors = unique(iColors);
+                    % Set once per color
+                    for iColor = uiColors
+                        s = iColors == iColor;
+                        set(hlabels(s),'Color',obj.Color(iColor,:));
+                    end
+                else
+                    set(hlabels,'Color',obj.Color);
+                end
+                h = [h(:) ; double(hlabels(:)) ];
+            else
+                delete(hTextIn);
             end
             
             % Set tag
@@ -205,8 +302,7 @@ classdef TracksDisplay < MovieDataDisplay
         
         function updateDraw(obj, h, data)
             tag=get(h(1),'Tag');
-            delete(h);
-            obj.initDraw(data,tag);
+            obj.initDraw(data,tag,h);
             return;
             
         end
