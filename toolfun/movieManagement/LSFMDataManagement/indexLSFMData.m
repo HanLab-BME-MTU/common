@@ -40,10 +40,13 @@ ip.KeepUnmatched = true;
 ip.addRequired('moviePaths', @(x)(iscell(x)||ischar(x)));
 ip.addRequired('movieListAnalysisDir', @ischar);
 ip.addParamValue('movieListName','movieList.mat', @ischar);
+ip.addParamValue('movieDataName','movieData.mat', @ischar);
 ip.addParamValue('deskew',false, @islogical);
 ip.addParamValue('writeData',true, @islogical);
 ip.addParamValue('copyFile',false, @islogical);
+ip.addParamValue('translocateMovieData',false, @islogical);
 ip.addParamValue('createMIP',true, @islogical);
+ip.addParamValue('is3D',true, @islogical);
 ip.addParamValue('lateralPixelSize',1, @isfloat);
 ip.addParamValue('axialPixelSize',1, @isfloat);
 ip.addParamValue('timeInterval',1, @isfloat);
@@ -149,25 +152,37 @@ for cellIdx=1:length(moviePaths)
     if(~exist([cPath filesep 'analysis'],'dir')) mkdir([cPath filesep 'analysis']); end
     %%
     MD=[];
+    try
     if(~isempty(channelList))
-        tiffReader=TiffSeriesReader({channelList.channelPath_},'force3D',true);
-    %%
+        %%
         MD=MovieData(channelList,[cPath filesep 'analysis'],'movieDataFileName_','movieData.mat','movieDataPath_',[cPath filesep 'analysis'], ...
-                            'pixelSize_',p.lateralPixelSize,'pixelSizeZ_',p.axialPixelSize,'timeInterval_',p.timeInterval);
-        MD.setReader(tiffReader);                    
+            'pixelSize_',p.lateralPixelSize,'pixelSizeZ_',p.axialPixelSize,'timeInterval_',p.timeInterval);
+        
+        if(p.is3D)
+            tiffReader=TiffSeriesReader({channelList.channelPath_},'force3D',true);
+            MD.setReader(tiffReader);
+        end;
         MD.sanityCheck();
         MD.save();
-        if(p.createMIP)
-            printMIP(MD);
+        if(p.is3D)
+            if(p.createMIP)
+                printMIP(MD);
+            end
         end
     else
         warning(['No files found for movie ' num2str(cellIdx)]);
-        MD=MovieData([],[cPath filesep 'analysis'],'movieDataFileName_','movieData.mat','movieDataPath_',[cPath filesep 'analysis']);
+        MD=MovieData([],[cPath filesep 'analysis'],'movieDataFileName_',p.movieDataName,'movieDataPath_',[cPath filesep 'analysis']);
     end;
 
     MDs{cellIdx}=MD;
+    catch
+        warning(['Movie building fail, exluding ' cPath ]);
+        MDs{cellIdx}=[];
+    end
+        
 end
-
+builtMovies=cellfun(@(x) ~isempty(x),MDs)
+MDs=[MDs{builtMovies}];
 
 mkdir([movieListAnalysisDir filesep 'analysis']);
 ML=MovieList(MDs,[movieListAnalysisDir filesep 'analysis'],'movieListFileName_',p.movieListName,'movieListPath_',[movieListAnalysisDir filesep 'analysis']);
