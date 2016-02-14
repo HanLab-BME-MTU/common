@@ -209,8 +209,7 @@ end
 disp('Creating Bio-Formats directory...')
 bfSourceDir=fileparts(which('bfGetReader.m'));
 bfTargetDir=[outDir filesep 'bioformats'];
-copyfile(fullfile(bfSourceDir, '*.m'), bfTargetDir)
-copyfile(fullfile(bfSourceDir, 'bioformats_package.jar'), bfTargetDir)
+copyfile(fullfile(bfSourceDir), bfTargetDir)
 
 disp(['Wrote package to ' outDir])
 
