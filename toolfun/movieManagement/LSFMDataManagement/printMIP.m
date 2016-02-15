@@ -34,6 +34,11 @@ for chIdx=1:length(MD.channels_)
     maxIntensityNorm=[ maxIntensityNorm max(vol(:))];
 end
 
+threeVideo = VideoWriter([savePath filesep 'three.avi']);
+myVideo.FrameRate = 4;  % Default 30
+myVideo.Quality = 90;    % Default 75
+open(threeVideo)
+
 for frameIdx=1:MD.nFrames_
     maxXY=[];maxZY=[];maxZX=[];three=[];
     for chIdx=1:length(MD.channels_)
@@ -44,14 +49,16 @@ for frameIdx=1:MD.nFrames_
         maxZX=[ maxZX cmaxZX];
         three=[ three cthree];        
     end
+    
     % save the maximum intensity projections
     imwrite(maxXY, [savePath filesep 'XY' filesep 'XY_' nameCells{frameIdx} ], 'Compression', 'none');
     imwrite(maxZY, [savePath filesep 'ZY' filesep 'ZY_'  nameCells{frameIdx}], 'Compression', 'none');
     imwrite(maxZX, [savePath filesep 'ZX' filesep 'ZX_'  nameCells{frameIdx}], 'Compression', 'none');
     imwrite(three, [savePath filesep 'Three' filesep nameCells{frameIdx}], 'Compression', 'none');
+    writeVideo(threeVideo,three)
 %     fprintf('\b|\n');
 end
-
+close(threeVideo)
 
 function [maxXY,maxZY,maxZX,three]=computeMIPs(vol,ZXRatio,minInt,maxInt)
 
