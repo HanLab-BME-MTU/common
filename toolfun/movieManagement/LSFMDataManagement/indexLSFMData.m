@@ -68,14 +68,15 @@ if(ischar(moviePaths))
     moviePathsRep=strrep(moviePaths,'{ch}',num2str(p.chStartIdx));
 
     % Initialize a path for each Cell from the regexp
-    fileDirRegexp=fileparts(moviePathsRep);
-    files=rdir([fileDirRegexp filesep]);    % filesep is important due to a bug in rdir ...
+    %fileDirRegexp=fileparts(moviePathsRep);
+    
+    files=rdir([moviePathsRep]);    % filesep is important due to a bug in rdir ...
     moviePathsRes=unique(cellfun(@(x) fileparts(x),{files.name},'unif',0)); 
 
 
 
-    % If {ch} is specified in the folder name then refine the cell folder. 
-    % Otherwise do not change the cell path and creat a subfolder
+    % If {ch} is specified in the folder name then redefine the cell folder. 
+    % Otherwise do not change the cell path and create a subfolder
     [fileDirRegexp,fileRegexp,ext]=fileparts(moviePaths);
     if(strfind(fileDirRegexp,'{ch}'))
         channelOriginalFilePattern=[fileRegexp ext];
