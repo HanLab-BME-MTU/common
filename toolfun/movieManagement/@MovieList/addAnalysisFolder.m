@@ -26,7 +26,7 @@ newRawDataRoot=ip.Results.newRawDataRoot;
         else
             MD=MovieData.loadMatFile(ML.movieDataFile_{i});
         end
-        MDs{i}=addAnalysisFolderMD(MD,currentAnalysisRoot,newAnalysisRoot,varargin{:});
+        MDs{i}=addAnalysisFolder(MD,currentAnalysisRoot,newAnalysisRoot,varargin{:});
         
     end
     mkdir([newAnalysisRoot filesep 'analysis']);
