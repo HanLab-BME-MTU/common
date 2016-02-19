@@ -1,4 +1,4 @@
-classdef TrackingProcess < DataProcessingProcess
+classdef TrackingProcess < DataProcessingProcess & NonSingularProcess
     % A class definition for a generic tracking process.
     %
     % Chuangang Ren, 11/2010
