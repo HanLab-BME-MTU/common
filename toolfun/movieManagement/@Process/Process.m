@@ -196,10 +196,12 @@ classdef Process < hgsetget
                     rethrow(err);
                 else
                     % If there is an error then try to run by passing the owner
-                    warning('Process:run', ...
-                        ['Tried to pass Process handle to function %s as ' ...
-                        'first argument, falling back to legacy behavior of ' ... '
-                        'passing MovieData handle'],func2str(obj.funName_));
+%                     warning('Process:run', ...
+%                         ['Tried to pass Process handle to function %s as ' ...
+%                         'first argument, falling back to legacy behavior of ' ... '
+%                         'passing MovieData handle'],func2str(obj.funName_));
+                    % Just display something more benign for now.
+                    printf('Function %s uses legacy Process API',func2str(obj.funName_));
                     obj.funName_(obj.getOwner(), varargin{:});                   
                 end
             end
