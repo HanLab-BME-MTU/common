@@ -1,4 +1,4 @@
-function movieData = getMovieMasksMSS(movieData,varargin)
+function movieData = getMovieMasksMSS(movieDataOrProcess,varargin)
 %THRESHOLDMOVIE applies multi-scale steerable filtering to every frame in input movie
 %
 % movieData = thresholdMovie(movieData,paramsIn)
@@ -36,22 +36,14 @@ function movieData = getMovieMasksMSS(movieData,varargin)
 %Check input
 ip = inputParser;
 ip.CaseSensitive = false;
-ip.addRequired('movieData', @(x) isa(x,'MovieData'));
+ip.addRequired('movieDataOrProcess', @isProcessOrMovieData);
 ip.addOptional('paramsIn',[], @isstruct);
-ip.parse(movieData,varargin{:});
+ip.parse(movieDataOrProcess,varargin{:});
 paramsIn=ip.Results.paramsIn;
 
-%Get the indices of any previous threshold processes from this function                                                                              
-iProc = movieData.getProcessIndex('MSSSegmentationProcess',1,0);
 
-%If the process doesn't exist, create it
-if isempty(iProc)
-    iProc = numel(movieData.processes_)+1;
-    movieData.addProcess(MSSSegmentationProcess(movieData,...
-        movieData.outputDirectory_));                                                                                                 
-end
-
-segProc = movieData.processes_{iProc};
+% Get MovieData object and Process
+[movieData, segProc] = getOwnerAndProcess(movieDataOrProcess,'MSSSegmentationProcess',true);
 
 %Parse input, store in parameter structure
 p = parseProcessParams(segProc,paramsIn);

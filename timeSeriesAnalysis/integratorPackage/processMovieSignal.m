@@ -1,4 +1,4 @@
-function processMovieSignal(movieObject,varargin)
+function processMovieSignal(movieObjectOrProcess,varargin)
 % PROCESSMOVIESIGNAL process time series from the sampled maps
 %
 % SYNOPSIS processMovieSignal(movieObject,paramsIn)
@@ -37,23 +37,14 @@ function processMovieSignal(movieObject,varargin)
 %Check input
 ip = inputParser;
 ip.CaseSensitive = false;
-ip.addRequired('movieObject', @(x) isa(x,'MovieObject'));
+ip.addRequired('movieObjectOrProcess', @isProcessOrMovieObject);
 ip.addOptional('paramsIn',[], @isstruct);
 ip.addParamValue('waitbar',[], @ishandle);
-ip.parse(movieObject,varargin{:});
+ip.parse(movieObjectOrProcess,varargin{:});
 paramsIn=ip.Results.paramsIn;
 
-%Get the indices of any previous  signal preprocessing process                                                                  
-iProc = movieObject.getProcessIndex('SignalProcessingProcess',1,0);
-
-%If the process doesn't exist, create it
-if isempty(iProc)
-    iProc = numel(movieObject.processes_)+1;
-    movieObject.addProcess(SignalProcessingProcess(movieObject,...
-        movieObject.outputDirectory_));                                                                                                 
-end
-
-signalProc = movieObject.processes_{iProc};
+% Get MovieData object and Process
+[movieObject, signalProc] = getOwnerAndProcess(movieObjectOrProcess,'SignalProcessingProcess',true);
 
 %Parse input, store in parameter structure
 p = parseProcessParams(signalProc,paramsIn);
@@ -102,13 +93,10 @@ if isa(movieObject,'MovieList')
         
         % Delegate processing for each movie of the list
         movieData = movieObject.getMovies{iMovie};
-        iProc = movieData.getProcessIndex('SignalProcessingProcess',1,0);
-        if isempty(iProc)
-            movieData.addProcess(SignalProcessingProcess(movieData,...
-                movieData.outputDirectory_));
-        end
+        
+        [~,movieSignalProc{i}] = getOwnerAndProcess(movieData,'SignalProcessingProcess',true);
+        
         % Parse parameters and run the process
-        movieSignalProc{i} = movieData.processes_{movieData.getProcessIndex('SignalProcessingProcess',1,0)};
         parseProcessParams(movieSignalProc{i},movieParams);
         movieSignalProc{i}.run(wtBarArgs{:});
         movieInput{i}=movieSignalProc{i}.getInput;       

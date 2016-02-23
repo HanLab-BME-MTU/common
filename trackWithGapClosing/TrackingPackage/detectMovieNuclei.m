@@ -1,4 +1,4 @@
-function detectMovieNuclei(movieData,varargin)
+function detectMovieNuclei(movieDataOrProcess,varargin)
 % detectMovieNuclei detects nuclei objects in a movie
 %
 % detectMovieNuclei 
@@ -21,21 +21,14 @@ function detectMovieNuclei(movieData,varargin)
 %Check input
 ip = inputParser;
 ip.CaseSensitive = false;
-ip.addRequired('movieData', @(x) isa(x,'MovieData'));
+ip.addRequired('movieDataOrProcess', @isProcessOrMovieData);
 ip.addOptional('paramsIn',[], @isstruct);
-ip.parse(movieData,varargin{:});
+ip.parse(movieDataOrProcess,varargin{:});
 paramsIn=ip.Results.paramsIn;
 
-%Get the indices of any previous speckle detection processes                                                                     
-iProc = movieData.getProcessIndex('NucleiDetectionProcess',1,0);
+% Get MovieData object and Nuclear Detection Process
+[movieData, nucDetProc] = getOwnerAndProcess(movieDataOrProcess,'NucleiDetectionProcess',true);
 
-%If the process doesn't exist, create it
-if isempty(iProc)
-    iProc = numel(movieData.processes_)+1;
-    movieData.addProcess(NucleiDetectionProcess(movieData,...
-        movieData.outputDirectory_));                                                                                                 
-end
-nucDetProc = movieData.getProcess(iProc);
 %Parse input, store in parameter structure
 p = parseProcessParams(nucDetProc,paramsIn);
 

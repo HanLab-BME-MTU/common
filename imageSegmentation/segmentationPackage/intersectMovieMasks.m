@@ -1,4 +1,4 @@
-function movieData = intersectMovieMasks(movieData,varargin)
+function movieData = intersectMovieMasks(movieDataOrProcess,varargin)
 %INTERSECTMOVIEMASKS Spatially transforms the masks of the input movie
 % 
 % movieData = transformMovieMasks(movieData)
@@ -63,21 +63,13 @@ function movieData = intersectMovieMasks(movieData,varargin)
 %Check input
 ip = inputParser;
 ip.CaseSensitive = false;
-ip.addRequired('movieData', @(x) isa(x,'MovieData'));
+ip.addRequired('movieDataOrProcess', @isProcessOrMovieData);
 ip.addOptional('paramsIn',[], @isstruct);
-ip.parse(movieData,varargin{:});
+ip.parse(movieDataOrProcess,varargin{:});
 paramsIn=ip.Results.paramsIn;
 
-%Get the indices of any previous speckle detection processes                                                                     
-iProc = movieData.getProcessIndex('MaskIntersectionProcess',1,0);
-
-%If the process doesn't exist, create it
-if isempty(iProc)
-    iProc = numel(movieData.processes_)+1;
-    movieData.addProcess(MaskIntersectionProcess(movieData,...
-        movieData.outputDirectory_));                                                                                                 
-end
-maskIntProc = movieData.processes_{iProc};
+% Get MovieData object and Process
+[movieData, maskIntProc,iProc] = getOwnerAndProcess(movieDataOrProcess,'MaskIntersectionProcess',true);
 
 %Parse input, store in parameter structure
 p = parseProcessParams(maskIntProc,paramsIn);
