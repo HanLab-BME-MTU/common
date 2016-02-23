@@ -90,7 +90,7 @@ classdef MaskProcess < Process
             ip.addRequired('iChan', @obj.checkChanNum);
             ip.addRequired('iFrame', @obj.checkFrameNum);
             if obj.owner_.is3D()
-                ip.addOptional('iZ', @obj.checkDepthNum);
+                ip.addOptional('iZ', [], @obj.checkDepthNum);
             end
             ip.addParamValue('output',[],@ischar);            
             ip.parse(obj,iChan,iFrame,varargin{:})
