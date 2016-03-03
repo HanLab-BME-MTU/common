@@ -45,7 +45,8 @@ classdef TracksDisplay < MovieDataDisplay
             % Concatenate data in a matrix of size dragtailLength x nTracks
             xData = NaN(dLength, nTracks);
             yData = NaN(dLength, nTracks);
-            for i = 1 : max(trackLengths)
+            uTrackLengths = unique(trackLengths);
+            for i = uTrackLengths(:)'
                 selected = trackLengths == i;
                 xTemp = vertcat(tracks(selected).xCoord)';
                 yTemp = vertcat(tracks(selected).yCoord)';
