@@ -219,6 +219,7 @@ classdef TracksDisplay < MovieDataDisplay
                     'Linewidth', obj.Linewidth, 'Color', obj.SplitColor , 'Marker', splitMarker , varargin{:});
                 h(4) = plotFast(h(4),xMergeData, yMergeData, 'Linestyle', obj.Linestyle,...
                     'Linewidth', obj.Linewidth, 'Color', obj.MergeColor, 'Marker', mergeMarker , varargin{:});
+                uistack(h(2:4),'top');
             end
             
             % Display track numbers if option is selected
