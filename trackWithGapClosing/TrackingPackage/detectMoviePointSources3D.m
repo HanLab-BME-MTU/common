@@ -1,4 +1,4 @@
-function detectMoviePointSources3D(movieData,varargin)
+function detectMoviePointSources3D(movieDataOrProcess,varargin)
 % detectMoviePointSource detect diffraction-limited objects in a movie
 %
 % detectMoviePointSources 
@@ -21,26 +21,20 @@ function detectMoviePointSources3D(movieData,varargin)
 %Check input
 ip = inputParser;
 ip.CaseSensitive = false;
-ip.addRequired('movieData', @(x) isa(x,'MovieData'));
+ip.addRequired('movieDataOrProcess', @isProcessOrMovieData);
 ip.addOptional('paramsIn',[], @isstruct);
 ip.addParamValue('UseIntersection',false,@islogical);
-ip.parse(movieData,varargin{:});
+ip.parse(movieDataOrProcess,varargin{:});
 ip.KeepUnmatched = true;
 paramsIn=ip.Results.paramsIn;
+
+% Get MovieData object and Process
+[movieData, pointSourceDetProc3D] = getOwnerAndProcess(movieDataOrProcess,'PointSourceDetectionProcess3D',true);
 
 if ~movieData.is3D
     error('detectMoviePointSources3D is specifically designed for 3D images. Please use detectMoviePointSources for 2D images.');
 end
-%Get the indices of any previous speckle detection processes                                                                     
-iProc = movieData.getProcessIndex('PointSourceDetectionProcess3D',1,0);
 
-%If the process doesn't exist, create it
-if isempty(iProc)
-    iProc = numel(movieData.processes_)+1;
-    movieData.addProcess(PointSourceDetectionProcess3D(movieData,...
-        movieData.outputDirectory_));                                                                                                 
-end
-pointSourceDetProc3D = movieData.processes_{iProc};
 %Parse input, store in parameter structure
 p = parseProcessParams(pointSourceDetProc3D,paramsIn);
 

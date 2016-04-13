@@ -1,16 +1,9 @@
-function wrapperMovieExample(movieData)
+function wrapperMovieExample(movieDataOrProcess)
 
 %% Registration
-%Get the indices of any previous threshold processes from this function                                                                              
-iProc = movieData.getProcessIndex('ExampleProcess',1,0);
 
-%If the process doesn't exist, create it
-if isempty(iProc)
-    movieData.addProcess(ExampleProcess(movieData));
-    iProc = movieData.getProcessIndex('ExampleProcess',1,0);
-end
-
-process = movieData.getProcess(iProc);
+% Get MovieData object and Process
+[movieData, process] = getOwnerAndProcess(movieDataOrProcess,'ExampleProcess',true);
 
 %% Input check
 
