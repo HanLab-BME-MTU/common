@@ -391,10 +391,19 @@ switch isR
                 % step, 2:end the top. Take the middle for best results.
                 % cumHist = (cumHist(2:end)+cumHist(1:end-1))/2;
                 
-                % make cumHist with binCenters in middle of top of step
-                binCenter = (binCenter(1:end-1)+binCenter(2:end))/2;
-                cumHist = cumHist(2:end-1);
-                numBins = numBins - 1;
+
+                if(numel(binCenter)-1 < numel(observations))
+                    % mkitti: Make a fake histogram if we have too few
+                    % observations
+                    cumHist = (1/numel(observations):1/numel(observations):1)';
+                    binCenter = observations;
+                    numBins = numel(observations);
+                else
+                    % make cumHist with binCenters in middle of top of step
+                    binCenter = (binCenter(1:end-1)+binCenter(2:end))/2;
+                    cumHist = cumHist(2:end-1);
+                    numBins = numBins - 1;
+                end
                 
                 % downsample to about 1000 points if necessary
                 if numBins > 1000
