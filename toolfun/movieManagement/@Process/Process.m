@@ -201,7 +201,7 @@ classdef Process < hgsetget
 %                         'first argument, falling back to legacy behavior of ' ... '
 %                         'passing MovieData handle'],func2str(obj.funName_));
                     % Just display something more benign for now.
-                    fprintf('Function %s uses legacy Process API',func2str(obj.funName_));
+                    fprintf('Function %s uses legacy Process API\n',func2str(obj.funName_));
                     obj.funName_(obj.getOwner(), varargin{:});                   
                 end
             end
