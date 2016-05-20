@@ -76,10 +76,13 @@ function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_
         dx_h = -fftshift(dx_h,1);
         output_size = size(dx_h);
         output_size(1) = output_size(1) - 1;
-        r = zeros(output_size);
-        for i=1:size(r,2)
-            r(:,i) = roots(dx_h(:,i));
+        r = zeros(output_size,'like',dx_h)';
+        dx_h = dx_h.';
+        parfor i=1:size(r,1)
+            r(i,:) = roots(dx_h(i,:));
         end
+%         dx_h = dx_h.';
+        r = r.';
         % keep only the real answers
 %         r = r(abs(log(abs(r))) < TOL);
         r(abs(log(abs(r))) > TOL) = NaN;
