@@ -94,13 +94,23 @@ function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_
     if(dx_h(end) ~= 0)
 %         r = roots(fftshift(-dx_h./dx_h(end)));
         dx_h = -fftshift(dx_h,1);
-        r = zeros(output_size,'like',dx_h)';
-        dx_h = dx_h.';
-        parfor i=1:size(r,1)
-            r(i,:) = roots(dx_h(i,:));
+        r = zeros(output_size,'like',dx_h);
+        % FIXME
+        r = r(:,:).';
+        dx_h = dx_h(:,:).';
+        if(~isempty(gcp('nocreate')))
+            parfor i=1:size(r,1)
+                r(i,:) = roots(dx_h(i,:));
+            end
+        else
+            for i=1:size(r,1);
+                r(i,:) = roots(dx_h(i,:));
+            end
         end
 %         dx_h = dx_h.';
         r = r.';
+        r = reshape(r,output_size);
+%       dx_h = reshape(dx_h.',output_size);
         % keep only the real answers
 %         r = r(abs(log(abs(r))) < TOL);
         imaginary_map = abs(log(abs(r))) > TOL;
