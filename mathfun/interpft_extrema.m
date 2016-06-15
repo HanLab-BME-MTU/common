@@ -1,10 +1,12 @@
-function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_extrema(x,dim)
+function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_extrema(x,dim,sorted)
 % interpft_extrema finds the extrema of the function when interpolated by fourier transform
 % This is the equivalent of doing sinc interpolation.
 %
 % INPUT
 % x - regularly sampled values to be interpolated.
 %     Values are considered to be sampled at (0:length(x)-1)*2*pi/length(x)
+% dim - dimension along which to find maxima
+% sorted - logical value about whether to sort the maxima by value
 %
 % OUTPUT
 % maxima - angle between 0 and 2*pi indicating location of local maxima
@@ -63,6 +65,10 @@ function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_
             dim = 1;
             unshift = 0;
         end
+    end
+    
+    if(nargin < 2)
+        sorted = false;
     end
 
     output_size = size(x);
@@ -163,7 +169,7 @@ function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_
 %     minima = extrema(dx2 > 0);
     minima(minima_map) = extrema(minima_map);
     
-    if(nargout > 2 || nargout == 0)
+    if(nargout > 2 || nargout == 0 || sorted)
 	% calculate the value of the extrema if needed
 %         maxima_value = waves*x_h/scale_factor;
         extrema_value = real(sum(bsxfun(@times,waves,permute(x_h,dim_permute)),ndims_waves))/scale_factor;
@@ -171,6 +177,29 @@ function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_
         minima_value = output_template;
         minima_value(minima_map) = extrema_value(minima_map);
         maxima_value(maxima_map) = extrema_value(maxima_map);
+        
+        if(sorted)
+
+            
+            maxima_value_inf = maxima_value;
+            maxima_value_inf(isnan(maxima_value_inf)) = -Inf;
+            [~,maxima,maxima_value] = sortMatrices(maxima_value_inf,maxima,maxima_value,'descend');
+            clear maxima_value_inf;
+            numMax = sum(maxima_map);
+            numMax = max(numMax(:));
+            maxima = maxima(1:numMax,:,:);
+            maxima_value = maxima_value(1:numMax,:,:);
+            
+            minima_value_inf = minima_value;
+            minima_value_inf(isnan(minima_value_inf)) = Inf;
+            [~,minima,minima_value] = sortMatrices(minima_value_inf,minima,minima_value);
+            clear minima_value_inf;
+            numMin = sum(minima_map);
+            numMin = max(numMin(:));
+            minima = minima(1:numMin,:,:);
+            minima_value = minima_value(1:numMin,:,:);
+                       
+        end
         
 %         maxima_value = reshape(maxima_value,output_size);
 %         minima_value = reshape(minima_value,output_size);
@@ -186,12 +215,21 @@ function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_
             other_value = output_template;
             other_value(other_map) = extrema_value(other_map);
             
+            if(sorted)
+                other_value_inf = other_value;
+                other_value_inf(isnan(maxima_value_inf)) = -Inf;
+                [~,other,other_value] = sortMatrices(other_value_inf,other,other_value,'descend');
+                clear other_value_inf;
+            end
+            
 %             other = reshape(other,output_size);
 %             other_value = reshape(other_value,output_size);
             other = shiftdim(other,unshift);
             other_value = shiftdim(other_value,unshift);
         end
     end
+    
+
     
     if(nargout == 0)
         % plot if no outputs requested
@@ -213,5 +251,5 @@ function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_
 %     minima = reshape(minima,output_size);
     maxima = shiftdim(maxima,unshift);
     minima = shiftdim(minima,unshift);
-
+    
 end
