@@ -354,6 +354,8 @@ classdef Process < hgsetget
             index = find(cellfun(@(x) isequal(x,obj),obj.getOwner().processes_));
             assert(numel(index)==1);
         end
+        
+        [ movieObject, process, processID ] = getOwnerAndProcess( process, processClass, createProcessIfNoneExists, varargin );
     end
     
     methods (Static)
