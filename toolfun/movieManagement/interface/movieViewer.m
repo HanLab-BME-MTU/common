@@ -770,7 +770,7 @@ end
    
 if(isfield(userData.figures,figName) ...
         && ishandle(userData.figures.(figName)) ...
-        && isvalid(userData.figures.(figName)))
+        && isvalid(handle(userData.figures.(figName))))
     h = userData.figures.(figName);
 else
     h = findobj(0,'-regexp','Name',['^' figName '$']);;
