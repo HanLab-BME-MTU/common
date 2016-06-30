@@ -172,7 +172,7 @@ pixelSizeY = metadataStore.getPixelsPhysicalSizeY(iSeries);
 if ~isempty(pixelSizeY)
     if ~isempty(pixelSize)
         pixelSizeY = pixelSizeY.value(ome.units.UNITS.NM).doubleValue();
-        assert(isequal(round(pixelSize,1), round(pixelSizeY,1)),...
+        assert(isequal(round(10*pixelSize)*0.1, round(pixelSizeY*10)*0.1),...
             'Pixel size different in x and y');
     else
         pixelSize = pixelSizeY.value(ome.units.UNITS.NM).doubleValue();

@@ -35,7 +35,7 @@ function [ varargout ] = parcellfun_progress( func, varargin )
 %      See @parcellfun_progress/emulate_{DisplayFunc} for more details
 %  ParallelPool - parallel.pool to use with parfeval
 %  Heading - optional char to be output by fprintf before iterating
-%  UseErrorStruct - true: pass error struct as defined in cellfun
+%  UseErrorStruct - true: pass error struct as defined in cellfun (default)
 %                  false: pass MException and same structure as DisplayFunc
 %  NumOutputs - specify number of outputs
 %  ReturnFutures - parallel.FevalFuture objects as first output
@@ -64,7 +64,7 @@ function [ varargout ] = parcellfun_progress( func, varargin )
     ip.addParameter('DisplayFunc',@defaultDisplayFunc,@(x) isa(x,'function_handle') || ischar(x));
     ip.addParameter('ParallelPool',[]);
     ip.addParameter('Heading','',@ischar);
-    ip.addParameter('UseErrorStruct',[],@islogical);
+    ip.addParameter('UseErrorStruct',true,@islogical);
     ip.addParameter('NumOutputs',[],@(x) validateattributes(x,{'numeric'},{'scalar'}));
     ip.addParameter('ReturnFutures',false,@islogical);
     ip.addParameter('DisplayDiaries',false,@islogical);
@@ -95,24 +95,24 @@ function [ varargout ] = parcellfun_progress( func, varargin )
     % Initialize parallel pool
     if(isempty(in.ParallelPool))
         in.ParallelPool = gcp;
+        if(isempty(in.ParallelPool))
+            error('parcellfun_progress:CannotObtainParallelPool', ...
+                'Cannot obtain parallel pool.');
+        end
     end
     
     if(ischar(in.DisplayFunc))
         in.DisplayFunc = str2func(['emulate_' in.DisplayFunc]);
     end
     
+    if(isequal(in.ErrorHandler,@defaultErrorHandler))
+        in.UseErrorStruct = false;
+    end
+    
     if(~isempty(in.Heading))
         fprintf(in.Heading);
     end
-
-    if(isempty(in.UseErrorStruct))
-        if(nargin(in.ErrorHandler) == 1)
-            in.UseErrorStruct = true;
-        else
-            in.UseErrorStruct = false;
-        end
-    end
-    
+   
     if(isempty(in.NumOutputs))
         in.NumOutputs = nargout - in.ReturnFutures;
     end
@@ -142,21 +142,23 @@ function [ varargout ] = parcellfun_progress( func, varargin )
     % Number of bytes output by progress, for backspacing
     d.nProgressOut = 0;
     % cache number of workers
-    nWorkers = in.ParallelPool.NumWorkers;
+    d.nWorkers = in.ParallelPool.NumWorkers;
     % Index from 1 to nRuns in case we need to figure out d.completedIdx
     idx = 1:d.nRuns;
     
     %% Start parallel execution
     d.startTimerVal = tic;
+    
+    % Initial display function
+    d.nProgressOut = in.DisplayFunc(d);
+    drawnow;
+    
     d.F = cellfun(@parfunc,varargin{1:paramIdx-1},'UniformOutput',false);
     d.F = [d.F{:}];
     
     % When this function completes, user quits, or exception occurs,
     % cleanup
     cleanup = onCleanup(@()  cancel(d.F));
-
-    % Initial display function
-    d.nProgressOut = in.DisplayFunc(d);
     
     % We will not update the estimate until we have processed all finished
     % workers, so store a copy of the structure
@@ -225,7 +227,7 @@ function [ varargout ] = parcellfun_progress( func, varargin )
                     fprintf('\n\n<= Diary of Index %d\n\n',d.completedIdx);
                 end
             end
-            if(d.nCompleted - dlast.nCompleted > nWorkers)
+            if(d.nCompleted - dlast.nCompleted > d.nWorkers)
                 % Force estimate update after nWorkers have finished
                 d.completedIdx = [];
             else
@@ -259,7 +261,7 @@ function [ varargout ] = parcellfun_progress( func, varargin )
         F = parfeval(in.ParallelPool,func,nout,varargin{:});
     end
 end
-function defaultErrorHandler(exception, d)
+function defaultErrorHandler(exception, varargin)
     rethrow(exception);
 end
 function nProgressOut = defaultDisplayFunc(d)
@@ -271,7 +273,8 @@ function nProgressOut = defaultDisplayFunc(d)
         remaining = 'hh:mm:ss';
         sinceStart = duration_shim(0,0,sinceStart);
     else
-        estDuration = d.nCompletedTime*d.nRuns/d.nCompleted;
+        fracCompleted = d.nCompleted / ceil(d.nRuns/d.nWorkers) / d.nWorkers;
+        estDuration = d.nCompletedTime / fracCompleted;
         estDuration = max(estDuration,sinceStart);
         remaining = estDuration - sinceStart;
         estDuration = duration_shim(0,0,estDuration);

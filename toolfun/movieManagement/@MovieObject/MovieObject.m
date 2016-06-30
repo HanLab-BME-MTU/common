@@ -62,6 +62,9 @@ classdef  MovieObject < hgsetget
                     if any(cellfun(@(x)strcmp(x,[class(obj) '.sanityCheck']),{stack.name})),
                         status  = true;
                     end
+                    if any(cellfun(@(x)strcmp(x,[class(obj) '.relocate']),{stack.name})),
+                        status  = true;
+                    end
             end
         end
         

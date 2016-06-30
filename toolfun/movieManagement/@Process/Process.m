@@ -290,7 +290,7 @@ classdef Process < hgsetget
             ip.addParamValue('useCache',false,@islogical);
             ip.KeepUnmatched = true;
             if obj.owner_.is3D()
-                ip.addOptional('iZ',@(x) ismember(x,1:obj.owner_.zSize_));
+                ip.addOptional('iZ',[],@(x) ismember(x,1:obj.owner_.zSize_));
             end
             ip.parse(obj,iChan,varargin{:});
             
