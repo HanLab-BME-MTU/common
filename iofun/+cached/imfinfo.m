@@ -40,14 +40,20 @@ persistent cache;
 
 ip = inputParser;
 ip.addRequired('filename',@ischar);
-ip.addOptional('fmt',[],@(x) x(1) ~= '-');
+if(nargin > 1 && varargin{2}(1) ~= '-')
+    ip.addOptional('fmt',[],@(x) x(1) ~= '-');
+end
 ip.addOptional('option','',@(x) x(1) == '-');
 ip.addOptional('optionFlag',true,@islogical);
 ip.parse(varargin{:});
 
 in = ip.Results;
 forwarded = { in.filename };
-forwarded = [forwarded in.fmt];
+if(isfield(in,'fmt'))
+    forwarded = [forwarded in.fmt];
+else
+    in.fmt = [];
+end
 
 % reset is false by default
 reset = false;

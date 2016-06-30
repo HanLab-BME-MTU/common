@@ -58,6 +58,11 @@ indx = chooseTracks(tracks,criteria);
 clear criteria
 tracks = tracks(indx);
 
+if isempty(indx)
+    statsGeneral = [zeros(1,5) NaN(1,4)];
+    return
+end
+
 %get number of tracks and number of frames
 numTracks = length(tracks);
 seqOfEvents = vertcat(tracks.seqOfEvents);

@@ -31,6 +31,18 @@ classdef TrackingProcess < DataProcessingProcess
             end
             obj = obj@DataProcessingProcess(super_args{:});
         end
+        
+        function run(obj,varargin)
+            procId = find(cellfun(@(proc) proc == obj,obj.owner_.processes_),1);
+            if(mod(length(varargin),2))
+                % odd number of variables, so parameter override
+                varargin = [varargin(1) 'ProcessIndex' procId varargin(2:end)];
+            else
+                % even number of variables,
+                varargin = ['ProcessIndex' procId varargin ];
+            end
+            run@DataProcessingProcess(obj,varargin{:});
+        end
 
         function h=draw(obj,iChan,varargin)
             h = obj.draw@DataProcessingProcess(iChan,varargin{:},'useCache',true);
@@ -70,9 +82,13 @@ classdef TrackingProcess < DataProcessingProcess
                     validTracks = (iFrame>=trackSEL(:,1) &iFrame<=trackSEL(:,2));
                     [varargout{i}(~validTracks).tracksCoordAmpCG]=deal([]);
                     
-                    for j=find(validTracks)'
-                        varargout{i}(j).tracksCoordAmpCG = varargout{i}(j).tracksCoordAmpCG(:,1:8*(iFrame-trackSEL(j,1)+1));
+                    nFrames = iFrame-trackSEL(validTracks,1)+1;
+                    nCoords = nFrames*8;
+                    validOut = varargout{i}(validTracks);
+                    for j=1:length(validOut)
+                        validOut(j).tracksCoordAmpCG = validOut(j).tracksCoordAmpCG(:,1:nCoords(j));
                     end
+                    varargout{i}(validTracks) = validOut;
                 end
             end
         end
@@ -271,7 +287,21 @@ classdef TrackingProcess < DataProcessingProcess
             
             % Determine the number of compound tracks
             nCompoundTracks = cellfun('size',{tracks.tracksCoordAmpCG},1)';
+            trackIdx = 1:length(tracks);
+            
+            % Filter by the tracks that are nonzero
+            filter = nCompoundTracks > 0;
+            tracks = tracks(filter);
+            trackIdx = trackIdx(filter);
+            nCompoundTracks = nCompoundTracks(filter);
+            
+            % Get the track lengths (nFrames x 8)
+            trackLengths = cellfun('size',{tracks.tracksCoordAmpCG},2)';
+            % Unique track lengths for batch processing later
+            uTrackLengths = unique(trackLengths);
+            % Running total of displayTracks for indexing
             nTracksTot = [0 cumsum(nCompoundTracks(:))'];
+            % Total number of tracks
             nTracks = nTracksTot(end);
             
             % Fail fast if no track
@@ -280,45 +310,144 @@ classdef TrackingProcess < DataProcessingProcess
                 return
             end
             
-            displayTracks(sum(nCompoundTracks),1) = struct('xCoord', [], 'yCoord', [], 'events' ,[], 'number', []);
-            for i = find(nCompoundTracks)'
-                % Get the x and y coordinate of all compound tracks
-                for  j = 1 : nCompoundTracks(i)
-                    iTrack = nTracksTot(i) + j ;
-                    displayTracks(iTrack).xCoord = tracks(i).tracksCoordAmpCG(j, 1:8:end);
-                    displayTracks(iTrack).yCoord = tracks(i).tracksCoordAmpCG(j, 2:8:end);
-                    displayTracks(iTrack).number = i;
-                    if isfield(tracks, 'label'),
-                        displayTracks(iTrack).label = tracks(i).label;
-                    end
-                end
-                
-                % Fill split events NaNs in compound tracks
-                nTimes = numel(displayTracks(iTrack).xCoord);
-                splitEvents = find(tracks(i).seqOfEvents(:,2)==1 & ~isnan(tracks(i).seqOfEvents(:,4)))';
-                eventTimes = tracks(i).seqOfEvents(splitEvents,1)-tracks(i).seqOfEvents(1);
-                for iEvent = splitEvents(eventTimes < nTimes)
-                    iTrack1 = nTracksTot(i)+ tracks(i).seqOfEvents(iEvent,3);
-                    iTrack2 = nTracksTot(i)+ tracks(i).seqOfEvents(iEvent,4);
-                    t = tracks(i).seqOfEvents(iEvent,1)-tracks(i).seqOfEvents(1);
-                    displayTracks(iTrack1).xCoord(t) = displayTracks(iTrack2).xCoord(t);
-                    displayTracks(iTrack1).yCoord(t) = displayTracks(iTrack2).yCoord(t);
-                    displayTracks(iTrack1).events(t) = 's';
-                    displayTracks(iTrack2).events(t) = 's';
-                end
-                
-                % Fill merge events NaNs in compound tracks
-                mergeEvents = find(tracks(i).seqOfEvents(:,2)==2 & ~isnan(tracks(i).seqOfEvents(:,4)))';
-                eventTimes = tracks(i).seqOfEvents(mergeEvents,1)-tracks(i).seqOfEvents(1);
-                for iEvent = mergeEvents(eventTimes < nTimes)
-                    iTrack1 = nTracksTot(i)+ tracks(i).seqOfEvents(iEvent,3);
-                    iTrack2 = nTracksTot(i)+ tracks(i).seqOfEvents(iEvent,4);
-                    t = tracks(i).seqOfEvents(iEvent,1) - tracks(i).seqOfEvents(1) + 1;
-                    displayTracks(iTrack1).xCoord(t) = displayTracks(iTrack2).xCoord(t);
-                    displayTracks(iTrack1).yCoord(t) = displayTracks(iTrack2).yCoord(t);
-                    displayTracks(iTrack1).events(t) = 'm';
-                    displayTracks(iTrack2).events(t) = 'm';
+            % Number of events in each seqOfEvents for indexing
+            % Each will normally have 2 events, beginning and end
+            nEvents = cellfun('size',{tracks.seqOfEvents},1);
 
+            % Initialize displayTracks structure
+            % xCoord: x-coordinate of simple track
+            % yCoord: y-coordinate of simple track
+            % events (deprecated): split or merge
+            % number: number corresponding to the original input compound
+            % track number
+            % splitEvents: times when splits occur
+            % mergeEvents: times when merges occur
+            displayTracks(nTracks,1) = struct('xCoord', [], 'yCoord', [], 'number', [], 'splitEvents', [], 'mergeEvents', []);
+            
+            hasSeqOfEvents = isfield(tracks,'seqOfEvents');
+            hasLabels = isfield(tracks, 'label');
+
+            % Batch by unique trackLengths
+            for trackLength = uTrackLengths'
+                %% Select original track numbers
+                selection = trackLengths == trackLength;
+                sTracks = tracks(selection);
+                sTrackCoordAmpCG = vertcat(sTracks.tracksCoordAmpCG);
+                % track number relative to input struct array
+                sTrackIdx = trackIdx(selection);
+                % index of selected tracks
+                siTracks = nTracksTot(selection);
+                
+                % runs in current selection
+                snCompoundTracks = nCompoundTracks(selection);
+                snTracksTot = [0 ; cumsum(snCompoundTracks)];
+                
+                % decode run lengths
+                snTracks = snTracksTot(end);
+                idx = zeros(snTracks,1);
+                idx(snTracksTot(1:end-1) + 1) = ones(size(snCompoundTracks));
+                idx = cumsum(idx);
+
+                % absolute index of tracks
+                iTracks = ones(snTracks,1);
+                iTracks(snTracksTot(1:end-1) + 1) = [siTracks(1); diff(siTracks)'] - [0 ; snCompoundTracks(1:end-1)-1];
+                iTracks = cumsum(iTracks) + 1;
+                
+                % grab x and y coordinate matrices
+                xCoords = sTrackCoordAmpCG(:,1:8:end);
+                yCoords = sTrackCoordAmpCG(:,2:8:end);
+                
+                %% Process sequence of events
+                if(hasSeqOfEvents)
+                    % make sequence of events matrix
+                    seqOfEvents = vertcat(sTracks.seqOfEvents);
+                    nSelectedEvents = nEvents(selection);
+                    iStartEvents = [1 cumsum(nSelectedEvents(1:end-1))+1];
+
+                    % The fifth column is the start frame for each track
+                    seqOfEvents(iStartEvents,5) = [seqOfEvents(1) ; diff(seqOfEvents(iStartEvents,1))];
+                    seqOfEvents(:,5) = cumsum(seqOfEvents(:,5));
+
+                    % The sixth column is the offset for the current selected
+                    % tracks
+                    seqOfEvents(iStartEvents,6) = [0; snCompoundTracks(1:end-1)];
+                    seqOfEvents(:,6) = cumsum(seqOfEvents(:,6));
+
+                    % Isolate merges and splits
+                    seqOfEvents = seqOfEvents(~isnan(seqOfEvents(:,4)),:);
+
+                    % Apply offset 
+                    seqOfEvents(:,3) = seqOfEvents(:,3) + seqOfEvents(:,6);
+                    seqOfEvents(:,4) = seqOfEvents(:,4) + seqOfEvents(:,6);
+
+                    % Number of Frames
+                    nFrames = trackLength/8;
+
+                    %% Splits
+                    % The 2nd column indicates split (1) or merge(2)
+                    splitEvents = seqOfEvents(seqOfEvents(:,2) == 1,:);
+                    % Evaluate time relative to start of track
+                    splitEventTimes = splitEvents(:,1) - splitEvents(:,5);
+                    % Time should not exceed the number of coordinates we have
+                    splitEvents = splitEvents(splitEventTimes < nFrames,:);
+                    splitEventTimes = splitEventTimes(splitEventTimes < nFrames,:);
+                    iTrack1 = splitEvents(:,3);
+                    iTrack2 = splitEvents(:,4);
+
+                    % Use accumarray to gather the splitEventTimes into cell
+                    % arrays
+                    if(~isempty(splitEventTimes))
+                        splitEventTimeCell = accumarray([iTrack1 ; iTrack2], [splitEventTimes ; splitEventTimes ],[size(xCoords,1) 1],@(x) {x'},{});
+                    else
+                        splitEventTimeCell = cell(size(xCoords,1),1);
+                    end
+
+%                     leftIdx = sub2ind(size(xCoords),iTrack1,splitEventTimes);
+%                     rightIdx = sub2ind(size(xCoords),iTrack2,splitEventTimes);
+                    leftIdx = (splitEventTimes-1)*size(xCoords,1) + iTrack1;
+                    rightIdx = (splitEventTimes-1)*size(xCoords,1) + iTrack2;
+                    xCoords(leftIdx) = xCoords(rightIdx);
+                    yCoords(leftIdx) = yCoords(rightIdx);
+
+                    %% Merges
+                    % The 2nd column indicates split (1) or merge(2)
+                    mergeEvents = seqOfEvents(seqOfEvents(:,2) == 2,:);
+                    mergeEventTimes = mergeEvents(:,1) - mergeEvents(:,5);
+                    mergeEvents = mergeEvents(mergeEventTimes < nFrames,:);
+                    mergeEventTimes = mergeEventTimes(mergeEventTimes < nFrames,:);
+                    mergeEventTimes = mergeEventTimes + 1;
+                    iTrack1 = mergeEvents(:,3);
+                    iTrack2 = mergeEvents(:,4);
+
+                    if(~isempty(mergeEventTimes))
+                        mergeEventTimeCell = accumarray([iTrack1 ; iTrack2], [mergeEventTimes ; mergeEventTimes ],[size(xCoords,1) 1],@(x) {x'},{});
+                    else
+                        mergeEventTimeCell = cell(size(xCoords,1),1);
+                    end
+
+%                     leftIdx = sub2ind(size(xCoords),iTrack1,mergeEventTimes);
+%                     rightIdx = sub2ind(size(xCoords),iTrack2,mergeEventTimes);
+                    leftIdx = (mergeEventTimes-1)*size(xCoords,1) + iTrack1;
+                    rightIdx = (mergeEventTimes-1)*size(xCoords,1) + iTrack2;
+                    xCoords(leftIdx) = xCoords(rightIdx);
+                    yCoords(leftIdx) = yCoords(rightIdx);
+                end
+                          
+                %% Load cells into struct fields
+                for i=1:length(iTracks)
+                    iTrack = iTracks(i);
+                    displayTracks(iTrack).xCoord = xCoords(i,:);
+                    displayTracks(iTrack).yCoord = yCoords(i,:);
+                    displayTracks(iTrack).number = sTrackIdx(idx(i));
+                end            
+                
+                if(hasSeqOfEvents)
+                    [displayTracks(iTracks).splitEvents] = splitEventTimeCell{:};
+                    [displayTracks(iTracks).mergeEvents] = mergeEventTimeCell{:};
+                end
+                
+                if hasLabels
+                    [displayTracks(iTracks).label] = sTracks(idx).label;
                 end
             end
         end

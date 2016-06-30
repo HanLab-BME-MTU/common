@@ -6,7 +6,7 @@ function tracksCoordAmpCG = getFeatFromIdx(tracks,movieInfo)
     A = vertcat(movieInfo.amp)';
     is3D = false;
     if(isfield(movieInfo,'zCoord'))
-        Z = vertcat(movieInfo.zCoord);
+        Z = vertcat(movieInfo.zCoord)';
         is3D = true;
     else
         Z = zeros(size(X));
