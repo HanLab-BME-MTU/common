@@ -1,5 +1,5 @@
 function plotTracksTransDiffAnalysis2D(trackedFeatureInfo,diffAnalysisRes,timeRange,...
-    newFigure,image,showConf,asymCheck)
+    newFigure,image,showConf,asymCheck,bayes)
 %PLOTTRACKSTRANSDIFFANALYSIS plots tracks in 2D highlighting the different diffusion segments within each track
 %
 %SYNOPSIS plotTracksTransDiffAnalysis2D(trackedFeatureInfo,diffAnalysisRes,timeRange,...
@@ -209,9 +209,6 @@ maxYCoord =  ceil(max(tracksY(:)));
 %get number of track segments to be plotted
 numTrackSegments = size(tracksX,2);
 
-%get track segment types from diffusion analysis
-trackSegmentType = vertcat(diffAnalysisRes.segmentClass);
-
 %% confinement radius information
 
 % %get track segment center, confinement radii and preferred direction of
@@ -263,60 +260,57 @@ tracksYP = tracksY(timeRange(1):timeRange(2),:);
 %% New plotting strategy
 %Build new matrix which indicates when tracks change diffusion
 
+
 base = -2*ones(size(tracksX));
 asymBase = -2*ones(size(tracksX));
-if asymCheck == 0
-for k = 1:length(trackSegmentType)
+ if isempty(bayes)
+        %get track segment types from diffusion analysis
+        trackSegmentType = vertcat(diffAnalysisRes.segmentClass);
 
-    for j = 1:size(trackSegmentType(k).momentScalingSpectrum,1)
-    base(trackSegmentType(k).momentScalingSpectrum(j,1):trackSegmentType(k).momentScalingSpectrum(j,2),k) = ...
-    trackSegmentType(k).momentScalingSpectrum(j,3);
+        if asymCheck == 0
+            for k = 1:length(trackSegmentType)
 
-    asymBase(trackSegmentType(k).momentScalingSpectrum1D(j,1):trackSegmentType(k).momentScalingSpectrum1D(j,2),k) = ...
-    trackSegmentType(k).momentScalingSpectrum1D(j,3);
-    
-    end
+                for j = 1:size(trackSegmentType(k).momentScalingSpectrum,1)
+                base(trackSegmentType(k).momentScalingSpectrum(j,1):trackSegmentType(k).momentScalingSpectrum(j,2),k) = ...
+                trackSegmentType(k).momentScalingSpectrum(j,3);
 
-end
-else
-    for k = 1:length(trackSegmentType)
+                asymBase(trackSegmentType(k).momentScalingSpectrum1D(j,1):trackSegmentType(k).momentScalingSpectrum1D(j,2),k) = ...
+                trackSegmentType(k).momentScalingSpectrum1D(j,3);
 
-        for j = 1:size(trackSegmentType(k).momentScalingSpectrum,1)
-        base(trackSegmentType(k).momentScalingSpectrum(j,1):trackSegmentType(k).momentScalingSpectrum(j,2),k) = ...
-        trackSegmentType(k).momentScalingSpectrum(j,3);
+                end
+
+            end
+        else
+            for k = 1:length(trackSegmentType)
+
+                for j = 1:size(trackSegmentType(k).momentScalingSpectrum,1)
+                base(trackSegmentType(k).momentScalingSpectrum(j,1):trackSegmentType(k).momentScalingSpectrum(j,2),k) = ...
+                trackSegmentType(k).momentScalingSpectrum(j,3);
+                end
+
+            end
         end
+ else
+   for m = 1:size(tracksXP,2)
+        results = diffAnalysisRes;
+        states = results.ML_states{1,m};
+        track = results.track{1,m};
+        steps = NaN(2,size(track,2));
+        steps(:,2:end) = results.steps{1,m};
 
-    end
-end
+        track(1,~isnan(steps(1,:))) = states;
+        track(2,~isnan(steps(1,:))) = states;
+        index = find(isnan(steps(2,:)));
+        track(1,index)=track(2,index+1);
+        track(2,index)=track(2,index+1);
+        base(~isnan(tracksXP(:,m)),m) = track(1,:);
+    end  
+     
+ end
 
 numTimePlot = timeRange(2) - timeRange(1) + 1;
 
-%Go through matrix and map what diffusion is present
-%unique
-% %% Temporary part
-%  	base(isnan(base)) = -1;
-%     tracksS = trackedFeatureInfo(:,8:8:end)';
-%     base(isnan(base)) = -1;
-%     colorType{1} = [0 0 0];
-%     colorType{2} = [0.5 0.3 0];
-%     colorType{3} = [0 0 1];
-%     colorType{4} = [0 1 1];
-%     colorType{5} = [1 0 0];
-%     tracksA = trackedFeatureInfo(:,4:8:end)';
-%     tracksI = tracksS.*tracksA;
-%     figure;
-%         for m = 1:184;
-%         diffTypes = unique(base(m,:));
-%             for j = 1:length(diffTypes)
-%             scatter(m,nanmean(tracksI(base(m,:)==diffTypes(j))),'MarkerEdgeColor',colorType{diffTypes(j)+2})
-%             hold on
-%             %      std(tracksS(base(:,m)==diffTypes(j)))
-%             % figure;
-%             %         scatter(ones(length(tracksS(base(1,:)==diffTypes(j))),1),tracksS(base(1,:)==diffTypes(j)))
-%             end
-%         end
-%         hold off
-%         figure; hold on
+
 asymBase(isnan(asymBase))=-1;
 base(isnan(base))=-1;
 base(base==-2)=NaN;
@@ -325,6 +319,11 @@ diffTypes = unique(base(~isnan(base)));
 % diffTypes = unique(base);
 copyR = size(tracksXP,1);
 copyC = size(tracksXP,2);
+removeGapParams.Delimeter = Inf;
+removeGapParams.RemoveOtherGaps = true;
+removeGapParams.Color = 'k';
+removeGapParams.LineStyle = ':';
+lineWithGaps(tracksXP,tracksYP,removeGapParams);
 for k = 1:length(diffTypes)
  	
     switch diffTypes(k)
@@ -375,7 +374,8 @@ for k = 1:length(diffTypes)
 
             for i=1:numTimePlot-1
                 validData=~all(isnan(copyX(i:i+1,:)),1);
-                lineWithGaps(copyX(i:i+1,validData),copyY(i:i+1,validData), 'Color',[0 0 1]);
+                lineWithGaps(copyX(i:i+1,validData),copyY(i:i+1,validData), 'Color',[0 0 1]);%Real
+% %                 lineWithGaps(copyX(i:i+1,validData),copyY(i:i+1,validData), 'Color','c');
             end
             %Asym linear and confined
             indA = find(asymBase(ind) ==1);
@@ -400,7 +400,8 @@ for k = 1:length(diffTypes)
  	
             for i=1:numTimePlot-1
                 validData=~all(isnan(copyX(i:i+1,:)),1);
-                lineWithGaps(copyX(i:i+1,validData),copyY(i:i+1,validData), 'Color','c');
+                lineWithGaps(copyX(i:i+1,validData),copyY(i:i+1,validData), 'Color','c');%Real
+% %                 lineWithGaps(copyX(i:i+1,validData),copyY(i:i+1,validData), 'Color',[0 0 1]);
             end
            %asym linear and free
             indA = find(asymBase(ind) ==2);
