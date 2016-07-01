@@ -103,10 +103,16 @@ disp('Starting analyzing tracks motion...')
 
 for i = p.ChannelIndex    
     tracks = trackProc.loadChannelOutput(i);
-    
+    try 
+        if postProc.funParams_.driftCorrect ==1     
+            [tracks] = scriptCorrectImageDrift(tracks,movieData);
+        end
+    catch 
+        
+    end
     diffAnalysisRes = trackDiffusionAnalysis1(tracks,...
         1,p.probDim,p.checkAsym,p.alphaValues,0,p.confRadMin); %#ok<NASGU>
-    
+    tracks = trackProc.loadChannelOutput(i);
     for j = 1:numel(tracks)
         tracks(j).classification = diffAnalysisRes(j).classification;
     end

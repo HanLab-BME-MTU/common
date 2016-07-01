@@ -126,6 +126,7 @@ classdef MotionAnalysisProcess < PostTrackingProcess
             funParams.checkAsym = 0;
             funParams.alphaValues = [0.05 0.1];
             funParams.confRadMin=0;
+            funParams.driftCorrect = 0;
         end
         
         function displayTracks = formatTracks(tracks)
