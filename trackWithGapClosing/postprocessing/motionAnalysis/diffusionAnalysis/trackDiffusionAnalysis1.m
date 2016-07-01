@@ -485,7 +485,7 @@ end
 
 %call code to summarize diffusion analysis results
 %store in .summary field of first track - rest stay empty
-if isstruct(tracks)
+if isstruct(tracksInput)
     minTrackLen = 5;
     [probMotionType,motionChar,errFlag] = summarizeDiffAnRes(tracksInput,minTrackLen,probDim,diffAnalysisRes,extractType);
     diffAnalysisRes(1).summary.probMotionType = probMotionType;

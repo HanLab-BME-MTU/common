@@ -311,7 +311,12 @@ if numFramesEff == 0
 end
 
 %% Link between frames
-
+% For skipping frames:
+repFrame=1;
+if repFrame>1
+    movieInfo=movieInfo(1:repFrame:end);
+    numFramesEff = length(movieInfo);
+end
 % if self-adaptive, link in multiple rounds
 if selfAdaptive
 
@@ -837,6 +842,41 @@ for iTrack = 1 : length(tracksFinal)
     tracksFinal(iTrack).seqOfEvents(:,1) = tracksFinal(iTrack).seqOfEvents(:,1) + emptyStart;
 end
 
+%replicate if only subset of movieInfo is used (e.g. by,
+%movieInfo=movieInfo(1:repFrame:end);) - added by Sangyoon Han 2/25/2016
+if repFrame>1
+    for iTrack = 1 : length(tracksFinal)
+        containsFinal=false;
+        tracksFinal(iTrack).seqOfEvents(1,1) = (tracksFinal(iTrack).seqOfEvents(1,1)-1)*repFrame+1;
+        if  tracksFinal(iTrack).seqOfEvents(2,1)==numFramesEff
+            containsFinal=true;
+            leftOverFrames = (tracksFinal(iTrack).seqOfEvents(2,1))*repFrame-numFrames;
+            tracksFinal(iTrack).seqOfEvents(2,1) = min((tracksFinal(iTrack).seqOfEvents(2,1))*repFrame,numFrames);
+        else
+            leftOverFrames=0;
+            tracksFinal(iTrack).seqOfEvents(2,1) = (tracksFinal(iTrack).seqOfEvents(2,1))*repFrame;
+        end
+        curTracksFeatIndxCG = kron(tracksFinal(iTrack).tracksFeatIndxCG,ones(1,repFrame));
+        if leftOverFrames>1
+            curTracksFeatIndxCG(end-leftOverFrames+1:end)=[];
+        end
+        tracksFinal(iTrack).tracksFeatIndxCG = curTracksFeatIndxCG;
+
+        tempCoordAmpCG = zeros(1,(tracksFinal(iTrack).seqOfEvents(2,1)-tracksFinal(iTrack).seqOfEvents(1,1)+1)*8);
+        for pp=1:length( tracksFinal(iTrack).tracksCoordAmpCG)/8
+            curSourceSegment = ((pp-1)*8+1):pp*8;
+            curOutputSegment = ((pp-1)*repFrame*8+1):pp*repFrame*8;
+            %finalFrame=tracksFinal(iTrack).seqOfEvents(2,1)*8;
+            curTracksCoordAmpCG = repmat( tracksFinal(iTrack).tracksCoordAmpCG(curSourceSegment),1,repFrame);
+            if containsFinal && pp==length( tracksFinal(iTrack).tracksCoordAmpCG)/8
+                curOutputSegment = ((pp-1)*repFrame*8+1):(pp*repFrame*8-leftOverFrames*8);
+                curTracksCoordAmpCG = repmat( tracksFinal(iTrack).tracksCoordAmpCG(curSourceSegment),1,repFrame-leftOverFrames);
+            end
+            tempCoordAmpCG(curOutputSegment)=curTracksCoordAmpCG;
+        end
+        tracksFinal(iTrack).tracksCoordAmpCG=tempCoordAmpCG;
+    end
+end
 %% Save results
 
 if isstruct(saveResults)

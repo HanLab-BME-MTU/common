@@ -26,6 +26,8 @@ function statsGeneral = calcStatsMS_noMotionInfo(tracks,minTrackLen,...
 %                     (5) Probability of a feature splitting.
 %                     (6) Rate of a feature merging (per unit time).
 %                     (7) Rate of a feature splitting (per unit time).
+%                     (8) Rate of a feature merging (per unit time per number of features).
+%                     (9) Rate of a feature splitting (per unit time per number of features).
 %
 %Khuloud Jaqaman, March 2013
 
@@ -55,6 +57,11 @@ criteria.lifeTime.min = minTrackLen;
 indx = chooseTracks(tracks,criteria);
 clear criteria
 tracks = tracks(indx);
+
+if isempty(indx)
+    statsGeneral = [zeros(1,5) NaN(1,4)];
+    return
+end
 
 %get number of tracks and number of frames
 numTracks = length(tracks);
@@ -130,15 +137,19 @@ aveSplitPerFrame = numSplitsTot / numFrames;
 probFeatMerge = aveMergePerFrame / aveFeatPerFrame;
 probFeatSplit = aveSplitPerFrame / aveFeatPerFrame;
 
-%calculate the rate of a feature merging/splitting
+%calculate the rate of a feature merging/splitting per unit time
 rateFeatMerge = probFeatMerge / timeBetweenFrames;
 rateFeatSplit = probFeatSplit / timeBetweenFrames;
+
+%calculate the rate per unit time and per number of features
+rateFeatMergeNorm = rateFeatMerge / aveFeatPerFrame;
+rateFeatSplitNorm = rateFeatSplit / aveFeatPerFrame;
 
 %% output
 
 %general statistics
 statsGeneral = [aveFeatPerFrame numTracks numTrackSegments probFeatMerge ...
-    probFeatSplit rateFeatMerge rateFeatSplit];
+    probFeatSplit rateFeatMerge rateFeatSplit rateFeatMergeNorm rateFeatSplitNorm];
 
 %% ~~~ the end ~~~
 

@@ -1,4 +1,4 @@
-function movieData = transformMovieMasks(movieData,paramsIn)
+function movieData = transformMovieMasks(movieDataOrProcess,paramsIn)
 %TRANSFORMMOVIEMASKS Spatially transforms the masks of the input movie
 % 
 % movieData = transformMovieMasks(movieData)
@@ -80,26 +80,18 @@ pString = 'xformed_mask_'; %Prefix for saving masks to file
 
 %% ----------- Input --------- %%
 
-if nargin < 1 || ~isa(movieData,'MovieData')
+if nargin < 1 || ~isProcessOrMovieData(movieDataOrProcess)
     error('The first input argument must be a valid MovieData object!')
 end
 if nargin < 2
     paramsIn = [];
 end
 
-
-%Get the indices of any previous mask transform processes from this function                                                                              
-iProc = movieData.getProcessIndex('MaskTransformationProcess',1,0);
-
-%If the process doesn't exist, create it
-if isempty(iProc)
-    iProc = numel(movieData.processes_)+1;
-    movieData.addProcess(MaskTransformationProcess(movieData));                                                                                                 
-end
-
+% Get MovieData object and Process
+[movieData, proc, iProc] = getOwnerAndProcess(movieDataOrProcess,'MaskTransformationProcess',true);
 
 %Parse input, store in parameter structure
-p = parseProcessParams(movieData.processes_{iProc},paramsIn);
+p = parseProcessParams(proc,paramsIn);
 nChanX = numel(p.ChannelIndex);
 
 if isempty(p.SegProcessIndex)    

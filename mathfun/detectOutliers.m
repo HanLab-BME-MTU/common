@@ -34,7 +34,7 @@ residuals = observations(:) - medObs;
 res2 = residuals .^ 2;
 
 %calculate the median of the squared residuals
-medRes2 = nanmedian(res2);
+medRes2 = max(nanmedian(res2),eps);
 
 %define parameter to remove outliers (see Rousseeuw 1987, p. 202)
 magicNumber2 = 1/norminv(.75)^2;
