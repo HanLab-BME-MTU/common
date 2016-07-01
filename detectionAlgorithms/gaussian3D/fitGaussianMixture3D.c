@@ -7,6 +7,11 @@
  * Mac/Linux (static): mex -I/usr/local/include -I../../mex/include /usr/local/lib/libgsl.a /usr/local/lib/libgslcblas.a fitGaussianMixture3D.c
  * Linux (ubuntu 12.04) mex -I/usr/local/include -I../../mex/include -lgsl -lgslcblas CFLAGS="\$CFLAGS -std=c99" fitGaussianMixture3D.c
  * Windows: mex COMPFLAGS="$COMPFLAGS /TP /MT" -I"..\..\..\extern\mex\include\gsl-1.15" -I"..\..\mex\include" "..\..\..\extern\mex\lib\gsl.lib" "..\..\..\extern\mex\lib\cblas.lib" -output fitGaussianMixture3D fitGaussianMixture3D.c
+ *
+ * UTSW BioHPC instructions (terminal shell):
+ * cd ~/matlab/common/detectionAlgorithms/gaussian3D/
+ * module add gsl
+ * mex -I../../mex/include -L$GSL_LIB -lgsl -lgslcblas -I$GSL_DIR/include CFLAGS="\$CFLAGS -std=c99" fitGaussianMixture3D.c
  */
 
 #include <stdlib.h>
