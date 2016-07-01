@@ -20,6 +20,9 @@ function [trackClass,mssSlope,genDiffCoef,scalingPower,normDiffCoef] ...
 %                     which will be used for all motion types, or 2 values,
 %                     which will be used for confined and directed, respectively.
 %                     Optional. Default: 0.1 for all.
+%                     Value of -1 will have varying false positve rate using 
+%                     new thresholds based on distributions of all
+%                     diffusion types
 %
 %OUTPUT trackClass  : # tracks x 1 vector of track classification.
 %                     Values mean the following ...
@@ -67,6 +70,8 @@ function [trackClass,mssSlope,genDiffCoef,scalingPower,normDiffCoef] ...
 %
 %Khuloud Jaqaman, March 2008
 %                 Feb 2015: Expanded to include immobile.
+% Tony Vega,      July 2016: New option to use thresholds based on
+% distributions of all diffusion types
 
 %% input
 
@@ -326,21 +331,7 @@ for iTrack = indx4diff'
                     trackClass(iTrack) = 3;
                 else
                     trackClass(iTrack) = 2;
-%                 elseif mssSlopeT > mssThreshNeg(numTimePoints)
-%                     coordXY(:,1) = tracks(iTrack,1:8:end);
-%                     coordXY(:,2) = tracks(iTrack,2:8:end);
-%                     alphaAsym =0.1;
-%                     [asymParamT,~] = asymDeterm2D3D(coordXY(:,1:probDim),alphaAsym);
-%                     sTest(:,1) = mssSlopeT;
-%                     sTest(:,2) = asymParamT;
-%                     example = sTest*([MdlDirect.pcaCoeff(numTimePoints,1:2);MdlDirect.pcaCoeff(numTimePoints,3:4)]);
-%                     if example(1) >= MdlDirect.mssThreshDirect(numTimePoints)
-%                     trackClass(iTrack) = 3;
-%                     else
-%                     trackClass(iTrack) = 2;
-%                     end
                 end
-%             end
         end
         
 
@@ -365,20 +356,6 @@ d = ones(size(x));
 
 
 %% thresholds
-function slopeFit = multiScaleFit(trackMoments,iOrder)
-%             lag = [5,10,15];
-            lag = 5:5:size(trackMoments,1);
-%         figure; hold on
-        for m = 1:length(lag)
-        lnTime = log((1:lag(m))');
-        lnMoment = log(trackMoments(1:lag(m),iOrder));
-        
-        [slParam,~] = polyfit(lnTime,lnMoment,1);
-        slopeFit(m) = slParam(1);
-%         plot(lnTime,y);
-        end
-%                 slParam2 = polyfit(1:length(lag),y,1);
-%         slopeFit = slParam2(1);
 
 % function mssThreshImm = threshMSSImm2D_p20(nTP)
 % 
