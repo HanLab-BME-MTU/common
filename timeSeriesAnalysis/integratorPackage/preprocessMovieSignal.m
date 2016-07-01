@@ -1,4 +1,4 @@
-function preprocessMovieSignal(movieObject,varargin)
+function preprocessMovieSignal(movieObjectOrProcess,varargin)
 % PREPROCESSMOVIESIGNAL preprocess time series from the sampled maps
 %
 % SYNOPSIS preprocessMovieSignal(movieObject,paramsIn)
@@ -55,22 +55,13 @@ function preprocessMovieSignal(movieObject,varargin)
 %Check input
 ip = inputParser;
 ip.CaseSensitive = false;
-ip.addRequired('movieObject', @(x) isa(x,'MovieObject'));
+ip.addRequired('movieObjectOrProcess', @isProcessOrMovieObject);
 ip.addOptional('paramsIn',[], @isstruct);
-ip.parse(movieObject,varargin{:});
+ip.parse(movieObjectOrProcess,varargin{:});
 paramsIn=ip.Results.paramsIn;
 
-%Get the indices of any previous  signal preprocessing process                                                                  
-iProc = movieObject.getProcessIndex('SignalPreprocessingProcess',1,0);
-
-%If the process doesn't exist, create it
-if isempty(iProc)
-    iProc = numel(movieObject.processes_)+1;
-    movieObject.addProcess(SignalPreprocessingProcess(movieObject,...
-        movieObject.outputDirectory_));                                                                                                 
-end
-
-signalPreProc = movieObject.processes_{iProc};
+% Get MovieData object and Process
+[movieObject, signalPreProc] = getOwnerAndProcess(movieObjectOrProcess,'SignalPreprocessingProcess',true);
 
 %Parse input, store in parameter structure
 p = parseProcessParams(signalPreProc,paramsIn);
@@ -96,17 +87,10 @@ if isa(movieObject,'MovieList')
         movieData = movieObject.getMovies{iMovie};
         fprintf(1,'Preprocessing signal for movie %g/%g\n',i,nMovies);
         
-        % Create movie process if empty
-        iProc = movieData.getProcessIndex('SignalPreprocessingProcess',1,0);
-        if isempty(iProc)
-            iProc = numel(movieData.processes_)+1;
-            movieData.addProcess(SignalPreprocessingProcess(movieData,...
-                movieData.outputDirectory_));
-        end
-        
+        [~,movieSignalPreProc{i}] = getOwnerAndProcess(movieData,'SignalPreprocessingProcess',true);
+               
         % Parse parameters and run movie process
-        movieSignalPreProc{i} = movieData.processes_{iProc};
-        parseProcessParams(movieData.processes_{iProc},movieParams);
+        parseProcessParams(movieSignalPreProc{i},movieParams);
         movieSignalPreProc{i}.run();
     end  
     

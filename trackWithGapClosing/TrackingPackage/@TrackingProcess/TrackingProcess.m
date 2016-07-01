@@ -1,4 +1,4 @@
-classdef TrackingProcess < DataProcessingProcess
+classdef TrackingProcess < DataProcessingProcess & NonSingularProcess
     % A class definition for a generic tracking process.
     %
     % Chuangang Ren, 11/2010
@@ -30,18 +30,6 @@ classdef TrackingProcess < DataProcessingProcess
                 super_args{4} = funParams;
             end
             obj = obj@DataProcessingProcess(super_args{:});
-        end
-        
-        function run(obj,varargin)
-            procId = find(cellfun(@(proc) proc == obj,obj.owner_.processes_),1);
-            if(mod(length(varargin),2))
-                % odd number of variables, so parameter override
-                varargin = [varargin(1) 'ProcessIndex' procId varargin(2:end)];
-            else
-                % even number of variables,
-                varargin = ['ProcessIndex' procId varargin ];
-            end
-            run@DataProcessingProcess(obj,varargin{:});
         end
 
         function h=draw(obj,iChan,varargin)

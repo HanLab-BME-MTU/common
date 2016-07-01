@@ -17,10 +17,5 @@ function checked = userfcn_saveCheckbox(handles)
 
 userData = get(handles.figure1, 'UserData');
 l = 1:size(userData.dependM, 1);
-% checked = arrayfun( @(x)( eval(['get(handles.checkbox_' num2str(x) ', ''Value'')']) ), l, 'UniformOutput', true);
-% the sentence above caused a problem of now recognizing handles, so I
-% changed it into for loop. - Sangyoon Han 03/2016
-checked = false(size(l));
-for ii=l
-    checked(ii)=eval(['get(handles.checkbox_' num2str(ii) ', ''Value'')']);
-end
+
+checked = arrayfun( @(x) get(handles.(['checkbox_' num2str(x)]), 'Value'), l, 'UniformOutput', true);

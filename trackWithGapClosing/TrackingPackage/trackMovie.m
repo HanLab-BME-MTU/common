@@ -13,28 +13,8 @@ ip.addParameter('ProcessIndex',[],@isnumeric);
 ip.parse(processOrMovieData,varargin{:});
 paramsIn=ip.Results.paramsIn;
 
-if(isa(processOrMovieData,'Process'))
-    trackProc = processOrMovieData;
-    movieData = processOrMovieData.getOwner();
-else
-    movieData = processOrMovieData;
-
-    %Get the indices of any previous tracking processes from this function                                                                              
-    if(isempty(ip.Results.ProcessIndex))
-        iProc = movieData.getProcessIndex('TrackingProcess',1,0);
-    else
-        iProc = ip.Results.ProcessIndex;
-    end
-
-    %If the process doesn't exist, create it
-    if isempty(iProc)
-        iProc = numel(movieData.processes_)+1;
-        movieData.addProcess(TrackingProcess(movieData,movieData.outputDirectory_));                                                                                                 
-    end
-
-    trackProc = movieData.processes_{iProc};
-    
-end % if(isa(movieData,'Process'))
+% TrackingProcess default outputDirectory is owner.outputDirectory_
+[movieData, trackProc] = getOwnerAndProcess(processOrMovieData,'TrackingProcess',true);
 
 %Parse input, store in parameter structure
 p = parseProcessParams(trackProc,paramsIn);

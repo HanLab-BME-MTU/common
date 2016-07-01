@@ -1,4 +1,4 @@
-function detectMovieAnisoGaussians(movieData,varargin)
+function detectMovieAnisoGaussians(movieDataOrProcess,varargin)
 % detectMovieAnisoGaussians detect objects by fitting anisotropic Gaussians
 %
 % SYNOPSIS detectMovieSubResFeatures(movieData,paramsIn)
@@ -19,21 +19,14 @@ function detectMovieAnisoGaussians(movieData,varargin)
 %Check input
 ip = inputParser;
 ip.CaseSensitive = false;
-ip.addRequired('movieData', @(x) isa(x,'MovieData'));
+ip.addRequired('movieData', @isProcessOrMovieData);
 ip.addOptional('paramsIn',[], @isstruct);
-ip.parse(movieData,varargin{:});
+ip.parse(movieDataOrProcess,varargin{:});
 paramsIn=ip.Results.paramsIn;
 
-%Get the indices of any previous speckle detection processes                                                                     
-iProc = movieData.getProcessIndex('AnisoGaussianDetectionProcess',1,0);
+% Get MovieData object and Detection Process
+[movieData, detProc] = getOwnerAndProcess(movieDataOrProcess,'AnisoGaussianDetectionProcess',true);
 
-%If the process doesn't exist, create it
-if isempty(iProc)
-    iProc = numel(movieData.processes_)+1;
-    movieData.addProcess(AnisoGaussianDetectionProcess(movieData,...
-        movieData.outputDirectory_));                                                                                                 
-end
-detProc = movieData.processes_{iProc};
 %Parse input, store in parameter structure
 p = parseProcessParams(detProc,paramsIn);
 

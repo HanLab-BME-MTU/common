@@ -1,4 +1,4 @@
-function movieData = threshold3DMovie(movieData,paramsIn)
+function movieData = threshold3DMovie(movieDataOrProcess,paramsIn)
 %THRESHOLDMOVIE applies automatic or manual thresholding to every frame in input movie
 %
 % movieData = thresholdMovie(movieData)
@@ -83,7 +83,7 @@ dName = 'masks_for_channel_';%String for naming the mask directories for each ch
 
 
 %Check that input object is a valid moviedata TEMP
-if nargin < 1 || ~isa(movieData,'MovieData')
+if nargin < 1 || ~isProcessOrMovieData(movieDataOrProcess)
     error('The first input argument must be a valid MovieData object!')
 end
 
@@ -91,21 +91,11 @@ if nargin < 2
     paramsIn = [];
 end
 
-
-%Get the indices of any previous threshold processes from this function                                                                              
-iProc = movieData.getProcessIndex('ThresholdProcess3D',1,0);
-
-%If the process doesn't exist, create it
-if isempty(iProc)
-    iProc = numel(movieData.processes_)+1;
-    movieData.addProcess(ThresholdProcess3D(movieData,movieData.outputDirectory_));                                                                                                 
-end
-
-thresProc= movieData.processes_{iProc};
-
+% Get MovieData object and Process
+[movieData, thresProc] = getOwnerAndProcess(movieDataOrProcess,'ThresholdProcess3D',true);
 
 %Parse input, store in parameter structure
-p = parseProcessParams(movieData.processes_{iProc},paramsIn);
+p = parseProcessParams(thresProc,paramsIn);
 
 nChan = numel(movieData.channels_);
 

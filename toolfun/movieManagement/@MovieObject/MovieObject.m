@@ -499,7 +499,8 @@ classdef  MovieObject < hgsetget
             % Checks if the object can be uploaded to the OMERO server
             status = obj.omeroSave_ && ~isempty(obj.getOmeroSession());
         end
-        
+        [ movieObject, process, processID ] = getOwnerAndProcess( movieObject, processClass, createProcessIfNoneExists, varargin );
+
     end
     
     methods(Static)
@@ -593,3 +594,4 @@ else
     iProc = iProc(end:-1:(end-nDesired+1));
 end
 end
+

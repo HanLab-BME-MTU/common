@@ -90,7 +90,7 @@ else
 end
 
 % Read all drawable output
-validProcId= find(cellfun(@(x) ismember('getDrawableOutput',methods(x)) &...
+validProcId= find(cellfun(@(x) ismember('getDrawableOutput',methods(x)) &&...
     x.success_,userData.MO.processes_));
 validProc=userData.MO.processes_(validProcId);
 
