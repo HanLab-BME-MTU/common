@@ -232,7 +232,11 @@ if handles.segThisCell > 1
     if(isempty(segIdx))
          segIdx = currObj.getPackageIndex('FilamentAnalysisPackage');    
     end
-    
+
+    if(isempty(segIdx))
+         segIdx = currObj.getPackageIndex('QFSMPackage');    
+    end
+
     segPath   = currObj.packages_{segIdx}.outputDirectory_;
     
     

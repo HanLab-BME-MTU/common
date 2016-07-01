@@ -127,6 +127,8 @@ end
 scores=round(scores*convFactor);
 scores(scores<range(1))=range(1);
 scores(scores>range(2))=range(2);
+% Make sure the scores are real - added by Sangyoon Han (2016.5.12)
+scores=real(scores);
 
 switch classCase
     case 1 % Range symmetric around 0

@@ -17,7 +17,11 @@ if nargin < 1 || isempty(dirPath)
 end
 
 if ~exist(dirPath,'dir')
-    mkdir(dirPath)
+    try
+        mkdir(dirPath)
+    catch
+        system(['mkdir -p ' dirPath]);
+    end
 else
     %Check for files in the directory
     inDir = dir([dirPath filesep '*']);
