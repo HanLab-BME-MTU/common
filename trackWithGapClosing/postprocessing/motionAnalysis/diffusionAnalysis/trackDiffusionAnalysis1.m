@@ -199,19 +199,19 @@ numTrackSegments = size(tracks,1);
 momentOrders = 0 : 6;
 [trackClassMSS,mssSlope,genDiffCoef,scalingPower,normDiffCoef] = ...
     trackMSSAnalysis(tracks,probDim,momentOrders,alphaValues(1));
-for iTrack = 1:length(trackClassMSS)
-                    if trackClassMSS(iTrack) > 1
-                    %% Testing variance as indicator
-                        coordXYZ(:,1) = (tracks(iTrack,1:8:end))';
-                        coordXYZ(:,2) = (tracks(iTrack,2:8:end))';
-                        distances = pdist(coordXYZ,'euclidean');
-                        variance(iTrack) = var(distances);
-                        if variance(iTrack) < 4
-                            trackClassMSS(iTrack) =1;
-                        end
-                        clear coordXYZ
-                    end
-end
+% for iTrack = 1:length(trackClassMSS)
+%                     if trackClassMSS(iTrack) > 1
+%                     %% Testing variance as indicator
+%                         coordXYZ(:,1) = (tracks(iTrack,1:8:end))';
+%                         coordXYZ(:,2) = (tracks(iTrack,2:8:end))';
+%                         distances = pdist(coordXYZ,'euclidean');
+%                         variance(iTrack) = var(distances);
+%                         if variance(iTrack) < 4
+%                             trackClassMSS(iTrack) =1;
+%                         end
+%                         clear coordXYZ
+%                     end
+% end
 %% track classification based on asymmetry
 
 %this classification scheme is taken from Huet et al (BJ 2006)
@@ -370,21 +370,20 @@ if ~isempty(indxConf)
         principalComponents = [-0.3059 0.9518; 0.9518 0.3059];
         traj = xyzCoord(:,1:2);
         trajLength = length(traj);
-        trackCenter(iTrack,:) = nanmean(xyzCoord(:,1:probDim));
         if trajLength <= 100 %Could even go up to 100, look into further
-            distXYConf = traj- repmat(trackCenter(iTrack,:),trajLength,1);
-            % unused
-            % distConf = sqrt(sum(distXYConf.^2,2));
+            trajMean = nanmean(xyzCoord(:,1:probDim));
+            distXYConf = traj- repmat(trajMean,trajLength,1);
+            distConf = sqrt(sum(distXYConf.^2,2));
             posXYConf = distXYConf > 0;
             numSwitchConf = length(find(sum(diff(posXYConf),2) > 0));
-            fracSwitchConf = numSwitchConf / (trajLength-1);
-            sTest(:,1) = fracSwitchConf;
+            fracSwitchConf(iTrack) = numSwitchConf / (trajLength-1);
+            sTest(:,1) = fracSwitchConf(iTrack);
             sTest(:,2)= mssSlope(iTrack);
             pc = sTest*principalComponents;
             if pc(1) <0.01
-                trackClassMSS(iTrack) = 0;
-            else
-                trackClassMSS(iTrack) = 1;
+% %                 trackClassMSS(iTrack) = 0;
+% %             else
+% %                 trackClassMSS(iTrack) = 1;
             end
         end
     end
@@ -474,6 +473,12 @@ for iTrack = 1 : numInputTracks
         compTrackStartRow(iTrack)+numSegments(iTrack)-1,:);
     confRadInfo.prefDir = prefDir(compTrackStartRow(iTrack):...
         compTrackStartRow(iTrack)+numSegments(iTrack)-1,:);
+    if diffAnalysisRes(iTrack).classification(3) ==3
+        xCoord = (tracks(iTrack,1:8:end))';
+        confRadInfo.driftSpeed = (2*confRadius(compTrackStartRow(iTrack)+numSegments(iTrack)-1,2))/length(xCoord);
+    else
+        confRadInfo.driftSpeed = NaN;
+    end
     diffAnalysisRes(iTrack).confRadInfo = confRadInfo;
 
 end
