@@ -185,16 +185,16 @@ classdef Process < hgsetget
             % Run the process!
             obj.startTime_ = clock;
 
-	    if(isa(obj,'NonSingularProcess'))
+            if(isa(obj,'NonSingularProcess'))
                 % Run by passing the Process itself rather than
                 % owner which can be obtained easily with getOwner()
-		% New style
-		obj.funName_(obj, varargin{:});
-	    else
-		% Run by passing the Process owner,
-		% Usually a MovieObject like MovieData
-		% Legacy style
-		obj.funName_(obj.getOwner(), varargin{:});
+                % New style
+                obj.funName_(obj, varargin{:});
+            else
+                % Run by passing the Process owner,
+                % Usually a MovieObject like MovieData
+                % Legacy style
+                obj.funName_(obj.getOwner(), varargin{:});
             end
 
             % Update flags and set finishTime
