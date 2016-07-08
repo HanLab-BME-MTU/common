@@ -184,28 +184,19 @@ classdef Process < hgsetget
             
             % Run the process!
             obj.startTime_ = clock;
-            
-            try
-                % Try to run by passing the Process itself rather than
+
+            if(isa(obj,'NonSingularProcess'))
+                % Run by passing the Process itself rather than
                 % owner which can be obtained easily with getOwner()
+                % New style
                 obj.funName_(obj, varargin{:});
-            catch err
-                if(isa(obj,'NonSingularProcess'))
-                    % This is a NonSingularProcess, do not attempt to
-                    % fallback
-                    rethrow(err);
-                else
-                    % If there is an error then try to run by passing the owner
-%                     warning('Process:run', ...
-%                         ['Tried to pass Process handle to function %s as ' ...
-%                         'first argument, falling back to legacy behavior of ' ... '
-%                         'passing MovieData handle'],func2str(obj.funName_));
-                    % Just display something more benign for now.
-                    fprintf('Function %s uses legacy Process API\n',func2str(obj.funName_));
-                    obj.funName_(obj.getOwner(), varargin{:});                   
-                end
+            else
+                % Run by passing the Process owner,
+                % Usually a MovieObject like MovieData
+                % Legacy style
+                obj.funName_(obj.getOwner(), varargin{:});
             end
-            
+
             % Update flags and set finishTime
             obj.success_= true;
             obj.updated_= true;
