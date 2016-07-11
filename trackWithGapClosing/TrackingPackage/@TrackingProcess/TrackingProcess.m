@@ -445,7 +445,7 @@ classdef TrackingProcess < DataProcessingProcess & NonSingularProcess
                     if hasPerSegmentLabels
                         for i=1:length(iTracks)
                             iTrack = iTracks(i);
-                            displayTracks(iTrack).label = labels(i);
+                            displayTracks(iTrack).label = labels(iTrack);
                         end    
                     else
                         [displayTracks(iTracks).label] = sTracks(idx).label;

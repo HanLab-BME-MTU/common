@@ -186,18 +186,31 @@ classdef TracksDisplay < MovieDataDisplay
             hlinesIn = findobj(hIn,'Type','Line');
             if hasLabels % If track is classified
                 nColors = size(obj.Color,1);
-                h = -ones(nColors,2);
+                h = -ones(nColors+1,2);
                 % Attempt to reuse line objects, delete the rest
                 idx = 1:min(numel(hlinesIn),numel(h));
                 h(idx) = double(hlinesIn(idx));
+                % Delete excess lines we do not need
                 delete(hlinesIn(numel(h)+1:end));
                 for iColor = 1:nColors
                     iTracks = mod([tracks.label]-1, nColors) +1 == iColor;
                     h(iColor,1)=plotFast(h(iColor,1),xData(:,iTracks),yData(:,iTracks),'Linestyle',obj.Linestyle,...
-                        'Linewidth', obj.Linewidth, 'Color',obj.Color(iColor,:),varargin{:});
+                        'Linewidth', obj.Linewidth, 'Color',obj.Color(iColor,:),'Marker','none',varargin{:});
                     h(iColor,2)=plotFast(h(iColor,2),xGapData(:,iTracks),yGapData(:,iTracks),'Linestyle',obj.GapLinestyle,...
-                        'Linewidth', obj.Linewidth, 'Color', obj.Color(iColor,:),varargin{:});
+                        'Linewidth', obj.Linewidth, 'Color',obj.Color(iColor,:),'Marker','none',varargin{:});
                 end
+                
+                % Plot merge / splits on top of classied tracks
+                splitMarker = 'none';
+                mergeMarker = 'none';
+                if(obj.markMergeSplit)
+                    splitMarker = obj.SplitMarker;
+                    mergeMarker = obj.MergeMarker;
+                end
+                h(nColors+1,1) = plotFast(h(nColors+1),xSplitData, ySplitData, 'Linestyle', obj.Linestyle,...
+                    'Linewidth', obj.Linewidth, 'Color', obj.SplitColor , 'Marker', splitMarker , varargin{:});
+                h(nColors+1,2) = plotFast(h(nColors+2),xMergeData, yMergeData, 'Linestyle', obj.Linestyle,...
+                    'Linewidth', obj.Linewidth, 'Color', obj.MergeColor, 'Marker', mergeMarker , varargin{:});
             else
                 % Plot links and gaps
                 h=-ones(4,1);
