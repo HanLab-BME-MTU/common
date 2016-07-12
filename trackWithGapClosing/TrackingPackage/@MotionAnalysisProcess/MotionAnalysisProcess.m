@@ -126,6 +126,7 @@ classdef MotionAnalysisProcess < PostTrackingProcess
             funParams.checkAsym = 0;
             funParams.alphaValues = [0.05 0.1];
             funParams.confRadMin=0;
+            funParams.driftCorrect = 0;
         end
         
         function displayTracks = formatTracks(tracks)
@@ -134,20 +135,53 @@ classdef MotionAnalysisProcess < PostTrackingProcess
             % Read track types and classification matrix
             types = MotionAnalysisProcess.getTrackTypes();
             track_class = vertcat(tracks.classification);
-            
-            % Assign label to each track of known type
-            for i = 1 : numel(types) - 1
-                idx = types(i).f(track_class);
-                if any(idx), [tracks(idx).label] = deal(i); end
-            end
+%             
+%             % Assign label to each track of known type
+%             for i = 1 : numel(types) - 1
+%                 idx = types(i).f(track_class);
+%                 if any(idx), [tracks(idx).label] = deal(i); end
+%             end
+
+
+%             track_class = {tracks.classification};
             
             % Assign last label to unlabelled tracks
-            if ~isfield(tracks, 'label')
-                 [tracks.label] = deal(numel(types));
-            else
-                idx = cellfun(@isempty, {tracks.label});
-                [tracks(idx).label] = deal(numel(types));
+%             if ~isfield(tracks, 'label')
+%                  [tracks.label] = deal(numel(types));
+%             else
+%                 idx = cellfun(@isempty, {tracks.label});
+%                 [tracks(idx).label] = deal(numel(types));
+%             end
+
+            % Number of labels per track needed
+            nLabels = cellfun('size',{tracks.classification},1);
+            % Initialize all labels as unlabelled
+            labels = arrayfun(@(x) ones(x,1)*numel(types),nLabels,'UniformOutput',false);
+            map = cumsum(nLabels);
+            
+            nLabels_gt_1 = nLabels > 1;
+            start = map(nLabels_gt_1)-nLabels(nLabels_gt_1)+1;
+            finish = map(nLabels_gt_1);
+
+            % Set labels as needed
+            for i = 1 : numel(types) - 1
+                % idx is a cell array of logical arrays
+                % mkitti: this is slow
+%                 idx = cellfun(types(i).f,track_class,'UniformOutput',false);
+                idx = types(i).f(track_class);
+                idx2 = num2cell(idx(map));
+                % deal with nLabels > 1 separately 
+                idx2(nLabels_gt_1) = arrayfun(@(s,e) idx(s:e),start,finish,'UniformOutput',false);
+                idx = idx2;
+%                 idx = mat2cell(idx,nLabels);
+                any_idx = cellfun(@any,idx);
+                labels(any_idx) = cellfun(@(idx_i,labels_i) labels_i.*~idx_i + i.*idx_i, ...
+                    idx(any_idx), labels(any_idx)','UniformOutput',false);
             end
+            [tracks.label] = deal(labels{:});
+
+            
+
             
             % Format tracks using TrackingProcess utility function
             displayTracks = TrackingProcess.formatTracks(tracks);
@@ -157,34 +191,37 @@ classdef MotionAnalysisProcess < PostTrackingProcess
             % Get the color map for classified tracks
             %
             % see also: plotTracksDiffAnalysis2D
-            
-            types(1).name = 'linear & 1D confined diffusion';
-            types(1).f = @(x) x(:, 1) == 1 & x(:, 3) == 1;
-            types(1).color = [1 0.7 0];
-            types(2).name = 'linear & 1D normal diffusion';
-            types(2).f = @(x) x(:, 1) == 1 & x(:, 3) == 2;
-            types(2).color = [1 0 0];
-            types(3).name = 'linear & 1D super diffusion';
-            types(3).f = @(x) x(:, 1) == 1 & x(:, 3) == 3;
-            types(3).color = [0 1 0];
-            types(4).name = 'linear & too short to analyze 1D diffusion';
-            types(4).f = @(x) x(:, 1) == 1 & isnan(x(:, 3));
-            types(4).color = [1 1 0];
-            types(5).name = 'random/unclassified & 2D confined diffusion';
-            types(5).f = @(x) x(:, 1) ~= 1 & x(:, 2) == 1;
-            types(5).color = [0 0 1];
-            types(6).name = 'random/unclassified & 2D normal diffusion';
-            types(6).f = @(x) x(:, 1) ~= 1 & x(:, 2) == 2;
-            types(6).color = [0 1 1];
-            types(7).name = 'random/unclassified & 2D super diffusion';
-            types(7).f = @(x) x(:, 1) ~= 1 & x(:, 2) == 3;
-            types(7).color = [1 0 1];
-            types(8).name = 'random & too short to analyze 2D diffusion';
-            types(8).f = @(x) x(:, 1) == 0 & isnan(x(:, 2));
-            types(8).color = [.6 0 1];
-            types(9).name = 'too short for any analysis';
-            types(9).f = @(x) 1;
-            types(9).color = [.7 .7 .7];
+            types(1).name = 'immobile';
+            types(1).f = @(x) x(:, 1) ~= 1 & x(:, 2) == 0;
+            types(1).color = [0.5 0.3 0];
+            types(2).name = 'linear & 1D confined diffusion';
+            types(2).f = @(x) x(:, 1) == 1 & x(:, 3) == 1;
+            types(2).color = [1 0.7 0];
+            types(3).name = 'linear & 1D normal diffusion';
+            types(3).f = @(x) x(:, 1) == 1 & x(:, 3) == 2;
+            types(3).color = [1 0 0];
+            types(4).name = 'linear & 1D super diffusion';
+            types(4).f = @(x) x(:, 1) == 1 & x(:, 3) == 3;
+            types(4).color = [0 1 0];
+            types(5).name = 'linear & too short to analyze 1D diffusion';
+            types(5).f = @(x) x(:, 1) == 1 & isnan(x(:, 3));
+            types(5).color = [1 1 0];
+            types(6).name = 'random/unclassified & 2D confined diffusion';
+            types(6).f = @(x) x(:, 1) ~= 1 & x(:, 2) == 1;
+            types(6).color = [0 0 1];
+            types(7).name = 'random/unclassified & 2D normal diffusion';
+            types(7).f = @(x) x(:, 1) ~= 1 & x(:, 2) == 2;
+            types(7).color = [0 1 1];
+            types(8).name = 'random/unclassified & 2D super diffusion';
+            types(8).f = @(x) x(:, 1) ~= 1 & x(:, 2) == 3;
+            types(8).color = [1 0 1];
+            types(9).name = 'random & too short to analyze 2D diffusion';
+            types(9).f = @(x) x(:, 1) == 0 & isnan(x(:, 2));
+            types(9).color = [.6 0 1];
+            types(10).name = 'too short for any analysis';
+            types(10).f = @(x) 1;
+            types(10).color = [.7 .7 .7];
+     
         end
         
     end
