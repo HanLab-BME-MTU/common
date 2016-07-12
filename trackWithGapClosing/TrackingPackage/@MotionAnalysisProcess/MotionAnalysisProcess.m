@@ -134,55 +134,52 @@ classdef MotionAnalysisProcess < PostTrackingProcess
             
             % Read track types and classification matrix
             types = MotionAnalysisProcess.getTrackTypes();
+	    % Matrix of the number of track segments by 3
             track_class = vertcat(tracks.classification);
-%             
-%             % Assign label to each track of known type
-%             for i = 1 : numel(types) - 1
-%                 idx = types(i).f(track_class);
-%                 if any(idx), [tracks(idx).label] = deal(i); end
-%             end
-
-
-%             track_class = {tracks.classification};
-            
-            % Assign last label to unlabelled tracks
-%             if ~isfield(tracks, 'label')
-%                  [tracks.label] = deal(numel(types));
-%             else
-%                 idx = cellfun(@isempty, {tracks.label});
-%                 [tracks(idx).label] = deal(numel(types));
-%             end
 
             % Number of labels per track needed
             nLabels = cellfun('size',{tracks.classification},1);
-            % Initialize all labels as unlabelled
+	    % Labels is a cell array of indices corresponding to to track segment types,
+	    %   see getTracksTypes
+            % Initialize all labels as unlabeled
             labels = arrayfun(@(x) ones(x,1)*numel(types),nLabels,'UniformOutput',false);
+	    % Map indicates position of last label for each track
             map = cumsum(nLabels);
             
+	    % logical array per track index of if there is more than one label per track
             nLabels_gt_1 = nLabels > 1;
+	    % labels index where the labels for each track starts
+	    %  if there is more than one label per track
             start = map(nLabels_gt_1)-nLabels(nLabels_gt_1)+1;
+	    % labels index where the labels for each track ends
+	    %  if there is more than one label per track
             finish = map(nLabels_gt_1);
 
             % Set labels as needed
             for i = 1 : numel(types) - 1
-                % idx is a cell array of logical arrays
-                % mkitti: this is slow
-%                 idx = cellfun(types(i).f,track_class,'UniformOutput',false);
+                % idx is a logical array if each track _segment_ belongs to types(i)
                 idx = types(i).f(track_class);
+		% idx2 is a cell array of logical arrays
+		%  the number of cells corresponds to each track index
+		%  the index of the logical array in each cell refers to each track segment
+		% Setup logical arrays. This works for when nLabels == 1
                 idx2 = num2cell(idx(map));
-                % deal with nLabels > 1 separately 
+                % deal with nLabels > 1 separately, grab range of labels for each track segment
+	        %  corresponding to each track	
                 idx2(nLabels_gt_1) = arrayfun(@(s,e) idx(s:e),start,finish,'UniformOutput',false);
+		% idx is now a cell array of logical arrays marking for each track
+		%  if each track segment belongs to types(i)
                 idx = idx2;
-%                 idx = mat2cell(idx,nLabels);
+		% Select only the indices where at least one segment belongs to type(i)
                 any_idx = cellfun(@any,idx);
+		% Assign label as i for each track segment belonging to types(i)
+		% Merge with previous labels
                 labels(any_idx) = cellfun(@(idx_i,labels_i) labels_i.*~idx_i + i.*idx_i, ...
                     idx(any_idx), labels(any_idx)','UniformOutput',false);
             end
+	    % Assign labels to each track
             [tracks.label] = deal(labels{:});
 
-            
-
-            
             % Format tracks using TrackingProcess utility function
             displayTracks = TrackingProcess.formatTracks(tracks);
         end
@@ -191,37 +188,46 @@ classdef MotionAnalysisProcess < PostTrackingProcess
             % Get the color map for classified tracks
             %
             % see also: plotTracksDiffAnalysis2D
+	    % Immobile: brown
             types(1).name = 'immobile';
             types(1).f = @(x) x(:, 1) ~= 1 & x(:, 2) == 0;
             types(1).color = [0.5 0.3 0];
+	    % Linear 1D confined: dark green
             types(2).name = 'linear & 1D confined diffusion';
             types(2).f = @(x) x(:, 1) == 1 & x(:, 3) == 1;
             types(2).color = [1 0.7 0];
+	    % Linear 1D normal: bright red 
             types(3).name = 'linear & 1D normal diffusion';
             types(3).f = @(x) x(:, 1) == 1 & x(:, 3) == 2;
             types(3).color = [1 0 0];
+	    % Linear 1D super: bright green
             types(4).name = 'linear & 1D super diffusion';
             types(4).f = @(x) x(:, 1) == 1 & x(:, 3) == 3;
             types(4).color = [0 1 0];
+	    % Linear 1D too short: yellow
             types(5).name = 'linear & too short to analyze 1D diffusion';
             types(5).f = @(x) x(:, 1) == 1 & isnan(x(:, 3));
             types(5).color = [1 1 0];
+	    % Random/unclassified & 2D confined: blue
             types(6).name = 'random/unclassified & 2D confined diffusion';
             types(6).f = @(x) x(:, 1) ~= 1 & x(:, 2) == 1;
             types(6).color = [0 0 1];
+	    % Random/unclassified & 2D normal: cyan
             types(7).name = 'random/unclassified & 2D normal diffusion';
             types(7).f = @(x) x(:, 1) ~= 1 & x(:, 2) == 2;
             types(7).color = [0 1 1];
+	    % Random/unclassified & 2D super: magenta
             types(8).name = 'random/unclassified & 2D super diffusion';
             types(8).f = @(x) x(:, 1) ~= 1 & x(:, 2) == 3;
             types(8).color = [1 0 1];
+	    % Random & 2D too short: purple
             types(9).name = 'random & too short to analyze 2D diffusion';
             types(9).f = @(x) x(:, 1) == 0 & isnan(x(:, 2));
             types(9).color = [.6 0 1];
+	    % Too short: grey
             types(10).name = 'too short for any analysis';
             types(10).f = @(x) 1;
             types(10).color = [.7 .7 .7];
-     
         end
         
     end
