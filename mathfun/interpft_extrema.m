@@ -1,4 +1,4 @@
-function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_extrema(x,dim,sorted)
+function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_extrema(x,dim,sorted,TOL)
 % interpft_extrema finds the extrema of the function when interpolated by fourier transform
 % This is the equivalent of doing sinc interpolation.
 %
@@ -7,6 +7,7 @@ function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_
 %     Values are considered to be sampled at (0:length(x)-1)*2*pi/length(x)
 % dim - dimension along which to find maxima
 % sorted - logical value about whether to sort the maxima by value
+% TOL - tolerance to determine if log(abs(root)) is zero to determine if root is real
 %
 % OUTPUT
 % maxima - angle between 0 and 2*pi indicating location of local maxima
@@ -48,8 +49,6 @@ function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_
 %
 % Author: Mark Kittisopikul, May 2016
 
-    % Tolerance for log(abs(root)) to be near zero, in which case the root is real
-    TOL = eps*1e2;
     
 %     original_size = size(x);
     if(nargin > 1)
@@ -70,6 +69,11 @@ function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_
     if(nargin < 3)
         sorted = false;
     end
+    if(nargin < 4)
+    	% Tolerance for log(abs(root)) to be near zero, in which case the root is real
+        TOL = eps*1e2;
+    end
+
 
     output_size = size(x);
     output_size(1) = output_size(1) - 1;
@@ -234,16 +238,18 @@ function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_
     
     if(nargout == 0)
         % plot if no outputs requested
-        if(~isempty(extrema))
-	    % Maxima will be green
-            real_maxima = maxima(maxima_map);
+        real_maxima = maxima(maxima_map);
+        if(~isempty(real_maxima))
+        % Maxima will be green
             plot([real_maxima real_maxima]',ylim,'g');
             plot(real_maxima,real(maxima_value(maxima_map)),'go');
+        end
+        real_minima = minima(minima_map);
+        if(~isempty(real_minima))
 	    % Minima will be red
-            real_minima = minima(minima_map);
             plot([real_minima real_minima]',ylim,'r');
             plot(real_minima,real(minima_value(minima_map)),'ro');
-        else
+        elseif(~isempty(real_maxima))
             warning('No extrema');
         end
     end
