@@ -238,17 +238,29 @@ function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_
     
     if(nargout == 0)
         % plot if no outputs requested
-        real_maxima = maxima(maxima_map);
+        if(sorted)
+            real_maxima = maxima(:);
+            real_maxima_value = maxima_value(:);
+        else
+            real_maxima = maxima(maxima_map);
+            real_maxima_value = real(maxima_value(maxima_map));
+        end
         if(~isempty(real_maxima))
         % Maxima will be green
             plot([real_maxima real_maxima]',ylim,'g');
-            plot(real_maxima,real(maxima_value(maxima_map)),'go');
+            plot(real_maxima,real_maxima_value,'go');
         end
-        real_minima = minima(minima_map);
+        if(sorted)
+            real_minima = minima(:);
+            real_minima_value = minima_value(:);
+        else
+            real_minima = minima(minima_map);
+            real_minima_value = real(minima_value(minima_map));
+        end
         if(~isempty(real_minima))
 	    % Minima will be red
             plot([real_minima real_minima]',ylim,'r');
-            plot(real_minima,real(minima_value(minima_map)),'ro');
+            plot(real_minima,real_minima_value,'ro');
         elseif(~isempty(real_maxima))
             warning('No extrema');
         end
