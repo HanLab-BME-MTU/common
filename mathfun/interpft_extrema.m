@@ -67,7 +67,7 @@ function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_
         end
     end
     
-    if(nargin < 2)
+    if(nargin < 3)
         sorted = false;
     end
 
@@ -87,6 +87,7 @@ function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_
         % split nyquist frequency
         x_h(nyquist,:) = x_h(nyquist,:)/2;
         x_h = x_h([1:nyquist nyquist nyquist+1:end],:);
+        x_h = reshape(x_h,[s(1)+1 s(2:end)]);
         output_size(1) = output_size(1) + 1;
     end
     % Wave number, unnormalized by number of points
