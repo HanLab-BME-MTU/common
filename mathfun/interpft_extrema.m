@@ -106,47 +106,36 @@ function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_
     dx2_h = bsxfun(@times,x_h,-freq.^2);
     
     % use companion matrix approach
-    if(dx_h(end) ~= 0)
-        dx_h = -fftshift(dx_h,1);
-        r = zeros(output_size,'like',dx_h);
-        output_size1 = output_size(1);
-        % roots outputs only column vectors which may be shorter than
-        % expected
-        if(~isempty(gcp('nocreate')))
-            parfor i=1:prod(output_size(2:end))
-                dx_h_roots = roots(dx_h(:,i));
-                dx_h_roots(end+1:output_size1) = 0;
-                r(:,i) = dx_h_roots;
-            end
-        else
-            for i=1:prod(output_size(2:end))
-                dx_h_roots = roots(dx_h(:,i));
-                dx_h_roots(end+1:output_size1) = 0;
-                r(:,i) = dx_h_roots;
-            end
+    dx_h = -fftshift(dx_h,1);
+    r = zeros(output_size,'like',dx_h);
+    output_size1 = output_size(1);
+    % roots outputs only column vectors which may be shorter than
+    % expected
+    if(~isempty(gcp('nocreate')))
+        parfor i=1:prod(output_size(2:end))
+            dx_h_roots = roots(dx_h(:,i));
+            dx_h_roots(end+1:output_size1) = 0;
+            r(:,i) = dx_h_roots;
         end
-        % magnitude
-        magnitude = abs(log(abs(r)));
-        % keep only the real answers
-        imaginary_map = magnitude > abs(TOL);
-        % If tolerance is negative and no roots are found, then use the
-        % root that is closest to being real
-        if(TOL < 0)
-            no_roots = all(imaginary_map);
-            imaginary_map(:,no_roots) = bsxfun(@gt,magnitude(:,no_roots),min(magnitude(:,no_roots))*10);
-        end
-%         real_map = ~imaginary_map;
-        r(imaginary_map) = NaN;
     else
-        % no roots
-        maxima = [];
-        minima = [];
-        maxima_value = [];
-        minima_value = [];
-        other = [];
-        other_value = [];
-        return;
+        for i=1:prod(output_size(2:end))
+            dx_h_roots = roots(dx_h(:,i));
+            dx_h_roots(end+1:output_size1) = 0;
+            r(:,i) = dx_h_roots;
+        end
     end
+    % magnitude
+    magnitude = abs(log(abs(r)));
+    % keep only the real answers
+    imaginary_map = magnitude > abs(TOL);
+    % If tolerance is negative and no roots are found, then use the
+    % root that is closest to being real
+    if(TOL < 0)
+        no_roots = all(imaginary_map);
+        imaginary_map(:,no_roots) = bsxfun(@gt,magnitude(:,no_roots),min(magnitude(:,no_roots))*10);
+    end
+%     real_map = ~imaginary_map;
+    r(imaginary_map) = NaN;
    
     % In the call to roots the coefficients were entered in reverse order (negative to positive)
     % rather than positive to negative. Therefore, take the negative of the angle..
