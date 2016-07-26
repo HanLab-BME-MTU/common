@@ -195,5 +195,5 @@ function vq = matrixMultiplicationTransform(v,xq)
     
     % sum across waves weighted by Fourier coefficients
     % normalize by the the number of Fourier coefficients
-    vq = real(sum(bsxfun(@times,waves,permute(v_h,dim_permute)),ndims_waves))/scale_factor;
+    vq = sum(real(bsxfun(@times,waves,permute(v_h,dim_permute))),ndims_waves)/scale_factor;
 end
