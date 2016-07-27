@@ -111,30 +111,16 @@ function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_
     output_size1 = output_size(1);
     % roots outputs only column vectors which may be shorter than
     % expected
-    if(~isempty(gcp('nocreate')))
-        parfor i=1:prod(output_size(2:end))
-            try
-                dx_h_roots = roots(dx_h(:,i));
-                dx_h_roots(end+1:output_size1) = 0;
-                r(:,i) = dx_h_roots;
-            catch err
-                switch(err.identifier)
-                    case 'MATLAB:ROOTS:NonFiniteInput'
-                        r(:,i) = NaN;
-                end
-            end
-        end
-    else
-        for i=1:prod(output_size(2:end))
-            try
-                dx_h_roots = roots(dx_h(:,i));
-                dx_h_roots(end+1:output_size1) = 0;
-                r(:,i) = dx_h_roots;
-            catch err
-                switch(err.identifier)
-                    case 'MATLAB:ROOTS:NonFiniteInput'
-                        r(:,i) = NaN;
-                end
+    % Only use parallel workers if a pool already exists
+    parfor (i=1:prod(output_size(2:end)), ~isempty(gcp('nocreate'))*realmax)
+        try
+            dx_h_roots = roots(dx_h(:,i));
+            dx_h_roots(end+1:output_size1) = 0;
+            r(:,i) = dx_h_roots;
+        catch err
+            switch(err.identifier)
+                case 'MATLAB:ROOTS:NonFiniteInput'
+                    r(:,i) = NaN;
             end
         end
     end
