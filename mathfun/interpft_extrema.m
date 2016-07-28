@@ -111,31 +111,33 @@ function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_
     output_size1 = output_size(1);
     % roots outputs only column vectors which may be shorter than
     % expected
-    if(~isempty(gcp('nocreate')))
-        parfor i=1:prod(output_size(2:end))
+    % Only use parallel workers if a pool already exists
+    parfor (i=1:prod(output_size(2:end)), ~isempty(gcp('nocreate'))*realmax)
+        try
             dx_h_roots = roots(dx_h(:,i));
             dx_h_roots(end+1:output_size1) = 0;
             r(:,i) = dx_h_roots;
-        end
-    else
-        for i=1:prod(output_size(2:end))
-            dx_h_roots = roots(dx_h(:,i));
-            dx_h_roots(end+1:output_size1) = 0;
-            r(:,i) = dx_h_roots;
+        catch err
+            switch(err.identifier)
+                case 'MATLAB:ROOTS:NonFiniteInput'
+                    r(:,i) = NaN;
+            end
         end
     end
     % magnitude
     magnitude = abs(log(abs(r)));
     % keep only the real answers
-    imaginary_map = magnitude > abs(TOL);
+    imaginary_map = ~(magnitude <= abs(TOL));
     % If tolerance is negative and no roots are found, then use the
     % root that is closest to being real
     if(TOL < 0)
         no_roots = all(imaginary_map);
         imaginary_map(:,no_roots) = bsxfun(@gt,magnitude(:,no_roots),min(magnitude(:,no_roots))*10);
     end
-%     real_map = ~imaginary_map;
     r(imaginary_map) = NaN;
+%     real_map = ~imaginary_map;
+%     clear imaginary_map
+    
    
     % In the call to roots the coefficients were entered in reverse order (negative to positive)
     % rather than positive to negative. Therefore, take the negative of the angle..
@@ -155,7 +157,7 @@ function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_
 %     dx2 = waves(:,:)*dx2_h;
     ndims_waves = ndims(waves);
     dim_permute = [ndims_waves 2:ndims_waves-1 1];
-    dx2 = real(sum(bsxfun(@times,waves,permute(dx2_h,dim_permute)),ndims_waves));
+    dx2 = sum(real(bsxfun(@times,waves,permute(dx2_h,dim_permute))),ndims_waves);
     
     % dx2 could be equal to 0, meaning inconclusive type
     % local maxima is when dx == 0, dx2 < 0
@@ -176,7 +178,7 @@ function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_
     if(nargout > 2 || nargout == 0 || sorted)
 	% calculate the value of the extrema if needed
 %         maxima_value = waves*x_h/scale_factor;
-        extrema_value = real(sum(bsxfun(@times,waves,permute(x_h,dim_permute)),ndims_waves))/scale_factor;
+        extrema_value = sum(real(bsxfun(@times,waves,permute(x_h,dim_permute))),ndims_waves)/scale_factor;
         maxima_value = output_template;
         minima_value = output_template;
         minima_value(minima_map) = extrema_value(minima_map);
