@@ -329,7 +329,7 @@ if isfield(diffAnalysisRes,'classification') %output of trackDiffusionAnalysis1
     end
     %random/unclassified + 2D immobile
     indx = find(trackSegmentType(:,1) ~= 1 & trackSegmentType(:,2) == 0);
-    trackSegmentColor(indx,:) = repmat([0.5 0.3 0],length(indx),1);%0.5 0.3 0
+    trackSegmentColor(indx,:) = repmat([0.5 0.3 0],length(indx),1);
     %random/unclassified + 2D confined
     indx = find(trackSegmentType(:,1) ~= 1 & trackSegmentType(:,2) == 1);
     trackSegmentColor(indx,:) = repmat([0 0 1],length(indx),1);
