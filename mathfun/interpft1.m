@@ -308,16 +308,17 @@ function vq = horner_vec_real(v,xq)
     z = exp(1i*pi*xq);
     % vq starts as 1 x N
     colon = {':'};
-    vq = v_h(nyquist,colon{ones(ndims(v_h)-1,1)});
+    v_h_colon = colon(ones(ndims(v_h)-1,1));
+    vq = v_h(nyquist,v_h_colon{:});
     for j = nyquist-1:-1:2
         vq = bsxfun(@times,z,vq);
-        vq = bsxfun(@plus,v_h(j,:),vq);
+        vq = bsxfun(@plus,v_h(j,v_h_colon{:}),vq);
     end
     % Last multiplication
 %     vq = bsxfun(@times,z,vq); % We only care about the real part
     vq = bsxfun(@times,real(z),real(vq))-bsxfun(@times,imag(z),imag(vq));
     % Add Constant Term and Scale
-    vq = bsxfun(@plus,v_h(1,:),vq*2);
+    vq = bsxfun(@plus,v_h(1,v_h_colon{:}),vq*2);
 %     vq = real(vq); % We already selected the real part above
     vq = vq./scale_factor;
 end
