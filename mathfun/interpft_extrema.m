@@ -1,4 +1,4 @@
-function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_extrema(x,dim,sorted)
+function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_extrema(x,dim,sorted,TOL)
 % interpft_extrema finds the extrema of the function when interpolated by fourier transform
 % This is the equivalent of doing sinc interpolation.
 %
@@ -7,6 +7,10 @@ function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_
 %     Values are considered to be sampled at (0:length(x)-1)*2*pi/length(x)
 % dim - dimension along which to find maxima
 % sorted - logical value about whether to sort the maxima by value
+% TOL - tolerance to determine if log(abs(root)) is zero to determine if
+%       the root of the derivative is real.
+%       If tolerance is negative, then use 10*abs(log(abs(root))) as the
+%       tolerance only if no roots are found with tolerance at -TOL.
 %
 % OUTPUT
 % maxima - angle between 0 and 2*pi indicating location of local maxima
@@ -48,8 +52,6 @@ function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_
 %
 % Author: Mark Kittisopikul, May 2016
 
-    % Tolerance for log(abs(root)) to be near zero, in which case the root is real
-    TOL = eps*1e2;
     
 %     original_size = size(x);
     if(nargin > 1)
@@ -67,9 +69,15 @@ function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_
         end
     end
     
-    if(nargin < 2)
+    if(nargin < 3)
         sorted = false;
     end
+    if(nargin < 4)
+    	% Tolerance for log(abs(root)) to be near zero, in which case the root is real
+        % Set negative so that tolerance adapts if no roots are found
+        TOL = -eps*1e2;
+    end
+
 
     output_size = size(x);
     output_size(1) = output_size(1) - 1;
@@ -87,6 +95,7 @@ function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_
         % split nyquist frequency
         x_h(nyquist,:) = x_h(nyquist,:)/2;
         x_h = x_h([1:nyquist nyquist nyquist+1:end],:);
+        x_h = reshape(x_h,[s(1)+1 s(2:end)]);
         output_size(1) = output_size(1) + 1;
     end
     % Wave number, unnormalized by number of points
@@ -97,41 +106,38 @@ function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_
     dx2_h = bsxfun(@times,x_h,-freq.^2);
     
     % use companion matrix approach
-    if(dx_h(end) ~= 0)
-%         r = roots(fftshift(-dx_h./dx_h(end)));
-        dx_h = -fftshift(dx_h,1);
-        r = zeros(output_size,'like',dx_h);
-        % FIXME
-        r = r(:,:).';
-        dx_h = dx_h(:,:).';
-        if(~isempty(gcp('nocreate')))
-            parfor i=1:size(r,1)
-                r(i,:) = roots(dx_h(i,:));
-            end
-        else
-            for i=1:size(r,1);
-                r(i,:) = roots(dx_h(i,:));
+    dx_h = -fftshift(dx_h,1);
+    r = zeros(output_size,'like',dx_h);
+    output_size1 = output_size(1);
+    % roots outputs only column vectors which may be shorter than
+    % expected
+    % Only use parallel workers if a pool already exists
+    parfor (i=1:prod(output_size(2:end)), ~isempty(gcp('nocreate'))*realmax)
+        try
+            dx_h_roots = roots(dx_h(:,i));
+            dx_h_roots(end+1:output_size1) = 0;
+            r(:,i) = dx_h_roots;
+        catch err
+            switch(err.identifier)
+                case 'MATLAB:ROOTS:NonFiniteInput'
+                    r(:,i) = NaN;
             end
         end
-%         dx_h = dx_h.';
-        r = r.';
-        r = reshape(r,output_size);
-%       dx_h = reshape(dx_h.',output_size);
-        % keep only the real answers
-%         r = r(abs(log(abs(r))) < TOL);
-        imaginary_map = abs(log(abs(r))) > TOL;
-%         real_map = ~imaginary_map;
-        r(imaginary_map) = NaN;
-    else
-        % no roots
-        maxima = [];
-        minima = [];
-        maxima_value = [];
-        minima_value = [];
-        other = [];
-        other_value = [];
-        return;
     end
+    % magnitude
+    magnitude = abs(log(abs(r)));
+    % keep only the real answers
+    imaginary_map = ~(magnitude <= abs(TOL));
+    % If tolerance is negative and no roots are found, then use the
+    % root that is closest to being real
+    if(TOL < 0)
+        no_roots = all(imaginary_map);
+        imaginary_map(:,no_roots) = bsxfun(@gt,magnitude(:,no_roots),min(magnitude(:,no_roots))*10);
+    end
+    r(imaginary_map) = NaN;
+%     real_map = ~imaginary_map;
+%     clear imaginary_map
+    
    
     % In the call to roots the coefficients were entered in reverse order (negative to positive)
     % rather than positive to negative. Therefore, take the negative of the angle..
@@ -151,7 +157,7 @@ function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_
 %     dx2 = waves(:,:)*dx2_h;
     ndims_waves = ndims(waves);
     dim_permute = [ndims_waves 2:ndims_waves-1 1];
-    dx2 = real(sum(bsxfun(@times,waves,permute(dx2_h,dim_permute)),ndims_waves));
+    dx2 = sum(real(bsxfun(@times,waves,permute(dx2_h,dim_permute))),ndims_waves);
     
     % dx2 could be equal to 0, meaning inconclusive type
     % local maxima is when dx == 0, dx2 < 0
@@ -172,7 +178,7 @@ function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_
     if(nargout > 2 || nargout == 0 || sorted)
 	% calculate the value of the extrema if needed
 %         maxima_value = waves*x_h/scale_factor;
-        extrema_value = real(sum(bsxfun(@times,waves,permute(x_h,dim_permute)),ndims_waves))/scale_factor;
+        extrema_value = sum(real(bsxfun(@times,waves,permute(x_h,dim_permute))),ndims_waves)/scale_factor;
         maxima_value = output_template;
         minima_value = output_template;
         minima_value(minima_map) = extrema_value(minima_map);
@@ -217,7 +223,7 @@ function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_
             
             if(sorted)
                 other_value_inf = other_value;
-                other_value_inf(isnan(maxima_value_inf)) = -Inf;
+                other_value_inf(isnan(other_value_inf)) = -Inf;
                 [~,other,other_value] = sortMatrices(other_value_inf,other,other_value,'descend');
                 clear other_value_inf;
             end
@@ -233,16 +239,30 @@ function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_
     
     if(nargout == 0)
         % plot if no outputs requested
-        if(~isempty(extrema))
-	    % Maxima will be green
-            real_maxima = maxima(maxima_map);
-            plot([real_maxima real_maxima]',ylim,'g');
-            plot(real_maxima,real(maxima_value(maxima_map)),'go');
-	    % Minima will be red
-            real_minima = minima(minima_map);
-            plot([real_minima real_minima]',ylim,'r');
-            plot(real_minima,real(minima_value(minima_map)),'ro');
+        if(sorted)
+            real_maxima = maxima(:);
+            real_maxima_value = maxima_value(:);
         else
+            real_maxima = maxima(maxima_map);
+            real_maxima_value = real(maxima_value(maxima_map));
+        end
+        if(~isempty(real_maxima))
+        % Maxima will be green
+            plot([real_maxima real_maxima]',ylim,'g');
+            plot(real_maxima,real_maxima_value,'go');
+        end
+        if(sorted)
+            real_minima = minima(:);
+            real_minima_value = minima_value(:);
+        else
+            real_minima = minima(minima_map);
+            real_minima_value = real(minima_value(minima_map));
+        end
+        if(~isempty(real_minima))
+	    % Minima will be red
+            plot([real_minima real_minima]',ylim,'r');
+            plot(real_minima,real_minima_value,'ro');
+        elseif(~isempty(real_maxima))
             warning('No extrema');
         end
     end
