@@ -65,6 +65,7 @@ function plotTracksTransDiffAnalysis2D(trackedFeatureInfo,diffAnalysisRes,timeRa
 %       too short for any analysis -> black
 %
 %Khuloud Jaqaman, April 2009
+%Edited: Tony Vega 2016
 
 %% Input
 
@@ -267,7 +268,7 @@ asymBase = -2*ones(size(tracksX));
         %get track segment types from diffusion analysis
         trackSegmentType = vertcat(diffAnalysisRes.segmentClass);
 
-        if asymCheck == 0
+        if asymCheck == 1
             for k = 1:length(trackSegmentType)
 
                 for j = 1:size(trackSegmentType(k).momentScalingSpectrum,1)
@@ -337,18 +338,33 @@ for k = 1:length(diffTypes)
             for i=1:numTimePlot-1
                 validData=~all(isnan(copyX(i:i+1,:)),1);
                 lineWithGaps(copyX(i:i+1,validData),copyY(i:i+1,validData), 'Color',[0 0 0]);
-            end 
+            end %Allow to change to white if image involved
            %asym linear and unclassified
-            indA = find(asymBase(ind) ==-1);
-                if ~isempty(indA)
+            indA = find(asymBase ==1);
+            indAF  = intersect(indA,ind);
+                if ~isempty(indAF)
                     copyX = NaN(copyR,copyC);
                     copyY = NaN(copyR,copyC);
-                    copyX(indA) = tracksXP(indA);
-                    copyY(indA) = tracksYP(indA);
+                    copyX(indAF) = tracksXP(indAF);
+                    copyY(indAF) = tracksYP(indAF);
 
                     for i=1:numTimePlot-1
                         validData=~all(isnan(copyX(i:i+1,:)),1);
-                        lineWithGaps(copyX(i:i+1,validData),copyY(i:i+1,validData), 'Color',[0.7 0.7 0.7]);
+                        lineWithGaps(copyX(i:i+1,validData),copyY(i:i+1,validData), 'Color',[0 102/255 51/255]);%[1 1 0]
+                    end 
+                end
+           %symmetric and unclassified
+            indA = find(asymBase ==0);
+            indAF  = intersect(indA,ind);
+                if ~isempty(indAF)
+                    copyX = NaN(copyR,copyC);
+                    copyY = NaN(copyR,copyC);
+                    copyX(indAF) = tracksXP(indAF);
+                    copyY(indAF) = tracksYP(indAF);
+
+                    for i=1:numTimePlot-1
+                        validData=~all(isnan(copyX(i:i+1,:)),1);
+                        lineWithGaps(copyX(i:i+1,validData),copyY(i:i+1,validData), 'Color',[0.6 0 1]);
                     end 
                 end
         case 0
@@ -378,12 +394,13 @@ for k = 1:length(diffTypes)
 % %                 lineWithGaps(copyX(i:i+1,validData),copyY(i:i+1,validData), 'Color','c');
             end
             %Asym linear and confined
-            indA = find(asymBase(ind) ==1);
-            if ~isempty(indA)
+            indA = find(asymBase ==1);
+            indAF  = intersect(indA,ind);
+            if ~isempty(indAF)
                     copyX = NaN(copyR,copyC);
                     copyY = NaN(copyR,copyC);
-                    copyX(indA) = tracksXP(indA);
-                    copyY(indA) = tracksYP(indA);
+                    copyX(indAF) = tracksXP(indAF);
+                    copyY(indAF) = tracksYP(indAF);
 
                 for i=1:numTimePlot-1
                     validData=~all(isnan(copyX(i:i+1,:)),1);
@@ -404,12 +421,13 @@ for k = 1:length(diffTypes)
 % %                 lineWithGaps(copyX(i:i+1,validData),copyY(i:i+1,validData), 'Color',[0 0 1]);
             end
            %asym linear and free
-            indA = find(asymBase(ind) ==2);
-            if ~isempty(indA)
+            indA = find(asymBase ==1);
+            indAF  = intersect(indA,ind);
+            if ~isempty(indAF)
                     copyX = NaN(copyR,copyC);
                     copyY = NaN(copyR,copyC);
-                    copyX(indA) = tracksXP(indA);
-                    copyY(indA) = tracksYP(indA);
+                    copyX(indAF) = tracksXP(indAF);
+                    copyY(indAF) = tracksYP(indAF);
 
                 for i=1:numTimePlot-1
                     validData=~all(isnan(copyX(i:i+1,:)),1);
@@ -428,16 +446,17 @@ for k = 1:length(diffTypes)
                 lineWithGaps(copyX(i:i+1,validData),copyY(i:i+1,validData), 'Color','m');
             end
  	           %asym linear and super
-        indA = find(asymBase(ind) ==3);
-            if ~isempty(indA)
+            indA = find(asymBase ==1);
+            indAF  = intersect(indA,ind);
+            if ~isempty(indAF)
                     copyX = NaN(copyR,copyC);
                     copyY = NaN(copyR,copyC);
-                    copyX(indA) = tracksXP(indA);
-                    copyY(indA) = tracksYP(indA);
+                    copyX(indAF) = tracksXP(indAF);
+                    copyY(indAF) = tracksYP(indAF);
 
                 for i=1:numTimePlot-1
                     validData=~all(isnan(copyX(i:i+1,:)),1);
-                    lineWithGaps(copyX(i:i+1,validData),copyY(i:i+1,validData), 'Color',[1 1 0]);
+                    lineWithGaps(copyX(i:i+1,validData),copyY(i:i+1,validData), 'Color',[0 1 0]);
                 end 
             end
     end
