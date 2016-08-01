@@ -20,6 +20,9 @@ function [trackClass,mssSlope,genDiffCoef,scalingPower,normDiffCoef] ...
 %                     which will be used for all motion types, or 2 values,
 %                     which will be used for confined and directed, respectively.
 %                     Optional. Default: 0.1 for all.
+%                     Value of -1 will have varying false positve rate using 
+%                     new thresholds based on distributions of all
+%                     diffusion types
 %
 %OUTPUT trackClass  : # tracks x 1 vector of track classification.
 %                     Values mean the following ...
@@ -67,6 +70,8 @@ function [trackClass,mssSlope,genDiffCoef,scalingPower,normDiffCoef] ...
 %
 %Khuloud Jaqaman, March 2008
 %                 Feb 2015: Expanded to include immobile.
+% Tony Vega,      July 2016: New option to use thresholds based on
+% distributions of all diffusion types
 
 %% input
 
@@ -88,6 +93,9 @@ if nargin < 4 || isempty(alphaMSS)
     [alphaMSSConf,alphaMSSDir,alphaMSSImm] = deal(0.1);
 elseif length(alphaMSS) == 1
         [alphaMSSConf,alphaMSSDir,alphaMSSImm] = deal(alphaMSS);
+elseif length(alphaMSS) == 2 % TEMP BY TONY, until further changes
+    alphaMSSConf = alphaMSS(1);
+    alphaMSSDir = alphaMSS(2);
 elseif length(alphaMSS) == 3
     alphaMSSConf = alphaMSS(1);
     alphaMSSDir = alphaMSS(2);
@@ -110,92 +118,109 @@ clear criteria
 %% alpha-value for classification
 
 %determine threshold based on alpha-value and dimensionality
-switch probDim
-    case 1
-        switch alphaMSSConf
-            case 0.2 %10th percentile and 90th percentile
-                mssThreshNeg = threshMSS1D_p20(numFramesMovie);
-            case 0.1 %5th percentile and 95th percentile
-                mssThreshNeg = threshMSS1D_p10(numFramesMovie);
-            case 0.05 %2.5th percentile and 97.5th percentile
-                mssThreshNeg = threshMSS1D_p05(numFramesMovie);
-            case 0.01 %0.5th percentile and 99.5th percentile
-                mssThreshNeg = threshMSS1D_p01(numFramesMovie);
-        end
-        switch alphaMSSDir
-            case 0.2 %10th percentile and 90th percentile
-                [~,mssThreshPos] = threshMSS1D_p20(numFramesMovie);
-            case 0.1 %5th percentile and 95th percentile
-                [~,mssThreshPos] = threshMSS1D_p10(numFramesMovie);
-            case 0.05 %2.5th percentile and 97.5th percentile
-                [~,mssThreshPos] = threshMSS1D_p05(numFramesMovie);
-            case 0.01 %0.5th percentile and 99.5th percentile
-                [~,mssThreshPos] = threshMSS1D_p01(numFramesMovie);
-        end
-        mssThreshImm = -Inf(numFramesMovie,1);
-    case 2
-        switch alphaMSSConf
-            case 0.2 %10th percentile and 90th percentile
-                mssThreshNeg = threshMSS2D_p20(numFramesMovie);
-            case 0.1 %5th percentile and 95th percentile
-                mssThreshNeg = threshMSS2D_p10(numFramesMovie);
-            case 0.05 %2.5th percentile and 97.5th percentile
-                mssThreshNeg = threshMSS2D_p05(numFramesMovie);
-            case 0.01 %0.5th percentile and 99.5th percentile
-                mssThreshNeg = threshMSS2D_p01(numFramesMovie);
-        end
-        switch alphaMSSDir
-            case 0.2 %10th percentile and 90th percentile
-                [~,mssThreshPos] = threshMSS2D_p20(numFramesMovie);
-            case 0.1 %5th percentile and 95th percentile
-                [~,mssThreshPos] = threshMSS2D_p10(numFramesMovie);
-            case 0.05 %2.5th percentile and 97.5th percentile
-                [~,mssThreshPos] = threshMSS2D_p05(numFramesMovie);
-            case 0.01 %0.5th percentile and 99.5th percentile
-                [~,mssThreshPos] = threshMSS2D_p01(numFramesMovie);
-        end
-        switch alphaMSSImm
-            %             case 0.2 %80th percentile
-            %                 mssThreshImm = threshMSSImm2D_p20(numFramesMovie);
-            %             case 0.1 %90th percentile
-            %                 mssThreshImm = threshMSSImm2D_p10(numFramesMovie);
-            %             case 0.05 %95th percentile
-            %                 mssThreshImm = threshMSSImm2D_p05(numFramesMovie);
-            case 0.01 %99th percentile
-                mssThreshImm = threshMSSImm2D_p01(numFramesMovie);
-            case 0.001 %99.9th percentile
-                mssThreshImm = threshMSSImm2D_p001(numFramesMovie);
-            case 0.0001 %99.99th percentile
-                mssThreshImm = threshMSSImm2D_p0001(numFramesMovie);
-            case 0 %100th percentile, or max
-                mssThreshImm = threshMSSImm2D_p0(numFramesMovie);
-        end
-    case 3
-        switch alphaMSSConf
-            case 0.2 %10th percentile and 90th percentile
-                mssThreshNeg = threshMSS3D_p20(numFramesMovie);
-            case 0.1 %5th percentile and 95th percentile
-                mssThreshNeg = threshMSS3D_p10(numFramesMovie);
-            case 0.05 %2.5th percentile and 97.5th percentile
-                mssThreshNeg = threshMSS3D_p05(numFramesMovie);
-            case 0.01 %0.5th percentile and 99.5th percentile
-                mssThreshNeg = threshMSS3D_p01(numFramesMovie);
-        end
-        switch alphaMSSDir
-            case 0.2 %10th percentile and 90th percentile
-                [~,mssThreshPos] = threshMSS3D_p20(numFramesMovie);
-            case 0.1 %5th percentile and 95th percentile
-                [~,mssThreshPos] = threshMSS3D_p10(numFramesMovie);
-            case 0.05 %2.5th percentile and 97.5th percentile
-                [~,mssThreshPos] = threshMSS3D_p05(numFramesMovie);
-            case 0.01 %0.5th percentile and 99.5th percentile
-                [~,mssThreshPos] = threshMSS3D_p01(numFramesMovie);
-        end
-        mssThreshImm = -Inf(numFramesMovie,1);
+if alphaMSS(1) ==-1  && probDim ==2%Maybe change to only allow
+    p = mfilename('fullpath');
+    load(strcat(p(1:95),'newDiffTypeThreshold.mat'))
+    mssThreshImm = Mdl.mssThreshImm;
+    mssThreshPos = Mdl.mssThreshPos;
+    mssThreshNeg = Mdl.mssThreshNeg;
+
+elseif alphaMSS(1) ==-1  && probDim ==1%Maybe change to only allow
+    p = mfilename('fullpath');
+    load(strcat(p(1:95),'newDiffTypeThreshold1D.mat'))
+    mssThreshImm = Mdl1D.mssThreshImm;
+    mssThreshPos = Mdl1D.mssThreshPos;
+    mssThreshNeg = Mdl1D.mssThreshNeg;
+else
+    switch probDim
+        case 1
+            switch alphaMSSConf
+                case 0.2 %10th percentile and 90th percentile
+                    mssThreshNeg = threshMSS1D_p20(numFramesMovie);
+                case 0.1 %5th percentile and 95th percentile
+                    mssThreshNeg = threshMSS1D_p10(numFramesMovie);
+                case 0.05 %2.5th percentile and 97.5th percentile
+                    mssThreshNeg = threshMSS1D_p05(numFramesMovie);
+                case 0.01 %0.5th percentile and 99.5th percentile
+                    mssThreshNeg = threshMSS1D_p01(numFramesMovie);
+            end
+            switch alphaMSSDir
+                case 0.2 %10th percentile and 90th percentile
+                    [~,mssThreshPos] = threshMSS1D_p20(numFramesMovie);
+                case 0.1 %5th percentile and 95th percentile
+                    [~,mssThreshPos] = threshMSS1D_p10(numFramesMovie);
+                case 0.05 %2.5th percentile and 97.5th percentile
+                    [~,mssThreshPos] = threshMSS1D_p05(numFramesMovie);
+                case 0.01 %0.5th percentile and 99.5th percentile
+                    [~,mssThreshPos] = threshMSS1D_p01(numFramesMovie);
+            end
+            mssThreshImm = -Inf(numFramesMovie,1);
+        case 2
+            switch alphaMSSConf
+                case 0.2 %10th percentile and 90th percentile
+                    mssThreshNeg = threshMSS2D_p20(numFramesMovie);
+                case 0.1 %5th percentile and 95th percentile
+                    mssThreshNeg = threshMSS2D_p10(numFramesMovie);
+                case 0.05 %2.5th percentile and 97.5th percentile
+                    mssThreshNeg = threshMSS2D_p05(numFramesMovie);
+                case 0.01 %0.5th percentile and 99.5th percentile
+                    mssThreshNeg = threshMSS2D_p01(numFramesMovie);
+            end
+            switch alphaMSSDir
+                case 0.2 %10th percentile and 90th percentile
+                    [~,mssThreshPos] = threshMSS2D_p20(numFramesMovie);
+                case 0.1 %5th percentile and 95th percentile
+                    [~,mssThreshPos] = threshMSS2D_p10(numFramesMovie);
+                case 0.05 %2.5th percentile and 97.5th percentile
+                    [~,mssThreshPos] = threshMSS2D_p05(numFramesMovie);
+                case 0.01 %0.5th percentile and 99.5th percentile
+                    [~,mssThreshPos] = threshMSS2D_p01(numFramesMovie);
+            end
+            switch alphaMSSImm
+                %             case 0.2 %80th percentile
+                %                 mssThreshImm = threshMSSImm2D_p20(numFramesMovie);
+                %             case 0.1 %90th percentile
+                %                 mssThreshImm = threshMSSImm2D_p10(numFramesMovie);
+                %             case 0.05 %95th percentile
+                %                 mssThreshImm = threshMSSImm2D_p05(numFramesMovie);
+                case 0.01 %99th percentile
+                    mssThreshImm = threshMSSImm2D_p01(numFramesMovie);
+                case 0.001 %99.9th percentile
+                    mssThreshImm = threshMSSImm2D_p001(numFramesMovie);
+                case 0.0001 %99.99th percentile
+                    mssThreshImm = threshMSSImm2D_p0001(numFramesMovie);
+                case 0 %100th percentile, or max
+                    mssThreshImm = threshMSSImm2D_p0(numFramesMovie);
+            end
+                        mssThreshImm = mssThreshNeg / 4;
+
+        case 3
+            switch alphaMSSConf
+                case 0.2 %10th percentile and 90th percentile
+                    mssThreshNeg = threshMSS3D_p20(numFramesMovie);
+                case 0.1 %5th percentile and 95th percentile
+                    mssThreshNeg = threshMSS3D_p10(numFramesMovie);
+                case 0.05 %2.5th percentile and 97.5th percentile
+                    mssThreshNeg = threshMSS3D_p05(numFramesMovie);
+                case 0.01 %0.5th percentile and 99.5th percentile
+                    mssThreshNeg = threshMSS3D_p01(numFramesMovie);
+            end
+            switch alphaMSSDir
+                case 0.2 %10th percentile and 90th percentile
+                    [~,mssThreshPos] = threshMSS3D_p20(numFramesMovie);
+                case 0.1 %5th percentile and 95th percentile
+                    [~,mssThreshPos] = threshMSS3D_p10(numFramesMovie);
+                case 0.05 %2.5th percentile and 97.5th percentile
+                    [~,mssThreshPos] = threshMSS3D_p05(numFramesMovie);
+                case 0.01 %0.5th percentile and 99.5th percentile
+                    [~,mssThreshPos] = threshMSS3D_p01(numFramesMovie);
+            end
+%             mssThreshImm = -Inf(numFramesMovie,1);
+            mssThreshImm = mssThreshNeg / 4;
+    end
 end
 
-%calculate the threshold for immobile as threshold for confined / 4
-mssThreshImm = mssThreshNeg / 4;
+
 
 %% memory for trajectory classification
 
@@ -235,7 +260,7 @@ for iTrack = indx4diff'
     trackMomentsT = calcTrackMoments(coordinates,standardDevs,momentOrders,maxLag);
     trackMoments = [trackMomentsT.momentValues];
     trackMoments = trackMoments(:,1:2:end);
-
+    
     %estimate the moment scaling spectrum (MSS),
     %i.e. the scaling power for all moments
     scalingPowerT = NaN(1,numOrders);
@@ -244,9 +269,10 @@ for iTrack = indx4diff'
 
         %caculate ln(lag) and ln(moment)
         lnTime = log((1:maxLag)');
-        lnMoment = log(trackMoments(:,iOrder));
+        lnMoment = log(trackMoments(1:maxLag,iOrder));
+
         
-        %remove any NaNs
+        %remove any NaNs     
         indxGood = find(~isnan(lnMoment));
         lnTime = lnTime(indxGood);
         lnMoment = lnMoment(indxGood);
@@ -255,12 +281,11 @@ for iTrack = indx4diff'
         if length(lnMoment) > 1
 
             %fit a straight line in the plot of lnMoment vs. lnTime
-            slParam = polyfit(lnTime,lnMoment,1);
+            [slParam,sFull] = polyfit(lnTime,lnMoment,1);                
 
-            %get scaling power and generalized diffusion coefficient
-            scalingPowerT(iOrder) = slParam(1);
-            genDiffCoefT(iOrder) = exp(slParam(2)) / 2 / probDim;
-            
+                  scalingPowerT(iOrder) = slParam(1);
+                  genDiffCoefT(iOrder) = exp(slParam(2)) / 2 / probDim;  
+
             %if this is the 2nd moment, calculate the "normal" diffusion
             %coefficient
             if momentOrders(iOrder)==2
@@ -274,7 +299,7 @@ for iTrack = indx4diff'
         end
 
     end
-
+    
     %keep only non-NaN scaling powers
     indxGood = find(~isnan(scalingPowerT));
     momentOrders4fit = momentOrders(indxGood);
@@ -295,17 +320,21 @@ for iTrack = indx4diff'
         %1 = confined Brownian, if mssThreshImm < MSS slope < mssThreshNeg
         %2 = pure Brownian, if mssThreshNeg <= MSS slope <= mssThreshPos
         %3 = directed, if MSS slope > mssThreshPos
+        
         if ~isnan(mssSlopeT)
-            if mssSlopeT <= mssThreshImm(numTimePoints)
-                trackClass(iTrack) = 0;
-            elseif mssSlopeT < mssThreshNeg(numTimePoints)
-                trackClass(iTrack) = 1;
-            elseif mssSlopeT > mssThreshPos(numTimePoints)
-                trackClass(iTrack) = 3;
-            else
-                trackClass(iTrack) = 2;
-            end
+            
+                if mssSlopeT <= mssThreshImm(numTimePoints)
+                    trackClass(iTrack) = 0;
+                elseif mssSlopeT < mssThreshNeg(numTimePoints) && mssSlopeT > mssThreshImm(numTimePoints)
+                    trackClass(iTrack) = 1;
+                elseif mssSlopeT > mssThreshPos(numTimePoints)
+                    trackClass(iTrack) = 3;
+                else
+                    trackClass(iTrack) = 2;
+                end
         end
+        
+
 
         %save additional output information
         mssSlope(iTrack) = mssSlopeT;
@@ -318,6 +347,8 @@ for iTrack = indx4diff'
 end
 
 %% subfunction 1
+
+
 function [y,d] = strLineFun2(logSlope,x)
 
 y = logSlope + x;

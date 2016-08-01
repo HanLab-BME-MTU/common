@@ -8,6 +8,9 @@ classdef NonSingularProcess < Process
     end
     
     methods
+        function obj = NonSingularProcess(varargin)
+            obj = obj@Process(varargin{:});
+        end
         function runLegacy(obj,varargin)
             % Reset sucess flags and existing display methods
             % Runs the funName_ with MovieData handle as first argument

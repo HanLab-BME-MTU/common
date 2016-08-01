@@ -1,6 +1,6 @@
 function [traj,trackMatrix,trajTransDiffClass,errFlag] = ...
     simMultiMotionTypeTraj(numParticles,volumeEdges,totalTime,timeStep,...
-    diffCoefRange,confRadRange,driftVelRange,durationRange,strictSwitch)
+    diffCoefRange,confRadRange,driftVelRange,durationRange,strictSwitch,immPrecision)
 %SIMMULTIMOTIONTYPETRAJ generates trajectories that exhibit a combination of confined diffusion, free diffusion and diffusion with drift
 %
 %SYNOPSIS [traj,trackMatrix,trajTransDiffClass,errFlag] = ...
@@ -20,12 +20,12 @@ function [traj,trackMatrix,trajTransDiffClass,errFlag] = ...
 %       driftVelRange: Row vector with 2 entries indicating drift speed
 %                      range [space units/unit time]. Direction chosen
 %                      randomly by algorithm.
-%       durationRange: 3-by-2 array indicating range of time spent in each
+%       durationRange: 4-by-2 array indicating range of time spent in each
 %                      motion category. 1st row: confined diffusion; 2nd
-%                      row: free diffusion; 3rd row: drift. 1st column:
-%                      shortest duration per category; 2nd column: longest
+%                      row: free diffusion; 3rd row: drift; 4th row confined.
+%                      1st column: shortest duration per category; 2nd column: longest
 %                      duration per category. To exclude a category, put
-%                      zeros in its row.
+%                      zeros in its row. 
 %       strictSwitch : 1 to force switching to a different motion type
 %                      between segments, 0 to allow switching to the same
 %                      motion type but possibly with different parameters.
@@ -40,6 +40,7 @@ function [traj,trackMatrix,trajTransDiffClass,errFlag] = ...
 %       errFlag    : 0 if function executes normally, 1 otherwise.
 %
 %Khuloud Jaqaman, May 2009
+% Edit: Tony Vega 2015 add immobile option
 
 %% Output
 
@@ -99,7 +100,9 @@ for iParticle = 1 : numParticles
     %1 = confined diffusion
     %2 = free diffusion
     %3 = diffusion with drift
+    %4 = immobile
     motionType = possibleMotionTypes(ceil(randNumArray(:,1)*numMotionTypes));
+
     if strictSwitch
         for iSegment = 2 : maxPossibelSegments
             possibleTypes = setdiff(possibleMotionTypes,motionType(iSegment-1));
@@ -152,6 +155,7 @@ for iParticle = 1 : numParticles
 
         %generate segment
         switch motionType(iSegment)
+
             case 1 %confined
                 [trajSegment,errFlag] = brownianMotion(dimension,...
                     diffCoefSegment(iSegment),segmentDuration(iSegment),...
@@ -166,11 +170,18 @@ for iParticle = 1 : numParticles
                 [trajSegment,errFlag] = brownianMotion(dimension,...
                     diffCoefSegment(iSegment),segmentDuration(iSegment),...
                     timeStep,[],[],driftVelSegment(iSegment,:));
+                
+            case 4 %immobile
+                %Add a bit of noise, beneath limit of confinement radius
+                trajSegment = zeros(round(segmentDuration(iSegment)./timeStep)+1,2);
+                trajSegment(2:end,:) = randn(round(segmentDuration(iSegment)./timeStep),2).*immPrecision;%+randi(2,1,1);%+3*ones(round(segmentDuration(iSegment)),2);
         end
 
         %shift segment based on last particle positions
         trajSegment = trajSegment + repmat(trajShift,size(trajSegment,1),1);
-        
+        if motionType(iSegment) == 4
+            segmentClass(iSegment,3) = 0;
+        end
         %store start of segment
         segmentClass(iSegment,1) = size(trajTmp,1) + 1;
         
