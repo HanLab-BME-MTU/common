@@ -11,7 +11,7 @@ classdef TestInterpftExtrema < TestCase
             self = self@TestCase(varargin{:});
         end
         function setUp(self)
-            self.seed = datenum(datetime('now'));
+            self.seed = 7.365476979391746e+05;
             rng(self.seed);
             self.figures = [];
         end
