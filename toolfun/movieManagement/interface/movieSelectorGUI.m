@@ -167,16 +167,16 @@ guidata(hObject, handles);
 function packageList = getPackageList()
 
 packageList = {'BiosensorsPackage';...
-    'FocalAdhesionPackage'
-    'FocalAdhesionSegmentationPackage'
-    'IntegratorPackage'
-    'QFSMPackage'
+%    'FocalAdhesionPackage'
+%    'FocalAdhesionSegmentationPackage'
+%    'IntegratorPackage'
+%    'QFSMPackage'
     'SegmentationPackage'
-    'TFMPackage'
+%    'TFMPackage'
     'TrackingPackage'
-    'ParkinTranslocationScoringPackage'
+%    'ParkinTranslocationScoringPackage'
     'WindowingPackage'
-    'ColocalizationPackage'
+%    'ColocalizationPackage'
     'FilamentAnalysisPackage'
     'ScoreGemPackage'
     'MicroNucQuantPackage'
