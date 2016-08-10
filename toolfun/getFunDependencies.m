@@ -60,7 +60,8 @@ filter = @(f, l) cellfun(@(x)(isempty(regexp(x,f,'once'))), l);
 
 while true
     %Find dependencies of current list
-    newFiles = depfun(filesList{:},'-toponly','-quiet');
+    %newFiles = depfun(filesList{:},'-toponly','-quiet');
+    newFiles = matlab.codetools.requiredFilesAndProducts(filesList,'toponly')';
         
     % Filter new found files using regular expression
     for i = 1:numel(excludefilters)
@@ -77,16 +78,7 @@ while true
 end
 
 % Matlab toolbox files are named '*/toolbox/name_of_toolbox/*'
-allDepFiles = depfun(depList{:},'-toponly','-quiet');
-toolboxToken = ['toolbox' regexptranslate('escape',filesep) '(\w+)' regexptranslate('escape',filesep)];
-foundTokens=regexp(allDepFiles,toolboxToken,'tokens','once');
-tb_namespaces = unique(vertcat(foundTokens{:}));
-
-% Remove the "toolboxes" that come with MATLAB by default
-v = cellfun(@ver, tb_namespaces, 'UniformOutput', false);
-v = v(~cellfun(@isempty, v));
-tb_names = cellfun(@(x) x.Name, v, 'UniformOutput', false);
-toolboxes = tb_names(~cellfun(@isempty, tb_names));
+[~,toolboxes] = matlab.codetools.requiredFilesAndProducts(depList,'toponly');
 
 if ip.Results.allMex
     %Find any mex binaries.
@@ -94,7 +86,7 @@ if ip.Results.allMex
     isMex = find(~cellfun(@isempty,mexInd))';
     mexFuns = {};
     for j = isMex
-        %And find any other mex files in same directory
+        %And find any other similarly named mex files in same directory
         newBins = dir([depList{j}(1:mexInd{j}+3) '*']);
         mexFuns = [mexFuns arrayfun(@(x)(which(newBins(x).name)),1:numel(newBins),'Unif',0)];               
     end
