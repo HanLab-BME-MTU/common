@@ -1,4 +1,4 @@
-function [prmVect, prmStd, C, res, J] = fitGaussian1D(x, data, prmVect, mode, mask)
+function [prmVect, prmStd, C, res, J] = fitGaussian1D(x, data, prmVect, mode, mask, opts)
 % prmVect = fitGaussian1D(x,data, p)
 % [prmVect,prmSTD,prmCov,res,jacob] = fitGaussian1D(x,data, p, mode,mask)
 %
@@ -6,6 +6,7 @@ function [prmVect, prmStd, C, res, J] = fitGaussian1D(x, data, prmVect, mode, ma
 %        p      : [xp A sigma c] initial and fixed parameter values
 %        {mode} : specifies which parameters to estimate; any combination of 'xAsc'
 %        {mask} : elements set to 1 are not included in optimization
+%        {opt}  : optimization parameter structure (as created by optimset)
 %
 % Data is assumed to contain a single Gaussian
 %
@@ -17,14 +18,14 @@ end
 if nargin<5
     mask = [];
 end
-
-opts = optimset('Jacobian', 'on', ...
-    'MaxFunEvals', 1e4, ...
-    'MaxIter', 1e4, ...
-    'Display', 'off', ...
-    'TolX', 1e-8, ...
-    'Tolfun', 1e-8);
-
+if nargin < 6 
+    opts = optimset('Jacobian', 'on', ...
+        'MaxFunEvals', 1e4, ...
+        'MaxIter', 1e4, ...
+        'Display', 'off', ...
+        'TolX', 1e-8, ...
+        'Tolfun', 1e-8);
+end
 
 estIdx = false(1,4); % [x A s c]
 estIdx(regexpi('xAsc', ['[' mode ']'])) = true;

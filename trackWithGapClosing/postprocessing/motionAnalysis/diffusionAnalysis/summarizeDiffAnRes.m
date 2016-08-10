@@ -111,8 +111,12 @@ end
 criteria.lifeTime.min = minTrackLen;
 indx = chooseTracks(tracks,criteria);
 clear criteria
-tracks = tracks(indx);
-diffAnalysisRes = diffAnalysisRes(indx);
+if ~isempty(indx)
+    tracks = tracks(indx);
+    diffAnalysisRes = diffAnalysisRes(indx);
+else
+    disp('Ignoring minTrackLen because imposing it leaves no tracks to analyze.')
+end
 
 %get number of tracks and number of frames
 numTracks = length(tracks);

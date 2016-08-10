@@ -109,7 +109,15 @@ for i = 1 : nSeries
     end
     
     % Create output directory
-    if ~isdir(outputDir), mkdir(outputDir); end
+    if ~isdir(outputDir) 
+        try
+            mkdir(outputDir); 
+        catch
+            disp(['Permission denied to make a folder in ' outputDir '.'])
+            outputDir = uigetdir(pwd,'Choose different analysis folder that you have a write access.');
+            mkdir(outputDir); 
+        end
+    end
     
     for iChan = 1:nChan
         
@@ -164,7 +172,7 @@ pixelSizeY = metadataStore.getPixelsPhysicalSizeY(iSeries);
 if ~isempty(pixelSizeY)
     if ~isempty(pixelSize)
         pixelSizeY = pixelSizeY.value(ome.units.UNITS.NM).doubleValue();
-        assert(isequal(round(pixelSize,1), round(pixelSizeY,1)),...
+        assert(isequal(round(10*pixelSize)*0.1, round(pixelSizeY*10)*0.1),...
             'Pixel size different in x and y');
     else
         pixelSize = pixelSizeY.value(ome.units.UNITS.NM).doubleValue();

@@ -46,7 +46,11 @@ h=quiver(x,y,u,v,0,quiverArgs{:});
 
 % Retrieve the x and y data for the arrow head and delete the quivergroup
 l=get(h,'Children');
-headData=get(l(2),{'XData','YData'});
+if isempty(l)
+    headData=get(h,{'XData','YData'});
+else
+    headData=get(l(2),{'XData','YData'});
+end
 delete(h);
 hold on;
 
@@ -65,10 +69,16 @@ for i=1:numel(vIndex)
         'Color',ip.Results.Colormap(vIndex(i),:));
     
     % Set arrowhead x and y-data
-    headIdx = arrayfun(@(x) 4*(x-1)+1:4*x,idx,'Unif',false);
-    headIdx=horzcat(headIdx{:});
     l=get(h(i),'Children');
-    set(l(2),'XData',headData{1}(headIdx),'YData',headData{2}(headIdx));
+    if isempty(l)
+        headIdx = arrayfun(@(x) 4*(x-1)+1:4*x,idx,'Unif',false);
+        headIdx=horzcat(headIdx{:});
+%         set(h(i),'XData',headData{1}(headIdx),'YData',headData{2}(headIdx));
+    else
+        headIdx = arrayfun(@(x) 4*(x-1)+1:4*x,idx,'Unif',false);
+        headIdx=horzcat(headIdx{:});
+        set(l(2),'XData',headData{1}(headIdx),'YData',headData{2}(headIdx));
+    end
 end
 
 % SB: the following piece of code is not satisfying for two reasons

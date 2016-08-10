@@ -18,4 +18,4 @@ function checked = userfcn_saveCheckbox(handles)
 userData = get(handles.figure1, 'UserData');
 l = 1:size(userData.dependM, 1);
 
-checked = arrayfun( @(x)( eval(['get(handles.checkbox_' num2str(x) ', ''Value'')']) ), l, 'UniformOutput', true);
+checked = arrayfun( @(x) get(handles.(['checkbox_' num2str(x)]), 'Value'), l, 'UniformOutput', true);

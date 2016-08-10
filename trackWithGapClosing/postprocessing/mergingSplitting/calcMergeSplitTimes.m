@@ -39,6 +39,8 @@ function [msTimeInfo] = calcMergeSplitTimes(tracks,minTrackLen,...
 %                             the track's start.
 %
 %Khuloud Jaqaman, April 2008
+% Edit Tony Vega ,June 2016 Includes starting times of all events in output
+% and track number
 
 %% input
 
@@ -131,6 +133,12 @@ for iType = 1 : numType
     timeMerge2Split = [];
     timeMerge2End = [];
     timeStart2Split = [];
+    %initialize start variables
+    timeSplit2MergeSelfStart = [];
+    timeSplit2MergeOtherStart = [];
+    timeMerge2SplitStart = [];
+    timeMerge2EndStart = [];
+    timeStart2SplitStart = [];
     eval(['indxTracks = indx' trackType ';']);
 
     %go over all tracks of this type ...
@@ -177,7 +185,7 @@ for iType = 1 : numType
 
                 %store in global array
                 timeSplit2MergeSelf = [timeSplit2MergeSelf; timeSplit2MergeTmp];
-
+                timeSplit2MergeSelfStart = [timeSplit2MergeSelfStart; [splitTime]];
                 %indicate index of participating split with a NaN
                 splitIndxTmp(iMS) = NaN;
 
@@ -227,7 +235,7 @@ for iType = 1 : numType
 
                 %store in global array
                 timeSplit2MergeOther = [timeSplit2MergeOther; timeSplit2MergeTmp];
-
+                timeSplit2MergeOtherStart = [timeSplit2MergeOtherStart; [splitTime]];
                 %store indices of participating splits and merges
                 takenMerge = [takenMerge; iMerge];
                 pairsSplit2Merge = [pairsSplit2Merge; [iSplit iMerge]];
@@ -256,7 +264,7 @@ for iType = 1 : numType
 
                 %store in global array
                 timeSplit2MergeOther = [timeSplit2MergeOther; timeSplit2MergeTmp];
-
+                timeSplit2MergeOtherStart = [timeSplit2MergeOtherStart; [splitTime]];
                 %store indices of participating splits and merges
                 takenMerge = [takenMerge; iMerge];
                 pairsSplit2Merge = [pairsSplit2Merge; [iSplit iMerge]];
@@ -304,7 +312,7 @@ for iType = 1 : numType
 
                 %store in global array
                 timeMerge2Split = [timeMerge2Split; timeMerge2SplitTmp];
-
+                timeMerge2SplitStart = [timeMerge2SplitStart; [mergeTime]];
                 %store indices of participating merges and splits
                 takenSplit = [takenSplit; iSplit];
                 pairsMerge2Split = [pairsMerge2Split; [iMerge iSplit]];
@@ -337,14 +345,14 @@ for iType = 1 : numType
 
                 %get the start time of this segment
                 startTime = seqOfEvents(seqOfEvents(:,2)==1&...
-                    seqOfEvents(:,3)==segmentIndx&isnan(seqOfEvents(:,4)),1);
+                    seqOfEvents(:,3)==segmentIndx,1);%&isnan(seqOfEvents(:,4)),1); Tony omitting, doesn't seem necessary. Excludes possibility of split from split
 
                 %calculate the start-to-split time
                 timeStart2SplitTmp = splitTime - startTime;
 
                 %store in global array
                 timeStart2Split = [timeStart2Split; timeStart2SplitTmp];
-
+                timeStart2SplitStart = [timeStart2SplitStart; [startTime]];
             end
 
         end %(for iMS = 1 : length(splitIndxGlob))
@@ -380,7 +388,7 @@ for iType = 1 : numType
 
                 %store in global array
                 timeMerge2End = [timeMerge2End; timeMerge2EndTmp];
-
+                timeMerge2EndStart = [timeMerge2EndStart; [mergeTime]];
             end
 
         end %(for iMS = 1 : length(mergeIndxGlob))
@@ -394,7 +402,12 @@ for iType = 1 : numType
     eval(['timeSplit2MergeOther' trackType ' = timeSplit2MergeOther;'])
     eval(['timeMerge2End' trackType ' = timeMerge2End;'])
     eval(['timeStart2Split' trackType ' = timeStart2Split;'])
-
+    
+    eval(['timeMerge2SplitStart' trackType ' = timeMerge2SplitStart;'])
+    eval(['timeSplit2MergeSelfStart' trackType ' = timeSplit2MergeSelfStart;'])
+    eval(['timeSplit2MergeOtherStart' trackType ' = timeSplit2MergeOtherStart;'])
+    eval(['timeMerge2EndStart' trackType ' = timeMerge2EndStart;'])
+    eval(['timeStart2SplitStart' trackType ' = timeStart2SplitStart;'])
 end
 
 %% output
@@ -406,18 +419,36 @@ if ~isempty(diffAnalysisRes)
     msTimeInfo.linear.timeSplit2MergeOther = timeSplit2MergeOtherLin;
     msTimeInfo.linear.timeStart2Split = timeStart2SplitLin;
     msTimeInfo.linear.timeMerge2End = timeMerge2EndLin;
+    msTimeInfo.linear.timeMerge2SplitStart = timeMerge2SplitStartLin;
+    msTimeInfo.linear.timeSplit2MergeSelfStart = timeSplit2MergeSelfStartLin;
+    msTimeInfo.linear.timeSplit2MergeOtherStart = timeSplit2MergeOtherStartLin;
+    msTimeInfo.linear.timeStart2SplitStart = timeStart2SplitStartLin;
+    msTimeInfo.linear.timeMerge2EndStart = timeMerge2EndStartLin;
+    
     msTimeInfo.brown.numTracks = numTracksBrown;
     msTimeInfo.brown.timeMerge2Split = timeMerge2SplitBrown;
     msTimeInfo.brown.timeSplit2MergeSelf = timeSplit2MergeSelfBrown;
     msTimeInfo.brown.timeSplit2MergeOther = timeSplit2MergeOtherBrown;
     msTimeInfo.brown.timeStart2Split = timeStart2SplitBrown;
     msTimeInfo.brown.timeMerge2End = timeMerge2EndBrown;
+    msTimeInfo.brown.timeMerge2SplitStart = timeMerge2SplitBrown;
+    msTimeInfo.brown.timeSplit2MergeSelfStart = timeSplit2MergeSelfStartBrown;
+    msTimeInfo.brown.timeSplit2MergeOtherStart = timeSplit2MergeOtherBrown;
+    msTimeInfo.brown.timeStart2SplitStart = timeStart2SplitBrown;
+    msTimeInfo.brown.timeMerge2EndStart = timeMerge2EndBrown;
+    
     msTimeInfo.conf.numTracks = numTracksConf;
     msTimeInfo.conf.timeMerge2Split = timeMerge2SplitConf;
     msTimeInfo.conf.timeSplit2MergeSelf = timeSplit2MergeSelfConf;
     msTimeInfo.conf.timeSplit2MergeOther = timeSplit2MergeOtherConf;
     msTimeInfo.conf.timeStart2Split = timeStart2SplitConf;
     msTimeInfo.conf.timeMerge2End = timeMerge2EndConf;
+    msTimeInfo.conf.timeMerge2SplitStart = timeMerge2SplitStartConf;
+    msTimeInfo.conf.timeSplit2MergeSelfStart = timeSplit2MergeSelfStartConf;
+    msTimeInfo.conf.timeSplit2MergeOtherStart = timeSplit2MergeOtherStartConf;
+    msTimeInfo.conf.timeStart2SplitStart = timeStart2SplitStartConf;
+    msTimeInfo.conf.timeMerge2EndStart = timeMerge2EndStartConf;
+    
 else
     msTimeInfo.all.numTracks = numTracksAll;
     msTimeInfo.all.timeMerge2Split = timeMerge2SplitAll;
@@ -425,6 +456,11 @@ else
     msTimeInfo.all.timeSplit2MergeOther = timeSplit2MergeOtherAll;
     msTimeInfo.all.timeStart2Split = timeStart2SplitAll;
     msTimeInfo.all.timeMerge2End = timeMerge2EndAll;
+    msTimeInfo.all.timeMerge2SplitStart = timeMerge2SplitStartAll;
+    msTimeInfo.all.timeSplit2MergeSelfStart = timeSplit2MergeSelfStartAll;
+    msTimeInfo.all.timeSplit2MergeOtherStart = timeSplit2MergeOtherStartAll;
+    msTimeInfo.all.timeStart2SplitStart = timeStart2SplitStartAll;
+    msTimeInfo.all.timeMerge2EndStart = timeMerge2EndStartAll;
 end
 
 %% ~~~ the end ~~~

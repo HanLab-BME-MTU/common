@@ -1,4 +1,4 @@
-function movieData = createMovieBackgroundMasks(movieData,paramsIn)
+function movieData = createMovieBackgroundMasks(movieDataOrProcess,paramsIn)
 %CREATEMOVIEBACKGROUNDMASKS creates background masks by growing the foreground masks
 %                                               
 % movieData = createMovieBackgroundMasks(movieData);                                              
@@ -73,25 +73,21 @@ pString = 'bkgrnd_'; %Prefix for saving masks to file
 
 %% ------------ Input ----------- %%
 
-if nargin < 1 || ~isa(movieData,'MovieData')
-    error('The first input argument must be a valid MovieData object!')
+if nargin < 1 || ~isProcessOrMovieData(movieDataOrProcess)
+    error('The first input argument must be a valid MovieData or Process object!')
 end
 if nargin < 2
     paramsIn = [];
 end
-%Get the indices of any previous background mask processes from this function                                                                              
-iProc = movieData.getProcessIndex('BackgroundMasksProcess',1,0);
 
-%If the process doesn't exist, create it
-if isempty(iProc)
-    iProc = numel(movieData.processes_)+1;
-    movieData.addProcess(BackgroundMasksProcess(movieData,movieData.outputDirectory_));                                                                                                 
-end
+
+% Get MovieData object and Process
+[movieData, proc, iProc] = getOwnerAndProcess(movieDataOrProcess,'BackgroundMasksProcess',true);
 
 nChan = numel(movieData.channels_);
 
 %Parse input, store in parameter structure
-p = parseProcessParams(movieData.processes_{iProc},paramsIn);
+p = parseProcessParams(proc,paramsIn);
 
 %----Param Check-----%
 
