@@ -193,11 +193,16 @@ function [x,v,xq,method,fineGridFactor,legacy] = parseinputs(varargin)
         % Not in legacy mode
         xq_sz = size(xq);
         v_sz = size(v);
+        same_sz = xq_sz(2:end) == v_sz(2:end);
+        % Append ones to right side of v_sz so that
+        %    length(xq_sz) == length(v_sz)
+        v_sz(length(v_sz)+1:length(xq_sz)) = 1;
         % xq should either be a column such that all points are queried against all trig polynomials
         %    outSz = [length(xq) v_sz(2:end)]
         % OR be of the same size as v for every dimension except the first.
         %    outSz = size(xq)
-        assert(iscolumn(xq) || all(xq_sz(2:end) == v_sz(2:end)), ...
+ 
+        assert(iscolumn(xq) || all(xq_sz(2:end) == v_sz(2:end)) || all(xq_sz([false ~same_sz]) == 1), ...
                 'interpft1:InputDimensions', ...
                 'xq should either be a column or have similar dimensions as v if not in legacy mode');
     % else
