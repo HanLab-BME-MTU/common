@@ -69,14 +69,23 @@ classdef TracksHandle < Tracks & dynamicprops
                 if(~isstruct(tracks))
                     tracks = convertMat2Struct2(tracks);
                 end
-                if(nargin > 1)
-                    tracks = normalizeTracks(tracks,movieInfo);
-                end
                 obj(numel(tracks)) = TracksHandle();
                 obj = reshape(obj,size(tracks));
+                if(nargin > 1)
+                    % If movieInfo is given, then
+                    % extract new coordinates and ignore previous ones.
+                    tracksCoordAmpCG = getFeatFromIdx(tracks,movieInfo);
+                    [obj.tracksCoordAmpCG] = deal(tracksCoordAmpCG{:});
+                else
+                    [obj.tracksCoordAmpCG] = deal(tracks.tracksCoordAmpCG);
+                end
                 [obj.tracksFeatIndxCG] = deal(tracks.tracksFeatIndxCG);
-                [obj.seqOfEvents] = deal(tracks.seqOfEvents);
-                [obj.tracksCoordAmpCG] = deal(tracks.tracksCoordAmpCG);
+                if(~isfield(tracks,'seqOfEvents'))
+                    [obj.seqOfEvents] = deal([]);
+                else
+                    [obj.seqOfEvents] = deal(tracks.seqOfEvents);
+                end
+                obj.normalizeSeqOfEvents();
                 obj.reindex();
             end
         end
@@ -124,20 +133,33 @@ classdef TracksHandle < Tracks & dynamicprops
             init = zeros(obj.numSegments,1);
             
             obj.segmentStartFrame = init;
+            obj.segmentEndFrame = init;
+            obj.parentSegment = init;
+            obj.spouseSegment = init;
+            
+            if(isempty(seqOfEvents))
+                % Reset to start at frame 1
+                obj.segmentStartFrame(:) = 1;
+                obj.segmentEndFrame(:) = obj.numFrames;
+                obj.parentSegment(:) = NaN;
+                obj.spouseSegment(:) = NaN;
+                return;
+            end
+            
             startIdx = seqOfEvents(:,2) == 1;
             obj.segmentStartFrame(seqOfEvents(startIdx,3)) = seqOfEvents(startIdx,1);
             
-            obj.segmentEndFrame = init;
+            
             endIdx = seqOfEvents(:,2) == 2;
             obj.segmentEndFrame(seqOfEvents(endIdx,3)) = seqOfEvents(endIdx,1);
             endIdx = endIdx & ~isnan(seqOfEvents(:,4));
             obj.segmentEndFrame(seqOfEvents(endIdx,3)) = seqOfEvents(endIdx,1) - 1;
             
-            obj.parentSegment = init;
+            
             idx = seqOfEvents(:,2) == 1;
             obj.parentSegment(seqOfEvents(idx,3)) = seqOfEvents(idx,4);
             
-            obj.spouseSegment = init;
+            
             idx = seqOfEvents(:,2) == 2;
             obj.spouseSegment(seqOfEvents(idx,3)) = seqOfEvents(idx,4);
             
