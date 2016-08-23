@@ -6,7 +6,7 @@ ip = inputParser;
 ip.addRequired('ML',@(MD) isa(ML,'MovieList'));
 ip.addParamValue('maxWidth',1600,@isnumeric);
 ip.addParamValue('maxHeight',900,@isnumeric);
-ip.addParamValue('MIPSize',300,@isnumeric);
+ip.addParamValue('MIPSize',250,@isnumeric);
 ip.parse(ML,varargin{:});
 p=ip.Results;
 % turn a specific warning off
