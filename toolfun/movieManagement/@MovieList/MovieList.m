@@ -198,14 +198,15 @@ classdef MovieList < MovieObject
             % Load or a movie list
             
             assert(nargin > 0);
-            assert(MovieList.isOmeroSession(varargin{1}) || ...
-                exist(varargin{1}, 'file') == 2)
+%             assert(MovieList.isOmeroSession(varargin{1}) || ...
+%                 exist(varargin{1}, 'file') == 2)
             
             if MovieList.isOmeroSession(varargin{1}),
                 obj = MovieList.loadOmero(varargin{:});
             else
                 assert(strcmpi(varargin{1}(end-3:end), '.mat'),...
                     'Input must be a MAT file');
+                % loadMatFile will catch if file does not exist
                 [obj, filepath] = MovieList.loadMatFile(varargin{1});
                 
                 % Perform sanityCheck using the input path

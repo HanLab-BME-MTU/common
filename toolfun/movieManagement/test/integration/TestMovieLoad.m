@@ -22,9 +22,9 @@ classdef TestMovieLoad < TestMovieObject & TestCase
         
         function testNonExistingMATfile(self)
             assertExceptionThrown(...
-                @() MovieData.load(self.moviePath), 'MATLAB:assertion:failed');
+                @() MovieData.load(self.moviePath), 'lccb:movieObject:invalidFilePath');
             assertExceptionThrown(...
-                @() MovieList.load(self.moviePath), 'MATLAB:assertion:failed');
+                @() MovieList.load(self.moviePath), 'lccb:movieObject:invalidFilePath');
         end         
 
         function testInvalidMATfile(self)
