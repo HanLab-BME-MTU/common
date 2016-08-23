@@ -514,8 +514,19 @@ classdef  MovieObject < hgsetget
             % Load a movie object saves as a MAT file on disk
             
             % Retrieve the absolute path
-            [~, f] = fileattrib(filepath);
-            filepath = f.Name;
+            [status, f] = fileattrib(filepath);
+            if(~status)
+                if(ischar(f))
+                    error('lccb:movieObject:invalidFilePath', ...
+                        [f filepath]);
+                else
+                    error('lccb:movieObject:invalidFilePath', ...
+                        ['Cannot obtain file attributes for ' filepath]);
+                end
+            else
+                filepath = f.Name;
+            end
+                
             
             % Import movie object from MAT file
             try
