@@ -727,18 +727,21 @@ classdef  MovieData < MovieObject & matlab.mixin.Heterogeneous
             % Load or re-load a movie object
             
             assert(nargin > 0);
-            assert(MovieData.isOmeroSession(varargin{1}) || ...
-                exist(varargin{1}, 'file') == 2)
+%             assert(MovieData.isOmeroSession(varargin{1}) || ...
+%                 exist(varargin{1}, 'file') == 2)
             
             if MovieObject.isOmeroSession(varargin{1}),
                 obj = MovieData.loadOmero(varargin{:});
             else
                 isMatFile = strcmpi(varargin{1}(end-3:end), '.mat');
                 if isMatFile,
+                    % loadMatFile will catch if file does not exist
                     [obj, absolutePath] = MovieData.loadMatFile(varargin{1});
                     [moviePath,movieName,movieExt]= fileparts(absolutePath);
                     obj.sanityCheck(moviePath,[movieName movieExt], varargin{2:end});
                 else
+                    % Check if file exists, although this will end up in bfImport 
+                    assert(exist(varargin{1}, 'file') == 2);
                     % Backward-compatibility - call the constructor
                     obj = MovieData(varargin{:});
                 end
@@ -771,8 +774,11 @@ classdef  MovieData < MovieObject & matlab.mixin.Heterogeneous
             
             % Get validator for single property
             validator=MovieData.getPropertyValidator(property);
-            propName = regexprep(regexprep(property,'(_\>)',''),'([A-Z])',' ${lower($1)}');
-            assert(~isempty(validator),['No validator defined for property ' propName]);
+            if(isempty(validator))
+                propName = lower(property(1:end-(property(end) == '_')));
+                error('MovieData:checkValue:noValidator', ...
+                    'No validator defined for property %s',propName);
+            end
             
             % Return result of validation
             status = isempty(value) || validator(value);

@@ -153,15 +153,20 @@ classdef Channel < hgsetget & matlab.mixin.Copyable
             
             % Return if unchanged property
             if isequal(obj.(property),value), return; end
-            propName = regexprep(regexprep(property,'(_\>)',''),'([A-Z])',' ${lower($1)}');
             
             % Test if the property is writable
-            assert(obj.checkProperty(property),'lccb:set:readonly',...
-                ['The channel''s ' propName ' has been set previously and cannot be changed!']);
+            if(~obj.checkProperty(property))
+                propName = lower(property(1:end-(property(end) == '_')));
+                error('lccb:set:readonly',...
+                    ['The channel''s' propName ' has been set previously and cannot be changed!']);
+            end
             
             % Test if the supplied value is valid
-            assert(obj.checkValue(property,value),'lccb:set:invalid',...
-                ['The supplied ' propName ' is invalid!']);
+            if(~obj.checkValue(property,value))
+                propName = lower(property(1:end-(property(end) == '_')));
+                error('lccb:set:invalid',...
+                    ['The supplied ' propName ' is invalid!']);
+            end
         end
         
         
@@ -362,8 +367,11 @@ classdef Channel < hgsetget & matlab.mixin.Copyable
             
             % Get validator for single property
             validator=Channel.getPropertyValidator(property);
-            propName = regexprep(regexprep(property,'(_\>)',''),'([A-Z])',' ${lower($1)}');
-            assert(~isempty(validator),['No validator defined for property ' propName]);
+            if(isempty(validator))
+                propName = lower(property(1:end-(property(end) == '_')));
+                error('Channel:checkValue:noValidator', ...
+                    'No validator defined for property %s',propName);
+            end
             
             % Return result of validation
             status = isempty(value) || validator(value);
