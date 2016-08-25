@@ -88,7 +88,8 @@ for frameIdx=1:max(frameNb)
                 vol=MD.getChannel(chIdx).loadStack(min(frameIdx,MD.nFrames_));
                 [cmaxXY]=computeMIPs(vol,ZXRatio,chMinIntensityNorm{MDIdx}(chIdx),chMaxIntensityNorm{MDIdx}(chIdx));
                 cmaxXY=imresize(cmaxXY,p.MIPSize/max(size(cmaxXY)));
-                mMaxXY=[ mMaxXY cmaxXY];
+                cmaxXY=padarray(cmaxXY,[max(0,p.MIPSize-size(cmaxXY,1)) 0],'post');
+                mMaxXY=[ mMaxXY cmaxXY];            
             end
             movieLine=[movieLine mMaxXY];
         end
