@@ -51,7 +51,6 @@ function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_
 % See also interpft, roots
 %
 % Author: Mark Kittisopikul, May 2016
-
     
 %     original_size = size(x);
     if(nargin > 1)
@@ -127,14 +126,14 @@ function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_
     % magnitude
     magnitude = abs(log(abs(r)));
     % keep only the real answers
-    imaginary_map = ~(magnitude <= abs(TOL));
+    real_map = (magnitude <= abs(TOL));
     % If tolerance is negative and no roots are found, then use the
     % root that is closest to being real
     if(TOL < 0)
-        no_roots = all(imaginary_map);
-        imaginary_map(:,no_roots) = bsxfun(@gt,magnitude(:,no_roots),min(magnitude(:,no_roots))*10);
+        no_roots = ~any(real_map);
+        real_map(:,no_roots) = bsxfun(@le,magnitude(:,no_roots),min(magnitude(:,no_roots))*10);
     end
-    r(imaginary_map) = NaN;
+%     r(imaginary_map) = NaN;
 %     real_map = ~imaginary_map;
 %     clear imaginary_map
     
@@ -142,22 +141,19 @@ function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_
     % In the call to roots the coefficients were entered in reverse order (negative to positive)
     % rather than positive to negative. Therefore, take the negative of the angle..
     % angle will return angle between -pi and pi
-    extrema = -angle(r);
+    
+    r = -angle(r(real_map));
     
     % Map angles to between 0 and 2 pi, moving negative values up
     % a period
-    neg_extrema = extrema < 0;
-    extrema(neg_extrema) = extrema(neg_extrema) + 2*pi;
+    neg_extrema = r < 0;
+    r(neg_extrema) = r(neg_extrema) + 2*pi;
     
-    % calculate angles multiplied by wave number
-    theta = bsxfun(@times,extrema,shiftdim(freq,-ndims(extrema)));
-    % waves
-    waves = exp(1i*theta);
-    % evaluate each wave by fourier coeffient
-%     dx2 = waves(:,:)*dx2_h;
-    ndims_waves = ndims(waves);
-    dim_permute = [ndims_waves 2:ndims_waves-1 1];
-    dx2 = sum(real(bsxfun(@times,waves,permute(dx2_h,dim_permute))),ndims_waves);
+    extrema = NaN(output_size);
+    extrema(real_map) = r;
+    
+    % Use Horner's method to compute 2nd derivative value
+    dx2 = interpft1([0 2*pi],dx2_h,extrema,'horner_freq');
     
     % dx2 could be equal to 0, meaning inconclusive type
     % local maxima is when dx == 0, dx2 < 0
@@ -177,12 +173,21 @@ function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_
     
     if(nargout > 2 || nargout == 0 || sorted)
 	% calculate the value of the extrema if needed
-%         maxima_value = waves*x_h/scale_factor;
-        extrema_value = sum(real(bsxfun(@times,waves,permute(x_h,dim_permute))),ndims_waves)/scale_factor;
+        
+        % Use Horner's method to compute value at extrema
+        extrema_value = interpft1([0 2*pi],x_h,extrema,'horner_freq');
+        % interpft1 will automatically scale, rescale if needed
+        if(scale_factor ~= size(x_h,1))
+            extrema_value = extrema_value/scale_factor*size(x_h,1);
+        end
+
         maxima_value = output_template;
-        minima_value = output_template;
-        minima_value(minima_map) = extrema_value(minima_map);
         maxima_value(maxima_map) = extrema_value(maxima_map);
+
+        if(nargout > 3 || nargout > 1 && sorted || nargout == 0)
+            minima_value = output_template;
+            minima_value(minima_map) = extrema_value(minima_map);
+        end
         
         if(sorted)
 
@@ -196,21 +201,29 @@ function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_
             maxima = maxima(1:numMax,:,:);
             maxima_value = maxima_value(1:numMax,:,:);
             
-            minima_value_inf = minima_value;
-            minima_value_inf(isnan(minima_value_inf)) = Inf;
-            [~,minima,minima_value] = sortMatrices(minima_value_inf,minima,minima_value);
-            clear minima_value_inf;
-            numMin = sum(minima_map);
-            numMin = max(numMin(:));
-            minima = minima(1:numMin,:,:);
-            minima_value = minima_value(1:numMin,:,:);
+            if(nargout > 1)
+                minima_value_inf = minima_value;
+                minima_value_inf(isnan(minima_value_inf)) = Inf;
+                [~,minima,minima_value] = sortMatrices(minima_value_inf,minima,minima_value);
+                clear minima_value_inf;
+                numMin = sum(minima_map);
+                numMin = max(numMin(:));
+                minima = minima(1:numMin,:,:);
+                minima_value = minima_value(1:numMin,:,:);
+            end
                        
         end
         
 %         maxima_value = reshape(maxima_value,output_size);
 %         minima_value = reshape(minima_value,output_size);
-        maxima_value = shiftdim(maxima_value,unshift);
-        minima_value = shiftdim(minima_value,unshift);
+
+        if(nargout > 2)
+            maxima_value = shiftdim(maxima_value,unshift);
+        end
+        
+        if(nargout > 3)
+            minima_value = shiftdim(minima_value,unshift);
+        end
         
         if(nargout > 4)
             % calculate roots which are not maxima or minima
@@ -270,6 +283,7 @@ function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_
 %     maxima = reshape(maxima,output_size);
 %     minima = reshape(minima,output_size);
     maxima = shiftdim(maxima,unshift);
-    minima = shiftdim(minima,unshift);
-    
+    if(nargout > 1)
+        minima = shiftdim(minima,unshift);
+    end
 end
