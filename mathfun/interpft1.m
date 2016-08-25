@@ -97,10 +97,16 @@ function [vq] = interpft1(varargin)
             % domain [0,2)
             xq = xq*2;
             vq = horner_vec_real(v,xq);
+        case 'horner_freq'
+            xq = xq*2;
+            vq = horner_vec_real_freq(v,xq);
         case 'mmt'
             % domain [0,2*pi)
             xq = xq*2*pi;
             vq = matrixMultiplicationTransform(v,xq);
+        case 'mmt_freq'
+            xq = xq*2*pi;
+            vq = matrixMultiplicationTransformFreq(v,xq);
         otherwise
             done = false;
     end
@@ -243,14 +249,16 @@ function fineGridFactor = parseFineGridFactor(fineGridFactor,method)
 end
 
 function vq = matrixMultiplicationTransform(v,xq)
+    vq = matrixMultiplicationTransformFreq(v_h,xq);
+end
+function vq = matrixMultiplicationTransformFreq(v_h,xq)
 %matrixMultiplicationTransform
 %
 % Adapted from interpft_extrema
-    s = size(v);
+    s = size(v_h);
     scale_factor = s(1);
 
     % Calculate fft and nyquist frequency
-    v_h = fft(v);
     nyquist = ceil((s(1)+1)/2);
 
     % If there is an even number of fourier coefficients, split the nyquist frequency
@@ -283,6 +291,9 @@ function vq = matrixMultiplicationTransform(v,xq)
     vq = sum(real(bsxfun(@times,waves,permute(v_h,dim_permute))),ndims_waves)/scale_factor;
 end
 function vq = horner_vec_real(v,xq)
+    vq = horner_vec_real_freq(fft(v),xq);
+end
+function vq = horner_vec_real_freq(v_h,xq)
     % v represents the coefficients of the polynomial
     %   D x N
     %   D = degree of the polynomial - 1
@@ -293,11 +304,10 @@ function vq = horner_vec_real(v,xq)
     %   N = number of polynomials
     % vq will be a Q x N matrix of the value of each polynomial
     %    evaluated at Q query points
-    s = size(v);
+    s = size(v_h);
     scale_factor = s(1);
 
     % Calculate fft and nyquist frequency
-    v_h = fft(v);
     nyquist = ceil((s(1)+1)/2);
     
     % If there is an even number of fourier coefficients, split the nyquist frequency
@@ -314,14 +324,17 @@ function vq = horner_vec_real(v,xq)
     % vq starts as 1 x N
     colon = {':'};
     v_h_colon = colon(ones(ndims(v_h)-1,1));
+       
     vq = v_h(nyquist,v_h_colon{:});
     for j = nyquist-1:-1:2
         vq = bsxfun(@times,z,vq);
         vq = bsxfun(@plus,v_h(j,v_h_colon{:}),vq);
     end
+       
     % Last multiplication
-%     vq = bsxfun(@times,z,vq); % We only care about the real part
-    vq = bsxfun(@times,real(z),real(vq))-bsxfun(@times,imag(z),imag(vq));
+    vq = bsxfun(@times,z,vq); % We only care about the real part
+    vq = real(vq);
+%     vq = bsxfun(@times,real(z),real(vq))-bsxfun(@times,imag(z),imag(vq));
     % Add Constant Term and Scale
     vq = bsxfun(@plus,v_h(1,v_h_colon{:}),vq*2);
 %     vq = real(vq); % We already selected the real part above
