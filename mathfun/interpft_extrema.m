@@ -106,23 +106,37 @@ function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_
     
     % use companion matrix approach
     dx_h = -fftshift(dx_h,1);
-    r = zeros(output_size,'like',dx_h);
+    dx_h = dx_h(:,:);
+%     r = zeros(output_size,'like',dx_h);
     output_size1 = output_size(1);
-    % roots outputs only column vectors which may be shorter than
-    % expected
+    nProblems = prod(output_size(2:end)); 
+    batchSize = min(1024,nProblems);
+    nBatches = ceil(nProblems/batchSize);
     % Only use parallel workers if a pool already exists
-    parfor (i=1:prod(output_size(2:end)), ~isempty(gcp('nocreate'))*realmax)
-        try
-            dx_h_roots = roots(dx_h(:,i));
-            dx_h_roots(end+1:output_size1) = 0;
-            r(:,i) = dx_h_roots;
-        catch err
-            switch(err.identifier)
-                case 'MATLAB:ROOTS:NonFiniteInput'
-                    r(:,i) = NaN;
+    nWorkers = ~isempty(gcp('nocreate'))*nBatches;
+    in = ones(1,nBatches)*batchSize;
+    in(end) = in(end) + nProblems - sum(in);
+    dx_h = mat2cell(dx_h,size(dx_h,1),in);
+    r = cell(1,nBatches);
+    parfor (i=1:nBatches, nWorkers)
+        r{i} = zeros(output_size1,size(dx_h{i},2),'like',dx_h{i});
+        for j = 1:size(dx_h{i},2);
+            try
+                % roots outputs only column vectors which may be shorter than
+                % expected
+                dx_h_roots = roots(dx_h{i}(:,j));
+                dx_h_roots(end+1:output_size1) = 0;
+                r{i}(:,j) = dx_h_roots;
+            catch err
+                switch(err.identifier)
+                    case 'MATLAB:ROOTS:NonFiniteInput'
+                        r{i}(:,j) = NaN(output_size1,1);
+                end
             end
         end
     end
+    r = [r{:}];
+    r = reshape(r,output_size);
     % magnitude
     magnitude = abs(log(abs(r)));
     % keep only the real answers
@@ -157,7 +171,6 @@ function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_
     
     % dx2 could be equal to 0, meaning inconclusive type
     % local maxima is when dx == 0, dx2 < 0
-%     maxima = extrema(dx2 < 0);
     output_template = NaN(output_size);
     
     maxima = output_template;
@@ -168,7 +181,6 @@ function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_
     
     maxima(maxima_map) = extrema(maxima_map);
     % local minima is when dx == 0, dx2 > 0
-%     minima = extrema(dx2 > 0);
     minima(minima_map) = extrema(minima_map);
     
     if(nargout > 2 || nargout == 0 || sorted)
