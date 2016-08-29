@@ -423,6 +423,7 @@ function pushinc_Callback(hSrc,eventdata_get_fgnd_bgnd_seeds_3d_points)
         current_mask = data_get_fgnd_bgnd_seeds_3d_points.m(:,:,data_get_fgnd_bgnd_seeds_3d_points.sliceno);
         current_im= data_get_fgnd_bgnd_seeds_3d_points.im(:,:,data_get_fgnd_bgnd_seeds_3d_points.sliceno);
         current_box = data_get_fgnd_bgnd_seeds_3d_points.boxall(data_get_fgnd_bgnd_seeds_3d_points.sliceno,:); 
+        data_get_fgnd_bgnd_seeds_3d_points.prevROI = current_mask;
         
         %increase frame number
         data_get_fgnd_bgnd_seeds_3d_points.sliceno = data_get_fgnd_bgnd_seeds_3d_points.sliceno+1;
@@ -592,7 +593,7 @@ function pushGo_Callback(hSrc,eventdata_get_fgnd_bgnd_seeds_3d_points)
     
     if ~isempty(fH)
         currROI = fH.createMask;    
-        data_get_fgnd_bgnd_seeds_3d_points.prevROI = currROI;
+%         data_get_fgnd_bgnd_seeds_3d_points.prevROI = currROI;
         
         data_get_fgnd_bgnd_seeds_3d_points.prevm = data_get_fgnd_bgnd_seeds_3d_points.m;
 

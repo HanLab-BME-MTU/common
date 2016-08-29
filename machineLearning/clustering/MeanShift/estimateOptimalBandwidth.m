@@ -57,16 +57,7 @@ else
 end
 
 %Setup parallel workers if requested
-if p.NumParallel > 1
-    currPoolSize = matlabpool('size');    
-    if currPoolSize ~= p.NumParallel       
-        if currPoolSize > 0            
-            matlabpool('close')
-        end        
-        matlabpool('open',p.NumParallel);        
-    end       
-end
-
+setPoolSize(p.NumParallel)
 
 
 %% --------- Per-Bandwidth Clustering ----- %%

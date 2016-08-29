@@ -37,7 +37,7 @@ parfor i = 1:nd
         if ischar(imageList{i})
             img = double(imread(imageList{i}));
         else
-            img = imageList{i};
+            img = double(imageList{i});
         end
     else
         img = double(readtiff(imageList{1}, frameRange(i)));

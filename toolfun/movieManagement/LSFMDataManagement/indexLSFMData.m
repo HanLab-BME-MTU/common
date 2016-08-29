@@ -1,4 +1,4 @@
-function ML=indexLSFMData(moviePaths,moviesRoot,varargin)
+function ML=indexLSFMData(moviePaths,movieListAnalysisDir,varargin)
 % - If necessary, batch sort time points in ch0/, ch1/ 
 % - Optionnaly deskew, dezip on demand)
 % - Create movieData and analysis folder for each movie
@@ -38,19 +38,22 @@ ip = inputParser;
 ip.CaseSensitive = false;
 ip.KeepUnmatched = true;
 ip.addRequired('moviePaths', @(x)(iscell(x)||ischar(x)));
-ip.addRequired('moviesRoot', @ischar);
+ip.addRequired('movieListAnalysisDir', @ischar);
 ip.addParamValue('movieListName','movieList.mat', @ischar);
+ip.addParamValue('movieDataName','movieData.mat', @ischar);
 ip.addParamValue('deskew',false, @islogical);
 ip.addParamValue('writeData',true, @islogical);
 ip.addParamValue('copyFile',false, @islogical);
+ip.addParamValue('translocateMovieData',false, @islogical);
 ip.addParamValue('createMIP',true, @islogical);
+ip.addParamValue('is3D',true, @islogical);
 ip.addParamValue('lateralPixelSize',1, @isfloat);
 ip.addParamValue('axialPixelSize',1, @isfloat);
 ip.addParamValue('timeInterval',1, @isfloat);
 ip.addParamValue('newDataPath',[], @ischar);
 ip.addParamValue('chStartIdx',1, @isnumeric);
 ip.addParamValue('filePattern','Iter_ sample_scan_3p35ms_zp4um_ch{ch}_stack*', @ischar); 
-ip.parse(moviePaths,moviesRoot,varargin{:});
+ip.parse(moviePaths,movieListAnalysisDir,varargin{:});
 
 p=ip.Results;
 writeData=p.writeData;
@@ -65,14 +68,15 @@ if(ischar(moviePaths))
     moviePathsRep=strrep(moviePaths,'{ch}',num2str(p.chStartIdx));
 
     % Initialize a path for each Cell from the regexp
-    fileDirRegexp=fileparts(moviePathsRep);
-    files=rdir([fileDirRegexp filesep]);    % filesep is important due to a bug in rdir ...
+    %fileDirRegexp=fileparts(moviePathsRep);
+    
+    files=rdir([moviePathsRep]);    % filesep is important due to a bug in rdir ...
     moviePathsRes=unique(cellfun(@(x) fileparts(x),{files.name},'unif',0)); 
 
 
 
-    % If {ch} is specified in the folder name then refine the cell folder. 
-    % Otherwise do not change the cell path and creat a subfolder
+    % If {ch} is specified in the folder name then redefine the cell folder. 
+    % Otherwise do not change the cell path and create a subfolder
     [fileDirRegexp,fileRegexp,ext]=fileparts(moviePaths);
     if(strfind(fileDirRegexp,'{ch}'))
         channelOriginalFilePattern=[fileRegexp ext];
@@ -149,28 +153,40 @@ for cellIdx=1:length(moviePaths)
     if(~exist([cPath filesep 'analysis'],'dir')) mkdir([cPath filesep 'analysis']); end
     %%
     MD=[];
+    try
     if(~isempty(channelList))
-        tiffReader=TiffSeriesReader({channelList.channelPath_},'force3D',true);
-    %%
+        %%
         MD=MovieData(channelList,[cPath filesep 'analysis'],'movieDataFileName_','movieData.mat','movieDataPath_',[cPath filesep 'analysis'], ...
-                            'pixelSize_',p.lateralPixelSize,'pixelSizeZ_',p.axialPixelSize,'timeInterval_',p.timeInterval);
-        MD.setReader(tiffReader);                    
+            'pixelSize_',p.lateralPixelSize,'pixelSizeZ_',p.axialPixelSize,'timeInterval_',p.timeInterval);
+        
+        if(p.is3D)
+            tiffReader=TiffSeriesReader({channelList.channelPath_},'force3D',true);
+            MD.setReader(tiffReader);
+        end;
         MD.sanityCheck();
         MD.save();
-        if(p.createMIP)
-            printMIP(MD);
+        if(p.is3D)
+            if(p.createMIP)
+                printMIP(MD);
+            end
         end
     else
         warning(['No files found for movie ' num2str(cellIdx)]);
-        MD=MovieData([],[cPath filesep 'analysis'],'movieDataFileName_','movieData.mat','movieDataPath_',[cPath filesep 'analysis']);
+        MD=MovieData([],[cPath filesep 'analysis'],'movieDataFileName_',p.movieDataName,'movieDataPath_',[cPath filesep 'analysis']);
     end;
 
     MDs{cellIdx}=MD;
+    catch
+        warning(['Movie building fail, exluding ' cPath ]);
+        MDs{cellIdx}=[];
+    end
+        
 end
+builtMovies=cellfun(@(x) ~isempty(x),MDs)
+MDs=[MDs{builtMovies}];
 
-
-mkdir([moviesRoot filesep 'analysis']);
-ML=MovieList(MDs,[moviesRoot filesep 'analysis'],'movieListFileName_',p.movieListName,'movieListPath_',[moviesRoot filesep 'analysis']);
+mkdir([movieListAnalysisDir filesep 'analysis']);
+ML=MovieList(MDs,[movieListAnalysisDir filesep 'analysis'],'movieListFileName_',p.movieListName,'movieListPath_',[movieListAnalysisDir filesep 'analysis']);
 ML.save();
 
 

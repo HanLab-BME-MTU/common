@@ -126,8 +126,10 @@ packageIcons = arrayfun(@(x) [iconsPath filesep x.name],icons,'Unif',false);
 % Concatenate all matlab files but the documentation
 packageFiles=vertcat(packageFuns,packageFigs);
 
-% Handle namespace packages separately
-pattern = sprintf('(.*%s\\+.*)%s.*', filesep, filesep);
+% 
+
+% Handle namespace packages and class folders separately
+pattern = sprintf('(.*%s[\\+@].*)%s.*', filesep, filesep);
 hasNs = ~cellfun(@isempty, regexp(packageFiles, pattern));
 if any(hasNs)
     nsFiles = packageFiles(hasNs);
@@ -152,7 +154,7 @@ for j = 1:nFiles
     copyfile(packageFiles{j},[outDir filesep packageFiles{j}(iLFS+1:end)]);
 end
 
-% Copy namespace packages
+% Copy namespace packages and class folders
 if ~isempty(nsDirs)
     nNsDirs = numel(nsDirs);
     disp(['Copying all package '  num2str(nNsDirs) ' files ...'])
@@ -207,8 +209,7 @@ end
 disp('Creating Bio-Formats directory...')
 bfSourceDir=fileparts(which('bfGetReader.m'));
 bfTargetDir=[outDir filesep 'bioformats'];
-copyfile(fullfile(bfSourceDir, '*.m'), bfTargetDir)
-copyfile(fullfile(bfSourceDir, 'bioformats_package.jar'), bfTargetDir)
+copyfile(fullfile(bfSourceDir), bfTargetDir)
 
 disp(['Wrote package to ' outDir])
 

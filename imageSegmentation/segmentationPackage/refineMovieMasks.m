@@ -1,4 +1,4 @@
-function movieData = refineMovieMasks(movieData,paramsIn)
+function movieData = refineMovieMasks(movieDataOrProcess,paramsIn)
 % REFINEMOVIEMASKS Performs post-processing to improve masks for an input movie.
 % 
 % movieData = refineMovieMasks(movieData)
@@ -131,27 +131,22 @@ pString = 'refined_'; %Prefix for saving masks to file
 
 %% ----------- Input --------- %%
 
-if nargin < 1 || ~isa(movieData,'MovieData')
+if nargin < 1 || ~isProcessOrMovieData(movieDataOrProcess)
     error('The first input argument must be a valid MovieData object!')
 end
 if nargin < 2
     paramsIn = [];
 end
 
-%Get the indices of any previous mask refinement processes from this function                                                                              
-iProc = movieData.getProcessIndex('MaskRefinementProcess',1,0);
 
-%If the process doesn't exist, create it
-if isempty(iProc)
-    iProc = numel(movieData.processes_)+1;
-    movieData.addProcess(MaskRefinementProcess(movieData,movieData.outputDirectory_));                                                                                                 
-end
+% Get MovieData object and Process
+[movieData, proc,iProc] = getOwnerAndProcess(movieDataOrProcess,'MaskRefinementProcess',true);
 
 nChan = numel(movieData.channels_);
 
 
 %Parse input, store in parameter structure
-p = parseProcessParams(movieData.processes_{iProc},paramsIn);
+p = parseProcessParams(proc,paramsIn);
 
 
 %----Param Check-----%
