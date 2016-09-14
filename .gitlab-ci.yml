@@ -20,35 +20,35 @@ before_script:
 cached_:
   stage: test
   script: 
-    - matlab -nodisplay -nodesktop -nosplash -r "runxunit -verbose cached; exit"
+    - 'matlab -nodisplay -nodesktop -nosplash -r "runxunit -verbose cached; exit"'
   only:
     - CI_test
 
 mathfun:
   stage: test
   script: 
-    - matlab -nodisplay -nodesktop -nosplash -r "runxunit -verbose ~/matlab/common/mathfun/test; exit"
+    - 'matlab -nodisplay -nodesktop -nosplash -r "runxunit -verbose ~/matlab/common/mathfun/test; exit"'
   only:
     - CI_test
 
 toolfun:
   stage: test
   script: 
-    - matlab -nodisplay -nodesktop -nosplash -r "runxunit -verbose ~/matlab/common/toolfun/test; exit"
+    - 'matlab -nodisplay -nodesktop -nosplash -r "runxunit -verbose ~/matlab/common/toolfun/test; exit"'
   only:
     - CI_test
 
 movieManagement_unit:
   stage: test
   script: 
-    - matlab -nodisplay -nodesktop -nosplash -r "runxunit -verbose ~/matlab/common/toolfun/movieManagement/test/unit; exit" 
+    - 'matlab -nodisplay -nodesktop -nosplash -r "runxunit -verbose ~/matlab/common/toolfun/movieManagement/test/unit; exit"'
   only:
     - CI_test
 
 movieManagement_integration:
   stage: test
   script: 
-    - matlab -nodisplay -nodesktop -nosplash -r "runxunit -verbose ~/matlab/common/toolfun/movieManagement/test/integration; exit" 
+    - 'matlab -nodisplay -nodesktop -nosplash -r "runxunit -verbose ~/matlab/common/toolfun/movieManagement/test/integration; exit"'
   only:
     - CI_test
 
