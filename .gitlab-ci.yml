@@ -1,10 +1,3 @@
-# Gitlab CI Script for danuser/common
-# Andrew R. Jamieson - 2016
-
-
-
-# first test job, current matlab version
-
 before_script:
   - date
   - w 
