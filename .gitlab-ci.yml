@@ -1,0 +1,58 @@
+# Gitlab CI Script for danuser/common
+# Andrew R. Jamieson - 2016
+
+
+
+# first test job, current matlab version
+stages:
+	- test
+
+before_script:
+  - date
+  - w 
+  - uname -a
+  - module list
+  - module unload matlab
+  - module load matlab/2016a
+  - module list
+  - pwd
+  
+cached_:
+  stage: test
+  script: 
+    - matlab -nodisplay -nodesktop -nosplash -r "runxunit -verbose cached; exit"
+  only:
+    - CI_test
+
+mathfun:
+  stage: test
+  script: 
+    - matlab -nodisplay -nodesktop -nosplash -r "runxunit -verbose ~/matlab/common/mathfun/test; exit"
+  only:
+    - CI_test
+
+toolfun:
+  stage: test
+  script: 
+    - matlab -nodisplay -nodesktop -nosplash -r "runxunit -verbose ~/matlab/common/toolfun/test; exit"
+  only:
+    - CI_test
+
+movieManagement_unit:
+  stage: test
+  script: 
+    - matlab -nodisplay -nodesktop -nosplash -r "runxunit -verbose ~/matlab/common/toolfun/movieManagement/test/unit; exit" 
+  only:
+    - CI_test
+
+movieManagement_integration:
+  stage: test
+  script: 
+    - matlab -nodisplay -nodesktop -nosplash -r "runxunit -verbose ~/matlab/common/toolfun/movieManagement/test/integration; exit" 
+  only:
+    - CI_test
+
+# matlab -nodisplay -nodesktop -nosplash -r "runxunit -xmlfile ${TARGET_FOLDER}/mathfun-report.xml ~/matlab/common/mathfun/test; exit" &
+# matlab -nodisplay -nodesktop -nosplash -r "runxunit -xmlfile ${TARGET_FOLDER}/toolfun-report.xml ~/matlab/common/toolfun/test; exit" &
+# matlab -nodisplay -nodesktop -nosplash -r "runxunit -xmlfile ${TARGET_FOLDER}/api-unit-report.xml ~/matlab/common/toolfun/movieManagement/test/unit; exit" &
+# matlab -nodisplay -nodesktop -nosplash -r "runxunit -xmlfile ${TARGET_FOLDER}/api-integration-report.xml ~/matlab/common/toolfun/movieManagement/test/integration; exit" &
