@@ -5,7 +5,7 @@
 
 # first test job, current matlab version
 stages:
-	- test
+  - test
 
 before_script:
   - date
