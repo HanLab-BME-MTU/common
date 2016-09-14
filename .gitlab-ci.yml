@@ -4,8 +4,6 @@
 
 
 # first test job, current matlab version
-stages:
-  - test
 
 before_script:
   - date
@@ -16,6 +14,9 @@ before_script:
   - module load matlab/2016a
   - module list
   - pwd
+
+stages:
+  - test
   
 cached_:
   stage: test
