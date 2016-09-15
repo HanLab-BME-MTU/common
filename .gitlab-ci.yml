@@ -1,3 +1,12 @@
+# Gitlab CI Script for danuser/common
+# Andrew R. Jamieson - 2016
+
+
+
+# first test job, current matlab version
+stages:
+  - test
+
 before_script:
   - date
   - w 
@@ -7,44 +16,45 @@ before_script:
   - module load matlab/2016a
   - module list
   - pwd
-
-stages:
-  - test
   
-cached_:
+R2016a_cached_:
   stage: test
   script: 
-    - 'matlab -nodisplay -nodesktop -nosplash -r "runxunit -verbose cached; exit"'
+    - matlab -nodisplay -nodesktop -nosplash -r "runCITests('cached', '-verbose');"
   only:
     - CI_test
 
-mathfun:
+R2016a_mathfun:
   stage: test
   script: 
-    - 'matlab -nodisplay -nodesktop -nosplash -r "runxunit -verbose ~/matlab/common/mathfun/test; exit"'
+    - matlab -nodisplay -nodesktop -nosplash -r "runCITests('~/matlab/common/mathfun/test', '-verbose');"
   only:
     - CI_test
+    # - testing
 
-toolfun:
+R2016a_toolfun:
   stage: test
   script: 
-    - 'matlab -nodisplay -nodesktop -nosplash -r "runxunit -verbose ~/matlab/common/toolfun/test; exit"'
+    - matlab -nodisplay -nodesktop -nosplash -r "runCITests('~/matlab/common/toolfun/test', '-verbose');"
   only:
     - CI_test
+    # - testing
 
-movieManagement_unit:
+R2016a_movieManagement_unit:
   stage: test
   script: 
-    - 'matlab -nodisplay -nodesktop -nosplash -r "runxunit -verbose ~/matlab/common/toolfun/movieManagement/test/unit; exit"'
+    - matlab -nodisplay -nodesktop -nosplash -r "runCITests('~/matlab/common/toolfun/movieManagement/test/unit', '-verbose')" 
   only:
     - CI_test
+    # - testing
 
-movieManagement_integration:
+R2016a_movieManagement_integration:
   stage: test
   script: 
-    - 'matlab -nodisplay -nodesktop -nosplash -r "runxunit -verbose ~/matlab/common/toolfun/movieManagement/test/integration; exit"'
+    - matlab -nodisplay -nodesktop -nosplash -r "runCITests('~/matlab/common/toolfun/movieManagement/test/integration', '-verbose');" 
   only:
     - CI_test
+    # - testing
 
 # matlab -nodisplay -nodesktop -nosplash -r "runxunit -xmlfile ${TARGET_FOLDER}/mathfun-report.xml ~/matlab/common/mathfun/test; exit" &
 # matlab -nodisplay -nodesktop -nosplash -r "runxunit -xmlfile ${TARGET_FOLDER}/toolfun-report.xml ~/matlab/common/toolfun/test; exit" &
