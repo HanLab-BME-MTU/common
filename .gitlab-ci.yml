@@ -24,7 +24,8 @@ R2016a_cached_:
     - module load matlab/2016a
     - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CI_PROJECT_DIR}', 'cached', '-verbose');"
   only:
-    - CI_test
+    - testing
+    - master
 
 R2016a_mathfun:
   stage: test
@@ -33,7 +34,8 @@ R2016a_mathfun:
     - module load matlab/2016a
     - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CI_PROJECT_DIR}', '~/matlab/common/mathfun/test', '-verbose');"
   only:
-    - CI_test
+    - testing
+    - master
 
 R2016a_toolfun:
   stage: test
@@ -42,7 +44,8 @@ R2016a_toolfun:
     - module load matlab/2016a
     - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CI_PROJECT_DIR}', '~/matlab/common/toolfun/test', '-verbose');"
   only:
-    - CI_test
+    - testing
+    - master
 
 R2016a_movieManagement_unit:
   stage: test
@@ -51,7 +54,8 @@ R2016a_movieManagement_unit:
     - module load matlab/2016a
     - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CI_PROJECT_DIR}', '~/matlab/common/toolfun/movieManagement/test/unit', '-verbose')" 
   only:
-    - CI_test
+    - testing
+    - master
 
 R2016a_movieManagement_integration:
   stage: test
@@ -60,11 +64,283 @@ R2016a_movieManagement_integration:
     - module load matlab/2016a
     - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CI_PROJECT_DIR}', '~/matlab/common/toolfun/movieManagement/test/integration', '-verbose');" 
   only:
-    - CI_test
+    - testing
+    - master
+
+###########[Version R2015b ]##########################################
+
+R2015b_cached_:
+  stage: test
+  script: 
+    - module unload matlab
+    - module load matlab/2015b
+    - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CI_PROJECT_DIR}', 'cached', '-verbose');"
+  only:
+    - testing
+    - master
+
+R2015b_mathfun:
+  stage: test
+  script: 
+    - module unload matlab
+    - module load matlab/2015b
+    - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CI_PROJECT_DIR}', '~/matlab/common/mathfun/test', '-verbose');"
+  only:
+    - testing
+    - master
+
+R2015b_toolfun:
+  stage: test
+  script: 
+    - module unload matlab
+    - module load matlab/2015b
+    - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CI_PROJECT_DIR}', '~/matlab/common/toolfun/test', '-verbose');"
+  only:
+    - testing
+    - master
+
+R2015b_movieManagement_unit:
+  stage: test
+  script: 
+    - module unload matlab
+    - module load matlab/2015b
+    - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CI_PROJECT_DIR}', '~/matlab/common/toolfun/movieManagement/test/unit', '-verbose')" 
+  only:
+    - testing
+    - master
+
+R2015b_movieManagement_integration:
+  stage: test
+  script: 
+    - module unload matlab
+    - module load matlab/2015b
+    - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CI_PROJECT_DIR}', '~/matlab/common/toolfun/movieManagement/test/integration', '-verbose');" 
+  only:
+    - testing
+    - master
+
+###########[Version R2015a ]##########################################
+
+R2015a_cached_:
+  stage: test
+  script: 
+    - module unload matlab
+    - module load matlab/2015a
+    - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CI_PROJECT_DIR}', 'cached', '-verbose');"
+  only:
+    - testing
+    - master
+
+R2015a_mathfun:
+  stage: test
+  script: 
+    - module unload matlab
+    - module load matlab/2015a
+    - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CI_PROJECT_DIR}', '~/matlab/common/mathfun/test', '-verbose');"
+  only:
+    - testing
+    - master
+
+R2015a_toolfun:
+  stage: test
+  script: 
+    - module unload matlab
+    - module load matlab/2015a
+    - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CI_PROJECT_DIR}', '~/matlab/common/toolfun/test', '-verbose');"
+  only:
+    - testing
+    - master
+
+R2015a_movieManagement_unit:
+  stage: test
+  script: 
+    - module unload matlab
+    - module load matlab/2015a
+    - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CI_PROJECT_DIR}', '~/matlab/common/toolfun/movieManagement/test/unit', '-verbose')" 
+  only:
+    - testing
+    - master
+
+R2015a_movieManagement_integration:
+  stage: test
+  script: 
+    - module unload matlab
+    - module load matlab/2015a
+    - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CI_PROJECT_DIR}', '~/matlab/common/toolfun/movieManagement/test/integration', '-verbose');" 
+  only:
+    - testing
+    - master
+
+
+###########[Version R2014b ]##########################################
+
+R2014b_cached_:
+  stage: test
+  script: 
+    - module unload matlab
+    - module load matlab/2014b
+    - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CI_PROJECT_DIR}', 'cached', '-verbose');"
+  only:
+    - testing
+    - master
+
+R2014b_mathfun:
+  stage: test
+  script: 
+    - module unload matlab
+    - module load matlab/2014b
+    - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CI_PROJECT_DIR}', '~/matlab/common/mathfun/test', '-verbose');"
+  only:
+    - testing
+    - master
+
+R2014b_toolfun:
+  stage: test
+  script: 
+    - module unload matlab
+    - module load matlab/2014b
+    - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CI_PROJECT_DIR}', '~/matlab/common/toolfun/test', '-verbose');"
+  only:
+    - testing
+    - master
+
+R2014b_movieManagement_unit:
+  stage: test
+  script: 
+    - module unload matlab
+    - module load matlab/2014b
+    - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CI_PROJECT_DIR}', '~/matlab/common/toolfun/movieManagement/test/unit', '-verbose')" 
+  only:
+    - testing
+    - master
+
+R2014b_movieManagement_integration:
+  stage: test
+  script: 
+    - module unload matlab
+    - module load matlab/2014b
+    - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CI_PROJECT_DIR}', '~/matlab/common/toolfun/movieManagement/test/integration', '-verbose');" 
+  only:
+    - testing
+    - master
+
+
+
+###########[Version R2014a ]##########################################
+
+R2014a_cached_:
+  stage: test
+  script: 
+    - module unload matlab
+    - module load matlab/2014a
+    - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CI_PROJECT_DIR}', 'cached', '-verbose');"
+  only:
+    - testing
+    - master
+
+R2014a_mathfun:
+  stage: test
+  script: 
+    - module unload matlab
+    - module load matlab/2014a
+    - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CI_PROJECT_DIR}', '~/matlab/common/mathfun/test', '-verbose');"
+  only:
+    - testing
+    - master
+
+R2014a_toolfun:
+  stage: test
+  script: 
+    - module unload matlab
+    - module load matlab/2014a
+    - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CI_PROJECT_DIR}', '~/matlab/common/toolfun/test', '-verbose');"
+  only:
+    - testing
+    - master
+
+R2014a_movieManagement_unit:
+  stage: test
+  script: 
+    - module unload matlab
+    - module load matlab/2014a
+    - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CI_PROJECT_DIR}', '~/matlab/common/toolfun/movieManagement/test/unit', '-verbose')" 
+  only:
+    - testing
+    - master
+
+R2014a_movieManagement_integration:
+  stage: test
+  script: 
+    - module unload matlab
+    - module load matlab/2014a
+    - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CI_PROJECT_DIR}', '~/matlab/common/toolfun/movieManagement/test/integration', '-verbose');" 
+  only:
+    - testing
+    - master
+
+
+
+###########[Version R2013b ]##########################################
+
+
+R2013b_cached_:
+  stage: test
+  script: 
+    - module unload matlab
+    - module load matlab/2013b
+    - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CI_PROJECT_DIR}', 'cached', '-verbose');"
+  only:
+    - testing
+    - master
+
+R2013b_mathfun:
+  stage: test
+  script: 
+    - module unload matlab
+    - module load matlab/2013b
+    - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CI_PROJECT_DIR}', '~/matlab/common/mathfun/test', '-verbose');"
+  only:
+    - testing
+    - master
+
+R2013b_toolfun:
+  stage: test
+  script: 
+    - module unload matlab
+    - module load matlab/2013b
+    - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CI_PROJECT_DIR}', '~/matlab/common/toolfun/test', '-verbose');"
+  only:
+    - testing
+    - master
+
+R2013b_movieManagement_unit:
+  stage: test
+  script: 
+    - module unload matlab
+    - module load matlab/2013b
+    - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CI_PROJECT_DIR}', '~/matlab/common/toolfun/movieManagement/test/unit', '-verbose')" 
+  only:
+    - testing
+    - master
+
+R2013b_movieManagement_integration:
+  stage: test
+  script: 
+    - module unload matlab
+    - module load matlab/2013b
+    - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CI_PROJECT_DIR}', '~/matlab/common/toolfun/movieManagement/test/integration', '-verbose');" 
+  only:
+    - testing
+    - master
+
+
+###########[Version R2013a ]##########################################
 
 
 
 
+
+###########[Version R2015a]matlab/2013b  matlab/2014a matlab/2013b matlab/2013a
 
 # Previous script example below for reference:
 # matlab -nodisplay -nodesktop -nosplash -r "runxunit -xmlfile ${TARGET_FOLDER}/mathfun-report.xml ~/matlab/common/mathfun/test; exit" &
