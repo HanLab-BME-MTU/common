@@ -1,0 +1,73 @@
+# Gitlab CI Script for danuser/common
+# Andrew R. Jamieson - 2016
+
+
+
+# first test job, current matlab version
+stages:
+  - test
+
+before_script:
+  - pwd
+  - date
+  - uname -a
+  - module unload matlab
+  - module list
+  - ~/matlab/ci-scripts/setup_gitlabCI.sh
+  - pwd
+
+  
+R2016a_cached_:
+  stage: test
+  script: 
+    - module unload matlab
+    - module load matlab/2016a
+    - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CI_PROJECT_DIR}', 'cached', '-verbose');"
+  only:
+    - CI_test
+
+R2016a_mathfun:
+  stage: test
+  script: 
+    - module unload matlab
+    - module load matlab/2016a
+    - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CI_PROJECT_DIR}', '~/matlab/common/mathfun/test', '-verbose');"
+  only:
+    - CI_test
+
+R2016a_toolfun:
+  stage: test
+  script: 
+    - module unload matlab
+    - module load matlab/2016a
+    - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CI_PROJECT_DIR}', '~/matlab/common/toolfun/test', '-verbose');"
+  only:
+    - CI_test
+
+R2016a_movieManagement_unit:
+  stage: test
+  script: 
+    - module unload matlab
+    - module load matlab/2016a
+    - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CI_PROJECT_DIR}', '~/matlab/common/toolfun/movieManagement/test/unit', '-verbose')" 
+  only:
+    - CI_test
+
+R2016a_movieManagement_integration:
+  stage: test
+  script: 
+    - module unload matlab
+    - module load matlab/2016a
+    - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CI_PROJECT_DIR}', '~/matlab/common/toolfun/movieManagement/test/integration', '-verbose');" 
+  only:
+    - CI_test
+
+
+
+
+
+# Previous script example below for reference:
+# matlab -nodisplay -nodesktop -nosplash -r "runxunit -xmlfile ${TARGET_FOLDER}/mathfun-report.xml ~/matlab/common/mathfun/test; exit" &
+# matlab -nodisplay -nodesktop -nosplash -r "runxunit -xmlfile ${TARGET_FOLDER}/toolfun-report.xml ~/matlab/common/toolfun/test; exit" &
+# matlab -nodisplay -nodesktop -nosplash -r "runxunit -xmlfile ${TARGET_FOLDER}/api-unit-report.xml ~/matlab/common/toolfun/movieManagement/test/unit; exit" &
+# matlab -nodisplay -nodesktop -nosplash -r "runxunit -xmlfile ${TARGET_FOLDER}/api-integration-report.xml ~/matlab/common/toolfun/movieManagement/test/integration; exit" &
