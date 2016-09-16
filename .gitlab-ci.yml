@@ -1,9 +1,6 @@
 # Gitlab CI Script for danuser/common
 # Andrew R. Jamieson - 2016
 
-
-
-# first test job, current matlab version
 stages:
   - test
 
@@ -15,7 +12,6 @@ before_script:
   - module list
   - ~/matlab/ci-scripts/setup_gitlabCI.sh
   - pwd
-
   
 R2016a_cached_:
   stage: test
@@ -67,7 +63,9 @@ R2016a_movieManagement_integration:
     - testing
     - master
 
+
 ###########[Version R2015b ]##########################################
+
 
 R2015b_cached_:
   stage: test
@@ -119,7 +117,9 @@ R2015b_movieManagement_integration:
     - testing
     - master
 
+
 ###########[Version R2015a ]##########################################
+
 
 R2015a_cached_:
   stage: test
@@ -174,6 +174,7 @@ R2015a_movieManagement_integration:
 
 ###########[Version R2014b ]##########################################
 
+
 R2014b_cached_:
   stage: test
   script: 
@@ -225,8 +226,8 @@ R2014b_movieManagement_integration:
     - master
 
 
-
 ###########[Version R2014a ]##########################################
+
 
 R2014a_cached_:
   stage: test
@@ -277,7 +278,6 @@ R2014a_movieManagement_integration:
   only:
     - testing
     - master
-
 
 
 ###########[Version R2013b ]##########################################
@@ -332,18 +332,3 @@ R2013b_movieManagement_integration:
   only:
     - testing
     - master
-
-
-###########[Version R2013a ]##########################################
-
-
-
-
-
-###########[Version R2015a]matlab/2013b  matlab/2014a matlab/2013b matlab/2013a
-
-# Previous script example below for reference:
-# matlab -nodisplay -nodesktop -nosplash -r "runxunit -xmlfile ${TARGET_FOLDER}/mathfun-report.xml ~/matlab/common/mathfun/test; exit" &
-# matlab -nodisplay -nodesktop -nosplash -r "runxunit -xmlfile ${TARGET_FOLDER}/toolfun-report.xml ~/matlab/common/toolfun/test; exit" &
-# matlab -nodisplay -nodesktop -nosplash -r "runxunit -xmlfile ${TARGET_FOLDER}/api-unit-report.xml ~/matlab/common/toolfun/movieManagement/test/unit; exit" &
-# matlab -nodisplay -nodesktop -nosplash -r "runxunit -xmlfile ${TARGET_FOLDER}/api-integration-report.xml ~/matlab/common/toolfun/movieManagement/test/integration; exit" &
