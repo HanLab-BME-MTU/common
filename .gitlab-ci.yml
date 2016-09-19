@@ -22,7 +22,8 @@ R2016a_unit:
     - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CI_PROJECT_DIR}', {'cached','~/matlab/common/mathfun/test','~/matlab/common/toolfun/test', '~/matlab/common/toolfun/movieManagement/test/unit','~/matlab/common/toolfun/movieManagement/test/integration'}, '-verbose');"
   only:
     - testing
-    - master 
+    - master
+    - CI_test 
 
 
 R2015b_unit:
@@ -33,7 +34,8 @@ R2015b_unit:
     - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CI_PROJECT_DIR}', {'cached','~/matlab/common/mathfun/test','~/matlab/common/toolfun/test', '~/matlab/common/toolfun/movieManagement/test/unit','~/matlab/common/toolfun/movieManagement/test/integration'}, '-verbose');"
   only:
     - testing
-    - master 
+    - master
+    - CI_test 
 
 R2015a_unit:
   stage: test
@@ -44,6 +46,7 @@ R2015a_unit:
   only:
     - testing
     - master
+    - CI_test
 
 R2014b_unit:
   stage: test
@@ -54,6 +57,7 @@ R2014b_unit:
   only:
     - testing
     - master
+    - CI_test
 
 R2014a_unit:
   stage: test
@@ -63,7 +67,8 @@ R2014a_unit:
     - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CI_PROJECT_DIR}', {'cached','~/matlab/common/mathfun/test','~/matlab/common/toolfun/test', '~/matlab/common/toolfun/movieManagement/test/unit','~/matlab/common/toolfun/movieManagement/test/integration'}, '-verbose');"
   only:
     - testing
-    - master 
+    - master
+    - CI_test 
 
 R2013b_unit:
   stage: test
@@ -74,6 +79,7 @@ R2013b_unit:
   only:
     - testing
     - master
+    - CI_test
 
 # R2016a_cached_:
 #   stage: test
