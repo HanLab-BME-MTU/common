@@ -6,7 +6,7 @@
 
 For Users
 ---------
-Basic user guide documentation is provided here: 
+Basic user guide documentation is provided here: https://git.biohpc.swmed.edu/danuser/common/tree/master/toolfun/movieManagement/tutorial
 
 For Developers
 --------------
