@@ -4,8 +4,6 @@
 ### Purpose
  Core functions and the MovieData APIs shared across applications.
 
-***
-
 For Users
 ---------
 Basic user guide documentation is provided here: 
