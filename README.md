@@ -7,6 +7,6 @@ Core functions and the MovieData APIs shared across applications.
 
 ***
 
-Changes to the master branch are resticted.  
+Changes to the `master` branch are resticted.  
 Please commit changes to the `testing` branch. 
-The master branch will be merged on a monthly basis with testing.
+The `master` branch will be merged on a monthly basis with `testing`.
