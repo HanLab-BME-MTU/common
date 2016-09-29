@@ -6,7 +6,8 @@
 
 For Users
 ---------
-Basic user guide documentation is provided here: https://git.biohpc.swmed.edu/danuser/common/tree/master/toolfun/movieManagement/tutorial
+Basic user tutorial is provided here: https://git.biohpc.swmed.edu/danuser/common/tree/master/toolfun/movieManagement/tutorial.
+User documentation is provided in subdirectories listed as `doc` (e.g., https://git.biohpc.swmed.edu/danuser/common/tree/master/toolfun/movieManagement/doc).
 
 For Developers
 --------------
