@@ -40,7 +40,7 @@ test:R2015b:
   script: 
     - module unload matlab
     - module load matlab/2015b
-    - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CI_PROJECT_DIR}', {'cached','${CI_PROJECT_DIR}/mathfun/test','${CI_PROJECT_DIR}/toolfun/test', '${CI_PROJECT_DIR}/toolfun/movieManagement/test/unit','${CI_PROJECT_DIR}/toolfun/movieManagement/test/integration'}, '-verbose');"
+    - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached','${CI_PROJECT_DIR}/mathfun/test','${CI_PROJECT_DIR}/toolfun/test', '${CI_PROJECT_DIR}/toolfun/movieManagement/test/unit','${CI_PROJECT_DIR}/toolfun/movieManagement/test/integration'}, '-verbose');"
     # - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached'}, '-verbose');"
   only:
     - testing
