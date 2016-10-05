@@ -78,11 +78,23 @@ function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_
     end
 
 
+
     output_size = size(x);
     output_size(1) = output_size(1) - 1;
+    
 
     s = size(x);
     scale_factor = s(1);
+    
+    if(s(1) == 1)
+        maxima = shiftdim(zeros(s),unshift);
+        minima = maxima;
+        other = maxima;
+        maxima_value = shiftdim(x,unshift);
+        minima_value = maxima_value;
+        other_value = maxima_value;
+        return;
+    end
 
     % Calculate fft and nyquist frequency
     x_h = fft(x);
