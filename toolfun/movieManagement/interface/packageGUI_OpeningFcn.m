@@ -72,7 +72,9 @@ if isempty(userData), userData = struct(); end
 userData.packageName = packageName;
 userData.MD = ip.Results.MD;
 userData.ML = ip.Results.ML;
-uTrackParCluster(ip.Results.cluster);
+if(~isempty(ip.Results.cluster))
+    uTrackParCluster(ip.Results.cluster);
+end
 
 %If package GUI supplied without argument, saves a boolean which will be
 %read by packageNameGUI_OutputFcn

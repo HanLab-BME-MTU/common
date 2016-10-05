@@ -142,7 +142,9 @@ if ~isempty(ip.Results.MD)
 end
 
 % Set uTrackParCluster
-uTrackParCluster(ip.Results.cluster);
+if(~isempty(ip.Results.cluster))
+    uTrackParCluster(ip.Results.cluster);
+end
 
 % Filter movies to get a unique list
 [~,index] = unique(arrayfun(@getFullPath,userData.MD,'Unif',0));

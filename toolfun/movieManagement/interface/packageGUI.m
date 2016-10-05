@@ -22,7 +22,7 @@ function varargout = packageGUI(varargin)
 
 % Edit the above text to modify the response to help packageGUI
 
-% Last Modified by GUIDE v2.5 10-Nov-2015 11:17:30
+% Last Modified by GUIDE v2.5 05-Oct-2016 01:36:55
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -300,7 +300,15 @@ function menu_parallel_Callback(hObject, eventdata, handles)
 % hObject    handle to menu_parallel (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-delete(hObject.Children);
+% clusterMenu = findobj(hObject,'Label','Cluster');
+% poolSizeMenu = findobj(hObject,'Label','Pool Size');
+% batchMenu = findobj(hObject,'Label','Batch Mode');
+clusterMenu = handles.menu_parallel_cluster;
+poolSizeMenu = handles.menu_parallel_pool;
+batchMenu = handles.menu_parallel_batch;
+
+% Setup Cluster Menu
+delete(clusterMenu.Children);
 profiles = {};
 try
     profiles = parallel.clusterProfiles;
@@ -313,27 +321,137 @@ profiles = [{'None'} profiles];
 cluster = uTrackParCluster();
 
 for i=1:length(profiles)
-    h = uimenu(hObject,'Label',profiles{i},'Callback',{@menu_parallel_cluster_Callback,handles});
+    h = uimenu(clusterMenu,'Label',profiles{i},'Callback',{@menu_parallel_cluster_profile_Callback,handles});
 
     if(i == 1 && isempty(cluster))
         h.Checked = 'on';
     elseif(~isempty(cluster) && strcmp(profiles{i},cluster.Profile))
         h.Checked = 'on';
+        if(isempty(poolSizeMenu.Children))
+            menu_parallel_cluster_profile_Callback(h, eventdata, handles)
+        end
     end
     if(i == 2)
         h.Separator = 'on';
     end
 end
 
+% Setup Pool Size Menu
+if(isempty(cluster))
+    poolSizeMenu.Enable = 'off';
+    batchMenu.Enable = 'off';
+else
+    poolSizeMenu.Enable = 'on';
+    batchMenu.Enable = 'on';
+end
+
+
+
+
 % --------------------------------------------------------------------
 function menu_parallel_cluster_Callback(hObject, eventdata, handles)
 % hObject    handle to menu_parallel_cluster (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+
+% --------------------------------------------------------------------
+function menu_parallel_cluster_profile_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_parallel_cluster_profile (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 if(strcmp(hObject.Label,'None'))
     cluster = [];
 else
     cluster = parcluster(hObject.Label);
+    poolSizeMenu = handles.menu_parallel_pool;
+    delete(poolSizeMenu.Children);
+    currentPool = gcp('nocreate');
+    h = uimenu(poolSizeMenu,'Label','No Pool','Callback',{@menu_parallel_pool_size_Callback,handles});
+    if(isempty(currentPool))
+        poolSize = 0;
+        h.Checked = 'on';
+    else
+        poolSize = currentPool.NumWorkers;
+    end
+    N = max(floor(cluster.NumWorkers/16),1);
+    for i=N:N:cluster.NumWorkers
+        h = uimenu(poolSizeMenu,'Label',num2str(i),'Callback',{@menu_parallel_pool_size_Callback,handles});
+        if(i == N)
+            h.Separator = 'on';
+        end
+        if(i == poolSize)
+            h.Checked = 'on';
+        end
+    end
 end
 % Set uTrackParCluster so that this information is accessible
 uTrackParCluster(cluster);
+
+
+
+
+% --------------------------------------------------------------------
+function menu_parallel_pool_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_parallel_pool (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% --------------------------------------------------------------------
+function menu_parallel_pool_size_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_parallel_pool_size (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+set(hObject.Parent.Children,'Checked','off')
+hObject.Checked = 'on';
+if(strcmp(handles.menu_parallel_batch_client.Checked,'on'))
+    currentPool = gcp('nocreate');
+    switch(hObject.Label)
+        case 'No Pool'
+            delete(currentPool);
+        otherwise
+            poolSize = str2double(hObject.Label);
+            if(~isempty(currentPool) && currentPool.NumWorkers ~= poolSize)
+                delete(currentPool);
+            end
+            parpool(uTrackParCluster,poolSize);
+    end
+else
+end
+
+% --------------------------------------------------------------------
+function menu_parallel_batch_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_parallel_batch (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+% --------------------------------------------------------------------
+function menu_parallel_batch_single_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_parallel_batch_single (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+hObject.Checked = 'on';
+handles.menu_parallel_batch_client.Checked = 'off';
+handles.menu_parallel_batch_one_per_movie.Checked = 'off';
+
+
+% --------------------------------------------------------------------
+function menu_parallel_batch_one_per_movie_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_parallel_batch_one_per_movie (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+hObject.Checked = 'on';
+handles.menu_parallel_batch_client.Checked = 'off';
+handles.menu_parallel_batch_single.Checked = 'off';
+
+
+% --------------------------------------------------------------------
+function menu_parallel_batch_client_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_parallel_batch_client (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+hObject.Checked = 'on';
+handles.menu_parallel_batch_single.Checked = 'off';
+handles.menu_parallel_batch_one_per_movie.Checked = 'off';
