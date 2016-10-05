@@ -57,7 +57,7 @@ varargout{1} = handles.output;
 userData = get(handles.figure1, 'UserData');
 if (isfield(userData,'startMovieSelectorGUI') && userData.startMovieSelectorGUI)
     movieSelectorGUI('packageName',userData.packageName,'MD',userData.MD,...
-        'ML', userData.ML , 'cluster', userData.cluster);
+        'ML', userData.ML , 'cluster', uTrackParCluster);
     delete(handles.figure1)
 end
 
@@ -309,13 +309,15 @@ catch err
     disp(getReport(err));
 end
 profiles = [{'None'} profiles];
-userData = get(handles.figure1,'UserData');
+% Update cluster from uTrackParCluster
+cluster = uTrackParCluster();
+
 for i=1:length(profiles)
     h = uimenu(hObject,'Label',profiles{i},'Callback',{@menu_parallel_cluster_Callback,handles});
 
-    if(i == 1 && isempty(userData.cluster))
+    if(i == 1 && isempty(cluster))
         h.Checked = 'on';
-    elseif(~isempty(userData.cluster) && strcmp(profiles{i},userData.cluster.Profile))
+    elseif(~isempty(cluster) && strcmp(profiles{i},cluster.Profile))
         h.Checked = 'on';
     end
     if(i == 2)
@@ -328,10 +330,10 @@ function menu_parallel_cluster_Callback(hObject, eventdata, handles)
 % hObject    handle to menu_parallel_cluster (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-userData = get(handles.figure1,'UserData');
 if(strcmp(hObject.Label,'None'))
-    userData.cluster = [];
+    cluster = [];
 else
-    userData.cluster = parcluster(hObject.Label);
+    cluster = parcluster(hObject.Label);
 end
-set(handles.figure1,'UserData',userData);
+% Set uTrackParCluster so that this information is accessible
+uTrackParCluster(cluster);

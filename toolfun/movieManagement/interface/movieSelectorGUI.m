@@ -84,7 +84,6 @@ handles.output = hObject;
 % other user data set-up
 userData.MD = MovieData.empty(1,0);
 userData.ML = MovieList.empty(1,0);
-userData.cluster = [];
 userData.userDir = pwd;
 userData.newFig=-1;
 userData.msgboxGUI=-1;
@@ -142,7 +141,8 @@ if ~isempty(ip.Results.MD)
     userData.MD = horzcat(userData.MD,ip.Results.MD);
 end
 
-userData.cluster = ip.Results.cluster;
+% Set uTrackParCluster
+uTrackParCluster(ip.Results.cluster);
 
 % Filter movies to get a unique list
 [~,index] = unique(arrayfun(@getFullPath,userData.MD,'Unif',0));
@@ -234,7 +234,7 @@ end
 
 close(handles.figure1);
 packageGUI(selectedPackage,userData.(field),...
-    'MD', userData.MD, 'ML', userData.ML, 'cluster', userData.cluster);
+    'MD', userData.MD, 'ML', userData.ML, 'cluster', uTrackParCluster);
 
 % --- Executes on selection change in listbox_movie.
 function listbox_movie_Callback(hObject, eventdata, handles)
