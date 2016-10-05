@@ -22,7 +22,7 @@ function varargout = packageGUI(varargin)
 
 % Edit the above text to modify the response to help packageGUI
 
-% Last Modified by GUIDE v2.5 04-Jun-2013 14:06:35
+% Last Modified by GUIDE v2.5 10-Nov-2015 11:17:30
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -57,7 +57,7 @@ varargout{1} = handles.output;
 userData = get(handles.figure1, 'UserData');
 if (isfield(userData,'startMovieSelectorGUI') && userData.startMovieSelectorGUI)
     movieSelectorGUI('packageName',userData.packageName,'MD',userData.MD,...
-        'ML', userData.ML);
+        'ML', userData.ML , 'cluster', userData.cluster);
     delete(handles.figure1)
 end
 
@@ -293,3 +293,45 @@ else
     % & nautilus)
     % system(sprintf('xdg-open %s',regexptranslate('escape',outputDir)));
 end
+
+
+% --------------------------------------------------------------------
+function menu_parallel_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_parallel (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+delete(hObject.Children);
+profiles = {};
+try
+    profiles = parallel.clusterProfiles;
+catch err
+    warning('Could not obtain cluster profiles');
+    disp(getReport(err));
+end
+profiles = [{'None'} profiles];
+userData = get(handles.figure1,'UserData');
+for i=1:length(profiles)
+    h = uimenu(hObject,'Label',profiles{i},'Callback',{@menu_parallel_cluster_Callback,handles});
+
+    if(i == 1 && isempty(userData.cluster))
+        h.Checked = 'on';
+    elseif(~isempty(userData.cluster) && strcmp(profiles{i},userData.cluster.Profile))
+        h.Checked = 'on';
+    end
+    if(i == 2)
+        h.Separator = 'on';
+    end
+end
+
+% --------------------------------------------------------------------
+function menu_parallel_cluster_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_parallel_cluster (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+userData = get(handles.figure1,'UserData');
+if(strcmp(hObject.Label,'None'))
+    userData.cluster = [];
+else
+    userData.cluster = parcluster(hObject.Label);
+end
+set(handles.figure1,'UserData',userData);

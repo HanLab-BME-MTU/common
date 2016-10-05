@@ -58,6 +58,7 @@ ip.addOptional('MO',[],@(x) isa(x,'MovieObject'));
 ip.addParamValue('MD',[],@(x) isempty(x) || isa(x,'MovieData'));
 ip.addParamValue('ML',[],@(x) isempty(x) || isa(x,'MovieList'));
 ip.addParamValue('packageConstr','',@(x) isa(x,'function_handle'));
+ip.addParamValue('cluster',[],@(x) isempty(x) || isa(x,'parallel.Cluster'));
 ip.parse(hObject,eventdata,handles,packageName,varargin{:});
 
 % Read the package name
@@ -71,6 +72,7 @@ if isempty(userData), userData = struct(); end
 userData.packageName = packageName;
 userData.MD = ip.Results.MD;
 userData.ML = ip.Results.ML;
+userData.cluster = ip.Results.cluster;
 
 %If package GUI supplied without argument, saves a boolean which will be
 %read by packageNameGUI_OutputFcn
