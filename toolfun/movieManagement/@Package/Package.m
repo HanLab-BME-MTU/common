@@ -273,6 +273,17 @@ classdef Package < hgsetget
             obj.outputDirectory_ = relocatePath(obj.outputDirectory_,oldRootDir,newRootDir);
         end
         
+        function procSeq = getProcessSequence(obj, procIDs)
+            % Returns a sequence of process IDs such that each process is
+            % preceeded by it's parent
+            procSeq = [];
+            if(~isempty(procIDs))
+                parentIDs = arrayfun(@(procID) obj.getParent(procID),procIDs,'UniformOutput',false);
+                parentIDs = unique([parentIDs{:}]);
+                procSeq = unique([obj.getProcessSequence(parentIDs) procIDs]);
+            end
+        end
+        
     end
         
     methods(Static)
