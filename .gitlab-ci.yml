@@ -172,3 +172,6 @@ doc:pdf_utrack:
     name: "${BUILD_NAME}-${RELEASE}_b${CI_BUILD_ID}.pdf"
     paths:
       - $TARGET_FOLDER/Readme_u-track.pdf
+  only:
+    - master
+    - CI_test
