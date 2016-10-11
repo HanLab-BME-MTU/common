@@ -111,7 +111,7 @@ packageFuns(mexFunsIndx) = [];
 
 % Remove additional compilation files
 if ~isempty(packageMexFuns)
-    compFunsExt = {'.c';'.cpp';'.h';'.nb';'.m'};
+    compFunsExt = {'.c';'.cpp';'.h';'.nb'}; % leave .m as help/documentation/backup if available
     for i=1:numel(compFunsExt)
         indx = ~cellfun(@isempty,regexp(packageMexFuns,[compFunsExt{i} '$'],'once'));
         packageMexFuns(indx)=[];
