@@ -177,12 +177,12 @@ for i = 1 : nIcons
     copyfile(packageIcons{i}, [iconsDir filesep packageIcons{i}(iLFS+1:end)]);
 end
 
-% Create icons output directory if non-existing
+% Create documentation output directory if non-existing
 disp('Creating documenation directory...')
 docDir=[outDir filesep 'doc'];
 if ~isdir(docDir), mkdir(docDir); end
 
-% Copy icons
+% Copy documentation
 nDocFiles = numel(packageDocs);
 disp(['Copying all '  num2str(nDocFiles) ' files ...'])
 for i = 1 : nDocFiles
