@@ -143,7 +143,7 @@ filesep_token = filesep;
 if(filesep_token == '\')
     filesep_token = '\\';
 end
-pattern = sprintf('(.*%s[\\+@].*)%s.*', filesep, filesep);
+pattern = sprintf('(.*%s[\\+@].*)%s.*', filesep_token, filesep_token);
 hasNs = ~cellfun(@isempty, regexp(packageFiles, pattern));
 if any(hasNs)
     nsFiles = packageFiles(hasNs);
