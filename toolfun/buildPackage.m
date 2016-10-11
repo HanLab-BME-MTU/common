@@ -118,15 +118,25 @@ if ~isempty(packageMexFuns)
     end
 end
 
+
+% Check for .m files associated with mex files
+% and remove these from packageFuns to avoid duplication.
+[mf1, mf2, mf3] = cellfun(@(x)fileparts(x), packageMexFuns, 'Unif', false);
+[f1, f2, f3] = cellfun(@(x)fileparts(x), packageFuns, 'Unif', false);
+[Int, if2, iPack] = intersect(f2, mf2);
+packageFuns(if2) = [];
+
+
+
 % Get the main path to the icons folder
 iconsPath = fullfile(fileparts(which('packageGUI.m')),'icons');
 icons = dir([iconsPath filesep '*.png']);
 packageIcons = arrayfun(@(x) [iconsPath filesep x.name],icons,'Unif',false);
 
+
 % Concatenate all matlab files but the documentation
 packageFiles=vertcat(packageFuns,packageFigs);
 
-% 
 
 % Handle namespace packages and class folders separately
 pattern = sprintf('(.*%s[\\+@].*)%s.*', filesep, filesep);
