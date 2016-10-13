@@ -279,8 +279,11 @@ classdef Package < hgsetget
             procSeq = [];
             if(~isempty(procIDs))
                 parentIDs = arrayfun(@(procID) obj.getParent(procID),procIDs,'UniformOutput',false);
+                % Sorted unique so that the parentIDs are in descending order
                 parentIDs = unique([parentIDs{:}]);
-                procSeq = unique([obj.getProcessSequence(parentIDs) procIDs]);
+                % Stable unique so that parents come before dependents
+                % Determine parents recursively
+                procSeq = unique([obj.getProcessSequence(parentIDs) procIDs],'stable');
             end
         end
         
