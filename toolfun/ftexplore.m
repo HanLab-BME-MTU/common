@@ -21,6 +21,10 @@ function [ objectFig ] = ftexplore( I )
 % This is especially useful for filtering in frequency space since the
 % response of the filter is the pointwise multiplication with 
 
+% Mark Kittiospikul, October 2016
+% Jaqaman Lab
+% UT Southwestern
+
 I = double(I);
 Iz = I - mean(I(:));
 
@@ -42,7 +46,7 @@ posCallback(getPosition(h_ellipse));
 freqFig = figure;
 hfreq = imshow(abs(fftshift(fft(Iz))),[]);
 info = @real;
-hax(1) = viscircles(hfreq.Parent,repmat([101 101],4,1),[10 20 40 80],'DrawBackgroundCircle',false,'EdgeColor',[1 1 1],'LineStyle',':','LineWidth',1);
+hax(1) = viscircles(hfreq.Parent,repmat([mean(xlim)-0.5 mean(ylim)-0.5],5,1),max([xlim ylim])*[0.1 0.2 0.4 0.8 1],'DrawBackgroundCircle',false,'EdgeColor',[1 1 1],'LineStyle',':','LineWidth',1);
 hax(2) = line(xlim-0.5,repmat(sum(xlim)/2,1,2),'Color',[1 1 1],'LineWidth',1,'LineStyle',':','Parent',hfreq.Parent);
 hax(3) = line(repmat(sum(ylim)/2,1,2),ylim-0.5,'Color',[1 1 1],'LineWidth',1,'LineStyle',':','Parent',hfreq.Parent);
 menu = uicontextmenu(freqFig);
