@@ -3,9 +3,11 @@
 
 
 stages:
-  - test
+  - unit
   - build
-  - doc
+  - test
+  - deploy
+  # - doc
 
 before_script:
   - pwd
@@ -23,77 +25,77 @@ variables:
 
 
 # === Test code =======================  
-test:R2016a:
-  stage: test
+unit:R2016a:
+  stage: unit
   script: 
     - module unload matlab
     - module load matlab/2016a
     - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached','${CI_PROJECT_DIR}/mathfun/test','${CI_PROJECT_DIR}/toolfun/test', '${CI_PROJECT_DIR}/toolfun/movieManagement/test/unit','${CI_PROJECT_DIR}/toolfun/movieManagement/test/integration'}, '-verbose');"
     # - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached'}, '-verbose');"
-  only:
-    - testing
-    - master
-    - CI_test 
+  # only:
+  #   - testing
+  #   - master
+  #   - CI_test 
 
-test:R2015b:
-  stage: test
+unit:R2015b:
+  stage: unit
   script: 
     - module unload matlab
     - module load matlab/2015b
     - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached','${CI_PROJECT_DIR}/mathfun/test','${CI_PROJECT_DIR}/toolfun/test', '${CI_PROJECT_DIR}/toolfun/movieManagement/test/unit','${CI_PROJECT_DIR}/toolfun/movieManagement/test/integration'}, '-verbose');"
     # - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached'}, '-verbose');"
   only:
-    - testing
+    # - testing
     - master
-    - CI_test 
+    # - CI_test 
 
-test:R2015a:
-  stage: test
+unit:R2015a:
+  stage: unit
   script: 
     - module unload matlab
     - module load matlab/2015a
     - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached','${CI_PROJECT_DIR}/mathfun/test','${CI_PROJECT_DIR}/toolfun/test', '${CI_PROJECT_DIR}/toolfun/movieManagement/test/unit','${CI_PROJECT_DIR}/toolfun/movieManagement/test/integration'}, '-verbose');"
     # - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached'}, '-verbose');"
   only:
-    - testing
+    # - testing
     - master
-    - CI_test 
+    # - CI_test 
 
-test:R2014b:
-  stage: test
+unit:R2014b:
+  stage: unit
   script: 
     - module unload matlab
     - module load matlab/2014b
     - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached','${CI_PROJECT_DIR}/mathfun/test','${CI_PROJECT_DIR}/toolfun/test', '${CI_PROJECT_DIR}/toolfun/movieManagement/test/unit','${CI_PROJECT_DIR}/toolfun/movieManagement/test/integration'}, '-verbose');"
     # - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached'}, '-verbose');"
   only:
-    - testing
+    # - testing
     - master
-    - CI_test 
+    # - CI_test 
 
-test:R2014a:
-  stage: test
+unit:R2014a:
+  stage: unit
   script: 
     - module unload matlab
     - module load matlab/2014a
     - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached','${CI_PROJECT_DIR}/mathfun/test','${CI_PROJECT_DIR}/toolfun/test', '${CI_PROJECT_DIR}/toolfun/movieManagement/test/unit','${CI_PROJECT_DIR}/toolfun/movieManagement/test/integration'}, '-verbose');"
     # - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached'}, '-verbose');"
   only:
-    - testing
+    # - testing
     - master
-    - CI_test 
+    # - CI_test 
 
-test:R2013b:
-  stage: test
+unit:R2013b:
+  stage: unit
   script: 
     - module unload matlab
     - module load matlab/2013b
     - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached','${CI_PROJECT_DIR}/mathfun/test','${CI_PROJECT_DIR}/toolfun/test', '${CI_PROJECT_DIR}/toolfun/movieManagement/test/unit','${CI_PROJECT_DIR}/toolfun/movieManagement/test/integration'}, '-verbose');"
     # - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached'}, '-verbose');"
-  only:
-    - testing
-    - master
-    - CI_test 
+  # only:
+  #   - testing
+  #   - master
+  #   - CI_test 
 
 # === Build Packages =======================  
 build:utrack:
@@ -134,44 +136,44 @@ build:utrack:
     - cp $DOCUMENTATION_DIR/_build/latex/u-track-*.pdf $TARGET_FOLDER/$BUILD_NAME/Readme_u-track.pdf
     - cp $DOCUMENTATION_DIR/_build/latex/u-track-*.pdf $TARGET_FOLDER/u-track_build${CI_BUILD_ID}.pdf
   dependencies:
-    - test:R2016a
-    - test:R2015b
-    - test:R2015a
-    - test:R2014b
-    - test:R2014a
-    - test:R2013b
+    - unit:R2016a
+    - unit:R2015b
+    - unit:R2015a
+    - unit:R2014b
+    - unit:R2014a
+    - unit:R2013b
   artifacts:
     name: "${BUILD_NAME}-b${CI_BUILD_ID}"
     paths:
       - $TARGET_FOLDER/$BUILD_NAME/
     when: on_success
   only:
-    - testing
+    # - testing
     - master
-    - CI_test 
+    # - CI_test 
 
 
 # === Documentation Generation Alone ======================= 
-doc:pdf_utrack:
-  stage: doc
-  variables:
-    # USER_HOME: "/home2/s170480"
-    DOCUMENTATION_DIR: "$USER_HOME/matlab/xUnit/git/documentation"
-    TARGET_FOLDER: "pdfdoc"
-    PACKAGE_NAME:  "u-track"
-    PACKAGE_CLASS: "TrackingPackage"
-    BUILD_NAME: $PACKAGE_NAME
-    RELEASE: "2.1.4-DEV"
-  script: 
-    - module load texlive/2014
-    - echo "# Build package documentation pdfs"
-    - mkdir -p ${CI_PROJECT_DIR}/$TARGET_FOLDER/
-    - (cd $DOCUMENTATION_DIR && make clean latexpdf)
-    - cp $DOCUMENTATION_DIR/_build/latex/u-track-*.pdf $TARGET_FOLDER/Readme_u-track-$RELEASE.pdf
-  artifacts:
-    name: "${BUILD_NAME}-${RELEASE}_b${CI_BUILD_ID}.pdf"
-    paths:
-      - $TARGET_FOLDER/Readme_u-track.pdf
-  only:
-    - master
-    - CI_test
+# doc:pdf_utrack:
+#   stage: doc
+#   variables:
+#     # USER_HOME: "/home2/s170480"
+#     DOCUMENTATION_DIR: "$USER_HOME/matlab/xUnit/git/documentation"
+#     TARGET_FOLDER: "pdfdoc"
+#     PACKAGE_NAME:  "u-track"
+#     PACKAGE_CLASS: "TrackingPackage"
+#     BUILD_NAME: $PACKAGE_NAME
+#     RELEASE: "2.1.4-DEV"
+#   script: 
+#     - module load texlive/2014
+#     - echo "# Build package documentation pdfs"
+#     - mkdir -p ${CI_PROJECT_DIR}/$TARGET_FOLDER/
+#     - (cd $DOCUMENTATION_DIR && make clean latexpdf)
+#     - cp $DOCUMENTATION_DIR/_build/latex/u-track-*.pdf $TARGET_FOLDER/Readme_u-track-$RELEASE.pdf
+#   artifacts:
+#     name: "${BUILD_NAME}-${RELEASE}_b${CI_BUILD_ID}.pdf"
+#     paths:
+#       - $TARGET_FOLDER/Readme_u-track.pdf
+#   only:
+#     - master
+#     - CI_test
