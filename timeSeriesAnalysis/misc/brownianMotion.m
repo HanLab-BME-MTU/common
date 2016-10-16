@@ -50,7 +50,7 @@ if ~any(dimension == [1 2 3])
 end
 
 %check whether diffusion constant is positive
-if ~isempty(find(diffConst <= 0))
+if ~isempty(find(diffConst <= 0,1))
     disp('--brownianMotion: Variable "diffConst" should be positive!');
     errFlag = 1;
 end

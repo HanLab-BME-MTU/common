@@ -120,6 +120,8 @@ classdef (Abstract = true) Tracks < handle  & matlab.mixin.Copyable
         nSeg
         f
         t
+    end
+    properties ( Dependent = true , Hidden)
         start
     end
     methods
@@ -164,5 +166,9 @@ classdef (Abstract = true) Tracks < handle  & matlab.mixin.Copyable
         idx = getSplitIdx(obj,msM)
         oldIdx = reindex(obj,newIdx);
         [merge,split] = getMergeSplitXY(obj,matrix);
+        [ obj ] = normalizeSeqOfEvents( obj );
+        [ obj ] = setFeatFromIdx(obj,movieInfo);
+        [ obj ] = setMovieInfo(obj,movieInfo);
+        [ movieInfo ] = getMovieInfo(obj);
     end
 end
