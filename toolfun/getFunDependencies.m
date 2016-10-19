@@ -41,6 +41,7 @@ function [depList, toolboxes] = getFunDependencies(funList, varargin)
 %                           matlab.codetools.requiredFilesAndProducts
 % Hunter Elliott, August 2016
 % Mark Kittisopikul, Merged with Hunter Elliot changes in d63ebd9d, October 2016
+% Philippe Roudot, Changed use_depfun line to 8.3 from R2014b, October 2016
 % Based on depfun_notoolbox.m and toolboxesUsed.m
 
 % Input check
