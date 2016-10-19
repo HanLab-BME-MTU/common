@@ -77,7 +77,7 @@ legacyFunctions = getLegacyCode(packageList);
     vertcat(packageList, legacyFunctions), ip.Results.exclude);
 disp('The package uses the following toolboxes:')
 disp(toolboxesUsed)
-
+disp({toolboxesUsed.Name;toolboxesUsed.Version}')
 %% Additional files can be found under four types of format:
 %   * GUIs may have associated *.fig
 %   * Processes and GUIs may have associated *.pdf
@@ -111,25 +111,39 @@ packageFuns(mexFunsIndx) = [];
 
 % Remove additional compilation files
 if ~isempty(packageMexFuns)
-    compFunsExt = {'.c';'.cpp';'.h';'.nb';'.m'};
+    compFunsExt = {'.c';'.cpp';'.h';'.nb'}; % leave .m as help/documentation/backup if available
     for i=1:numel(compFunsExt)
         indx = ~cellfun(@isempty,regexp(packageMexFuns,[compFunsExt{i} '$'],'once'));
         packageMexFuns(indx)=[];
     end
 end
 
+
+% Check for .m files associated with mex files
+% and remove these from packageFuns to avoid duplication.
+[mf1, mf2, mf3] = cellfun(@(x)fileparts(x), packageMexFuns, 'Unif', false);
+[f1, f2, f3] = cellfun(@(x)fileparts(x), packageFuns, 'Unif', false);
+[Int, if2, iPack] = intersect(f2, mf2);
+packageFuns(if2) = [];
+
+
+
 % Get the main path to the icons folder
 iconsPath = fullfile(fileparts(which('packageGUI.m')),'icons');
 icons = dir([iconsPath filesep '*.png']);
 packageIcons = arrayfun(@(x) [iconsPath filesep x.name],icons,'Unif',false);
 
+
 % Concatenate all matlab files but the documentation
 packageFiles=vertcat(packageFuns,packageFigs);
 
-% 
 
 % Handle namespace packages and class folders separately
-pattern = sprintf('(.*%s[\\+@].*)%s.*', filesep, filesep);
+filesep_token = filesep;
+if(filesep_token == '\')
+    filesep_token = '\\';
+end
+pattern = sprintf('(.*%s[\\+@].*)%s.*', filesep_token, filesep_token);
 hasNs = ~cellfun(@isempty, regexp(packageFiles, pattern));
 if any(hasNs)
     nsFiles = packageFiles(hasNs);
@@ -177,12 +191,12 @@ for i = 1 : nIcons
     copyfile(packageIcons{i}, [iconsDir filesep packageIcons{i}(iLFS+1:end)]);
 end
 
-% Create icons output directory if non-existing
+% Create documentation output directory if non-existing
 disp('Creating documenation directory...')
 docDir=[outDir filesep 'doc'];
 if ~isdir(docDir), mkdir(docDir); end
 
-% Copy icons
+% Copy documentation
 nDocFiles = numel(packageDocs);
 disp(['Copying all '  num2str(nDocFiles) ' files ...'])
 for i = 1 : nDocFiles

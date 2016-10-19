@@ -38,14 +38,19 @@ classdef  MovieObject < hgsetget
             % Test if the property is unchanged
             if isequal(obj.(property),value), return; end
             
-            propName = regexprep(regexprep(property,'(_\>)',''),'([A-Z])',' ${lower($1)}');
             % Test if the property is writable
-            assert(obj.checkProperty(property),'lccb:set:readonly',...
-                ['The ' propName ' has been set previously and cannot be changed!']);
+            if(~obj.checkProperty(property))
+                propName = lower(property(1:end-(property(end) == '_')));
+                error('lccb:set:readonly',...
+                    ['The ' propName ' has been set previously and cannot be changed!']);
+            end
             
             % Test if the supplied value is valid
-            assert(obj.checkValue(property,value),'lccb:set:invalid',...
-                ['The supplied ' propName ' is invalid!']);
+            if(~obj.checkValue(property,value))
+                propName = lower(property(1:end-(property(end) == '_')));
+                error('lccb:set:invalid',...
+                    ['The supplied ' propName ' is invalid!']);
+            end
         end
         
         function status = checkProperty(obj,property)
@@ -499,50 +504,67 @@ classdef  MovieObject < hgsetget
             % Checks if the object can be uploaded to the OMERO server
             status = obj.omeroSave_ && ~isempty(obj.getOmeroSession());
         end
-        
+        [ movieObject, process, processID ] = getOwnerAndProcess( movieObject, processClass, createProcessIfNoneExists, varargin );
+
     end
     
     methods(Static)
 
-        function [obj, filepath] = loadMatFile(class, filepath)
+        function [obj, filepath] = loadMatFile(classname, filepath)
             % Load a movie object saves as a MAT file on disk
             
             % Retrieve the absolute path
-            [~, f] = fileattrib(filepath);
-            filepath = f.Name;
+            [status, f] = fileattrib(filepath);
+            if(~status)
+                if(ischar(f))
+                    error('lccb:movieObject:invalidFilePath', ...
+                        [f filepath]);
+                else
+                    error('lccb:movieObject:invalidFilePath', ...
+                        ['Cannot obtain file attributes for ' filepath]);
+                end
+            else
+                filepath = f.Name;
+            end
+                
             
             % Import movie object from MAT file
             try
-                % List variables in the path
-                vars = whos('-file', filepath);
+                 % Load movie object
+                 % (takes same time as checking vars via whos)
+                data = load(filepath, '-mat');
             catch whosException
                 ME = MException('lccb:movieObject:load', 'Fail to open file. Make sure it is a MAT file.');
                 ME = ME.addCause(whosException);
                 throw(ME);
             end
             
+            vars = fieldnames(data);
+            classes = structfun(@class,data,'UniformOutput',false);
+            
             % Check if a single movie object is in the variables
-            isMovie = cellfun(@(x) strcmp(x, class) || ...
-                any(strcmp(superclasses(x), class)),{vars.class});
+            isMovie = cellfun(@(x) strcmp(x, classname) || ...
+                any(strcmp(superclasses(x), classname)),struct2cell(classes));
             assert(any(isMovie),'lccb:movieObject:load', ...
-                'No object of type %s is found in selected MAT file.', class);
+                'No object of type %s is found in selected MAT file.', classname);
             assert(sum(isMovie)==1,'lccb:movieObject:load', ...
                 'Multiple objects are found in selected MAT file.');
-            assert(isequal(prod(vars(isMovie).size), 1),'lccb:movieObject:load', ...
+            assert(isequal(prod(cellfun('prodofsize',struct2cell(data))), 1),'lccb:movieObject:load', ...
                 'Multiple objects are found in selected MAT file.');
             
-            % Load movie object
-            data = load(filepath, '-mat', vars(isMovie).name);
-            obj= data.(vars(isMovie).name);
+            obj= data.(vars{isMovie});
         end
         
         function validator = getPropertyValidator(property)
             % Retrieve the validator for the specified property
             validator=[];
-            if ismember(property,{'outputDirectory_','notes_'})
-                validator=@ischar;
-            elseif strcmp(property, 'omeroId_')
-                validator = @isposint;
+            switch(property)
+                case 'outputDirectory_'
+                    validator = @ischar;
+                case 'notes_'
+                    validator = @ischar;
+                case 'omeroId_'
+                    validator = @isposint;
             end
         end
         
@@ -593,3 +615,4 @@ else
     iProc = iProc(end:-1:(end-nDesired+1));
 end
 end
+

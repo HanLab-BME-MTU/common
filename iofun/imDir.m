@@ -90,8 +90,9 @@ fileNames = vertcat(fileNames{:});
 %  ---- Fix the order of the files if they are numbered.  ---- %
 
 %First, extract the number from the end of the file, if present
+fExtNum = arrayfun(@(x)(min(regexp(x.name,'\.'))),fileNames); %Find beginning of file extension. Handles special cases like .tiff and .ome.tif
 fNums = arrayfun(@(x)(str2double(...
-    x.name(max(regexp(x.name(1:end-4),'\D'))+1:end-4))),fileNames);
+    fileNames(x).name(max(regexp(fileNames(x).name(1:fExtNum(x)-1),'\D'))+1:fExtNum(x)-1))),1:numel(fileNames));
 
 count = getMultiplicity(fNums);
 

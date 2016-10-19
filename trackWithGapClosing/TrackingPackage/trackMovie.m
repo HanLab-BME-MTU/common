@@ -1,4 +1,4 @@
-function trackMovie(movieData,varargin)
+function trackMovie(processOrMovieData,varargin)
 % Track features in a movie which has been processed by a detection method
 %
 % Sebastien Besson, 5/2011
@@ -7,28 +7,14 @@ function trackMovie(movieData,varargin)
 %Check input
 ip = inputParser;
 ip.CaseSensitive = false;
-ip.addRequired('movieData', @(x) isa(x,'MovieData'));
+ip.addRequired('movieData', @(x) isa(x,'Process') && isa(x.getOwner(),'MovieData') || isa(x,'MovieData'));
 ip.addOptional('paramsIn',[], @isstruct);
 ip.addParameter('ProcessIndex',[],@isnumeric);
-ip.parse(movieData,varargin{:});
+ip.parse(processOrMovieData,varargin{:});
 paramsIn=ip.Results.paramsIn;
 
-
-
-%Get the indices of any previous tracking processes from this function                                                                              
-if(isempty(ip.Results.ProcessIndex))
-    iProc = movieData.getProcessIndex('TrackingProcess',1,0);
-else
-    iProc = ip.Results.ProcessIndex;
-end
-
-%If the process doesn't exist, create it
-if isempty(iProc)
-    iProc = numel(movieData.processes_)+1;
-    movieData.addProcess(TrackingProcess(movieData,movieData.outputDirectory_));                                                                                                 
-end
-
-trackProc = movieData.processes_{iProc};
+% TrackingProcess default outputDirectory is owner.outputDirectory_
+[movieData, trackProc] = getOwnerAndProcess(processOrMovieData,'TrackingProcess',true);
 
 %Parse input, store in parameter structure
 p = parseProcessParams(trackProc,paramsIn);

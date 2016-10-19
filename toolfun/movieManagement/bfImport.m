@@ -109,7 +109,15 @@ for i = 1 : nSeries
     end
     
     % Create output directory
-    if ~isdir(outputDir), mkdir(outputDir); end
+    if ~isdir(outputDir) 
+        try
+            mkdir(outputDir); 
+        catch
+            disp(['Permission denied to make a folder in ' outputDir '.'])
+            outputDir = uigetdir(pwd,'Choose different analysis folder that you have a write access.');
+            mkdir(outputDir); 
+        end
+    end
     
     for iChan = 1:nChan
         

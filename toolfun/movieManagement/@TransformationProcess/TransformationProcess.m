@@ -155,9 +155,13 @@ classdef TransformationProcess < ImageProcessingProcess
             nIm = obj.owner_.nFrames_;
             
             %Load and display the images.
-            compDir = obj.owner_.channels_(iComp).channelPath_;
-            compName = obj.owner_.getImageFileNames(iComp);
-            compIm1 = imread([compDir filesep compName{1}{1}]);
+            if isa(obj.owner_.getReader,'BioFormatsReader')
+                compIm1 = obj.owner_.getReader.loadImage(iComp,1);
+            else
+                compDir = obj.owner_.channels_(iComp).channelPath_;
+                compName = obj.owner_.getImageFileNames(iComp);
+                compIm1 = imread([compDir filesep compName{1}{1}]);
+            end
             
             xDir = obj.outFilePaths_{1,iXchan};
             xName = obj.getOutImageFileNames(iXchan);
@@ -166,7 +170,11 @@ classdef TransformationProcess < ImageProcessingProcess
             h = fsFigure(.75);
             
             if nIm > 1
-                compIm2 = imread([compDir filesep compName{1}{end}]);
+                if isa(obj.owner_.getReader,'BioFormatsReader')
+                    compIm2 =  obj.owner_.getReader.loadImage(iComp,nIm);
+                else
+                    compIm2 = imread([compDir filesep compName{1}{end}]);
+                end
                 xIm2 = imread([xDir filesep xName{1}{end}]);
                 subplot(1,2,1)
             end

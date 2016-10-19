@@ -1,4 +1,4 @@
-classdef TrackingProcess < DataProcessingProcess
+classdef TrackingProcess < DataProcessingProcess & NonSingularProcess
     % A class definition for a generic tracking process.
     %
     % Chuangang Ren, 11/2010
@@ -314,6 +314,13 @@ classdef TrackingProcess < DataProcessingProcess
             
             hasSeqOfEvents = isfield(tracks,'seqOfEvents');
             hasLabels = isfield(tracks, 'label');
+            
+            if(hasLabels)
+                labels = vertcat(tracks.label);
+                if(size(labels,1) == nTracks)
+                    hasPerSegmentLabels = true;
+                end
+            end
 
             % Batch by unique trackLengths
             for trackLength = uTrackLengths'
@@ -435,7 +442,14 @@ classdef TrackingProcess < DataProcessingProcess
                 end
                 
                 if hasLabels
-                    [displayTracks(iTracks).label] = sTracks(idx).label;
+                    if hasPerSegmentLabels
+                        for i=1:length(iTracks)
+                            iTrack = iTracks(i);
+                            displayTracks(iTrack).label = labels(iTrack);
+                        end    
+                    else
+                        [displayTracks(iTracks).label] = sTracks(idx).label;
+                    end
                 end
             end
         end

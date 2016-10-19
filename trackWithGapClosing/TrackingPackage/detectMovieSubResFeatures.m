@@ -1,4 +1,4 @@
-function detectMovieSubResFeatures(movieData,varargin)
+function detectMovieSubResFeatures(movieDataOrProcess,varargin)
 % detectMovieSubResFeatures detect sub-resolution objects in a movie
 %
 % detectMovieSubResFeatures 
@@ -21,21 +21,15 @@ function detectMovieSubResFeatures(movieData,varargin)
 %Check input
 ip = inputParser;
 ip.CaseSensitive = false;
-ip.addRequired('movieData', @(x) isa(x,'MovieData'));
+ip.addRequired('movieDataOrProcess', @isProcessOrMovieData);
 ip.addOptional('paramsIn',[], @isstruct);
-ip.parse(movieData,varargin{:});
+ip.parse(movieDataOrProcess,varargin{:});
 paramsIn=ip.Results.paramsIn;
 
-%Get the indices of any previous speckle detection processes                                                                     
-iProc = movieData.getProcessIndex('SubResolutionProcess',1,0);
 
-%If the process doesn't exist, create it
-if isempty(iProc)
-    iProc = numel(movieData.processes_)+1;
-    movieData.addProcess(SubResolutionProcess(movieData,...
-        movieData.outputDirectory_));                                                                                                 
-end
-subResDetProc = movieData.processes_{iProc};
+% Get MovieData object and Process
+[movieData, subResDetProc] = getOwnerAndProcess(movieDataOrProcess,'SubResolutionProcess',true);
+
 %Parse input, store in parameter structure
 p = parseProcessParams(subResDetProc,paramsIn);
 

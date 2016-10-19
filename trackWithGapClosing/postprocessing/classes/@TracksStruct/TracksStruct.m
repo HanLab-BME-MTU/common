@@ -68,14 +68,23 @@ classdef TracksStruct < Tracks & dynamicprops
                 if(~isstruct(tracks))
                     tracks = convertMat2Struct2(tracks);
                 end
-                if(nargin > 1)
-                    tracks = normalizeTracks(tracks,movieInfo);
-                end
                 obj(numel(tracks)) = TracksStruct();
                 obj = reshape(obj,size(tracks));
+                if(nargin > 1)
+                    % If movieInfo is given, then
+                    % extract new coordinates and ignore previous ones.
+                    tracksCoordAmpCG = getFeatFromIdx(tracks,movieInfo);
+                    [obj.tracksCoordAmpCG] = deal(tracksCoordAmpCG{:});
+                else
+                    [obj.tracksCoordAmpCG] = deal(tracks.tracksCoordAmpCG);
+                end
                 [obj.tracksFeatIndxCG] = deal(tracks.tracksFeatIndxCG);
-                [obj.seqOfEvents] = deal(tracks.seqOfEvents);
-                [obj.tracksCoordAmpCG] = deal(tracks.tracksCoordAmpCG);
+                if(~isfield(tracks,'seqOfEvents'))
+                    [obj.seqOfEvents] = deal([]);
+                else
+                    [obj.seqOfEvents] = deal(tracks.seqOfEvents);
+                end
+                obj.normalizeSeqOfEvents();
                 obj.reindex();
             end
         end

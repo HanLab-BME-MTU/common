@@ -38,13 +38,10 @@ if nargin < 1 || ~isa(movieData,'MovieData')
     error('The first input must be a valid MovieData object!');        
 end
 
-   
-%Check if the movie has a sampling process
-iProc = movieData.getProcessIndex('SegmentationSamplingProcess',1,false);
+% Get MovieData object and Process
+[movieData, sampProc] = getOwnerAndProcess(movieDataOrProcess,'SegmentationSamplingProcess',false); 
 
-assert(~isempty(iProc),'You must create the process object and add it to the MovieData before calling this function!')
-
-sampProc = movieData.processes_{iProc};
+assert(~isempty(sampProc),'You must create the process object and add it to the MovieData before calling this function!')
 
 %Parse input, store in parameter structure
 p = parseProcessParams(sampProc);

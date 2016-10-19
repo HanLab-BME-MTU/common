@@ -184,8 +184,19 @@ classdef Process < hgsetget
             
             % Run the process!
             obj.startTime_ = clock;
-            obj.funName_(obj.getOwner(), varargin{:});
-            
+
+            if(isa(obj,'NonSingularProcess'))
+                % Run by passing the Process itself rather than
+                % owner which can be obtained easily with getOwner()
+                % New style
+                obj.funName_(obj, varargin{:});
+            else
+                % Run by passing the Process owner,
+                % Usually a MovieObject like MovieData
+                % Legacy style
+                obj.funName_(obj.getOwner(), varargin{:});
+            end
+
             % Update flags and set finishTime
             obj.success_= true;
             obj.updated_= true;
@@ -290,7 +301,7 @@ classdef Process < hgsetget
             ip.addParamValue('useCache',false,@islogical);
             ip.KeepUnmatched = true;
             if obj.owner_.is3D()
-                ip.addOptional('iZ',@(x) ismember(x,1:obj.owner_.zSize_));
+                ip.addOptional('iZ',[],@(x) ismember(x,1:obj.owner_.zSize_));
             end
             ip.parse(obj,iChan,varargin{:});
             
@@ -334,6 +345,8 @@ classdef Process < hgsetget
             index = find(cellfun(@(x) isequal(x,obj),obj.getOwner().processes_));
             assert(numel(index)==1);
         end
+        
+        [ movieObject, process, processID ] = getOwnerAndProcess( process, processClass, createProcessIfNoneExists, varargin );
     end
     
     methods (Static)

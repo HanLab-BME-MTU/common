@@ -492,7 +492,7 @@ if (chanIndx~=userData.chanIndx) ||  (imIndx~=userData.imIndx)
     end
     
     % Get the value of the new maximum threshold
-    maxThresholdValue=max(userData.imData(:));
+    maxThresholdValue=max(max(userData.imData(:)),1);
     % Update the threshold Value if above the new maximum
     thresholdValue=min(thresholdValue,maxThresholdValue);
     

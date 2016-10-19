@@ -39,6 +39,8 @@ function [depList, toolboxes] = getFunDependencies(funList, varargin)
 % Sebastien Besson, July 2011
 % Mark Kittisopikul, February 2016 depfun is now deprecated in lieu of
 %                           matlab.codetools.requiredFilesAndProducts
+% Hunter Elliott, August 2016
+% Mark Kittisopikul, Merged with Hunter Elliot changes in d63ebd9d, October 2016
 % Based on depfun_notoolbox.m and toolboxesUsed.m
 
 % Input check
@@ -108,7 +110,7 @@ if ip.Results.allMex
     isMex = find(~cellfun(@isempty,mexInd))';
     mexFuns = {};
     for j = isMex
-        %And find any other mex files in same directory
+        %And find any other similarly named mex files in same directory
         newBins = dir([depList{j}(1:mexInd{j}+3) '*']);
         mexFuns = [mexFuns arrayfun(@(x)(which(newBins(x).name)),1:numel(newBins),'Unif',0)];               
     end
