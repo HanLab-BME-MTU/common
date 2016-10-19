@@ -25,6 +25,8 @@ function [ objectFig ] = ftexplore( I )
 % Jaqaman Lab
 % UT Southwestern
 
+doGaussian = true;
+
 I = double(I);
 Iz = I - mean(I(:));
 
@@ -54,7 +56,9 @@ m_real = uimenu(menu,'Label','Real','Checked','on','Callback',@selectInfo);
 m_imag = uimenu(menu,'Label','Imag','Checked','off','Callback',@selectInfo);
 m_abs  = uimenu(menu,'Label','Magnitude','Checked','off','Callback',@selectInfo);
 m_angle = uimenu(menu,'Label','Phase','Checked','off','Callback',@selectInfo);
+m_info = [m_real m_imag m_abs m_angle];
 m_axes = uimenu(menu,'Label','Axes','Checked','on','Callback',@toggleAxes,'Separator','on');
+m_gaussian = uimenu(menu,'Label','Gaussian','Checked','on','Callback',@toggleGaussian);
 hfreq.UIContextMenu = menu;
 colorbar
 cm = vertcat(bsxfun(@times,(1-(0:32)/32)',[0 1 1]),bsxfun(@times,(1:32)'/32,[1 1 0]));
@@ -68,9 +72,13 @@ end
     function posCallback(p)
         center = [p(2)+p(4)/2,p(1)+p(3)/2];
         center = round(center);
-        gaussianWindow = imgaussfilt(circshift(delta,center),p(3)/3,'FilterSize',round(p(3))*4+1);
-        cdata = imfuse(gaussianWindow.*I,I,'Scaling','independent');
-        set(him,'CData',cdata);
+        if(doGaussian)
+            gaussianWindow = imgaussfilt(circshift(delta,center),p(3)/3,'FilterSize',round(p(3))*4+1);
+            cdata = imfuse(gaussianWindow.*I,I,'Scaling','independent');
+            set(him,'CData',cdata);
+        else
+            set(him,'CData',I);
+        end
         setPosition(h_pt,fliplr(center));
     end
     function showLocalizedFreq(p)
@@ -78,7 +86,9 @@ end
         center = round(center);
         gaussianWindow = ifftshift(imgaussfilt(fftshift(delta),p(3)/3,'FilterSize',round(p(3))*4+1));
         Is = circshift(Iz,-center+1);
-        Is = Is.*gaussianWindow;
+        if(doGaussian)
+            Is = Is.*gaussianWindow;
+        end
 %         Is = Is - mean(Is(:));
         If = info(fftshift(fft2(Is)));
         cmax = max(abs(If(:)));
@@ -89,7 +99,7 @@ end
         colormap(hfreq.Parent,cm);
     end
     function selectInfo(hObject,~)
-        set(menu.Children,'Checked','off');
+        set(m_info,'Checked','off');
         switch(hObject.Label)
             case 'Real'
                 info = @real;
@@ -113,8 +123,17 @@ end
                 m_axes.Checked = 'off';
             case 'off'
                 set(hax,'Visible','on');
-                maxes.Checked = 'on';
+                m_axes.Checked = 'on';
         end
+    end
+    function toggleGaussian(hObject,~)
+        doGaussian = ~doGaussian;
+        if(doGaussian)
+            m_gaussian.Checked = 'on';
+        else
+            m_gaussian.Checked = 'off';
+        end
+        showLocalizedFreq(getPosition(h_ellipse));
     end
 
 end
