@@ -138,6 +138,8 @@ else
     movieException = start_processing_movies_in_series(movieRun,handles,movieException,procRun);
 end
 if strcmp(get(handles.menu_debug_enter,'Checked'),'on'), dbclear if caught error; end
+% Update userData after processing
+userData = get(handles.figure1,'UserData');
 
 %% Post-processing exception report
 status = generateReport(movieException,userData,'postprocessing');
@@ -153,12 +155,15 @@ delete(hWaitbar);
 end
 
 function [movieException] = start_processing_movies_in_series(movieRun,handles,movieException, procRun)
+% start_processing_movies_in_series Run legacy code for single thread
+% processing
 
 userData = get(handles.figure1, 'UserData');
 
 for i=1:length(movieRun)
     iMovie = movieRun(i);
    
+    % TODO: Consider using selectMovie here
     if iMovie ~= userData.id
         % Update the movie pop-up menu in the main package GUI
         set(handles.figure1, 'UserData', userData)
@@ -175,7 +180,7 @@ for i=1:length(movieRun)
     userfcn_drawIcon(handles,'clear',procRun{iMovie},'',true); % user data is retrieved, updated and submitted
     % Refresh user data !!!
     userData = get(handles.figure1, 'UserData');
-    set(handles.text_status, 'Visible', 'on')
+    set(handles.text_status, 'Visible', 'on');
     
     % Run algorithms!
     try
@@ -216,29 +221,8 @@ if strcmp(get(handles.menu_debug_enter,'Checked'),'on'), dbclear if caught error
 end
 
 function movieException = start_processing_movies_in_parallel(movieRun,handles,movieException, procRun)
-    userData = get(handles.figure1, 'UserData');
-
-    for i=1:length(movieRun)
-        iMovie = movieRun(i);
-
-        if iMovie ~= userData.id
-            % Update the movie pop-up menu in the main package GUI
-            set(handles.figure1, 'UserData', userData)
-            set(handles.popupmenu_movie, 'Value', iMovie)
-
-            % Update the movie pop-up menu in the main package GUI
-            packageGUI('switchMovie_Callback',handles.popupmenu_movie, [], handles)
-            userData = get(handles.figure1, 'UserData');
-        end
-
-        % Clear icons of selected processes
-        % Return user data !!!
-        set(handles.figure1, 'UserData', userData)
-        userfcn_drawIcon(handles,'clear',procRun{iMovie},'',true); % user data is retrieved, updated and submitted
-        % Refresh user data !!!
-        userData = get(handles.figure1, 'UserData');
-    end
-    set(handles.text_status, 'Visible', 'on')
+% start_processing_movies_in_parallel New code for parallel processing on
+% the MovieData level
     
     parSettings.batch = strcmp(handles.menu_parallel_batch_client.Checked,'on') + ...
                         strcmp(handles.menu_parallel_batch_single.Checked,'on')*2 + ...
@@ -256,12 +240,8 @@ function movieException = start_processing_movies_in_parallel(movieRun,handles,m
             end
         case 2 % Single Batch Job
             start_processing_movies_in_parallel_single_batch(movieRun,handles,movieException, procRun);
-%             error('packageGUI_RunFcn:parallel:Unimplemented', ...
-%                 'Single batch job has not been implemented yet');
         case 4 % One Per Movie
             start_processing_movies_in_parallel_batch_per_movie(movieRun,handles,movieException, procRun)
-%             error('packageGUI_RunFcn:parallel:Unimplemented', ...
-%                 'One Batch Job per Movie has not been implemented yet');
         otherwise
             error('packageGUI_RunFcn:parallel:UnknownBatchSetting', ...
                 'Could not determine parallel batch setting for uTrack')
@@ -269,98 +249,9 @@ function movieException = start_processing_movies_in_parallel(movieRun,handles,m
     
     if(strcmp(handles.menu_parallel_batch_client.Checked,'on'))
     end
-%        
-% %     jobs = cell(1,length(movieRun));
-% %     jobs(length(movieRun)) = parallel.Job;
-%     for i=1:length(movieRun)
-%         iMovie = movieRun(i);
-%         % TODO: Consider using userData.crtPackage.runJobs here
-% %         jobs{i} = userData.crtPackage.runJobs(userData.cluster,5,procRun{iMovie});
-% %             set(handles.text_status, 'String', ...
-% %                 sprintf('Queuing %d of %d movies total ...', i, length(movieRun)) )
-%         % Determine sequence that parent processes and checked processes
-%         % should be run
-%         procSequence = userData.crtPackage.getProcessSequence(procRun{iMovie});
-%         % Determine which processes were successful
-%         procSuccess =  cellfun(@(proc) proc.success_,userData.crtPackage.processes_(procSequence));
-%         % Only run the processes that were either requested or were not
-%         % successful
-%         mustRun = ismember(procSequence,procRun{iMovie});
-%         procSequence = procSequence(~procSuccess | mustRun);
-%         procs = userData.crtPackage.processes_(procSequence);
-%         f = @(p,~) cellfun(@run,p);
-% %         pkg = userData.crtPackage;
-% %         f = @() arrayfun(@(procID) userfcn_runProc_dfs_no_gui(procID,procRun{iMovie},pkg),procRun{iMovie});
-%         jobs(i) = parfeval(gcp,f,0,procs,0);
-%         set(handles.text_status, 'String', ...
-%             sprintf('Queuing %d of %d movies total ...', i, length(movieRun)));
-% %         jobs(i) = batch(uTrackParCluster,f,0,{procs},'AutoAttachFiles',false,'CaptureDiary',true);
-% %         for procID = procRun{iMovie}
-% %             set(handles.text_status, 'String', ...
-% %                 sprintf('Step %d - Queuing %d of %d movies total ...', procID, i, length(movieRun)) )
-% %             userfcn_runProc_dfs_no_gui(procID, procRun{iMovie}, userData.crtPackage);
-% %         end
-%     end
-% %     jobs = [jobs{:}];
-%     set(handles.text_status, 'String', ...
-%         sprintf('Waiting for parallel job %d of %d movies total ...', 0, length(movieRun)));
-%     
-%     % TODO: Do something better with this
-%     finishedJobs = zeros(size(jobs));
-%     finishedJobCount = 0;
-%     while(finishedJobCount ~= length(jobs))
-%         for i=1:length(jobs)
-%             if(~strcmp(jobs(i).State,'pending'))
-%                 wait(jobs(i),'finished',1);
-%                 if(strcmp(jobs(i).State,'finished'))
-%                     if(~finishedJobs(i))                       
-%                         finishedJobs(i) = true;
-%                         finishedJobCount = sum(finishedJobs);
-%                         set(handles.text_status, 'String', ...
-%                              sprintf('Finished parallel job %d of %d',finishedJobCount,length(jobs)));
-%                         fprintf('Movie %d output:\n',i);
-%                         disp(jobs(i).Diary);
-%                         fprintf('\n');
-%     %                     delete(jobs(i));
-%                         packageGUI_RefreshFcn(handles,'initialize');
-%                     end
-%                 end
-%             end
-%         end
-%     end
-%     for i=1:length(jobs)
-%         delete(jobs(i));
-%     end
-
-        % Run algorithms!
-%         try
-%             % Return user data !!!
-%             set(handles.figure1, 'UserData', userData)
-% 
-%             for procID = procRun{iMovie}
-%                 set(handles.text_status, 'String', ...
-%                     sprintf('Step %d - Processing %d of %d movies total ...', procID, i, length(movieRun)) )
-%                 userfcn_runProc_dfs(procID, procRun{iMovie}, handles); % user data is retrieved, updated and submitted
-%             end
-% 
-%         catch ME
-% 
-%             % Save the error into movie Exception cell array
-%             ME2 = MException('lccb:run:error','Step %d: %s',...
-%                 procID,userData.package(iMovie).processes_{procID}.getName);
-%             movieException{iMovie} = horzcat(movieException{iMovie}, ME2);
-%             movieException{iMovie}=movieException{iMovie}.addCause(ME);
-% 
-%             procRun{iMovie} = procRun{iMovie}(procRun{iMovie} < procID);
-% 
-%             % Refresh wall status
-%             packageGUI_RefreshFcn(handles,'initialize');
-%         end
-
 end
 
 function movieException = start_processing_movies_in_parallel_parfeval(movieRun,handles,movieException, procRun)
-    userData = get(handles.figure1, 'UserData');
     
     currentPool = gcp('nocreate');
     poolSize = findobj(handles.menu_parallel_pool,'Checked','on');
@@ -379,6 +270,9 @@ function movieException = start_processing_movies_in_parallel_parfeval(movieRun,
 
     for i=1:length(movieRun)
         iMovie = movieRun(i);
+
+        userData = selectMovie(iMovie, handles, procRun);
+        
         % Determine sequence that parent processes and checked processes
         % should be run
         procSequence = userData.crtPackage.getProcessSequence(procRun{iMovie});
@@ -389,8 +283,10 @@ function movieException = start_processing_movies_in_parallel_parfeval(movieRun,
         mustRun = ismember(procSequence,procRun{iMovie});
         procSequence = procSequence(~procSuccess | mustRun);
         procs = userData.crtPackage.processes_(procSequence);
+        % Save procSequence for reload
+        procRun{iMovie} = procSequence;
 %         f = @(p,~) cellfun(@run,p);
-        jobs(i) = parfeval(currentPool,@runProcesses,0,procs,0);
+        jobs(i) = parfeval(currentPool,@runProcesses,1,procs,0);
         set(handles.text_status, 'String', ...
             sprintf('Queuing %d of %d movies total ...', i, length(movieRun)));
     end
@@ -407,6 +303,12 @@ function movieException = start_processing_movies_in_parallel_parfeval(movieRun,
                     if(wait(jobs(i),'finished',1))
                         finishedJobs(i) = true;
                         finishedJobCount = sum(finishedJobs);
+                        
+                        % Update Processes
+                        newProcs = fetchOutputs(jobs(i));
+                        iMovie = movieRun(i);
+                        userData = updateUserData(handles, newProcs(1), iMovie);
+                        
                         set(handles.text_status, 'String', ...
                              sprintf('Finished parallel job %d of %d',finishedJobCount,length(jobs)));
                         fprintf('Movie %d output:\n',movieRun(i));
@@ -414,6 +316,8 @@ function movieException = start_processing_movies_in_parallel_parfeval(movieRun,
                         fprintf('\n');
                         packageGUI_RefreshFcn(handles,'initialize');
                     elseif(strcmp(jobs(i).State,'failed'))
+                        finishedJobs(i) = true;
+                        finishedJobCount = sum(finishedJobs);
                         % Save the error into movie Exception cell array
                         ME = jobs(i).Error;
                         ME2 = MException('lccb:run:error','Parallel Run: Movie %d',...
@@ -437,7 +341,6 @@ end
 
 function movieException = start_processing_movies_in_parallel_single_batch(movieRun,handles,movieException, procRun)
     % Process all movies in a single batch job
-    userData = get(handles.figure1, 'UserData');
     
     poolSize = findobj(handles.menu_parallel_pool,'Checked','on');
     poolSize = str2double(poolSize.Label);
@@ -450,6 +353,9 @@ function movieException = start_processing_movies_in_parallel_single_batch(movie
     
     for i=1:length(movieRun)
         iMovie = movieRun(i);
+        
+        userData = selectMovie(iMovie, handles, procRun);
+        
         % Determine sequence that parent processes and checked processes
         % should be run
         procSequence = userData.crtPackage.getProcessSequence(procRun{iMovie});
@@ -464,10 +370,20 @@ function movieException = start_processing_movies_in_parallel_single_batch(movie
     end
 
     
-    job = batch(uTrackParCluster,@start_processing_movies_in_parallel_single_batch_job,1,{movieRun,procsPerMovie,movieException},'AutoAttachFiles',false,'CaptureDiary',true,poolParams{:});
+    job = batch(uTrackParCluster,@start_processing_movies_in_parallel_single_batch_job,2,{movieRun,procsPerMovie,movieException},'AutoAttachFiles',false,'CaptureDiary',true,poolParams{:});
     disp(job);
     wait(job);
-    movieException = fetchOutputs(job);
+    out = fetchOutputs(job);
+    movieException = out{1};
+    
+    % Update Processes
+    procs = out{2};
+    for i=1:length(movieRun)
+        % Update Processes
+        iMovie = movieRun(i);
+        userData = updateUserData(handles, procs{i}(1), iMovie);
+    end
+    
     job.diary;
     delete(job);
     
@@ -476,15 +392,17 @@ function movieException = start_processing_movies_in_parallel_single_batch(movie
 
 end
 
-function movieException = start_processing_movies_in_parallel_single_batch_job(movieRun,procsPerMovie,movieException)
+function [movieException,procs] = start_processing_movies_in_parallel_single_batch_job(movieRun,procsPerMovie,movieException)
     currentPool = gcp('nocreate');
+    procs = cell(1,length(movieRun));
     if(isempty(currentPool))
         % No parallel pool available, run in serial
         for i=1:length(movieRun)
             iMovie = movieRun{i};
+                       
             fprintf('Movie %d\n',movieRun(i));
             try
-                runProcesses(procsPerMovie{i});
+                procs{i} = runProcesses(procsPerMovie{i});
             catch ME
                 ME2 = MException('lccb:run:error','Parallel Run: Movie %d',...
                     i);
@@ -520,7 +438,7 @@ function movieException = start_processing_movies_in_parallel_single_batch_job(m
         currentPool = gcp;
         for i=1:length(movieRun)
             iMovie = movieRun(i);
-            jobs(i) = parfeval(currentPool,@runProcesses,0,procsPerMovie{i},0);
+            jobs(i) = parfeval(currentPool,@runProcesses,1,procsPerMovie{i},0);
 %             set(handles.text_status, 'String', ...
 %                 sprintf('Queuing %d of %d movies total ...', i, length(movieRun)));
         fprintf('Queuing %d of %d movies total ...\n', i, length(movieRun));
@@ -539,6 +457,11 @@ function movieException = start_processing_movies_in_parallel_single_batch_job(m
                         if(wait(jobs(i),'finished',1))
                             finishedJobs(i) = true;
                             finishedJobCount = sum(finishedJobs);
+                            
+                            % Fetch proceses to update later
+                            newProcs = fetchOutputs(jobs(i));
+                            procs{i} = newProcs{1};
+                            
 %                             set(handles.text_status, 'String', ...
 %                                  sprintf('Finished parallel job %d of %d',finishedJobCount,length(jobs)));
                             fprintf('Finished parallel job %d of %d\n',finishedJobCount,length(jobs))
@@ -547,6 +470,8 @@ function movieException = start_processing_movies_in_parallel_single_batch_job(m
                             fprintf('\n');
 %                             packageGUI_RefreshFcn(handles,'initialize');
                         elseif(strcmp(jobs(i).State,'failed'))
+                            finishedJobs(i) = true;
+                            finishedJobCount = sum(finishedJobs);
                             % Save the error into movie Exception cell array
                             ME = jobs(i).Error;
                             ME2 = MException('lccb:run:error','Parallel Run: Movie %d',...
@@ -572,7 +497,6 @@ end
 
 function movieException = start_processing_movies_in_parallel_batch_per_movie(movieRun,handles,movieException, procRun)
     % Process each movie in a separate batch job
-    userData = get(handles.figure1, 'UserData');
     
     poolSize = findobj(handles.menu_parallel_pool,'Checked','on');
     poolSize = str2double(poolSize.Label);
@@ -583,6 +507,9 @@ function movieException = start_processing_movies_in_parallel_batch_per_movie(mo
 
     for i=1:length(movieRun)
         iMovie = movieRun(i);
+        
+        userData = selectMovie(iMovie, handles, procRun);
+        
         % Determine sequence that parent processes and checked processes
         % should be run
         procSequence = userData.crtPackage.getProcessSequence(procRun{iMovie});
@@ -595,7 +522,8 @@ function movieException = start_processing_movies_in_parallel_batch_per_movie(mo
         procs = userData.crtPackage.processes_(procSequence);
 %         f = @(p,~) cellfun(@run,p);
 %         jobs(i) = parfeval(gcp,f,0,procs,0);
-        jobs(i) = batch(uTrackParCluster,@runProcesses,0,{procs,0},'AutoAttachFiles',false,'CaptureDiary',true,poolParams{:});
+        jobs(i) = batch(uTrackParCluster,@runProcesses,1,{procs,0},'AutoAttachFiles',false,'CaptureDiary',true,poolParams{:});
+        procRun{iMovie} = procSequence;
 
         set(handles.text_status, 'String', ...
             sprintf('Queuing %d of %d movies total ...', i, length(movieRun)));
@@ -614,6 +542,14 @@ function movieException = start_processing_movies_in_parallel_batch_per_movie(mo
                     if(wait(jobs(i),'finished',1))
                         finishedJobs(i) = true;
                         finishedJobCount = sum(finishedJobs);
+                        
+                        % Update Processes
+                        newProcs = fetchOutputs(jobs(i));
+                        newProcs = newProcs{1};
+                        iMovie = movieRun(i);
+                        userData = selectMovie(iMovie, handles, procRun);
+                        userData = updateUserData(handles, newProcs(1), iMovie);
+                        
                         set(handles.text_status, 'String', ...
                              sprintf('Finished parallel job %d of %d',finishedJobCount,length(jobs)));
                         fprintf('Movie %d output:\n',movieRun(i));
@@ -621,6 +557,8 @@ function movieException = start_processing_movies_in_parallel_batch_per_movie(mo
                         fprintf('\n');
                         packageGUI_RefreshFcn(handles,'initialize');
                     elseif(strcmp(jobs(i).State,'failed'))
+                        finishedJobs(i) = true;
+                        finishedJobCount = sum(finishedJobs);
                         % Save the error into movie Exception cell array
                         ME = jobs(i).Error;
                         ME2 = MException('lccb:run:error','Parallel Run: Movie %d',...
@@ -673,4 +611,75 @@ end
 
 % Refresh wall status
 packageGUI_RefreshFcn(handles,'initialize');
+end
+
+function userData = selectMovie(iMovie,handles,procRun)
+% selectMovie Selects the movie of interest, updating GUI and userData
+% Importantly also sets userData.crtPackage via switchMovie_Callback
+    userData = get(handles.figure1, 'UserData');
+
+    if iMovie ~= userData.id
+        % Update the movie pop-up menu in the main package GUI
+        set(handles.figure1, 'UserData', userData)
+        set(handles.popupmenu_movie, 'Value', iMovie)
+        
+        % Update the movie pop-up menu in the main package GUI
+        packageGUI('switchMovie_Callback',handles.popupmenu_movie, [], handles)
+        userData = get(handles.figure1, 'UserData');
+    end
+    
+    % Clear icons of selected processes
+    % Return user data !!!
+    set(handles.figure1, 'UserData', userData)
+    userfcn_drawIcon(handles,'clear',procRun{iMovie},'',true); % user data is retrieved, updated and submitted
+    % Refresh user data !!!
+    userData = get(handles.figure1, 'UserData');
+    set(handles.text_status, 'Visible', 'on');
+end
+
+function userData = updateUserData(handles,newProcs,iMovie)
+%updateUserData update userData to replace all altered MovieData and Package handles
+% If Process is run remotely, local handles may not be updated. The only way to update
+% all these handles is to alter userData
+    assert(length(newProcs) == length(iMovie), ...
+        'packageGUI_RunFcn:updateUserData:argLength', ...
+        'Arguments must be of the same length');
+    userData = get(handles.figure1,'UserData');
+
+    if(isa(newProcs,'Process'))
+        newProcs = {newProcs};
+    end
+
+    % Determine field
+    if ~isempty(userData.MD), field='MD'; else field = 'ML'; end
+
+    for i=1:length(newProcs)
+        proc = newProcs{i};
+
+        % Replace MovieObject
+        MOs = userData.(field);
+        assert(strcmp(MOs(iMovie(i)).getFullPath, ...
+                      proc.getOwner().getFullPath), ...
+            'packageGUI_RunFcn:updateUserData:movieObjectFullPathDiffers', ...
+            'Attempt to replace MovieObject with one with a different path');
+        MOs(iMovie(i)) = proc.getOwner();
+        userData.(field) = MOs;
+        
+        if(strcmp(field,'MD'))
+            % Update MovieList if we updated the MD
+            userData.ML.attachMovies(MOs(iMovie));
+        end
+
+        % Replace Package
+        iPackage = MOs(iMovie(i)).getPackageIndex(userData.packageName,1,false);
+        userData.package(iMovie(i)) = userData.MD(iMovie).getPackage(iPackage);
+
+        % Update crtPackage if it is the one currently selected
+        if(userData.id == iMovie)
+            userData.crtPackage = userData.package(iMovie(i));
+        end
+    end
+
+    % Update userData
+    set(handles.figure1, 'UserData', userData)
 end
