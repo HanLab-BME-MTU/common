@@ -17,6 +17,7 @@ end
 bar(1:numConditions, cellfun(@nanmean,cellArrayData)*convertFactor,'FaceColor',[1 1 1],'EdgeColor',[0 0 0],'LineWidth',1.5); hold on
 errorbar(1:numConditions, cellfun(@nanmean,cellArrayData)*convertFactor,cellfun(@(x) nanstd(x)/sqrt(length(x)),cellArrayData)*convertFactor,'Marker','none','LineStyle','none','Color','k','LineWidth',1.5);
 set(gca,'XTickLabel',nameList)
+set(gca,'XTickLabelRotation',45)
 
 %% perform ranksum test for every single combination
 maxPoint =cellfun(@nanmean,cellArrayData)+cellfun(@(x) nanstd(x)/sqrt(length(x)),cellArrayData);
@@ -25,18 +26,41 @@ lineGap=maxPoint2*0.05;
 q=0;
 for k=1:(numConditions-1)
     for ii=k+1:numConditions
-        q=q+lineGap;
-        line([k ii], ones(1,2)*(maxPoint2+q),'Color','k')    
-        q=q+lineGap;
-        if ~kstest(cellArrayData{k})
-            [~,p]=ttest2(cellArrayData{k},cellArrayData{ii});
-            text(floor((k+ii)/2), maxPoint2+q,['p=' num2str(p) '(t)'])
-       else
-            [p]=ranksum(cellArrayData{k},cellArrayData{ii});
-            text(floor((k+ii)/2), maxPoint2+q,['p=' num2str(p) '(r)'])
-       end
+        if numel(cellArrayData{k})>1 && numel(cellArrayData{ii})>1
+            if kstest(cellArrayData{k}) % this means the test rejects the null hypothesis
+                [p]=ranksum(cellArrayData{k},cellArrayData{ii});
+                if p<0.05
+                    q=q+lineGap;
+                    line([k ii], ones(1,2)*(maxPoint2+q),'Color','k')    
+                    q=q+lineGap;
+                    text(floor((k+ii)/2), maxPoint2+q,['p=' num2str(p) ' (r)'])
+                end
+            else
+                [~,p]=ttest2(cellArrayData{k},cellArrayData{ii});
+                if p<0.05
+                    q=q+lineGap;
+                    line([k ii], ones(1,2)*(maxPoint2+q),'Color','k')    
+                    q=q+lineGap;
+                    text(floor((k+ii)/2), maxPoint2+q,['p=' num2str(p) ' (t)'])
+                end
+            end
+        end
     end
 end
+% for k=1:(numConditions-1)
+%     for ii=k+1:numConditions
+%         q=q+lineGap;
+%         line([k ii], ones(1,2)*(maxPoint2+q),'Color','k')    
+%         q=q+lineGap;
+%         if ~kstest(cellArrayData{k})
+%             [~,p]=ttest2(cellArrayData{k},cellArrayData{ii});
+%             text(floor((k+ii)/2), maxPoint2+q,['p=' num2str(p) '(t)'])
+%        else
+%             [p]=ranksum(cellArrayData{k},cellArrayData{ii});
+%             text(floor((k+ii)/2), maxPoint2+q,['p=' num2str(p) '(r)'])
+%        end
+%     end
+% end
 q=q+lineGap*3;
 ylim([0 maxPoint2+q])
 

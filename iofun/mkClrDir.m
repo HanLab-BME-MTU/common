@@ -20,7 +20,13 @@ if ~exist(dirPath,'dir')
     try
         mkdir(dirPath)
     catch
-        system(['mkdir -p ' dirPath]);
+        try
+            system(['mkdir -p ' dirPath]);
+        catch
+            [upperPath,curFolderName] = fileparts(dirPath);
+            cd(upperPath)
+            system(['mkdir -p ' curFolderName]);
+        end
     end
 else
     %Check for files in the directory
@@ -31,4 +37,5 @@ else
             && ~strcmp('..',x.name)),inDir));
         arrayfun(@(x)(delete([dirPath filesep x.name])),inDir);
     end
+    display(['The folder ' dirPath ' already existed. Cleaning the folder ...'])
 end

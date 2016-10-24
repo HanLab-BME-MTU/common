@@ -1,6 +1,6 @@
-function []=boxPlotCellArray(cellArrayData,nameList,convertFactor,notchOn)
-% function []=boxPlotCellArray(FAarea) automatically converts cell array
-% format input to matrix input to use matlab function 'boxplot'
+function []=errorBarPlotCellArray(cellArrayData,nameList,convertFactor)
+% function []=errorBarPlotCellArray(FAarea) automatically converts cell array
+% format input to matrix input to use matlab function 'errorbar'
 % input: cellArrayData      cell array data
 %           nameList            cell array containing name of each
 %                                       condition (ex: {'condition1' 'condition2' 'condition3'})
@@ -13,40 +13,24 @@ matrixData = NaN(lengthLongest,numConditions);
 for k=1:numConditions
     matrixData(1:length(cellArrayData{k}),k) = cellArrayData{k};
 end
-if nargin<4
-    notchOn=true;
-end
 if nargin<3
     convertFactor = 1;
-    notchOn=true;
 end
 if nargin<2
     nameList=arrayfun(@(x) num2str(x),(1:numConditions),'UniformOutput',false);
     convertFactor = 1;
-    notchOn=true;
 end
-boxWidth=0.5;
-whiskerRatio=1;
 matrixData=matrixData*convertFactor;
-if notchOn %min(sum(~isnan(matrixData),1))>20 || 
-    boxplot(matrixData,'whisker',whiskerRatio,'notch','on',...
-        'labels',nameList,'symbol','','widths',boxWidth,'jitter',1,'colors','k');%, 'labelorientation','inline');
-else % if the data is too small, don't use notch
-    boxplot(matrixData,'whisker',whiskerRatio*0.5,'notch','off',...
-        'labels',nameList,'symbol','','widths',boxWidth,'jitter',1,'colors','k');%, 'labelorientation','inline');
-end
-    
-set(findobj(gca,'LineStyle','--'),'LineStyle','-')
-set(findobj(gca,'tag','Median'),'LineWidth',2)
-% set(gca,'XTick',1:numel(nameList))
-% set(gca,'XTickLabel',nameList)
+errorbar(nanmedian(matrixData),...
+    stdErrMean(matrixData),'rx')
+set(gca,'XTickLabel',nameList)
+set(gca,'XTick',1:numel(cellArrayData))
 set(gca,'XTickLabelRotation',45)
 
 hold on
 % perform ranksum test for every single combination
-maxPoint = quantile(matrixData,[0.25 0.75]);
-maxPoint2 = maxPoint(2,:)+(maxPoint(2,:)-maxPoint(1,:))*whiskerRatio;
-maxPoint2 = max(maxPoint2);
+maxPoint =cellfun(@nanmedian,cellArrayData)+cellfun(@(x) nanstd(x)/sqrt(length(x)),cellArrayData);
+maxPoint2 = nanmax(maxPoint(:));
 lineGap=maxPoint2*0.05;
 q=0;
 for k=1:(numConditions-1)
@@ -72,12 +56,12 @@ for k=1:(numConditions-1)
         end
     end
 end
-q=q+lineGap*3;
-minPoint = quantile(matrixData,[0.25 0.75]);
-minPoint2 = minPoint(1,:)-(minPoint(2,:)-minPoint(1,:))*whiskerRatio;
-minPoint2 = min(minPoint2);
-ylim([minPoint2-lineGap*2 maxPoint2+q])
-
 set(gca,'FontSize',6)
 set(findobj(gca,'Type','Text'),'FontSize',4)
+
+q=q+lineGap*3;
+minPoint =cellfun(@nanmedian,cellArrayData)-cellfun(@(x) nanstd(x)/sqrt(length(x)),cellArrayData);
+minPoint2 = nanmin(minPoint(:));
+
+ylim([minPoint2-lineGap*2 maxPoint2+q])
 
