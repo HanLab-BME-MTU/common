@@ -24,7 +24,6 @@ before_script:
   - module unload matlab
   - module list
   - cd $CLEAN_REPO_PATH/ci-scripts
-  - pwd
   - git checkout master
   - git pull 
   - cd $CI_PROJECT_DIR
@@ -109,12 +108,12 @@ build:utrack:
   stage: build
   variables:
     # USER_HOME: "/home2/s170480"
-    TARGET_FOLDER: "target"
     PACKAGE_NAME:  "u-track"
     PACKAGE_CLASS: "TrackingPackage"
     BUILD_NAME: $PACKAGE_NAME
     DOCUMENTATION_DIR: "$USER_HOME/matlab/xUnit/git/documentation"
     RELEASE: "2.1.4-DEV"
+    TARGET_FOLDER: $PACKAGE_NAME_$RELEASE
   script:
     - module unload matlab
     - module load matlab/2016a
@@ -152,7 +151,7 @@ build:utrack:
   artifacts:
     name: "${BUILD_NAME}-b${CI_BUILD_ID}"
     paths:
-      - $TARGET_FOLDER/$BUILD_NAME/
+      - $TARGET_FOLDER
     when: on_success
   only:
     # - testing
