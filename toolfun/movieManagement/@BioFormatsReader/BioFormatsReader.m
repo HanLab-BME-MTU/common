@@ -17,7 +17,7 @@ classdef  BioFormatsReader < Reader
             % Input check
             ip = inputParser();
             ip.addRequired('id', @ischar);
-            ip.addOptional('series', 0, @(x) isscalar(x) && isnumeric(x));
+            ip.addOptional('series', 0, @(x) validateattributes(x, {'numeric'}, {'scalar'}));
             ip.addParamValue('reader', [], @(x) isa(x, 'loci.formats.IFormatReader'));
             ip.parse(varargin{:});
             
