@@ -13,8 +13,8 @@ variables:
   USER_HOME: "/home2/s170480"
   USER_MATLAB_HOME: "${USER_HOME}/matlab/"
   CLEAN_REPO_PATH: "${USER_HOME}/matlab/xUnit/git/"
-  CI_UNIT_SCRIPT: ${CLEAN_REPO_PATH}/ci-scripts/runCITests
-  CI_BUILD_SCRIPT: ${CLEAN_REPO_PATH}/ci-scripts/runCIbuildPackage
+  CI_SCRIPT_PATH: "${CLEAN_REPO_PATH}/ci-scripts/"
+  # CI_BUILD_SCRIPT: "${CLEAN_REPO_PATH}/ci-scripts/buildrunCIbuildPackage"
   
 before_script:
   - pwd
@@ -37,8 +37,8 @@ unit:R2016a:
   script: 
     - module unload matlab
     - module load matlab/2016a
-    - matlab -nodisplay -nodesktop -nosplash -r "${CI_UNIT_SCRIPT}('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached','${CI_PROJECT_DIR}/mathfun/test','${CI_PROJECT_DIR}/toolfun/test', '${CI_PROJECT_DIR}/toolfun/movieManagement/test/unit','${CI_PROJECT_DIR}/toolfun/movieManagement/test/integration'}, '-verbose');"
-    # - matlab -nodisplay -nodesktop -nosplash -r "${CI_UNIT_SCRIPT}('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached'}, '-verbose');"
+    - matlab -nodisplay -nodesktop -nosplash -r "restoredefaultpath; addpath(${CI_SCRIPT_PATH}); runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached','${CI_PROJECT_DIR}/mathfun/test','${CI_PROJECT_DIR}/toolfun/test', '${CI_PROJECT_DIR}/toolfun/movieManagement/test/unit','${CI_PROJECT_DIR}/toolfun/movieManagement/test/integration'}, '-verbose');"
+    # - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached'}, '-verbose');"
   # only:
   #   - testing
   #   - master
@@ -49,8 +49,8 @@ unit:R2015b:
   script: 
     - module unload matlab
     - module load matlab/2015b
-    - matlab -nodisplay -nodesktop -nosplash -r "${CI_UNIT_SCRIPT}('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached','${CI_PROJECT_DIR}/mathfun/test','${CI_PROJECT_DIR}/toolfun/test', '${CI_PROJECT_DIR}/toolfun/movieManagement/test/unit','${CI_PROJECT_DIR}/toolfun/movieManagement/test/integration'}, '-verbose');"
-    # - matlab -nodisplay -nodesktop -nosplash -r "${CI_UNIT_SCRIPT}('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached'}, '-verbose');"
+    - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached','${CI_PROJECT_DIR}/mathfun/test','${CI_PROJECT_DIR}/toolfun/test', '${CI_PROJECT_DIR}/toolfun/movieManagement/test/unit','${CI_PROJECT_DIR}/toolfun/movieManagement/test/integration'}, '-verbose');"
+    # - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached'}, '-verbose');"
   only:
     # - testing
     - master
@@ -61,8 +61,8 @@ unit:R2015a:
   script: 
     - module unload matlab
     - module load matlab/2015a
-    - matlab -nodisplay -nodesktop -nosplash -r "${CI_UNIT_SCRIPT}('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached','${CI_PROJECT_DIR}/mathfun/test','${CI_PROJECT_DIR}/toolfun/test', '${CI_PROJECT_DIR}/toolfun/movieManagement/test/unit','${CI_PROJECT_DIR}/toolfun/movieManagement/test/integration'}, '-verbose');"
-    # - matlab -nodisplay -nodesktop -nosplash -r "${CI_UNIT_SCRIPT}('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached'}, '-verbose');"
+    - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached','${CI_PROJECT_DIR}/mathfun/test','${CI_PROJECT_DIR}/toolfun/test', '${CI_PROJECT_DIR}/toolfun/movieManagement/test/unit','${CI_PROJECT_DIR}/toolfun/movieManagement/test/integration'}, '-verbose');"
+    # - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached'}, '-verbose');"
   only:
     # - testing
     - master
@@ -73,8 +73,8 @@ unit:R2014b:
   script: 
     - module unload matlab
     - module load matlab/2014b
-    - matlab -nodisplay -nodesktop -nosplash -r "${CI_UNIT_SCRIPT}('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached','${CI_PROJECT_DIR}/mathfun/test','${CI_PROJECT_DIR}/toolfun/test', '${CI_PROJECT_DIR}/toolfun/movieManagement/test/unit','${CI_PROJECT_DIR}/toolfun/movieManagement/test/integration'}, '-verbose');"
-    # - matlab -nodisplay -nodesktop -nosplash -r "${CI_UNIT_SCRIPT}('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached'}, '-verbose');"
+    - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached','${CI_PROJECT_DIR}/mathfun/test','${CI_PROJECT_DIR}/toolfun/test', '${CI_PROJECT_DIR}/toolfun/movieManagement/test/unit','${CI_PROJECT_DIR}/toolfun/movieManagement/test/integration'}, '-verbose');"
+    # - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached'}, '-verbose');"
   only:
     # - testing
     - master
@@ -85,8 +85,8 @@ unit:R2014a:
   script: 
     - module unload matlab
     - module load matlab/2014a
-    - matlab -nodisplay -nodesktop -nosplash -r "${CI_UNIT_SCRIPT}('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached','${CI_PROJECT_DIR}/mathfun/test','${CI_PROJECT_DIR}/toolfun/test', '${CI_PROJECT_DIR}/toolfun/movieManagement/test/unit','${CI_PROJECT_DIR}/toolfun/movieManagement/test/integration'}, '-verbose');"
-    # - matlab -nodisplay -nodesktop -nosplash -r "${CI_UNIT_SCRIPT}('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached'}, '-verbose');"
+    - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached','${CI_PROJECT_DIR}/mathfun/test','${CI_PROJECT_DIR}/toolfun/test', '${CI_PROJECT_DIR}/toolfun/movieManagement/test/unit','${CI_PROJECT_DIR}/toolfun/movieManagement/test/integration'}, '-verbose');"
+    # - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached'}, '-verbose');"
   only:
     # - testing
     - master
@@ -97,8 +97,8 @@ unit:R2013b:
   script: 
     - module unload matlab
     - module load matlab/2013b
-    - matlab -nodisplay -nodesktop -nosplash -r "${CI_UNIT_SCRIPT}('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached','${CI_PROJECT_DIR}/mathfun/test','${CI_PROJECT_DIR}/toolfun/test', '${CI_PROJECT_DIR}/toolfun/movieManagement/test/unit','${CI_PROJECT_DIR}/toolfun/movieManagement/test/integration'}, '-verbose');"
-    # - matlab -nodisplay -nodesktop -nosplash -r "${CI_UNIT_SCRIPT}('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached'}, '-verbose');"
+    - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached','${CI_PROJECT_DIR}/mathfun/test','${CI_PROJECT_DIR}/toolfun/test', '${CI_PROJECT_DIR}/toolfun/movieManagement/test/unit','${CI_PROJECT_DIR}/toolfun/movieManagement/test/integration'}, '-verbose');"
+    # - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached'}, '-verbose');"
   # only:
   #   - testing
   #   - master
@@ -126,7 +126,7 @@ build:utrack:
     - echo "Creating ${CI_PROJECT_DIR}/$TARGET_FOLDER/$BUILD_NAME/software"
     - mkdir -p ${CI_PROJECT_DIR}/$TARGET_FOLDER/$BUILD_NAME/software
     # - 
-    - matlab -nodesktop -nosplash -r "${CI_BUILD_SCRIPT}('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}','$PACKAGE_CLASS','${CI_PROJECT_DIR}/$TARGET_FOLDER/$BUILD_NAME/software');"; if [ $? -ne 0 ]; then echo "error"; exit 2; else echo "good evening"; echo "$?"; fi
+    - matlab -nodesktop -nosplash -r "runCIbuildPackage('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}','$PACKAGE_CLASS','${CI_PROJECT_DIR}/$TARGET_FOLDER/$BUILD_NAME/software');"; if [ $? -ne 0 ]; then echo "error"; exit 2; else echo "good evening"; echo "$?"; fi
     # - if [ $? -ne 0 ]; then echo "error"; exit 2; else echo "good evening"; echo "$?"; fi
     # -
     - echo "# Add license headers to functions"
