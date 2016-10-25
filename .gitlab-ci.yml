@@ -14,7 +14,6 @@ variables:
   USER_MATLAB_HOME: "${USER_HOME}/matlab/"
   CLEAN_REPO_PATH: "${USER_HOME}/matlab/xUnit/git/"
   CI_SCRIPT_PATH: "${CLEAN_REPO_PATH}/ci-scripts/"
-  # CI_BUILD_SCRIPT: "${CLEAN_REPO_PATH}/ci-scripts/buildrunCIbuildPackage"
   
 before_script:
   - pwd
@@ -28,21 +27,15 @@ before_script:
   - git pull 
   - cd $CI_PROJECT_DIR
   - $CLEAN_REPO_PATH/ci-scripts/setup_gitlabCI.sh
-
-# === Test code =======================  
+ 
+ # === Unit Tests ======================= 
 unit:R2016a:
   stage: unit
   script: 
     - module unload matlab
     - module load matlab/2016a
     - echo "-Xmx1024m" > java.opts
-    - matlab -nodisplay -nodesktop -nosplash -r "try, restoredefaultpath; addpath('${CI_SCRIPT_PATH}'); runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached','${CI_PROJECT_DIR}/mathfun/test','${CI_PROJECT_DIR}/toolfun/test', '${CI_PROJECT_DIR}/toolfun/movieManagement/test/unit','${CI_PROJECT_DIR}/toolfun/movieManagement/test/integration'}, '-verbose'); exit(0);, catch, warning('[MATLAB] !!!MATLAB CI SCRIPT ERROR!!!'); exit(2); end "; if [ $? -ne 0 ]; then echo "[ERROR!] MATLAB script error ";  else echo "...MATLAB script executed without error..."; echo "$?"; fi
-    # - if [ $? -ne 0 ]; then echo "[ERROR!] MATLAB script error "; exit 2; else echo "...MATLAB script executed..."; echo "$?"; fi
-    # - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached'}, '-verbose');"
-  # only:
-  #   - testing
-  #   - master
-  #   - CI_test 
+    - matlab -nodisplay -nodesktop -nosplash -r "try, restoredefaultpath; addpath('${CI_SCRIPT_PATH}'); runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached','${CI_PROJECT_DIR}/mathfun/test','${CI_PROJECT_DIR}/toolfun/test', '${CI_PROJECT_DIR}/toolfun/movieManagement/test/unit','${CI_PROJECT_DIR}/toolfun/movieManagement/test/integration'}, '-verbose'); exit(0);, catch ee, warning('[MATLAB] !!!MATLAB CI SCRIPT ERROR!!!'); display(getReport(ee, 'extended')); exit(2); end "; 
 
 # unit:R2015b:
 #   stage: unit
@@ -50,12 +43,9 @@ unit:R2016a:
 #     - module unload matlab
 #     - module load matlab/2015b
 #     - echo "-Xmx1024m" > java.opts
-#     - matlab -nodisplay -nodesktop -nosplash -r "try, restoredefaultpath; addpath('${CI_SCRIPT_PATH}'); runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached','${CI_PROJECT_DIR}/mathfun/test','${CI_PROJECT_DIR}/toolfun/test', '${CI_PROJECT_DIR}/toolfun/movieManagement/test/unit','${CI_PROJECT_DIR}/toolfun/movieManagement/test/integration'}, '-verbose'); exit(0);, catch, warning('[MATLAB] !!!MATLAB CI SCRIPT ERROR!!!'); exit(2); end ";
-#     # - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached'}, '-verbose');"
+#     - matlab -nodisplay -nodesktop -nosplash -r "try, restoredefaultpath; addpath('${CI_SCRIPT_PATH}'); runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached','${CI_PROJECT_DIR}/mathfun/test','${CI_PROJECT_DIR}/toolfun/test', '${CI_PROJECT_DIR}/toolfun/movieManagement/test/unit','${CI_PROJECT_DIR}/toolfun/movieManagement/test/integration'}, '-verbose'); exit(0);, catch ee, warning('[MATLAB] !!!MATLAB CI SCRIPT ERROR!!!'); display(getReport(ee, 'extended')); exit(2); end ";
 #   only:
-#     # - testing
 #     - master
-#     # - CI_test 
 
 # unit:R2015a:
 #   stage: unit
@@ -64,11 +54,8 @@ unit:R2016a:
 #     - module load matlab/2015a
 #     - echo "-Xmx1024m" > java.opts
 #     - matlab -nodisplay -nodesktop -nosplash -r "try, restoredefaultpath; addpath('${CI_SCRIPT_PATH}'); runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached','${CI_PROJECT_DIR}/mathfun/test','${CI_PROJECT_DIR}/toolfun/test', '${CI_PROJECT_DIR}/toolfun/movieManagement/test/unit','${CI_PROJECT_DIR}/toolfun/movieManagement/test/integration'}, '-verbose'); exit(0);, catch, warning('[MATLAB] !!!MATLAB CI SCRIPT ERROR!!!'); exit(2); end ";
-#     # - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached'}, '-verbose');"
 #   only:
-#     # - testing
 #     - master
-#     # - CI_test 
 
 # unit:R2014b:
 #   stage: unit
@@ -77,11 +64,8 @@ unit:R2016a:
 #     - module load matlab/2014b
 #     - echo "-Xmx1024m" > java.opts
 #     - matlab -nodisplay -nodesktop -nosplash -r "try, restoredefaultpath; addpath('${CI_SCRIPT_PATH}'); runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached','${CI_PROJECT_DIR}/mathfun/test','${CI_PROJECT_DIR}/toolfun/test', '${CI_PROJECT_DIR}/toolfun/movieManagement/test/unit','${CI_PROJECT_DIR}/toolfun/movieManagement/test/integration'}, '-verbose'); exit(0);, catch, warning('[MATLAB] !!!MATLAB CI SCRIPT ERROR!!!'); exit(2); end ";
-#     # - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached'}, '-verbose');"
 #   only:
-#     # - testing
 #     - master
-#     # - CI_test 
 
 # unit:R2014a:
 #   stage: unit
@@ -89,12 +73,9 @@ unit:R2016a:
 #     - module unload matlab
 #     - module load matlab/2014a
 #     - echo "-Xmx1024m" > java.opts
-#     - matlab -nodisplay -nodesktop -nosplash -r "try, restoredefaultpath; addpath('${CI_SCRIPT_PATH}'); runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached','${CI_PROJECT_DIR}/mathfun/test','${CI_PROJECT_DIR}/toolfun/test', '${CI_PROJECT_DIR}/toolfun/movieManagement/test/unit','${CI_PROJECT_DIR}/toolfun/movieManagement/test/integration'}, '-verbose'); exit(0);, catch, warning('[MATLAB] !!!MATLAB CI SCRIPT ERROR!!!'); exit(2); end ";
-#     # - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached'}, '-verbose');"
+#     - matlab -nodisplay -nodesktop -nosplash -r "try, restoredefaultpath; addpath('${CI_SCRIPT_PATH}'); runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached','${CI_PROJECT_DIR}/mathfun/test','${CI_PROJECT_DIR}/toolfun/test', '${CI_PROJECT_DIR}/toolfun/movieManagement/test/unit','${CI_PROJECT_DIR}/toolfun/movieManagement/test/integration'}, '-verbose'); exit(0);, catch ee, warning('[MATLAB] !!!MATLAB CI SCRIPT ERROR!!!'); display(getReport(ee, 'extended')); exit(2); end "; 
 #   only:
-#     # - testing
 #     - master
-#     # - CI_test 
 
 unit:R2013b:
   stage: unit
@@ -103,11 +84,7 @@ unit:R2013b:
     - module load matlab/2013b
     - echo "-Xmx1024m" > java.opts
     - matlab -nodisplay -nodesktop -nosplash -r "try, restoredefaultpath; addpath('${CI_SCRIPT_PATH}'); runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached','${CI_PROJECT_DIR}/mathfun/test','${CI_PROJECT_DIR}/toolfun/test', '${CI_PROJECT_DIR}/toolfun/movieManagement/test/unit','${CI_PROJECT_DIR}/toolfun/movieManagement/test/integration'}, '-verbose'); exit(0);, catch ee, warning('[MATLAB] !!!MATLAB CI SCRIPT ERROR!!!'); display(getReport(ee, 'extended')); exit(2); end "; 
-    # - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached'}, '-verbose');"
-  # only:
-  #   - testing
-  #   - master
-  #   - CI_test 
+ 
 
 # === Build Packages =======================  
 build:utrack:
@@ -118,52 +95,70 @@ build:utrack:
     BUILD_NAME: $PACKAGE_NAME
     DOCUMENTATION_DIR: "$USER_HOME/matlab/xUnit/git/documentation"
     RELEASE: "2.1.4-DEV"
-    TARGET_FOLDER: "${PACKAGE_NAME}_${RELEASE}"
+    TARGET_FOLDER: "target/${PACKAGE_NAME}"
   script:
     - module unload matlab
     - module load matlab/2016a
     - module load texlive/2014
-    # -
+
     - echo "Cleaning ${CI_PROJECT_DIR}/$TARGET_FOLDER"
     - rm -rf ${CI_PROJECT_DIR}/$TARGET_FOLDER/
-    # -
+
     - echo "Creating ${CI_PROJECT_DIR}/$TARGET_FOLDER/software"
     - mkdir -p ${CI_PROJECT_DIR}/$TARGET_FOLDER/software
-    # - 
+
     - echo "-Xmx1024m" > java.opts
-    - matlab -nodesktop -nosplash -r "try, restoredefaultpath; addpath('${CI_SCRIPT_PATH}'); runCIbuildPackage('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}','$PACKAGE_CLASS','${CI_PROJECT_DIR}/$TARGET_FOLDER/software'); exit(0);, catch ee, warning('[MATLAB] !!!MATLAB CI SCRIPT ERROR!!!'); display(getReport(ee, 'extended')); exit(2); end "; 
-    # - matlab -nodesktop -nosplash -r "try, restoredefaultpath; addpath('${CI_SCRIPT_PATH}'); runCIbuildPackage('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}','$PACKAGE_CLASS','${CI_PROJECT_DIR}/$TARGET_FOLDER/software'); exit(0);, catch ee, warning('[MATLAB] !!!MATLAB CI SCRIPT ERROR!!!'); display(getReport(ee, 'extended')); exit(2); end "; if [ $? -ne 0 ]; then echo "[SYSTEM][ERROR!] MATLAB script return exit signal with error ";  else echo "[SYSTEM]...MATLAB script executed without error..."; echo "$?"; fi
-    # - if [ $? -ne 0 ]; then echo "[ERROR!] MATLAB script error ";  else echo "...MATLAB script executed..."; echo "$?"; fi
-    # -
+    - matlab -nodesktop -nosplash -r "try, restoredefaultpath; addpath('${CI_SCRIPT_PATH}'); runCIbuildPackage('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}','$PACKAGE_CLASS','${CI_PROJECT_DIR}/$TARGET_FOLDER/software'); exit(0);, catch ee, warning('[MATLAB] !!!MATLAB CI BUILD PACKAGE ERROR!!!'); display(getReport(ee, 'extended')); exit(2); end "; 
+
     - echo "# Add license headers to functions"
     - cp $DOCUMENTATION_DIR/license/addCopyingStatement ${CI_PROJECT_DIR}/$TARGET_FOLDER/software
     - cp $DOCUMENTATION_DIR/license/CopyingStatement ${CI_PROJECT_DIR}/$TARGET_FOLDER/software
     - (cd ${CI_PROJECT_DIR}/$TARGET_FOLDER/software && bash addCopyingStatement u-track)
     - rm -v ${CI_PROJECT_DIR}/$TARGET_FOLDER/software/*CopyingStatement
-    # -
+
     - echo "# Copy GPL license"
     - cp $DOCUMENTATION_DIR/license/GPL-License.txt ${CI_PROJECT_DIR}/$TARGET_FOLDER/
-    # -
+
     - echo "# Build package documentation"
     - (cd $DOCUMENTATION_DIR && make clean latexpdf)
     - cp $DOCUMENTATION_DIR/_build/latex/u-track-*.pdf $TARGET_FOLDER/Readme_u-track.pdf
-    # - cp $DOCUMENTATION_DIR/_build/latex/u-track-*.pdf $TARGET_FOLDER/u-track_build${CI_BUILD_ID}.pdf
+
   dependencies:
     - unit:R2016a
   #   - unit:R2015b
   #   - unit:R2015a
   #   - unit:R2014b
   #   - unit:R2014a
-    - unit:R2013b
+    # - unit:R2013b
   artifacts:
     name: "${BUILD_NAME}-b${CI_BUILD_ID}"
     paths:
       - $TARGET_FOLDER
     when: on_success
+    expire_in: 3 months
   only:
-    # - testing
     - master
+    # - testing
     # - CI_test 
+
+# === Test Packages =======================  
+test:utrack:R2016a:
+  stage: test
+  variables:
+    TEST_DATA_LOCATION: 'https://lamella.biohpc.swmed.edu/index.php/s/1HBBq4bUzVlUFZn/download'
+    BUILT_PACKAGE_PATH: 
+    MATLAB_TEST_SCRIPT: "${CI_SCRIPT_PATH}/automatedTests/"
+
+
+
+  script:
+    - cp ${MATLAB_TEST_SCRIPT} 
+    - matlab -nodesktop -nosplash -r "try, restoredefaultpath; addpath(genpath('${CI_SCRIPT_PATH}')); utrack_build_test; exit(0);, catch ee, warning('[MATLAB] !!!MATLAB TEST STAGE ERROR!!!'); display(getReport(ee, 'extended')); exit(2); end "; 
+    
+  dependencies:
+    - build:u-track
+
+
 
 
 # === Documentation Generation Alone ======================= 
