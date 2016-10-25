@@ -102,7 +102,7 @@ unit:R2013b:
     - module unload matlab
     - module load matlab/2013b
     - echo "-Xmx1024m" > java.opts
-    - matlab -nodisplay -nodesktop -nosplash -r "try, restoredefaultpath; addpath('${CI_SCRIPT_PATH}'); runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached','${CI_PROJECT_DIR}/mathfun/test','${CI_PROJECT_DIR}/toolfun/test', '${CI_PROJECT_DIR}/toolfun/movieManagement/test/unit','${CI_PROJECT_DIR}/toolfun/movieManagement/test/integration'}, '-verbose'); exit(0);, catch, warning('[MATLAB] !!!MATLAB CI SCRIPT ERROR!!!'); exit(2); end "; 
+    - matlab -nodisplay -nodesktop -nosplash -r "try, restoredefaultpath; addpath('${CI_SCRIPT_PATH}'); runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached','${CI_PROJECT_DIR}/mathfun/test','${CI_PROJECT_DIR}/toolfun/test', '${CI_PROJECT_DIR}/toolfun/movieManagement/test/unit','${CI_PROJECT_DIR}/toolfun/movieManagement/test/integration'}, '-verbose'); exit(0);, catch ee, warning('[MATLAB] !!!MATLAB CI SCRIPT ERROR!!!'); display(getReport(ee, 'extended')); exit(2); end "; 
     # - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached'}, '-verbose');"
   # only:
   #   - testing
@@ -131,7 +131,8 @@ build:utrack:
     - mkdir -p ${CI_PROJECT_DIR}/$TARGET_FOLDER/software
     # - 
     - echo "-Xmx1024m" > java.opts
-    - matlab -nodesktop -nosplash -r "try, restoredefaultpath; addpath('${CI_SCRIPT_PATH}'); runCIbuildPackage('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}','$PACKAGE_CLASS','${CI_PROJECT_DIR}/$TARGET_FOLDER/software'); exit(0);, catch, warning('[MATLAB] !!!MATLAB CI SCRIPT ERROR!!!'); exit(2); end "; if [ $? -ne 0 ]; then echo "[SYSTEM][ERROR!] MATLAB script return exit signal with error ";  else echo "[SYSTEM]...MATLAB script executed without error..."; echo "$?"; fi
+    - matlab -nodesktop -nosplash -r "try, restoredefaultpath; addpath('${CI_SCRIPT_PATH}'); runCIbuildPackage('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}','$PACKAGE_CLASS','${CI_PROJECT_DIR}/$TARGET_FOLDER/software'); exit(0);, catch ee, warning('[MATLAB] !!!MATLAB CI SCRIPT ERROR!!!'); display(getReport(ee, 'extended')); exit(2); end "; 
+    # - matlab -nodesktop -nosplash -r "try, restoredefaultpath; addpath('${CI_SCRIPT_PATH}'); runCIbuildPackage('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}','$PACKAGE_CLASS','${CI_PROJECT_DIR}/$TARGET_FOLDER/software'); exit(0);, catch ee, warning('[MATLAB] !!!MATLAB CI SCRIPT ERROR!!!'); display(getReport(ee, 'extended')); exit(2); end "; if [ $? -ne 0 ]; then echo "[SYSTEM][ERROR!] MATLAB script return exit signal with error ";  else echo "[SYSTEM]...MATLAB script executed without error..."; echo "$?"; fi
     # - if [ $? -ne 0 ]; then echo "[ERROR!] MATLAB script error ";  else echo "...MATLAB script executed..."; echo "$?"; fi
     # -
     - echo "# Add license headers to functions"
