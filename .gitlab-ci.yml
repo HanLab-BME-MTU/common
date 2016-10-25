@@ -29,73 +29,79 @@ before_script:
   - cd $CI_PROJECT_DIR
   - $CLEAN_REPO_PATH/ci-scripts/setup_gitlabCI.sh
 
-
 # === Test code =======================  
 unit:R2016a:
   stage: unit
   script: 
     - module unload matlab
     - module load matlab/2016a
-    - matlab -nodisplay -nodesktop -nosplash -r "restoredefaultpath; addpath('${CI_SCRIPT_PATH}'); runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached','${CI_PROJECT_DIR}/mathfun/test','${CI_PROJECT_DIR}/toolfun/test', '${CI_PROJECT_DIR}/toolfun/movieManagement/test/unit','${CI_PROJECT_DIR}/toolfun/movieManagement/test/integration'}, '-verbose');"
+    - echo "-Xmx1024m" > java.opts
+    - matlab -nodisplay -nodesktop -nosplash -r "restoredefaultpath; addpath('${CI_SCRIPT_PATH}'); runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached','${CI_PROJECT_DIR}/mathfun/test','${CI_PROJECT_DIR}/toolfun/test', '${CI_PROJECT_DIR}/toolfun/movieManagement/test/unit','${CI_PROJECT_DIR}/toolfun/movieManagement/test/integration'}, '-verbose');" ; if [ $? -ne 0 ]; then echo "[ERROR!] MATLAB script error ";  else echo "...MATLAB script executed without error..."; echo "$?"; fi
+    # - if [ $? -ne 0 ]; then echo "[ERROR!] MATLAB script error "; exit 2; else echo "...MATLAB script executed..."; echo "$?"; fi
     # - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached'}, '-verbose');"
   # only:
   #   - testing
   #   - master
   #   - CI_test 
 
-unit:R2015b:
-  stage: unit
-  script: 
-    - module unload matlab
-    - module load matlab/2015b
-    - matlab -nodisplay -nodesktop -nosplash -r "restoredefaultpath; addpath('${CI_SCRIPT_PATH}'); runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached','${CI_PROJECT_DIR}/mathfun/test','${CI_PROJECT_DIR}/toolfun/test', '${CI_PROJECT_DIR}/toolfun/movieManagement/test/unit','${CI_PROJECT_DIR}/toolfun/movieManagement/test/integration'}, '-verbose');"
-    # - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached'}, '-verbose');"
-  only:
-    # - testing
-    - master
-    # - CI_test 
+# unit:R2015b:
+#   stage: unit
+#   script: 
+#     - module unload matlab
+#     - module load matlab/2015b
+#     - echo "-Xmx1024m" > java.opts
+#     - matlab -nodisplay -nodesktop -nosplash -r "restoredefaultpath; addpath('${CI_SCRIPT_PATH}'); runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached','${CI_PROJECT_DIR}/mathfun/test','${CI_PROJECT_DIR}/toolfun/test', '${CI_PROJECT_DIR}/toolfun/movieManagement/test/unit','${CI_PROJECT_DIR}/toolfun/movieManagement/test/integration'}, '-verbose');"
+#     # - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached'}, '-verbose');"
+#   only:
+#     # - testing
+#     - master
+#     # - CI_test 
 
-unit:R2015a:
-  stage: unit
-  script: 
-    - module unload matlab
-    - module load matlab/2015a
-    - matlab -nodisplay -nodesktop -nosplash -r "restoredefaultpath; addpath('${CI_SCRIPT_PATH}'); runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached','${CI_PROJECT_DIR}/mathfun/test','${CI_PROJECT_DIR}/toolfun/test', '${CI_PROJECT_DIR}/toolfun/movieManagement/test/unit','${CI_PROJECT_DIR}/toolfun/movieManagement/test/integration'}, '-verbose');"
-    # - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached'}, '-verbose');"
-  only:
-    # - testing
-    - master
-    # - CI_test 
+# unit:R2015a:
+#   stage: unit
+#   script: 
+#     - module unload matlab
+#     - module load matlab/2015a
+#     - echo "-Xmx1024m" > java.opts
+#     - matlab -nodisplay -nodesktop -nosplash -r "restoredefaultpath; addpath('${CI_SCRIPT_PATH}'); runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached','${CI_PROJECT_DIR}/mathfun/test','${CI_PROJECT_DIR}/toolfun/test', '${CI_PROJECT_DIR}/toolfun/movieManagement/test/unit','${CI_PROJECT_DIR}/toolfun/movieManagement/test/integration'}, '-verbose');"
+#     # - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached'}, '-verbose');"
+#   only:
+#     # - testing
+#     - master
+#     # - CI_test 
 
-unit:R2014b:
-  stage: unit
-  script: 
-    - module unload matlab
-    - module load matlab/2014b
-    - matlab -nodisplay -nodesktop -nosplash -r "restoredefaultpath; addpath('${CI_SCRIPT_PATH}'); runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached','${CI_PROJECT_DIR}/mathfun/test','${CI_PROJECT_DIR}/toolfun/test', '${CI_PROJECT_DIR}/toolfun/movieManagement/test/unit','${CI_PROJECT_DIR}/toolfun/movieManagement/test/integration'}, '-verbose');"
-    # - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached'}, '-verbose');"
-  only:
-    # - testing
-    - master
-    # - CI_test 
+# unit:R2014b:
+#   stage: unit
+#   script: 
+#     - module unload matlab
+#     - module load matlab/2014b
+#     - echo "-Xmx1024m" > java.opts
+#     - matlab -nodisplay -nodesktop -nosplash -r "restoredefaultpath; addpath('${CI_SCRIPT_PATH}'); runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached','${CI_PROJECT_DIR}/mathfun/test','${CI_PROJECT_DIR}/toolfun/test', '${CI_PROJECT_DIR}/toolfun/movieManagement/test/unit','${CI_PROJECT_DIR}/toolfun/movieManagement/test/integration'}, '-verbose');"
+#     # - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached'}, '-verbose');"
+#   only:
+#     # - testing
+#     - master
+#     # - CI_test 
 
-unit:R2014a:
-  stage: unit
-  script: 
-    - module unload matlab
-    - module load matlab/2014a
-    - matlab -nodisplay -nodesktop -nosplash -r "restoredefaultpath; addpath('${CI_SCRIPT_PATH}'); runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached','${CI_PROJECT_DIR}/mathfun/test','${CI_PROJECT_DIR}/toolfun/test', '${CI_PROJECT_DIR}/toolfun/movieManagement/test/unit','${CI_PROJECT_DIR}/toolfun/movieManagement/test/integration'}, '-verbose');"
-    # - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached'}, '-verbose');"
-  only:
-    # - testing
-    - master
-    # - CI_test 
+# unit:R2014a:
+#   stage: unit
+#   script: 
+#     - module unload matlab
+#     - module load matlab/2014a
+#     - echo "-Xmx1024m" > java.opts
+#     - matlab -nodisplay -nodesktop -nosplash -r "restoredefaultpath; addpath('${CI_SCRIPT_PATH}'); runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached','${CI_PROJECT_DIR}/mathfun/test','${CI_PROJECT_DIR}/toolfun/test', '${CI_PROJECT_DIR}/toolfun/movieManagement/test/unit','${CI_PROJECT_DIR}/toolfun/movieManagement/test/integration'}, '-verbose');"
+#     # - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached'}, '-verbose');"
+#   only:
+#     # - testing
+#     - master
+#     # - CI_test 
 
 unit:R2013b:
   stage: unit
   script: 
     - module unload matlab
     - module load matlab/2013b
+    - echo "-Xmx1024m" > java.opts
     - matlab -nodisplay -nodesktop -nosplash -r "restoredefaultpath; addpath('${CI_SCRIPT_PATH}'); runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached','${CI_PROJECT_DIR}/mathfun/test','${CI_PROJECT_DIR}/toolfun/test', '${CI_PROJECT_DIR}/toolfun/movieManagement/test/unit','${CI_PROJECT_DIR}/toolfun/movieManagement/test/integration'}, '-verbose');"
     # - matlab -nodisplay -nodesktop -nosplash -r "runCITests('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}', {'cached'}, '-verbose');"
   # only:
@@ -107,13 +113,12 @@ unit:R2013b:
 build:utrack:
   stage: build
   variables:
-    # USER_HOME: "/home2/s170480"
     PACKAGE_NAME:  "u-track"
     PACKAGE_CLASS: "TrackingPackage"
     BUILD_NAME: $PACKAGE_NAME
     DOCUMENTATION_DIR: "$USER_HOME/matlab/xUnit/git/documentation"
     RELEASE: "2.1.4-DEV"
-    TARGET_FOLDER: $PACKAGE_NAME_$RELEASE
+    TARGET_FOLDER: "${PACKAGE_NAME}_${RELEASE}"
   script:
     - module unload matlab
     - module load matlab/2016a
@@ -122,31 +127,32 @@ build:utrack:
     - echo "Cleaning ${CI_PROJECT_DIR}/$TARGET_FOLDER"
     - rm -rf ${CI_PROJECT_DIR}/$TARGET_FOLDER/
     # -
-    - echo "Creating ${CI_PROJECT_DIR}/$TARGET_FOLDER/$BUILD_NAME/software"
-    - mkdir -p ${CI_PROJECT_DIR}/$TARGET_FOLDER/$BUILD_NAME/software
+    - echo "Creating ${CI_PROJECT_DIR}/$TARGET_FOLDER/software"
+    - mkdir -p ${CI_PROJECT_DIR}/$TARGET_FOLDER/software
     # - 
-    - matlab -nodesktop -nosplash -r "restoredefaultpath; addpath('${CI_SCRIPT_PATH}'); runCIbuildPackage('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}','$PACKAGE_CLASS','${CI_PROJECT_DIR}/$TARGET_FOLDER/$BUILD_NAME/software');"; if [ $? -ne 0 ]; then echo "error"; exit 2; else echo "good evening"; echo "$?"; fi
-    # - if [ $? -ne 0 ]; then echo "error"; exit 2; else echo "good evening"; echo "$?"; fi
+    - echo "-Xmx1024m" > java.opts
+    - matlab -nodesktop -nosplash -r "restoredefaultpath; addpath('${CI_SCRIPT_PATH}'); runCIbuildPackage('${CLEAN_REPO_PATH}', '${CI_PROJECT_DIR}','$PACKAGE_CLASS','${CI_PROJECT_DIR}/$TARGET_FOLDER/software');"; if [ $? -ne 0 ]; then echo "[ERROR!] MATLAB script error ";  else echo "...MATLAB script executed without error..."; echo "$?"; fi
+    # - if [ $? -ne 0 ]; then echo "[ERROR!] MATLAB script error ";  else echo "...MATLAB script executed..."; echo "$?"; fi
     # -
     - echo "# Add license headers to functions"
-    - cp $DOCUMENTATION_DIR/license/addCopyingStatement ${CI_PROJECT_DIR}/$TARGET_FOLDER/$BUILD_NAME/software
-    - cp $DOCUMENTATION_DIR/license/CopyingStatement ${CI_PROJECT_DIR}/$TARGET_FOLDER/$BUILD_NAME/software
-    - (cd ${CI_PROJECT_DIR}/$TARGET_FOLDER/$BUILD_NAME/software && bash addCopyingStatement u-track)
-    - rm -v ${CI_PROJECT_DIR}/$TARGET_FOLDER/$BUILD_NAME/software/*CopyingStatement
+    - cp $DOCUMENTATION_DIR/license/addCopyingStatement ${CI_PROJECT_DIR}/$TARGET_FOLDER/software
+    - cp $DOCUMENTATION_DIR/license/CopyingStatement ${CI_PROJECT_DIR}/$TARGET_FOLDER/software
+    - (cd ${CI_PROJECT_DIR}/$TARGET_FOLDER/software && bash addCopyingStatement u-track)
+    - rm -v ${CI_PROJECT_DIR}/$TARGET_FOLDER/software/*CopyingStatement
     # -
     - echo "# Copy GPL license"
-    - cp $DOCUMENTATION_DIR/license/GPL-License.txt ${CI_PROJECT_DIR}/$TARGET_FOLDER/$BUILD_NAME/
+    - cp $DOCUMENTATION_DIR/license/GPL-License.txt ${CI_PROJECT_DIR}/$TARGET_FOLDER/
     # -
     - echo "# Build package documentation"
     - (cd $DOCUMENTATION_DIR && make clean latexpdf)
-    - cp $DOCUMENTATION_DIR/_build/latex/u-track-*.pdf $TARGET_FOLDER/$BUILD_NAME/Readme_u-track.pdf
+    - cp $DOCUMENTATION_DIR/_build/latex/u-track-*.pdf $TARGET_FOLDER/Readme_u-track.pdf
     - cp $DOCUMENTATION_DIR/_build/latex/u-track-*.pdf $TARGET_FOLDER/u-track_build${CI_BUILD_ID}.pdf
   dependencies:
     - unit:R2016a
-    - unit:R2015b
-    - unit:R2015a
-    - unit:R2014b
-    - unit:R2014a
+  #   - unit:R2015b
+  #   - unit:R2015a
+  #   - unit:R2014b
+  #   - unit:R2014a
     - unit:R2013b
   artifacts:
     name: "${BUILD_NAME}-b${CI_BUILD_ID}"
