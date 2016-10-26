@@ -155,7 +155,7 @@ test:utrack:R2016a:
     - matlab -nodesktop -nosplash -r "try, restoredefaultpath; cd('${BUILT_PACKAGE_PATH}'); addpath(genpath('${BUILT_PACKAGE_PATH}')); ${TEST_M_FILE_NAME}; exit(0);, catch ee, warning('[MATLAB] !!!MATLAB TEST STAGE ERROR!!!'); display(getReport(ee, 'extended')); exit(2); end "; 
     
   dependencies:
-    - build:u-track
+    - build:utrack
 
 
 
