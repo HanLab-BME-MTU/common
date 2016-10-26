@@ -722,6 +722,8 @@ classdef  MovieData < MovieObject & matlab.mixin.Heterogeneous
         end
         
         tf = isequal(obj,MD,varargin);
+        tf = isequaln(obj,MD,varargin);
+        tf = isequalwithequalnans(obj,MD,varargin);
     end
     methods(Static)
         function obj = load(varargin)

@@ -271,7 +271,7 @@ classdef TestMovieData < TestMovieObject
             self.setUpMovie();
             self.movie.sanityCheck();
             movie2 = MovieData.load(self.movie.getFullPath());
-            assert(isequal(self.movie,movie2));
+            assertEqual(self.movie,movie2);
         end
     end
     
