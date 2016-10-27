@@ -154,6 +154,5 @@ doc:pdf_utrack:
     name: "${BUILD_NAME}-${RELEASE}_b${CI_BUILD_ID}.pdf"
     paths:
       - $TARGET_FOLDER/Readme_u-track.pdf
-    expire_in:
-      - 90 days
+    expire_in: 90 days
   when: manual
