@@ -10,7 +10,7 @@ stages:
   - doc
 
 variables:
-  USER_HOME: "/home2/s170480"
+  USER_HOME: "/home2/s170480/"
   USER_MATLAB_HOME: "${USER_HOME}/matlab/"
   CLEAN_REPO_PATH: "${USER_HOME}/matlab/xUnit/git/"
   CI_SCRIPT_PATH: "${CLEAN_REPO_PATH}/ci-scripts/"
@@ -26,6 +26,7 @@ before_script:
   - echo $CLEAN_REPO_PATH
   - echo $USER_MATLAB_HOME
   - echo $USER_HOME
+  - echo $CI_SCRIPT_PATH
   - cd $CI_SCRIPT_PATH
   - git checkout $CI_BUILD_REF_NAME
   - git pull 
