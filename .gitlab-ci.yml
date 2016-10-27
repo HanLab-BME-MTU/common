@@ -157,4 +157,4 @@ doc:pdf_utrack:
     expire_in:
       - 90 days
   when:
-    - manual
+      - manual
