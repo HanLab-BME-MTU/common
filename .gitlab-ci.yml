@@ -156,5 +156,4 @@ doc:pdf_utrack:
       - $TARGET_FOLDER/Readme_u-track.pdf
     expire_in:
       - 90 days
-  when:
-      - manual
+  when: manual
