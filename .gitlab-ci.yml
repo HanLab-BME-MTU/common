@@ -12,7 +12,7 @@ stages:
 variables:
   USER_HOME: "/home2/s170480/"
   USER_MATLAB_HOME: "/home2/s170480/matlab/"
-  CLEAN_REPO_PATH: "$/home2/s170480/matlab/xUnit/git/"
+  CLEAN_REPO_PATH: "/home2/s170480/matlab/xUnit/git/"
   CI_SCRIPT_PATH: "${CLEAN_REPO_PATH}/ci-scripts/"
   
 before_script:
