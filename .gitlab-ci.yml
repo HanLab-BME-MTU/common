@@ -22,6 +22,10 @@ before_script:
   - module load python
   - module unload matlab
   - module list
+  - echo $CI_SCRIPT_PATH
+  - echo $CLEAN_REPO_PATH
+  - echo $USER_MATLAB_HOME
+  - echo $USER_HOME
   - cd $CI_SCRIPT_PATH
   - git checkout $CI_BUILD_REF_NAME
   - git pull 
