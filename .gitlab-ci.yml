@@ -10,8 +10,6 @@ stages:
   - doc
 
 variables:
-  USER_HOME: "/home2/s170480/"
-  USER_MATLAB_HOME: "/home2/s170480/matlab/"
   CLEAN_REPO_PATH: "/home2/s170480/matlab/xUnit/git/"
   CI_SCRIPT_PATH: "${CLEAN_REPO_PATH}/ci-scripts/"
   
@@ -22,13 +20,8 @@ before_script:
   - module load python
   - module unload matlab
   - module list
-  - echo $CI_SCRIPT_PATH
-  - echo $CLEAN_REPO_PATH
-  - echo $USER_MATLAB_HOME
-  - echo $USER_HOME
-  - echo $CI_SCRIPT_PATH
   - cd $CI_SCRIPT_PATH
-  - git checkout $CI_BUILD_REF_NAME
+  - git checkout master
   - git pull 
   - cd $CI_PROJECT_DIR
   - $CI_SCRIPT_PATH/setup_gitlabCI.sh
@@ -43,41 +36,45 @@ unit:R2016a:
     - echo "-Xmx1024m" > java.opts
     - $CI_SCRIPT_PATH/runCITest_m.sh
 
-# unit:R2015b:
-#   stage: unit
-#   script: 
-#     - module unload matlab
-#     - module load matlab/2015b
-#     - echo "-Xmx1024m" > java.opts
-#   only:
-#     - master
+unit:R2015b:
+  stage: unit
+  script: 
+    - module unload matlab
+    - module load matlab/2015b
+    - echo "-Xmx1024m" > java.opts
+    - $CI_SCRIPT_PATH/runCITest_m.sh
+  only:
+    - master
 
-# unit:R2015a:
-#   stage: unit
-#   script: 
-#     - module unload matlab
-#     - module load matlab/2015a
-#     - echo "-Xmx1024m" > java.opts
-#   only:
-#     - master
+unit:R2015a:
+  stage: unit
+  script: 
+    - module unload matlab
+    - module load matlab/2015a
+    - echo "-Xmx1024m" > java.opts
+    - $CI_SCRIPT_PATH/runCITest_m.sh
+  only:
+    - master
 
-# unit:R2014b:
-#   stage: unit
-#   script: 
-#     - module unload matlab
-#     - module load matlab/2014b
-#     - echo "-Xmx1024m" > java.opts
-#   only:
-#     - master
+unit:R2014b:
+  stage: unit
+  script: 
+    - module unload matlab
+    - module load matlab/2014b
+    - echo "-Xmx1024m" > java.opts
+    - $CI_SCRIPT_PATH/runCITest_m.sh
+  only:
+    - master
 
-# unit:R2014a:
-#   stage: unit
-#   script: 
-#     - module unload matlab
-#     - module load matlab/2014a
-#     - echo "-Xmx1024m" > java.opts
-#   only:
-#     - master
+unit:R2014a:
+  stage: unit
+  script: 
+    - module unload matlab
+    - module load matlab/2014a
+    - echo "-Xmx1024m" > java.opts
+    - $CI_SCRIPT_PATH/runCITest_m.sh
+  only:
+    - master
 
 unit:R2013b:
   stage: unit
@@ -104,14 +101,6 @@ build:utrack:
     - module load texlive/2014
     - echo "-Xmx1024m" > java.opts
     - $CI_SCRIPT_PATH/runCIbuild_utrack_Package_m.sh
-
-  dependencies:
-    - unit:R2016a
-  #   - unit:R2015b
-  #   - unit:R2015a
-  #   - unit:R2014b
-  #   - unit:R2014a
-    # - unit:R2013b
   artifacts:
     name: "${BUILD_NAME}-b${CI_BUILD_ID}"
     paths:
@@ -120,11 +109,11 @@ build:utrack:
     expire_in: 3 months
   only:
     - master
-    # - testing
-    # - CI_test 
+    - testing 
 
 
 # === Test Packages =======================  
+# Run the newest and oldest 
 test:utrack:R2016a:
   stage: test
   variables:
@@ -138,6 +127,76 @@ test:utrack:R2016a:
   dependencies:
     - build:utrack
 
+test:utrack:R2013b:
+  stage: test
+  variables:
+    TEST_DATA_LOCATION: 'https://lamella.biohpc.swmed.edu/index.php/s/1HBBq4bUzVlUFZn/download'
+    BUILT_PACKAGE_PATH: "${CI_PROJECT_DIR}/target/u-track/"
+  script:
+    - module unload matlab
+    - module load matlab/2013b
+    - echo "-Xmx1024m" > java.opts
+    - ${CI_SCRIPT_PATH}/utrack_test.sh
+  dependencies:
+    - build:utrack
+
+# Optional Runs with different versions
+# #################################
+test:utrack:R2015b:
+  stage: test
+  variables:
+    TEST_DATA_LOCATION: 'https://lamella.biohpc.swmed.edu/index.php/s/1HBBq4bUzVlUFZn/download'
+    BUILT_PACKAGE_PATH: "${CI_PROJECT_DIR}/target/u-track/"
+  script:
+    - module unload matlab
+    - module load matlab/2015b
+    - echo "-Xmx1024m" > java.opts
+    - ${CI_SCRIPT_PATH}/utrack_test.sh
+  dependencies:
+    - build:utrack
+  when: manual
+
+test:utrack:R2015a:
+  stage: test
+  variables:
+    TEST_DATA_LOCATION: 'https://lamella.biohpc.swmed.edu/index.php/s/1HBBq4bUzVlUFZn/download'
+    BUILT_PACKAGE_PATH: "${CI_PROJECT_DIR}/target/u-track/"
+  script:
+    - module unload matlab
+    - module load matlab/2015a
+    - echo "-Xmx1024m" > java.opts
+    - ${CI_SCRIPT_PATH}/utrack_test.sh
+  dependencies:
+    - build:utrack
+  when: manual
+
+test:utrack:R2014b:
+  stage: test
+  variables:
+    TEST_DATA_LOCATION: 'https://lamella.biohpc.swmed.edu/index.php/s/1HBBq4bUzVlUFZn/download'
+    BUILT_PACKAGE_PATH: "${CI_PROJECT_DIR}/target/u-track/"
+  script:
+    - module unload matlab
+    - module load matlab/2014b
+    - echo "-Xmx1024m" > java.opts
+    - ${CI_SCRIPT_PATH}/utrack_test.sh
+  dependencies:
+    - build:utrack
+  when: manual
+
+test:utrack:R2014a:
+  stage: test
+  variables:
+    TEST_DATA_LOCATION: 'https://lamella.biohpc.swmed.edu/index.php/s/1HBBq4bUzVlUFZn/download'
+    BUILT_PACKAGE_PATH: "${CI_PROJECT_DIR}/target/u-track/"
+  script:
+    - module unload matlab
+    - module load matlab/2014a
+    - echo "-Xmx1024m" > java.opts
+    - ${CI_SCRIPT_PATH}/utrack_test.sh
+  dependencies:
+    - build:utrack
+  when: manual
 
 # === Documentation Generation Alone ======================= 
 doc:pdf_utrack:
@@ -158,6 +217,6 @@ doc:pdf_utrack:
   artifacts:
     name: "${BUILD_NAME}-${RELEASE}_b${CI_BUILD_ID}.pdf"
     paths:
-      - $TARGET_FOLDER/Readme_u-track.pdf
+      - $TARGET_FOLDER/Readme_u-track-$RELEASE.pdf
     expire_in: 90 days
   when: manual
