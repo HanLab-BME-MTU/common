@@ -8,7 +8,8 @@ function [ tf ] = isequal( obj, MD, varargin )
          elseif(isa(obj,'MovieData') && isa(MD,'MovieData'))
              % Two MovieData are the same if they will be saved in the same
              % place
-             tf = strcmp(obj.movieDataPath_,MD.movieDataPath_) && ...
+             tf = obj == MD || ...
+                  strcmp(obj.movieDataPath_,MD.movieDataPath_) && ...
                   strcmp(obj.movieDataFileName_,MD.movieDataFileName_);
          else
              tf = false;
