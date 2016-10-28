@@ -44,7 +44,7 @@ unit:R2013b:
     - module load matlab/2013b
     - echo "-Xmx1024m" > java.opts
     - $CI_SCRIPT_PATH/runCITest_m.sh
-    
+
 # ======== [optional - other version] ==
 unit:R2015b:
   stage: unit
@@ -161,7 +161,7 @@ test:utrack:R2016a:
     - echo "-Xmx1024m" > java.opts
     - ${CI_SCRIPT_PATH}/utrack_test.sh
   dependencies:
-    - build:utrack:$MATLAB_BUILD_VERSION
+    - build:utrack:R2016a
 
 # Oldest
 test:utrack:R2013b:
@@ -177,7 +177,7 @@ test:utrack:R2013b:
     - echo "-Xmx1024m" > java.opts
     - ${CI_SCRIPT_PATH}/utrack_test.sh
   dependencies:
-    - build:utrack:$MATLAB_BUILD_VERSION
+    - build:utrack:R2013b
 
 test:utrack:R2013b-B2016a:
   stage: test
@@ -192,7 +192,7 @@ test:utrack:R2013b-B2016a:
     - echo "-Xmx1024m" > java.opts
     - ${CI_SCRIPT_PATH}/utrack_test.sh
   dependencies:
-    - build:utrack:$MATLAB_BUILD_VERSION
+    - build:utrack:R2016a
   when: manual
 
 # Optional Runs with different Run versions
@@ -210,7 +210,7 @@ test:utrack:R2015b:
     - echo "-Xmx1024m" > java.opts
     - ${CI_SCRIPT_PATH}/utrack_test.sh
   dependencies:
-    - build:utrack:$MATLAB_BUILD_VERSION
+    - build:utrack:2013b
   when: manual
 
 test:utrack:R2015a:
@@ -226,7 +226,7 @@ test:utrack:R2015a:
     - echo "-Xmx1024m" > java.opts
     - ${CI_SCRIPT_PATH}/utrack_test.sh
   dependencies:
-    - build:utrack:$MATLAB_BUILD_VERSION
+    - build:utrack:2013b
   when: manual
 
 test:utrack:R2014b:
@@ -242,7 +242,7 @@ test:utrack:R2014b:
     - echo "-Xmx1024m" > java.opts
     - ${CI_SCRIPT_PATH}/utrack_test.sh
   dependencies:
-    - build:utrack:$MATLAB_BUILD_VERSION
+    - build:utrack:2013b
   when: manual
 
 test:utrack:R2014a:
@@ -258,7 +258,7 @@ test:utrack:R2014a:
     - echo "-Xmx1024m" > java.opts
     - ${CI_SCRIPT_PATH}/utrack_test.sh
   dependencies:
-    - build:utrack:$MATLAB_BUILD_VERSION
+    - build:utrack:2013b
   when: manual
 
 # === Documentation Generation Alone ======================= 
