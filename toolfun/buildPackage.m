@@ -77,7 +77,8 @@ legacyFunctions = getLegacyCode(packageList);
     vertcat(packageList, legacyFunctions), ip.Results.exclude);
 disp('The package uses the following toolboxes:')
 disp(toolboxesUsed)
-disp({toolboxesUsed.Name;toolboxesUsed.Version}')
+% toolboxesUsed is the just the list of names, see getFunDependencies
+% disp({toolboxesUsed.Name;toolboxesUsed.Version}')
 %% Additional files can be found under four types of format:
 %   * GUIs may have associated *.fig
 %   * Processes and GUIs may have associated *.pdf
