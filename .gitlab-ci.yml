@@ -94,7 +94,7 @@ unit:R2014a:
 # === Build Packages =======================  
 # Build the newest and oldest 
 
-build:utrack:2016a:
+build:utrack:R2016a:
   stage: build
   variables:
     MATLAB_VERSION: "2016a"
@@ -210,7 +210,7 @@ test:utrack:R2015b:
     - echo "-Xmx1024m" > java.opts
     - ${CI_SCRIPT_PATH}/utrack_test.sh
   dependencies:
-    - build:utrack:2013b
+    - build:utrack:R2013b
   when: manual
 
 test:utrack:R2015a:
@@ -226,7 +226,7 @@ test:utrack:R2015a:
     - echo "-Xmx1024m" > java.opts
     - ${CI_SCRIPT_PATH}/utrack_test.sh
   dependencies:
-    - build:utrack:2013b
+    - build:utrack:R2013b
   when: manual
 
 test:utrack:R2014b:
@@ -242,7 +242,7 @@ test:utrack:R2014b:
     - echo "-Xmx1024m" > java.opts
     - ${CI_SCRIPT_PATH}/utrack_test.sh
   dependencies:
-    - build:utrack:2013b
+    - build:utrack:R2013b
   when: manual
 
 test:utrack:R2014a:
@@ -258,7 +258,7 @@ test:utrack:R2014a:
     - echo "-Xmx1024m" > java.opts
     - ${CI_SCRIPT_PATH}/utrack_test.sh
   dependencies:
-    - build:utrack:2013b
+    - build:utrack:R2013b
   when: manual
 
 # === Documentation Generation Alone ======================= 
