@@ -115,10 +115,10 @@ build:utrack:R2016a:
     paths:
       - $TARGET_FOLDER
     when: on_success
-    expire_in: 3 months
-  only:
-    - master
-    - testing 
+    expire_in: 1 week
+  # only:
+  #   - master
+  #   - testing 
 
 build:utrack:R2013b:
   stage: build
@@ -141,10 +141,10 @@ build:utrack:R2013b:
     paths:
       - $TARGET_FOLDER
     when: on_success
-    expire_in: 3 months
-  only:
-    - master
-    - testing 
+    expire_in: 1 week
+  # only:
+  #   - master
+  #   - testing 
 
 # === Test Packages =======================  
 # Run the newest and oldest 
@@ -164,7 +164,7 @@ test:utrack:R2016a:
     - build:utrack:R2016a
 
 # Oldest
-test:utrack:R2013b:
+test:utrack:R2013b-B2013b:
   stage: test
   variables:
     MATLAB_TEST_VERSION: "2013b"
@@ -193,8 +193,7 @@ test:utrack:R2013b-B2016a:
     - ${CI_SCRIPT_PATH}/utrack_test.sh
   dependencies:
     - build:utrack:R2016a
-  when: manual
-
+  
 # Optional Runs with different Run versions
 # #################################
 test:utrack:R2015b:
@@ -281,5 +280,5 @@ doc:pdf_utrack:
     name: "${BUILD_NAME}-${RELEASE}_b${CI_BUILD_ID}.pdf"
     paths:
       - $TARGET_FOLDER/Readme_u-track-$RELEASE.pdf
-    expire_in: 90 days
+    expire_in: 14 days
   when: manual
