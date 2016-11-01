@@ -71,6 +71,7 @@ ip.addRequired('handles',@isstruct);
 ip.addParamValue('packageName','',@ischar);
 ip.addParamValue('MD', MovieData.empty(1,0) ,@(x) isempty(x) || isa(x,'MovieData'));
 ip.addParamValue('ML', MovieList.empty(1,0), @(x) isempty(x) || isa(x,'MovieList'));
+ip.addParamValue('cluster',[],@(x) isempty(x) || isa(x,'parallel.Cluster'));
 ip.parse(hObject,eventdata,handles,varargin{:});
 
 set(handles.text_copyright, 'String', getLCCBCopyright())
@@ -138,6 +139,11 @@ end
 % Populate movies to analyze
 if ~isempty(ip.Results.MD)
     userData.MD = horzcat(userData.MD,ip.Results.MD);
+end
+
+% Set uTrackParCluster
+if(~isempty(ip.Results.cluster))
+    uTrackParCluster(ip.Results.cluster);
 end
 
 % Filter movies to get a unique list
@@ -230,7 +236,7 @@ end
 
 close(handles.figure1);
 packageGUI(selectedPackage,userData.(field),...
-    'MD', userData.MD, 'ML', userData.ML);
+    'MD', userData.MD, 'ML', userData.ML, 'cluster', uTrackParCluster);
 
 % --- Executes on selection change in listbox_movie.
 function listbox_movie_Callback(hObject, eventdata, handles)

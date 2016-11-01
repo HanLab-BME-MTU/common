@@ -22,7 +22,7 @@ function varargout = packageGUI(varargin)
 
 % Edit the above text to modify the response to help packageGUI
 
-% Last Modified by GUIDE v2.5 04-Jun-2013 14:06:35
+% Last Modified by GUIDE v2.5 07-Oct-2016 17:16:06
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -57,7 +57,7 @@ varargout{1} = handles.output;
 userData = get(handles.figure1, 'UserData');
 if (isfield(userData,'startMovieSelectorGUI') && userData.startMovieSelectorGUI)
     movieSelectorGUI('packageName',userData.packageName,'MD',userData.MD,...
-        'ML', userData.ML);
+        'ML', userData.ML , 'cluster', uTrackParCluster);
     delete(handles.figure1)
 end
 
@@ -293,3 +293,228 @@ else
     % & nautilus)
     % system(sprintf('xdg-open %s',regexptranslate('escape',outputDir)));
 end
+
+
+% --------------------------------------------------------------------
+function menu_parallel_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_parallel (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+% clusterMenu = findobj(hObject,'Label','Cluster');
+% poolSizeMenu = findobj(hObject,'Label','Pool Size');
+% batchMenu = findobj(hObject,'Label','Batch Mode');
+clusterMenu = handles.menu_parallel_cluster;
+poolSizeMenu = handles.menu_parallel_pool;
+batchMenu = handles.menu_parallel_batch;
+
+% Setup Cluster Menu
+delete(clusterMenu.Children);
+profiles = {};
+try
+    profiles = parallel.clusterProfiles;
+catch err
+    warning('Could not obtain cluster profiles');
+    disp(getReport(err));
+end
+profiles = [{'None'} profiles];
+% Update cluster from uTrackParCluster
+cluster = uTrackParCluster();
+
+for i=1:length(profiles)
+    h = uimenu(clusterMenu,'Label',profiles{i},'Callback',{@menu_parallel_cluster_profile_Callback,handles});
+
+    if(i == 1 && isempty(cluster))
+        h.Checked = 'on';
+    elseif(~isempty(cluster) && strcmp(profiles{i},cluster.Profile))
+        h.Checked = 'on';
+        if(isempty(poolSizeMenu.Children))
+            menu_parallel_cluster_profile_Callback(h, eventdata, handles)
+        end
+    end
+    if(i == 2)
+        h.Separator = 'on';
+    end
+end
+
+% Setup Pool Size Menu
+if(isempty(cluster))
+    poolSizeMenu.Enable = 'off';
+    batchMenu.Enable = 'off';
+else
+    poolSizeMenu.Enable = 'on';
+    batchMenu.Enable = 'on';
+end
+
+
+
+
+% --------------------------------------------------------------------
+function menu_parallel_cluster_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_parallel_cluster (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+
+% --------------------------------------------------------------------
+function menu_parallel_cluster_profile_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_parallel_cluster_profile (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+if(strcmp(hObject.Label,'None'))
+    cluster = [];
+else
+    cluster = parcluster(hObject.Label);
+    poolSizeMenu = handles.menu_parallel_pool;
+    delete(poolSizeMenu.Children);
+    currentPool = gcp('nocreate');
+    h = uimenu(poolSizeMenu,'Label','No Pool','Callback',{@menu_parallel_pool_size_Callback,handles});
+    % Provide at most 16 options
+    N = max(floor(cluster.NumWorkers/16),1);
+    if(isempty(currentPool))
+        if(strcmp(cluster.Profile,'local'))
+            % For local profile, set the default to maximum number of
+            % workers
+            poolSize = cluster.NumWorkers;
+        else
+            % For other profiles, use the first increment
+            poolSize = N;
+        end
+    else
+        % If pool exists, display current size
+        poolSize = currentPool.NumWorkers;
+    end
+
+    % List pool sizes for every N workers
+    % make sure existing pool size is checked
+    poolSizeCheckExists = false;
+    for i=N:N:cluster.NumWorkers
+        h = uimenu(poolSizeMenu,'Label',num2str(i),'Callback',{@menu_parallel_pool_size_Callback,handles});
+        if(i == N)
+            h.Separator = 'on';
+        end
+        if(i == poolSize)
+            h.Checked = 'on';
+            poolSizeCheckExists = true;
+        end
+    end
+    if(~poolSizeCheckExists)
+        h = uimenu(poolSizeMenu,'Label',num2str(poolSize),'Callback',{@menu_parallel_pool_size_Callback,handles});
+        h.Checked = 'on';
+    end
+end
+% Set uTrackParCluster so that this information is accessible
+uTrackParCluster(cluster);
+batchMenuItem = findobj(handles.menu_parallel_batch,'Checked','on');
+batchMenuItem.Callback(batchMenuItem, eventdata);
+
+
+
+
+% --------------------------------------------------------------------
+function menu_parallel_pool_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_parallel_pool (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% --------------------------------------------------------------------
+function menu_parallel_pool_size_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_parallel_pool_size (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+set(hObject.Parent.Children,'Checked','off')
+hObject.Checked = 'on';
+% if(strcmp(handles.menu_parallel_batch_client.Checked,'on'))
+%     currentPool = gcp('nocreate');
+%     switch(hObject.Label)
+%         case 'No Pool'
+%             delete(currentPool);
+%         otherwise
+%             poolSize = str2double(hObject.Label);
+%             if(~isempty(currentPool) && currentPool.NumWorkers ~= poolSize)
+%                 delete(currentPool);
+%             end
+%             parpool(uTrackParCluster,poolSize);
+%     end
+% else
+% end
+
+% --------------------------------------------------------------------
+function menu_parallel_batch_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_parallel_batch (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+% --------------------------------------------------------------------
+function menu_parallel_batch_single_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_parallel_batch_single (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+hObject.Checked = 'on';
+handles.menu_parallel_batch_client.Checked = 'off';
+handles.menu_parallel_batch_one_per_movie.Checked = 'off';
+noPool = findobj(handles.menu_parallel_pool,'Label','No Pool');
+noPool.Enable = 'on';
+
+% --------------------------------------------------------------------
+function menu_parallel_batch_one_per_movie_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_parallel_batch_one_per_movie (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+hObject.Checked = 'on';
+handles.menu_parallel_batch_client.Checked = 'off';
+handles.menu_parallel_batch_single.Checked = 'off';
+noPool = findobj(handles.menu_parallel_pool,'Label','No Pool');
+noPool.Enable = 'on';
+
+
+% --------------------------------------------------------------------
+function menu_parallel_batch_client_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_parallel_batch_client (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+hObject.Checked = 'on';
+handles.menu_parallel_batch_single.Checked = 'off';
+handles.menu_parallel_batch_one_per_movie.Checked = 'off';
+noPool = findobj(handles.menu_parallel_pool,'Label','No Pool');
+noPool.Enable = 'off';
+poolSize = findobj(handles.menu_parallel_pool,'Checked','on');
+% No pool is not an option for This Client non-batch mode
+if(strcmp(poolSize.Label,'No Pool'))
+    clusterProfileMenuItem = findobj(handles.menu_parallel_cluster,'Checked','on');
+    menu_parallel_cluster_profile_Callback(clusterProfileMenuItem,eventdata,handles);
+end
+
+
+% --------------------------------------------------------------------
+function menu_parallel_help_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_parallel_help (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+h = msgbox( {...
+    'uTrack Parallel Help' ...
+    '--------------------' ...
+    'This menu enables use of MATLAB''s parallel computing toolbox.' ...
+    '' ...
+    'Cluster: Select the cluster profile to use for parallezation.' ...
+    '         None: Do not use parallel processing.' ...
+    '         Local: Use multiprocessor capabilities of your current machine.' ...
+    '         Other: Ask your cluster/HPC administrator.' ...
+    '' ...
+    'Pool: Select the number of workers to use. Function depends on batch mode.' ...
+    '' ...
+    'Batch: Select mode of parallelization.' ...
+    '       This Client: Use parallel pool from this client and to evaluate' ...
+    '                    movies in parallel.' ...
+    '                    You may need to be on a cluster  node to ' ... 
+    '                    use this if not using the local cluster.' ...
+    '       Single Job: Use a single batch job to run movies(s). ' ...
+    '                   Movies will be run in parallel if a pool is created.' ...
+    '                   If you exit uTrack, the job will keep running.' ...
+    '       One Job Per Movie: Create a batch job for each movie. ' ...
+    '                          Each job will have it''s own pool.' ...
+    '                          This allows processes to use the parallel pool.' ...
+    '                          If you exit uTrack, the jobs will keep running.' ...
+    }, ...
+    'uTrack Parallel Help','help');
