@@ -153,7 +153,6 @@ test:utrack:R2016a:
   variables:
     MATLAB_TEST_VERSION: "2016a"
     MATLAB_BUILD_VERSION: "2016a"
-    TEST_DATA_LOCATION: "https://lamella.biohpc.swmed.edu/index.php/s/1HBBq4bUzVlUFZn/download"
     BUILT_PACKAGE_PATH: "${CI_PROJECT_DIR}/target/${MATLAB_BUILD_VERSION}/u-track/"
   script:
     - module unload matlab
@@ -169,7 +168,6 @@ test:utrack:R2013b-B2013b:
   variables:
     MATLAB_TEST_VERSION: "2013b"
     MATLAB_BUILD_VERSION: "2013b"
-    TEST_DATA_LOCATION: 'https://lamella.biohpc.swmed.edu/index.php/s/1HBBq4bUzVlUFZn/download'
     BUILT_PACKAGE_PATH: "${CI_PROJECT_DIR}/target/${MATLAB_BUILD_VERSION}/u-track/"
   script:
     - module unload matlab
@@ -184,7 +182,6 @@ test:utrack:R2013b-B2016a:
   variables:
     MATLAB_TEST_VERSION: "2013b"
     MATLAB_BUILD_VERSION: "2016a"
-    TEST_DATA_LOCATION: 'https://lamella.biohpc.swmed.edu/index.php/s/1HBBq4bUzVlUFZn/download'
     BUILT_PACKAGE_PATH: "${CI_PROJECT_DIR}/target/${MATLAB_BUILD_VERSION}/u-track/"
   script:
     - module unload matlab
@@ -201,7 +198,6 @@ test:utrack:R2015b:
   variables:
     MATLAB_TEST_VERSION: "2015b"
     MATLAB_BUILD_VERSION: "2013b"
-    TEST_DATA_LOCATION: 'https://lamella.biohpc.swmed.edu/index.php/s/1HBBq4bUzVlUFZn/download'
     BUILT_PACKAGE_PATH: "${CI_PROJECT_DIR}/target/${MATLAB_BUILD_VERSION}/u-track/"
   script:
     - module unload matlab
@@ -217,7 +213,6 @@ test:utrack:R2015a:
   variables:
     MATLAB_TEST_VERSION: "2015a"
     MATLAB_BUILD_VERSION: "2013b"
-    TEST_DATA_LOCATION: 'https://lamella.biohpc.swmed.edu/index.php/s/1HBBq4bUzVlUFZn/download'
     BUILT_PACKAGE_PATH: "${CI_PROJECT_DIR}/target/${MATLAB_BUILD_VERSION}/u-track/"
   script:
     - module unload matlab
@@ -233,7 +228,6 @@ test:utrack:R2014b:
   variables:
     MATLAB_TEST_VERSION: "2014b"
     MATLAB_BUILD_VERSION: "2013b"
-    TEST_DATA_LOCATION: 'https://lamella.biohpc.swmed.edu/index.php/s/1HBBq4bUzVlUFZn/download'
     BUILT_PACKAGE_PATH: "${CI_PROJECT_DIR}/target/${MATLAB_BUILD_VERSION}/u-track/"
   script:
     - module unload matlab
@@ -249,7 +243,6 @@ test:utrack:R2014a:
   variables:
     MATLAB_TEST_VERSION: "2014a"
     MATLAB_BUILD_VERSION: "2013b"
-    TEST_DATA_LOCATION: 'https://lamella.biohpc.swmed.edu/index.php/s/1HBBq4bUzVlUFZn/download'
     BUILT_PACKAGE_PATH: "${CI_PROJECT_DIR}/target/${MATLAB_BUILD_VERSION}/u-track/"
   script:
     - module unload matlab
