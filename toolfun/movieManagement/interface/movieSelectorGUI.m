@@ -172,7 +172,8 @@ guidata(hObject, handles);
 
 function packageList = getPackageList()
 
-packageList = {'BiosensorsPackage';...
+packageList = {
+    'BiosensorsPackage';...
     'FocalAdhesionPackage'
     'FocalAdhesionSegmentationPackage'
     'IntegratorPackage'
