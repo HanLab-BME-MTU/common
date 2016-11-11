@@ -68,10 +68,10 @@ ip = inputParser;
 ip.addRequired('hObject',@ishandle);
 ip.addRequired('eventdata',@(x) isstruct(x) || isempty(x));
 ip.addRequired('handles',@isstruct);
-ip.addParamValue('packageName','',@ischar);
-ip.addParamValue('MD', MovieData.empty(1,0) ,@(x) isempty(x) || isa(x,'MovieData'));
-ip.addParamValue('ML', MovieList.empty(1,0), @(x) isempty(x) || isa(x,'MovieList'));
-ip.addParamValue('cluster',[],@(x) isempty(x) || isa(x,'parallel.Cluster'));
+ip.addParameter('packageName','',@ischar);
+ip.addParameter('MD', MovieData.empty(1,0) ,@(x) isempty(x) || isa(x,'MovieData'));
+ip.addParameter('ML', MovieList.empty(1,0), @(x) isempty(x) || isa(x,'MovieList'));
+ip.addParameter('cluster',[],@(x) isempty(x) || isa(x,'parallel.Cluster'));
 ip.parse(hObject,eventdata,handles,varargin{:});
 
 set(handles.text_copyright, 'String', getLCCBCopyright())
@@ -96,7 +96,7 @@ userData = loadLCCBIcons(userData);
 
 % Get concrete packages
 packageList = getPackageList();
-if isempty(packageList), 
+if isempty(packageList) 
     warndlg('No package found! Please make sure you properly added the installation directory to the path (see user''s manual).',...
         'Movie Selector','modal'); 
 end
