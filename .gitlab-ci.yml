@@ -115,7 +115,7 @@ build:utrack:R2016a:
     paths:
       - $TARGET_FOLDER
     when: on_success
-    expire_in: 1 week
+    expire_in: 6 weeks
   # only:
   #   - master
   #   - testing 
@@ -141,7 +141,7 @@ build:utrack:R2013b:
     paths:
       - $TARGET_FOLDER
     when: on_success
-    expire_in: 1 week
+    expire_in: 6 weeks
   # only:
   #   - master
   #   - testing 
