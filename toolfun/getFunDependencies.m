@@ -67,25 +67,31 @@ depList={};
 filter = @(f, l) cellfun(@(x)(isempty(regexp(x,f,'once'))), l);
 
 while true
+    disp(' -- looping over file dependency search -- ')
     %Find dependencies of current list
     if(use_depfun)
         newFiles = depfun(filesList{:},'-toponly','-quiet');
     else
-        newFiles = matlab.codetools.requiredFilesAndProducts(filesList,'toponly');
+        newFiles = matlab.codetools.requiredFilesAndProducts(filesList);
     end
         
     % Filter new found files using regular expression
     for i = 1:numel(excludefilters)
         newFiles = newFiles(filter(excludefilters{i}, newFiles));
     end
-    
+        
     % Update the dependencies file list
     nFiles=numel(depList);
     filesList = setdiff(newFiles,depList);
-    depList = unique(vertcat(depList(:),newFiles(:)));
+    depList = unique(vertcat(depList(:), newFiles(:)));
     
-    % Break if no new file or the same set of files is found
-    if isempty(newFiles) || nFiles==numel(depList), break; end
+    if (use_depfun)
+        % Break if no new file or the same set of files is found
+        if isempty(newFiles) || nFiles==numel(depList), break; end
+    else
+        disp('Used matlab.codetools.requiredFilesAndProducts - Break loop.')
+        break;
+    end
 end
 
 if(use_depfun)
