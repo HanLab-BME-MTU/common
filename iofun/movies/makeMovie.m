@@ -96,6 +96,8 @@ end
 if strcmp(format,'mov') == 1 | strcmp(format,'MOV')
    MakeQTMovie('finish');
 elseif strcmp(format,'avi') == 1 | strcmp(format,'AVI')
-   outFileName = [outFileName '.avi'];
-   movie2avi(M,outFileName);
+    v = VideoWriter(outFileName);
+    open(v);
+    writeVideo(v, M);
+    close(v);
 end

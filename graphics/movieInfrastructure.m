@@ -42,8 +42,13 @@ switch whatToDo
         switch movieType
             case 'mov'
                 MakeQTMovie finish
-            case 'avi'
-                movie2avi(movieVar,fullfile(dir2saveMovie,movieName),'compression','None','fps',10)
+            case 'avi'   
+                v = VideoWriter(fullfile(dir2saveMovie,movieName));
+                v.FrameRate = 10;
+                v.Quality = 95;
+                open(v);
+                writeVideo(v, movieVar);
+                close(v);
             case {'mp4_unix','avi_unix'}
                 frameDir = [dir2saveMovie filesep 'tmpFramesMovie'];
                 ndigit = num2str(ceil(log10(numFramesMovie)));
