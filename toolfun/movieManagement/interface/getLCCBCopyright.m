@@ -17,4 +17,4 @@ function copyright = getLCCBCopyright()
 
 % Set year and version information
 str_year = '2016';
-copyright = sprintf('Copyright %s UTSW', str_year);
+copyright = sprintf('Copyright %s Danuser Lab - UTSouthwestern', str_year);
