@@ -116,7 +116,7 @@ end
 if ~any(strcmp('AxesHandle',imviewArgs))
     figHan = figure;
     axHan = gca;
-    imviewArgs = [imviewArgs 'AxesHandle',axHan];
+    imviewArgs = [imviewArgs {'AxesHandle',axHan}];
 end
 
 %% ------ Movie Making ----- %%

@@ -5,13 +5,14 @@ ip = inputParser;
 ip.addRequired('MD',@(MD) isa(MD,'MovieData'));
 ip.parse(MD);
 
-
+progressText(0,'Print MIP');
 
 % turn a specific warning off
 warning('off', 'MATLAB:imagesci:tifftagsread:expectedAsciiDataFormat');
 
 if(MD.zSize_==1)
-    error('This seems to be a 2D movie, No MIP produced.');
+    warning('This seems to be a 2D movie, No MIP produced.');
+    return;
 end
 
 savePath=[MD.outputDirectory_ filesep 'MIP'];
@@ -40,6 +41,7 @@ myVideo.Quality = 90;    % Default 75
 open(threeVideo)
 
 for frameIdx=1:MD.nFrames_
+    progressText(frameIdx/MD.nFrames_,'Print MIP');
     maxXY=[];maxZY=[];maxZX=[];three=[];
     for chIdx=1:length(MD.channels_)
         vol=MD.getChannel(chIdx).loadStack(frameIdx);  

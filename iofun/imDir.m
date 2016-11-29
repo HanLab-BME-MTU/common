@@ -105,6 +105,6 @@ if(all(count == 1))
 
     fileNames = fileNames(iX);
 else
-    warning('imDir:non-unique-numbers','The numbers at the end of the filenames are not unique. Not sorting.');
+    disp(['imDir:non-unique-numbers: The numbers at the end of the filenames are not unique. Not sorting.']);
 end
 
