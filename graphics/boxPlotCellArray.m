@@ -8,6 +8,10 @@ function []=boxPlotCellArray(cellArrayData,nameList,convertFactor,notchOn)
 %           pixelSize, timeInterval etc...)
 % Sangyoon Han, March 2016
 [lengthLongest]=max(cellfun(@(x) length(x),cellArrayData));
+%If there is no data, exclude them in the plot
+idEmptyData = cellfun(@isempty,cellArrayData);
+cellArrayData(idEmptyData)=[];
+nameList(idEmptyData)=[];
 numConditions = numel(cellArrayData);
 matrixData = NaN(lengthLongest,numConditions);
 for k=1:numConditions
@@ -28,12 +32,14 @@ end
 boxWidth=0.5;
 whiskerRatio=1;
 matrixData=matrixData*convertFactor;
+nameListNew = cellfun(@(x,y) [x '(N=' num2str(length(y)) ')'],nameList,cellArrayData,'UniformOutput', false);
+
 if notchOn %min(sum(~isnan(matrixData),1))>20 || 
     boxplot(matrixData,'whisker',whiskerRatio,'notch','on',...
-        'labels',nameList,'symbol','','widths',boxWidth,'jitter',1,'colors','k');%, 'labelorientation','inline');
+        'labels',nameListNew,'symbol','','widths',boxWidth,'jitter',1,'colors','k');%, 'labelorientation','inline');
 else % if the data is too small, don't use notch
     boxplot(matrixData,'whisker',whiskerRatio*0.5,'notch','off',...
-        'labels',nameList,'symbol','','widths',boxWidth,'jitter',1,'colors','k');%, 'labelorientation','inline');
+        'labels',nameListNew,'symbol','','widths',boxWidth,'jitter',1,'colors','k');%, 'labelorientation','inline');
 end
     
 set(findobj(gca,'LineStyle','--'),'LineStyle','-')

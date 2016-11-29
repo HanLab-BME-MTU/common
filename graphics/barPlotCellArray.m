@@ -16,12 +16,13 @@ if nargin<2
 end
 bar(1:numConditions, cellfun(@nanmean,cellArrayData)*convertFactor,'FaceColor',[1 1 1],'EdgeColor',[0 0 0],'LineWidth',1.5); hold on
 errorbar(1:numConditions, cellfun(@nanmean,cellArrayData)*convertFactor,cellfun(@(x) nanstd(x)/sqrt(length(x)),cellArrayData)*convertFactor,'Marker','none','LineStyle','none','Color','k','LineWidth',1.5);
-set(gca,'XTickLabel',nameList)
+nameListNew = cellfun(@(x,y) [x '(N=' num2str(length(y)) ')'],nameList,cellArrayData,'UniformOutput', false);
+set(gca,'XTickLabel',nameListNew)
 set(gca,'XTickLabelRotation',45)
 
 %% perform ranksum test for every single combination
 maxPoint =cellfun(@nanmean,cellArrayData)+cellfun(@(x) nanstd(x)/sqrt(length(x)),cellArrayData);
-maxPoint2 = nanmax(maxPoint(:));
+maxPoint2 = nanmax(maxPoint(:))*convertFactor;
 lineGap=maxPoint2*0.05;
 q=0;
 for k=1:(numConditions-1)
