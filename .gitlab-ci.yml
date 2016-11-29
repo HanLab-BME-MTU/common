@@ -1,0 +1,277 @@
+# Gitlab CI Script for danuser/common
+# Andrew R. Jamieson - 2016
+
+
+stages:
+  - unit
+  - build
+  - test
+  - deploy
+  - doc
+
+variables:
+  CLEAN_REPO_PATH: "/home2/s170480/matlab/xUnit/git/"
+  CI_SCRIPT_PATH: "${CLEAN_REPO_PATH}/ci-scripts/"
+  
+before_script:
+  - pwd
+  - date
+  - uname -a
+  - module load python
+  - module unload matlab
+  - module list
+  - cd $CI_SCRIPT_PATH
+  - git checkout master
+  - git pull 
+  - cd $CI_PROJECT_DIR
+  - $CI_SCRIPT_PATH/setup_gitlabCI.sh
+ 
+ 
+# === Unit Tests ======================= 
+# Newest and oldest first...
+unit:R2016a:
+  stage: unit
+  script: 
+    - module unload matlab
+    - module load matlab/2016a
+    - echo "-Xmx1024m" > java.opts
+    - $CI_SCRIPT_PATH/runCITest_m.sh
+
+unit:R2013b:
+  stage: unit
+  script: 
+    - module unload matlab
+    - module load matlab/2013b
+    - echo "-Xmx1024m" > java.opts
+    - $CI_SCRIPT_PATH/runCITest_m.sh
+
+# ======== [optional - other version] ==
+unit:R2015b:
+  stage: unit
+  script: 
+    - module unload matlab
+    - module load matlab/2015b
+    - echo "-Xmx1024m" > java.opts
+    - $CI_SCRIPT_PATH/runCITest_m.sh
+  when: manual
+  # only:
+  #   - master
+
+unit:R2015a:
+  stage: unit
+  script: 
+    - module unload matlab
+    - module load matlab/2015a
+    - echo "-Xmx1024m" > java.opts
+    - $CI_SCRIPT_PATH/runCITest_m.sh
+  when: manual
+  # only:
+  #   - master
+
+unit:R2014b:
+  stage: unit
+  script: 
+    - module unload matlab
+    - module load matlab/2014b
+    - echo "-Xmx1024m" > java.opts
+    - $CI_SCRIPT_PATH/runCITest_m.sh
+  when: manual
+  # only:
+  #   - master
+
+unit:R2014a:
+  stage: unit
+  script: 
+    - module unload matlab
+    - module load matlab/2014a
+    - echo "-Xmx1024m" > java.opts
+    - $CI_SCRIPT_PATH/runCITest_m.sh
+  when: manual
+  # only:
+  #   - master
+
+
+# === Build Packages =======================  
+# Build the newest and oldest 
+
+build:utrack:R2016a:
+  stage: build
+  variables:
+    MATLAB_VERSION: "2016a"
+    PACKAGE_NAME:  "u-track"
+    PACKAGE_CLASS: "TrackingPackage"
+    BUILD_NAME: $PACKAGE_NAME
+    DOCUMENTATION_DIR: "${CLEAN_REPO_PATH}/documentation"
+    RELEASE: "2.1.4-DEV"
+    TARGET_FOLDER: "target/${MATLAB_VERSION}/${PACKAGE_NAME}"
+  script:
+    - module unload matlab
+    - module load matlab/$MATLAB_VERSION
+    - module load texlive/2014
+    - echo "-Xmx1024m" > java.opts
+    - $CI_SCRIPT_PATH/runCIbuild_utrack_Package_m.sh
+  artifacts:
+    name: "${BUILD_NAME}-b${CI_BUILD_ID}"
+    paths:
+      - $TARGET_FOLDER
+    when: on_success
+    expire_in: 6 weeks
+  # only:
+  #   - master
+  #   - testing 
+
+build:utrack:R2013b:
+  stage: build
+  variables:
+    MATLAB_VERSION: "2013b"
+    PACKAGE_NAME:  "u-track"
+    PACKAGE_CLASS: "TrackingPackage"
+    BUILD_NAME: $PACKAGE_NAME
+    DOCUMENTATION_DIR: "${CLEAN_REPO_PATH}/documentation"
+    RELEASE: "2.1.4-DEV"
+    TARGET_FOLDER: "target/${MATLAB_VERSION}/${PACKAGE_NAME}"
+  script:
+    - module unload matlab
+    - module load matlab/$MATLAB_VERSION
+    - module load texlive/2014
+    - echo "-Xmx1024m" > java.opts
+    - $CI_SCRIPT_PATH/runCIbuild_utrack_Package_m.sh
+  artifacts:
+    name: "${BUILD_NAME}-b${CI_BUILD_ID}"
+    paths:
+      - $TARGET_FOLDER
+    when: on_success
+    expire_in: 6 weeks
+  # only:
+  #   - master
+  #   - testing 
+
+# === Test Packages =======================  
+# Run the newest and oldest 
+test:utrack:R2016a:
+  stage: test
+  variables:
+    MATLAB_TEST_VERSION: "2016a"
+    MATLAB_BUILD_VERSION: "2016a"
+    BUILT_PACKAGE_PATH: "${CI_PROJECT_DIR}/target/${MATLAB_BUILD_VERSION}/u-track/"
+  script:
+    - module unload matlab
+    - module load matlab/$MATLAB_TEST_VERSION
+    - echo "-Xmx1024m" > java.opts
+    - ${CI_SCRIPT_PATH}/utrack_test.sh
+  dependencies:
+    - build:utrack:R2016a
+
+# Oldest
+test:utrack:R2013b-B2013b:
+  stage: test
+  variables:
+    MATLAB_TEST_VERSION: "2013b"
+    MATLAB_BUILD_VERSION: "2013b"
+    BUILT_PACKAGE_PATH: "${CI_PROJECT_DIR}/target/${MATLAB_BUILD_VERSION}/u-track/"
+  script:
+    - module unload matlab
+    - module load matlab/$MATLAB_TEST_VERSION
+    - echo "-Xmx1024m" > java.opts
+    - ${CI_SCRIPT_PATH}/utrack_test.sh
+  dependencies:
+    - build:utrack:R2013b
+
+test:utrack:R2013b-B2016a:
+  stage: test
+  variables:
+    MATLAB_TEST_VERSION: "2013b"
+    MATLAB_BUILD_VERSION: "2016a"
+    BUILT_PACKAGE_PATH: "${CI_PROJECT_DIR}/target/${MATLAB_BUILD_VERSION}/u-track/"
+  script:
+    - module unload matlab
+    - module load matlab/$MATLAB_TEST_VERSION
+    - echo "-Xmx1024m" > java.opts
+    - ${CI_SCRIPT_PATH}/utrack_test.sh
+  dependencies:
+    - build:utrack:R2016a
+  
+# Optional Runs with different Run versions
+# #################################
+test:utrack:R2015b:
+  stage: test
+  variables:
+    MATLAB_TEST_VERSION: "2015b"
+    MATLAB_BUILD_VERSION: "2013b"
+    BUILT_PACKAGE_PATH: "${CI_PROJECT_DIR}/target/${MATLAB_BUILD_VERSION}/u-track/"
+  script:
+    - module unload matlab
+    - module load matlab/$MATLAB_TEST_VERSION
+    - echo "-Xmx1024m" > java.opts
+    - ${CI_SCRIPT_PATH}/utrack_test.sh
+  dependencies:
+    - build:utrack:R2013b
+  when: manual
+
+test:utrack:R2015a:
+  stage: test
+  variables:
+    MATLAB_TEST_VERSION: "2015a"
+    MATLAB_BUILD_VERSION: "2013b"
+    BUILT_PACKAGE_PATH: "${CI_PROJECT_DIR}/target/${MATLAB_BUILD_VERSION}/u-track/"
+  script:
+    - module unload matlab
+    - module load matlab/$MATLAB_TEST_VERSION
+    - echo "-Xmx1024m" > java.opts
+    - ${CI_SCRIPT_PATH}/utrack_test.sh
+  dependencies:
+    - build:utrack:R2013b
+  when: manual
+
+test:utrack:R2014b:
+  stage: test
+  variables:
+    MATLAB_TEST_VERSION: "2014b"
+    MATLAB_BUILD_VERSION: "2013b"
+    BUILT_PACKAGE_PATH: "${CI_PROJECT_DIR}/target/${MATLAB_BUILD_VERSION}/u-track/"
+  script:
+    - module unload matlab
+    - module load matlab/$MATLAB_TEST_VERSION
+    - echo "-Xmx1024m" > java.opts
+    - ${CI_SCRIPT_PATH}/utrack_test.sh
+  dependencies:
+    - build:utrack:R2013b
+  when: manual
+
+test:utrack:R2014a:
+  stage: test
+  variables:
+    MATLAB_TEST_VERSION: "2014a"
+    MATLAB_BUILD_VERSION: "2013b"
+    BUILT_PACKAGE_PATH: "${CI_PROJECT_DIR}/target/${MATLAB_BUILD_VERSION}/u-track/"
+  script:
+    - module unload matlab
+    - module load matlab/$MATLAB_TEST_VERSION
+    - echo "-Xmx1024m" > java.opts
+    - ${CI_SCRIPT_PATH}/utrack_test.sh
+  dependencies:
+    - build:utrack:R2013b
+  when: manual
+
+# === Documentation Generation Alone ======================= 
+doc:pdf_utrack:
+  stage: doc
+  variables:
+    DOCUMENTATION_DIR: "${CLEAN_REPO_PATH}/documentation"
+    TARGET_FOLDER: "pdfdoc"
+    PACKAGE_NAME:  "u-track"
+    PACKAGE_CLASS: "TrackingPackage"
+    BUILD_NAME: $PACKAGE_NAME
+    RELEASE: "2.1.4-DEV"
+  script: 
+    - module load texlive/2014
+    - echo "# Build package documentation pdfs"
+    - mkdir -p ${CI_PROJECT_DIR}/$TARGET_FOLDER/
+    - (cd $DOCUMENTATION_DIR && make clean latexpdf)
+    - cp $DOCUMENTATION_DIR/_build/latex/u-track-*.pdf $TARGET_FOLDER/Readme_u-track-$RELEASE.pdf
+  artifacts:
+    name: "${BUILD_NAME}-${RELEASE}_b${CI_BUILD_ID}.pdf"
+    paths:
+      - $TARGET_FOLDER/Readme_u-track-$RELEASE.pdf
+    expire_in: 14 days
+  when: manual
