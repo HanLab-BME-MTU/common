@@ -27,8 +27,10 @@
 %
 %
 % Note: this function uses patch() since colors can't be controlled with bar()
-
+%
 % Francois Aguet, 18 March 2011 (Last modified: 1 Mar 2013)
+% Andrew R. Jamieson, Nov. 2016  - fixed deprecated errorbar style bug and
+% other figure errors.
 
 function [h, he] = barplot2(prm, varargin)
 
@@ -41,25 +43,25 @@ ip.addRequired('prm');
 ip.addOptional('errorbars', [], @(x) isempty(x) || all(size(x)==size(prm)));
 ip.addOptional('BottomErrorbars', [], @(x) isempty(x) || all(size(x)==size(prm)));
 ip.addOptional('Annotations', [], @(x) isempty(x) || size(x,2)==2);
-ip.addParamValue('FaceColor', jet(nb), @(x) any(size(x,1)==[1 nb ng]));
-ip.addParamValue('EdgeColor', []);
-ip.addParamValue('BorderWidth', [], @isscalar); 
-ip.addParamValue('XLabel', ' ', @ischar);
-ip.addParamValue('YLabel', ' ', @ischar);
-ip.addParamValue('YLim', [], @(x) numel(x)==2);
-ip.addParamValue('YTick', []);
-ip.addParamValue('XTickLabel', [], @(x) isempty(x) || any(numel(x)==[nb ng]) || (iscell(x) && (numel(x)==sum(nb) || numel(x)==ng)));
-ip.addParamValue('BarWidth', 0.8, @isscalar);
-ip.addParamValue('GroupDistance', 0.8, @isscalar);
-ip.addParamValue('LineWidth', 1, @isscalar);
-ip.addParamValue('Angle', 45, @(x) isscalar(x) && (0<=x && x<=90));
-ip.addParamValue('ErrorBarPosition', 'top',  @(x) strcmpi(x, 'top') | strcmpi(x, 'both'));
-ip.addParamValue('ErrorBarWidth', 0.2, @(x) 0<x && x<=1);
-ip.addParamValue('Handle', gca, @ishandle);
-ip.addParamValue('Interpreter', 'tex', @(x) any(strcmpi(x, {'tex', 'latex', 'none'})));
-ip.addParamValue('X', [], @(x) numel(x)==ng); % cell array of x-coordinates (groups only)
-ip.addParamValue('AdjustFigure', true, @islogical);
-ip.addParamValue('ErrorbarColor', []); % not yet implemented
+ip.addParameter('FaceColor', jet(nb), @(x) any(size(x,1)==[1 nb ng]));
+ip.addParameter('EdgeColor', []);
+ip.addParameter('BorderWidth', [], @isscalar); 
+ip.addParameter('XLabel', ' ', @ischar);
+ip.addParameter('YLabel', ' ', @ischar);
+ip.addParameter('YLim', [], @(x) numel(x)==2);
+ip.addParameter('YTick', []);
+ip.addParameter('XTickLabel', [], @(x) isempty(x) || any(numel(x)==[nb ng]) || (iscell(x) && (numel(x)==sum(nb) || numel(x)==ng)));
+ip.addParameter('BarWidth', 0.8, @isscalar);
+ip.addParameter('GroupDistance', 0.8, @isscalar);
+ip.addParameter('LineWidth', 1, @isscalar);
+ip.addParameter('Angle', 45, @(x) isscalar(x) && (0<=x && x<=90));
+ip.addParameter('ErrorBarPosition', 'top',  @(x) strcmpi(x, 'top') | strcmpi(x, 'both'));
+ip.addParameter('ErrorBarWidth', 0.2, @(x) 0<x && x<=1);
+ip.addParameter('Handle', gca, @ishandle);
+ip.addParameter('Interpreter', 'tex', @(x) any(strcmpi(x, {'tex', 'latex', 'none'})));
+ip.addParameter('X', [], @(x) numel(x)==ng); % cell array of x-coordinates (groups only)
+ip.addParameter('AdjustFigure', true, @islogical);
+ip.addParameter('ErrorbarColor', []); % not yet implemented
 ip.parse(prm, varargin{:});
 
 topErrorbars = ip.Results.errorbars;
@@ -123,14 +125,20 @@ for g = 1:ng
         if sum(posIdx)>0
             he = errorbar(xa{g}(posIdx), height(posIdx), zeros(1,sum(posIdx)), topErrorbars(g,posIdx),...
                 'k', 'LineStyle', 'none', 'LineWidth', ip.Results.LineWidth, 'HandleVisibility', 'off', 'Parent', ha);
-            setErrorbarStyle(he, ip.Results.ErrorBarWidth, 'Position', 'top');
+            if verLessThan('matlab','8.4')
+                % -- Code to run in MATLAB R2014a and earlier here --
+                setErrorbarStyle(he, ip.Results.ErrorBarWidth, 'Position', 'top');
+            end
             topval((g-1)*nb+find(posIdx)) = height(posIdx)+topErrorbars(g,posIdx);
         end
         posIdx = height<0; % negative values
         if sum(posIdx)>0
             he = errorbar(xa{g}(posIdx), height(posIdx), bottomErrorbars(g,posIdx), zeros(1,sum(posIdx)),...
                 'k', 'LineStyle', 'none', 'LineWidth', ip.Results.LineWidth, 'HandleVisibility', 'off', 'Parent', ha);
-            setErrorbarStyle(he, ip.Results.ErrorBarWidth, 'Position', 'bottom');
+            if verLessThan('matlab','8.4')
+                % -- Code to run in MATLAB R2014a and earlier here --           
+                setErrorbarStyle(he, ip.Results.ErrorBarWidth, 'Position', 'bottom');
+            end
         end
         %topval((g-1)*nb+find(posIdx)
     end
@@ -160,13 +168,19 @@ for g = 1:ng
         if sum(posIdx)>0
             he = errorbar(xa{g}(posIdx), height(posIdx), bottomErrorbars(g,posIdx), zeros(1,sum(posIdx)),...
                 'k', 'LineStyle', 'none', 'LineWidth', ip.Results.LineWidth, 'HandleVisibility', 'off', 'Parent', ha);
-            setErrorbarStyle(he, ip.Results.ErrorBarWidth, 'Position', 'bottom');
+            if verLessThan('matlab','8.4')
+                % -- Code to run in MATLAB R2014a and earlier here --  
+                setErrorbarStyle(he, ip.Results.ErrorBarWidth, 'Position', 'bottom');
+            end
         end
         posIdx = height<0; % negative values
         if sum(posIdx)>0
             he = errorbar(xa{g}(posIdx), height(posIdx), zeros(1,sum(posIdx)), topErrorbars(g,posIdx),...
                 'k', 'LineStyle', 'none', 'LineWidth', ip.Results.LineWidth, 'HandleVisibility', 'off', 'Parent', ha);
-            setErrorbarStyle(he, ip.Results.ErrorBarWidth, 'Position', 'top');
+            if verLessThan('matlab','8.4')
+                % -- Code to run in MATLAB R2014a and earlier here --  
+                setErrorbarStyle(he, ip.Results.ErrorBarWidth, 'Position', 'top');
+            end
         end
     end
 end
