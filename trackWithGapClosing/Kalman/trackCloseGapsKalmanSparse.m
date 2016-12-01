@@ -449,7 +449,7 @@ numTracksLink = size(tracksFeatIndxLink,1);
 %% Close gaps with merging/splitting
 
 %if there are gaps to close (i.e. if there are tracks that start after the
-%first frame and tracks that end before the last framae) ...
+%first frame and tracks that end before the last frame) ...
 if any(trackStartTime > 1) || any(trackEndTime < numFramesEff)
 
     if verbose
