@@ -337,8 +337,8 @@ end
 set(handles.pushbutton_run, 'Callback', @(hObject,eventdata)packageGUI_RunFcn(hObject,eventdata,guidata(hObject)));
 % Set web links in menu
 set(handles.menu_about_gpl,'UserData','http://www.gnu.org/licenses/gpl.html')
-set(handles.menu_about_lccb,'UserData','http://lccb.hms.harvard.edu/')
-set(handles.menu_about_lccbsoftware,'UserData','http://lccb.hms.harvard.edu/software.html')
+set(handles.menu_about_lccb,'UserData','http://www.utsouthwestern.edu/labs/danuser/')
+set(handles.menu_about_lccbsoftware,'UserData','http://www.utsouthwestern.edu/labs/danuser/software/')
  
 % Update handles structure
 set(handles.figure1,'UserData',userData);
