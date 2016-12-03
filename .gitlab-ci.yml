@@ -101,7 +101,7 @@ build:utrack:R2016a:
     PACKAGE_NAME:  "u-track"
     PACKAGE_CLASS: "TrackingPackage"
     BUILD_NAME: $PACKAGE_NAME
-    DOCUMENTATION_DIR: "$USER_HOME/matlab/xUnit/git/documentation"
+    DOCUMENTATION_DIR: "${CLEAN_REPO_PATH}/documentation"
     RELEASE: "2.1.4-DEV"
     TARGET_FOLDER: "target/${MATLAB_VERSION}/${PACKAGE_NAME}"
   script:
@@ -115,7 +115,7 @@ build:utrack:R2016a:
     paths:
       - $TARGET_FOLDER
     when: on_success
-    expire_in: 1 week
+    expire_in: 6 weeks
   # only:
   #   - master
   #   - testing 
@@ -127,7 +127,7 @@ build:utrack:R2013b:
     PACKAGE_NAME:  "u-track"
     PACKAGE_CLASS: "TrackingPackage"
     BUILD_NAME: $PACKAGE_NAME
-    DOCUMENTATION_DIR: "$USER_HOME/matlab/xUnit/git/documentation"
+    DOCUMENTATION_DIR: "${CLEAN_REPO_PATH}/documentation"
     RELEASE: "2.1.4-DEV"
     TARGET_FOLDER: "target/${MATLAB_VERSION}/${PACKAGE_NAME}"
   script:
@@ -141,7 +141,7 @@ build:utrack:R2013b:
     paths:
       - $TARGET_FOLDER
     when: on_success
-    expire_in: 1 week
+    expire_in: 6 weeks
   # only:
   #   - master
   #   - testing 

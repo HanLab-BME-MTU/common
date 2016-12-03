@@ -666,8 +666,13 @@ function userData = updateUserData(handles,newProcs,iMovie)
         userData.(field) = MOs;
         
         if(strcmp(field,'MD'))
-            % Update MovieList if we updated the MD
-            userData.ML.attachMovies(MOs(iMovie));
+            % Update MovieList(s) if we updated the MD
+            % Loop because there may be more than one MovieList
+            for ll = 1:length(userData.ML)
+                % attachMovies only attaches if the movie is already in the
+                % list and does not generate an error otherwise
+                userData.ML(ll).attachMovies(MOs(iMovie(i)));
+            end
         end
 
         % Replace Package

@@ -22,7 +22,7 @@ function varargout = movieSelectorGUI(varargin)
 
 % Edit the above text to modify the response to help movieSelectorGUI
 
-% Last Modified by GUIDE v2.5 25-May-2015 22:56:16
+% Last Modified by GUIDE v2.5 01-Dec-2016 17:13:50
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -68,10 +68,10 @@ ip = inputParser;
 ip.addRequired('hObject',@ishandle);
 ip.addRequired('eventdata',@(x) isstruct(x) || isempty(x));
 ip.addRequired('handles',@isstruct);
-ip.addParamValue('packageName','',@ischar);
-ip.addParamValue('MD', MovieData.empty(1,0) ,@(x) isempty(x) || isa(x,'MovieData'));
-ip.addParamValue('ML', MovieList.empty(1,0), @(x) isempty(x) || isa(x,'MovieList'));
-ip.addParamValue('cluster',[],@(x) isempty(x) || isa(x,'parallel.Cluster'));
+ip.addParameter('packageName','',@ischar);
+ip.addParameter('MD', MovieData.empty(1,0) ,@(x) isempty(x) || isa(x,'MovieData'));
+ip.addParameter('ML', MovieList.empty(1,0), @(x) isempty(x) || isa(x,'MovieList'));
+ip.addParameter('cluster',[],@(x) isempty(x) || isa(x,'parallel.Cluster'));
 ip.parse(hObject,eventdata,handles,varargin{:});
 
 set(handles.text_copyright, 'String', getLCCBCopyright())
@@ -96,7 +96,7 @@ userData = loadLCCBIcons(userData);
 
 % Get concrete packages
 packageList = getPackageList();
-if isempty(packageList), 
+if isempty(packageList) 
     warndlg('No package found! Please make sure you properly added the installation directory to the path (see user''s manual).',...
         'Movie Selector','modal'); 
 end
@@ -172,7 +172,8 @@ guidata(hObject, handles);
 
 function packageList = getPackageList()
 
-packageList = {'BiosensorsPackage';...
+packageList = {
+    'BiosensorsPackage';...
     'FocalAdhesionPackage'
     'FocalAdhesionSegmentationPackage'
     'IntegratorPackage'
@@ -640,3 +641,10 @@ if isempty(varname), return; end
 
 userData = get(handles.figure1, 'UserData');
 assignin('base', varname{1}, userData.ML(props{2}));
+
+
+% --------------------------------------------------------------------
+function menu_about_lccb_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_about_lccb (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
