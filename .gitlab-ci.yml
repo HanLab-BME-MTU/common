@@ -31,17 +31,21 @@ before_script:
 # Newest and oldest first...
 unit:R2016a:
   stage: unit
+  variables:
+    MATLAB_VERSION: "2016b"
   script: 
     - module unload matlab
-    - module load matlab/2016a
+    - module load matlab/$MATLAB_VERSION
     - echo "-Xmx1024m" > java.opts
     - $CI_SCRIPT_PATH/runCITest_m.sh
 
 unit:R2013b:
   stage: unit
+  variables:
+    MATLAB_VERSION: "2013b"
   script: 
     - module unload matlab
-    - module load matlab/2013b
+    - module load matlab/$MATLAB_VERSION
     - echo "-Xmx1024m" > java.opts
     - $CI_SCRIPT_PATH/runCITest_m.sh
 
