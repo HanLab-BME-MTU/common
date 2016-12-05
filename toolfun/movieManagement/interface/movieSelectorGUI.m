@@ -22,7 +22,7 @@ function varargout = movieSelectorGUI(varargin)
 
 % Edit the above text to modify the response to help movieSelectorGUI
 
-% Last Modified by GUIDE v2.5 25-May-2015 22:56:16
+% Last Modified by GUIDE v2.5 01-Dec-2016 17:13:50
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -641,3 +641,10 @@ if isempty(varname), return; end
 
 userData = get(handles.figure1, 'UserData');
 assignin('base', varname{1}, userData.ML(props{2}));
+
+
+% --------------------------------------------------------------------
+function menu_about_lccb_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_about_lccb (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)

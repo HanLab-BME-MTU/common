@@ -122,11 +122,12 @@ end
 
 % Check for .m files associated with mex files
 % and remove these from packageFuns to avoid duplication.
-[mf1, mf2, mf3] = cellfun(@(x)fileparts(x), packageMexFuns, 'Unif', false);
-[f1, f2, f3] = cellfun(@(x)fileparts(x), packageFuns, 'Unif', false);
-[Int, if2, iPack] = intersect(f2, mf2);
-packageFuns(if2) = [];
-
+if ~isempty(packageMexFuns)
+    [mf1, mf2, mf3] = cellfun(@(x)fileparts(x), packageMexFuns, 'Unif', false);
+    [f1, f2, f3] = cellfun(@(x)fileparts(x), packageFuns, 'Unif', false); 
+    [Int, if2, iPack] = intersect(f2, mf2);
+    packageFuns(if2) = [];
+end
 
 
 % Get the main path to the icons folder
@@ -205,17 +206,19 @@ for i = 1 : nDocFiles
     copyfile(packageDocs{i}, [docDir filesep packageDocs{i}(iLFS+1:end)]);
 end
 
-% Create mex output directory if non-existing
-disp('Creating MEX-files directory...')
-mexDir=[outDir filesep 'mex'];
-if ~isdir(mexDir), mkdir(mexDir); end
-
-% Copy mex-files
-nMexFiles = numel(packageMexFuns);
-disp(['Copying all '  num2str(nMexFiles) ' MEX files ...'])
-for i = 1 : nMexFiles
-    iLFS = max(regexp(packageMexFuns{i},filesep));
-    copyfile(packageMexFuns{i},[mexDir filesep packageMexFuns{i}(iLFS+1:end)]);
+if ~isempty(packageMexFuns)
+    % Create mex output directory if non-existing
+    disp('Creating MEX-files directory...')
+    mexDir=[outDir filesep 'mex'];
+    if ~isdir(mexDir), mkdir(mexDir); end
+    
+    % Copy mex-files
+    nMexFiles = numel(packageMexFuns);
+    disp(['Copying all '  num2str(nMexFiles) ' MEX files ...'])
+    for i = 1 : nMexFiles
+        iLFS = max(regexp(packageMexFuns{i},filesep));
+        copyfile(packageMexFuns{i},[mexDir filesep packageMexFuns{i}(iLFS+1:end)]);
+    end
 end
 
 %% External libraries
