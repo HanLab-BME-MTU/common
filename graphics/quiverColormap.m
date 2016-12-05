@@ -35,7 +35,7 @@ function h= quiverColormap(x,y,u,v,varargin)
 % Parse input parameters
 ip=inputParser;
 ip.addParamValue('Colormap',jet,@(x) isnumeric(x) && size(x,2)==3);
-ip.addParamValue('CLim',[],@isvector);
+ip.addParamValue('CLim',[],@(x) isvector(x) || isempty(x));
 ip.KeepUnmatched=true;
 ip.parse(varargin{:});
 

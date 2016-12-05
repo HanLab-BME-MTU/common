@@ -116,7 +116,7 @@ end
 if ~any(strcmp('AxesHandle',imviewArgs))
     figHan = figure;
     axHan = gca;
-    imviewArgs = [imviewArgs 'AxesHandle',axHan];
+    imviewArgs = [imviewArgs {'AxesHandle',axHan}];
 end
 
 %% ------ Movie Making ----- %%
@@ -164,11 +164,10 @@ if makeMov
     MakeQTMovie('finish')
 end
 if makeAvi
-    if isunix
-        movie2avi(movieFrames,[movieData.outputDirectory_ filesep fName]);
-    else
-        movie2avi(movieFrames,[movieData.outputDirectory_ filesep fName],'compression','Cinepak');        
-    end
+    v = VideoWriter([movieData.outputDirectory_ filesep fName '.avi']);
+    open(v);
+    writeVideo(v, movieFrames);
+    close(v);
 end
 
 

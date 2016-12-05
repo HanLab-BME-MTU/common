@@ -55,7 +55,7 @@ function [fileNames, formatNum, sNums] = imDir(imDirectory,returnAll)
 
 %The list of supported file extensions. Feel free to add! (just update the
 %help also!)
-fExt = {'tif', 'stk', 'bmp', 'jpg','jp2','jpx'};
+fExt = {'tif','tiff', 'stk', 'bmp', 'jpg','jp2','jpx'};
 if ~ispc && ~(ismac && ~verLessThan('matlab', '8.3'))
     % Add case-sensitivity under unix based platforms
     fExt =  reshape(vertcat(fExt,upper(fExt)),1,2*numel(fExt));
@@ -105,6 +105,6 @@ if(all(count == 1))
 
     fileNames = fileNames(iX);
 else
-    warning('imDir:non-unique-numbers','The numbers at the end of the filenames are not unique. Not sorting.');
+    disp(['imDir:non-unique-numbers: The numbers at the end of the filenames are not unique. Not sorting.']);
 end
 
