@@ -21,9 +21,25 @@ set(gca,'XTickLabel',nameListNew)
 set(gca,'XTickLabelRotation',45)
 
 %% perform ranksum test for every single combination
-maxPoint =cellfun(@nanmean,cellArrayData)+cellfun(@(x) nanstd(x)/sqrt(length(x)),cellArrayData);
-maxPoint2 = nanmax(maxPoint(:))*convertFactor;
-lineGap=maxPoint2*0.05;
+meanPoints =cellfun(@nanmean,cellArrayData);
+maxPoint = max(meanPoints);
+minPoint = min(meanPoints);
+if maxPoint>0 && minPoint>0
+    maxPointWithStd =cellfun(@nanmean,cellArrayData)+cellfun(@(x) nanstd(x)/sqrt(length(x)),cellArrayData);
+    extremePoint2 = nanmax(maxPointWithStd(:))*convertFactor;
+elseif maxPoint<0 && minPoint<0
+    maxPointWithStd =cellfun(@nanmean,cellArrayData)-cellfun(@(x) nanstd(x)/sqrt(length(x)),cellArrayData);
+    extremePoint2 = nanmin(maxPointWithStd(:))*convertFactor;
+else
+    if maxPoint>abs(minPoint)
+        maxPointWithStd =cellfun(@nanmean,cellArrayData)+cellfun(@(x) nanstd(x)/sqrt(length(x)),cellArrayData);
+        extremePoint2 = nanmax(maxPointWithStd(:))*convertFactor;
+    else
+        maxPointWithStd =cellfun(@nanmean,cellArrayData)-cellfun(@(x) nanstd(x)/sqrt(length(x)),cellArrayData);
+        extremePoint2 = nanmin(maxPointWithStd(:))*convertFactor;
+    end
+end
+lineGap=abs(extremePoint2*0.05);
 q=0;
 for k=1:(numConditions-1)
     for ii=k+1:numConditions
@@ -31,18 +47,32 @@ for k=1:(numConditions-1)
             if kstest(cellArrayData{k}) % this means the test rejects the null hypothesis
                 [p]=ranksum(cellArrayData{k},cellArrayData{ii});
                 if p<0.05
-                    q=q+lineGap;
-                    line([k ii], ones(1,2)*(maxPoint2+q),'Color','k')    
-                    q=q+lineGap;
-                    text(floor((k+ii)/2), maxPoint2+q,['p=' num2str(p) ' (r)'])
+                    if extremePoint2>0
+                        q=q+lineGap;
+                        line([k ii], ones(1,2)*(extremePoint2+q),'Color','k')    
+                        q=q+lineGap;
+                        text(floor((k+ii)/2), extremePoint2+q,['p=' num2str(p) ' (r)'])
+                    else
+                        q=q+lineGap;
+                        line([k ii], ones(1,2)*(extremePoint2-q),'Color','k')    
+                        q=q+lineGap;
+                        text(floor((k+ii)/2), extremePoint2-q,['p=' num2str(p) ' (r)'])
+                    end
                 end
             else
                 [~,p]=ttest2(cellArrayData{k},cellArrayData{ii});
                 if p<0.05
-                    q=q+lineGap;
-                    line([k ii], ones(1,2)*(maxPoint2+q),'Color','k')    
-                    q=q+lineGap;
-                    text(floor((k+ii)/2), maxPoint2+q,['p=' num2str(p) ' (t)'])
+                    if extremePoint2>0
+                        q=q+lineGap;
+                        line([k ii], ones(1,2)*(extremePoint2+q),'Color','k')    
+                        q=q+lineGap;
+                        text(floor((k+ii)/2), extremePoint2+q,['p=' num2str(p) ' (t)'])
+                    else
+                        q=q+lineGap;
+                        line([k ii], ones(1,2)*(extremePoint2-q),'Color','k')    
+                        q=q+lineGap;
+                        text(floor((k+ii)/2), extremePoint2-q,['p=' num2str(p) ' (t)'])
+                    end
                 end
             end
         end
@@ -63,5 +93,17 @@ end
 %     end
 % end
 q=q+lineGap*3;
-ylim([0 maxPoint2+q])
+if extremePoint2>0
+    if minPoint>0
+        ylim([0 extremePoint2+q])
+    else
+        ylim([minPoint-lineGap extremePoint2+q])
+    end
+else
+    if minPoint<0
+        ylim([extremePoint2-q 0])
+    else
+        ylim([extremePoint2-q minPoint+lineGap])
+    end
+end
 

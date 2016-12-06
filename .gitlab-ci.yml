@@ -114,6 +114,7 @@ build:utrack:R2016b:
     PACKAGE_NAME:  "u-track"
     PACKAGE_CLASS: "TrackingPackage"
     BUILD_NAME: $PACKAGE_NAME
+    RELEASE: "2.2.0"
     DOCUMENTATION_DIR: "${CLEAN_REPO_PATH}/documentation"
     TARGET_FOLDER: "target/${MATLAB_VERSION}/${PACKAGE_NAME}"
   script:
@@ -139,6 +140,7 @@ build:utrack:R2013b:
     PACKAGE_NAME:  "u-track"
     PACKAGE_CLASS: "TrackingPackage"
     BUILD_NAME: $PACKAGE_NAME
+    RELEASE: "2.2.0"
     DOCUMENTATION_DIR: "${CLEAN_REPO_PATH}/documentation"
     TARGET_FOLDER: "target/${MATLAB_VERSION}/${PACKAGE_NAME}"
   script:
