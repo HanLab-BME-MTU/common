@@ -75,7 +75,7 @@ classdef TestInterpftExtrema < TestCase
                 x = x'/n*2*pi;
                 % Relax the tolerance since the maximum occurs at the
                 % boundary
-                [maxima, minima, maxima_value, minima_value, other, other_value] = interpft_extrema(cos(x),1,true,1e-11);
+                [maxima, minima, maxima_value, minima_value, other, other_value] = interpft_extrema(cos(x),1,true,1e-10);
                 assert(abs(maxima_value-1) < 1e-15);
                 assert(abs(minima_value+1) < 1e-15);
                 assertEqual(cos(maxima),1);

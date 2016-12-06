@@ -13,6 +13,12 @@ classdef TestProgressTextMultiple < TestCase
             clear progressTextMultiple;
         end
         function testNormalCountdown(self,pauseTime)
+            if(nargin < 2)
+                pauseTime = 0;
+            end
+            evalc('self.actualNormalCountdown(pauseTime)');
+        end
+        function actualNormalCountdown(self,pauseTime)
             % Test a normal progress update scenario
             if(nargin < 2)
                 pauseTime = 0;
@@ -55,6 +61,12 @@ classdef TestProgressTextMultiple < TestCase
             end
         end
         function testTextChangeCountdown(self,pauseTime)
+            if(nargin < 2)
+                pauseTime = 0;
+            end
+            evalc('self.actualTextChangeCountdown(pauseTime)');
+        end
+        function actualTextChangeCountdown(self,pauseTime)
             % Test a progress update with changing text
             if(nargin < 2)
                 pauseTime = 0;
@@ -97,6 +109,12 @@ classdef TestProgressTextMultiple < TestCase
             end
         end
         function testEmptyText(self,pauseTime)
+            if(nargin < 2)
+                pauseTime = 0;
+            end
+            evalc('self.actualEmptyText(pauseTime)');
+        end
+        function actualEmptyText(self,pauseTime)
             % Test a progress update with empty text
             if(nargin < 2)
                 pauseTime = 0;
@@ -141,6 +159,9 @@ classdef TestProgressTextMultiple < TestCase
             end
         end
         function testOverrun(self)
+            evalc('self.actualOverrun');
+        end
+        function actualOverrun(self)
             % Test situation where the number of steps specified is
             % exceeded
             nSteps = 5;
@@ -151,6 +172,7 @@ classdef TestProgressTextMultiple < TestCase
             assertEqual(o.iStep,0);
             assertEqual(o.nStep,nSteps(1));
             lastwarn('');
+            warning('off','progressTextMultiple:LevelZero');
             for i=1:(nSteps+overrun)
                 o = progressTextMultiple;
             end

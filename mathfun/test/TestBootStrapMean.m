@@ -36,7 +36,7 @@ classdef TestBootStrapMean < TestCase
         function TestWithParallel(self)
             % Make sure parallel pool exists
             if(isempty(gcp('nocreate')))
-                parpool;
+                parpool(3);
             end
             [conf,meanS] = bootStrapMean(self.numbers, self.alpha, self.nBoot);
             meanO = mean(self.numbers);

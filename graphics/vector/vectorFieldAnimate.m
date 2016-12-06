@@ -220,8 +220,11 @@ end
 
 if ~isempty(aviMovieName)
    if isempty(movie2aviPar)
-      movie2avi(M,aviMovieName);
+      v = VideoWriter(aviMovieName);
    else
-      movie2avi(M,aviMovieName,movie2aviPar{:});
+      v = VideoWriter(aviMovieName, movie2aviPar{:}); % may not be correct....
    end
+   open(v);
+   writeVideo(v, M);
+   close(v);
 end
