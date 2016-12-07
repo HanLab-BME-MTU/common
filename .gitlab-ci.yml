@@ -12,7 +12,6 @@ stages:
 variables:
   CLEAN_REPO_PATH: "/home2/s170480/matlab/xUnit/git/"
   CI_SCRIPT_PATH: "${CLEAN_REPO_PATH}/ci-scripts/"
-  CI_SCRIPT_BRANCH: "test_redesign"
   
 before_script:
   - pwd
@@ -22,9 +21,7 @@ before_script:
   - module unload matlab
   - module list
   - cd $CI_SCRIPT_PATH
-  - echo pwd
-  - git checkout test_redesign
-  - git checkout $CI_SCRIPT_BRANCH
+  - git checkout master
   - git pull 
   - cd $CI_PROJECT_DIR
   - $CI_SCRIPT_PATH/setup_gitlabCI.sh
@@ -40,7 +37,7 @@ unit:R2016b:
     - module unload matlab
     - module load matlab/$MATLAB_VERSION
     - echo "-Xmx1024m" > java.opts
-    - $CI_SCRIPT_PATH/unit/runCITest_m.sh
+    - $CI_SCRIPT_PATH/runCITest_m.sh
 
 unit:R2013b:
   stage: unit
@@ -50,7 +47,7 @@ unit:R2013b:
     - module unload matlab
     - module load matlab/$MATLAB_VERSION
     - echo "-Xmx1024m" > java.opts
-    - $CI_SCRIPT_PATH/unit/runCITest_m.sh
+    - $CI_SCRIPT_PATH/runCITest_m.sh
 
 # ======== [optional - other version] ==
 unit:R2016a:
@@ -59,7 +56,7 @@ unit:R2016a:
     - module unload matlab
     - module load matlab/2016a
     - echo "-Xmx1024m" > java.opts
-    - $CI_SCRIPT_PATH/unit/runCITest_m.sh
+    - $CI_SCRIPT_PATH/runCITest_m.sh
   when: manual
 
 unit:R2015b:
@@ -68,7 +65,7 @@ unit:R2015b:
     - module unload matlab
     - module load matlab/2015b
     - echo "-Xmx1024m" > java.opts
-    - $CI_SCRIPT_PATH/unit/runCITest_m.sh
+    - $CI_SCRIPT_PATH/runCITest_m.sh
   when: manual
   # only:
   #   - master
@@ -79,7 +76,7 @@ unit:R2015a:
     - module unload matlab
     - module load matlab/2015a
     - echo "-Xmx1024m" > java.opts
-    - $CI_SCRIPT_PATH/unit/runCITest_m.sh
+    - $CI_SCRIPT_PATH/runCITest_m.sh
   when: manual
   # only:
   #   - master
@@ -90,7 +87,7 @@ unit:R2014b:
     - module unload matlab
     - module load matlab/2014b
     - echo "-Xmx1024m" > java.opts
-    - $CI_SCRIPT_PATH/unit/runCITest_m.sh
+    - $CI_SCRIPT_PATH/runCITest_m.sh
   when: manual
   # only:
   #   - master
@@ -101,7 +98,7 @@ unit:R2014a:
     - module unload matlab
     - module load matlab/2014a
     - echo "-Xmx1024m" > java.opts
-    - $CI_SCRIPT_PATH/unit/runCITest_m.sh
+    - $CI_SCRIPT_PATH/runCITest_m.sh
   when: manual
   # only:
   #   - master
@@ -125,7 +122,7 @@ build:utrack:R2016b:
     - module load matlab/$MATLAB_VERSION
     - module load texlive/2014
     - echo "-Xmx1024m" > java.opts
-    - $CI_SCRIPT_PATH/build/u-track/runCIbuild_utrack_Package_m.sh
+    - $CI_SCRIPT_PATH/runCIbuild_utrack_Package_m.sh
   artifacts:
     name: "${BUILD_NAME}-b${CI_BUILD_ID}"
     paths:
@@ -151,7 +148,7 @@ build:utrack:R2013b:
     - module load matlab/$MATLAB_VERSION
     - module load texlive/2014
     - echo "-Xmx1024m" > java.opts
-    - $CI_SCRIPT_PATH/build/u-track/runCIbuild_utrack_Package_m.sh
+    - $CI_SCRIPT_PATH/runCIbuild_utrack_Package_m.sh
   artifacts:
     name: "${BUILD_NAME}-b${CI_BUILD_ID}"
     paths:
@@ -171,7 +168,7 @@ test:utrack:R2016b:
     - module unload matlab
     - module load matlab/$MATLAB_TEST_VERSION
     - echo "-Xmx1024m" > java.opts
-    - ${CI_SCRIPT_PATH}/test/u-track/utrack_test.sh
+    - ${CI_SCRIPT_PATH}/utrack_test.sh
   dependencies:
     - build:utrack:R2016b
 
@@ -186,7 +183,7 @@ test:utrack:R2013b-B2013b:
     - module unload matlab
     - module load matlab/$MATLAB_TEST_VERSION
     - echo "-Xmx1024m" > java.opts
-    - ${CI_SCRIPT_PATH}/test/u-track/utrack_test.sh
+    - ${CI_SCRIPT_PATH}/utrack_test.sh
   dependencies:
     - build:utrack:R2013b
 
@@ -200,7 +197,7 @@ test:utrack:R2013b-B2016b:
     - module unload matlab
     - module load matlab/$MATLAB_TEST_VERSION
     - echo "-Xmx1024m" > java.opts
-    - ${CI_SCRIPT_PATH}/test/u-track/utrack_test.sh
+    - ${CI_SCRIPT_PATH}/utrack_test.sh
   dependencies:
     - build:utrack:R2016b
   
@@ -216,7 +213,7 @@ test:utrack:R2016a:
     - module unload matlab
     - module load matlab/$MATLAB_TEST_VERSION
     - echo "-Xmx1024m" > java.opts
-    - ${CI_SCRIPT_PATH}/test/u-track/utrack_test.sh
+    - ${CI_SCRIPT_PATH}/utrack_test.sh
   dependencies:
     - build:utrack:R2013b
   when: manual
@@ -231,7 +228,7 @@ test:utrack:R2015b:
     - module unload matlab
     - module load matlab/$MATLAB_TEST_VERSION
     - echo "-Xmx1024m" > java.opts
-    - ${CI_SCRIPT_PATH}/test/u-track/utrack_test.sh
+    - ${CI_SCRIPT_PATH}/utrack_test.sh
   dependencies:
     - build:utrack:R2013b
   when: manual
@@ -246,7 +243,7 @@ test:utrack:R2015a:
     - module unload matlab
     - module load matlab/$MATLAB_TEST_VERSION
     - echo "-Xmx1024m" > java.opts
-    - ${CI_SCRIPT_PATH}/test/u-track/utrack_test.sh
+    - ${CI_SCRIPT_PATH}/utrack_test.sh
   dependencies:
     - build:utrack:R2013b
   when: manual
@@ -261,7 +258,7 @@ test:utrack:R2014b:
     - module unload matlab
     - module load matlab/$MATLAB_TEST_VERSION
     - echo "-Xmx1024m" > java.opts
-    - ${CI_SCRIPT_PATH}/test/u-track/utrack_test.sh
+    - ${CI_SCRIPT_PATH}/utrack_test.sh
   dependencies:
     - build:utrack:R2013b
   when: manual
@@ -276,7 +273,7 @@ test:utrack:R2014a:
     - module unload matlab
     - module load matlab/$MATLAB_TEST_VERSION
     - echo "-Xmx1024m" > java.opts
-    - ${CI_SCRIPT_PATH}/test/u-track/utrack_test.sh
+    - ${CI_SCRIPT_PATH}/utrack_test.sh
   dependencies:
     - build:utrack:R2013b
   when: manual
@@ -297,6 +294,12 @@ doc:pdf_utrack:
     - mkdir -p ${CI_PROJECT_DIR}/$TARGET_FOLDER/
     - (cd $DOCUMENTATION_DIR && make clean latexpdf)
     - cp $DOCUMENTATION_DIR/_build/latex/u-track-*.pdf $TARGET_FOLDER/Readme_u-track-$RELEASE.pdf
+  artifacts:
+    name: "${BUILD_NAME}-${RELEASE}_b${CI_BUILD_ID}.pdf"
+    paths:
+      - $TARGET_FOLDER/Readme_u-track-$RELEASE.pdf
+    expire_in: 14 days
+  when: manual$DOCUMENTATION_DIR/_build/latex/u-track-*.pdf $TARGET_FOLDER/Readme_u-track-$RELEASE.pdf
   artifacts:
     name: "${BUILD_NAME}-${RELEASE}_b${CI_BUILD_ID}.pdf"
     paths:
