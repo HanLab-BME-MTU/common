@@ -22,6 +22,8 @@ before_script:
   - module unload matlab
   - module list
   - cd $CI_SCRIPT_PATH
+  - echo pwd
+  - git checkout test_redesign
   - git checkout $CI_SCRIPT_BRANCH
   - git pull 
   - cd $CI_PROJECT_DIR
