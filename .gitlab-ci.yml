@@ -305,10 +305,4 @@ doc:pdf_utrack:
     paths:
       - $TARGET_FOLDER/Readme_u-track-$RELEASE.pdf
     expire_in: 14 days
-  when: manual$DOCUMENTATION_DIR/_build/latex/u-track-*.pdf $TARGET_FOLDER/Readme_u-track-$RELEASE.pdf
-  artifacts:
-    name: "${BUILD_NAME}-${RELEASE}_b${CI_BUILD_ID}.pdf"
-    paths:
-      - $TARGET_FOLDER/Readme_u-track-$RELEASE.pdf
-    expire_in: 14 days
   when: manual
