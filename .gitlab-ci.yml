@@ -13,7 +13,7 @@ variables:
   CLEAN_REPO_PATH: "/home2/s170480/matlab/xUnit/git/"
   CI_SCRIPT_PATH: "${CLEAN_REPO_PATH}/ci-scripts/"
   CI_SCRIPT_BRANCH: "master"
-  
+  TEST_DEBUG_TARGET_FOLDER: "debug_test/"
 before_script:
   - pwd
   - date
@@ -22,16 +22,12 @@ before_script:
   - module unload matlab
   - module list
   - cd $CI_SCRIPT_PATH
-  - git fetch
-  - git status
-  - git checkout "${CI_SCRIPT_BRANCH}"
-  - git status
   - git pull
-  - git status
+  - git checkout "${CI_SCRIPT_BRANCH}"
+  - git pull
   - $CI_SCRIPT_PATH/setup_gitlabCI.sh
   - cd $CI_PROJECT_DIR
   
- 
  
 # === Unit Tests ======================= 
 # Newest and oldest first...
@@ -54,6 +50,7 @@ unit:R2013b:
     - module load matlab/$MATLAB_VERSION
     - echo "-Xmx1024m" > java.opts
     - $CI_SCRIPT_PATH/unit/runCITest_m.sh
+  when: manual
 
 # ======== [optional - other version] ==
 unit:R2016a:
@@ -161,6 +158,7 @@ build:utrack:R2013b:
       - $TARGET_FOLDER
     when: on_success
     expire_in: 6 weeks
+  when: manual
 
 # === Test Packages =======================  
 # Run the newest and oldest 
@@ -175,6 +173,12 @@ test:utrack:R2016b:
     - module load matlab/$MATLAB_TEST_VERSION
     - echo "-Xmx1024m" > java.opts
     - ${CI_SCRIPT_PATH}/test/u-track/utrack_test.sh
+  artifacts:
+    name: "MATLAB_dump_b${CI_BUILD_ID}_${MATLAB_TEST_VERSION}_${MATLAB_BUILD_VERSION}"
+    paths:
+      - $TEST_DEBUG_TARGET_FOLDER
+    when: always
+    expire_in: 1 week
   dependencies:
     - build:utrack:R2016b
 
@@ -192,6 +196,13 @@ test:utrack:R2013b-B2013b:
     - ${CI_SCRIPT_PATH}/test/u-track/utrack_test.sh
   dependencies:
     - build:utrack:R2013b
+  artifacts:
+    name: "MATLAB_dump_b${CI_BUILD_ID}_${MATLAB_TEST_VERSION}_${MATLAB_BUILD_VERSION}"
+    paths:
+      - $TEST_DEBUG_TARGET_FOLDER
+    when: always
+    expire_in: 1 week
+  when: manual
 
 test:utrack:R2013b-B2016b:
   stage: test
@@ -206,6 +217,14 @@ test:utrack:R2013b-B2016b:
     - ${CI_SCRIPT_PATH}/test/u-track/utrack_test.sh
   dependencies:
     - build:utrack:R2016b
+  artifacts:
+    name: "MATLAB_dump_b${CI_BUILD_ID}_${MATLAB_TEST_VERSION}_${MATLAB_BUILD_VERSION}"
+    paths:
+      - $TEST_DEBUG_TARGET_FOLDER
+    when: always
+    expire_in: 1 week
+  when: manual
+
   
 # Optional Runs with different Run versions
 # #################################
@@ -222,6 +241,12 @@ test:utrack:R2016a:
     - ${CI_SCRIPT_PATH}/test/u-track/utrack_test.sh
   dependencies:
     - build:utrack:R2013b
+  artifacts:
+    name: "MATLAB_dump_b${CI_BUILD_ID}_${MATLAB_TEST_VERSION}_${MATLAB_BUILD_VERSION}"
+    paths:
+      - $TEST_DEBUG_TARGET_FOLDER
+    when: always
+    expire_in: 1 week
   when: manual
 
 test:utrack:R2015b:
@@ -237,6 +262,12 @@ test:utrack:R2015b:
     - ${CI_SCRIPT_PATH}/test/u-track/utrack_test.sh
   dependencies:
     - build:utrack:R2013b
+  artifacts:
+    name: "MATLAB_dump_b${CI_BUILD_ID}_${MATLAB_TEST_VERSION}_${MATLAB_BUILD_VERSION}"
+    paths:
+      - $TEST_DEBUG_TARGET_FOLDER
+    when: always
+    expire_in: 1 week
   when: manual
 
 test:utrack:R2015a:
@@ -252,6 +283,12 @@ test:utrack:R2015a:
     - ${CI_SCRIPT_PATH}/test/u-track/utrack_test.sh
   dependencies:
     - build:utrack:R2013b
+  artifacts:
+    name: "MATLAB_dump_b${CI_BUILD_ID}_${MATLAB_TEST_VERSION}_${MATLAB_BUILD_VERSION}"
+    paths:
+      - $TEST_DEBUG_TARGET_FOLDER
+    when: always
+    expire_in: 1 week
   when: manual
 
 test:utrack:R2014b:
@@ -267,6 +304,12 @@ test:utrack:R2014b:
     - ${CI_SCRIPT_PATH}/test/u-track/utrack_test.sh
   dependencies:
     - build:utrack:R2013b
+  artifacts:
+    name: "MATLAB_dump_b${CI_BUILD_ID}_${MATLAB_TEST_VERSION}_${MATLAB_BUILD_VERSION}"
+    paths:
+      - $TEST_DEBUG_TARGET_FOLDER
+    when: always
+    expire_in: 1 week
   when: manual
 
 test:utrack:R2014a:
@@ -282,6 +325,12 @@ test:utrack:R2014a:
     - ${CI_SCRIPT_PATH}/test/u-track/utrack_test.sh
   dependencies:
     - build:utrack:R2013b
+  artifacts:
+    name: "MATLAB_dump_b${CI_BUILD_ID}_${MATLAB_TEST_VERSION}_${MATLAB_BUILD_VERSION}"
+    paths:
+      - $TEST_DEBUG_TARGET_FOLDER
+    when: always
+    expire_in: 1 week
   when: manual
 
 # === Documentation Generation Alone ======================= 
