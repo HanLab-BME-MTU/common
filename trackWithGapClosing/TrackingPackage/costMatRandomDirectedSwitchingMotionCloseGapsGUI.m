@@ -22,7 +22,7 @@ function varargout = costMatRandomDirectedSwitchingMotionCloseGapsGUI(varargin)
 
 % Edit the above text to modify the response to help costMatRandomDirectedSwitchingMotionCloseGapsGUI
 
-% Last Modified by GUIDE v2.5 12-Dec-2011 15:51:50
+% Last Modified by GUIDE v2.5 16-Dec-2016 17:35:28
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -342,3 +342,16 @@ if get(hObject, 'Value')
 else
     set(get(handles.uipanel_ampRatioLimit,'Children'),'Enable','off');  
 end
+
+
+% --- Executes on button press in checkbox10_gapExcludeMS.
+function checkbox10_gapExcludeMS_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox10_gapExcludeMS (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+if get(hObject, 'Value')
+    set(get(handles.uipanel_ampRatioLimit,'Children'),'Enable','on');
+else
+    set(get(handles.uipanel_ampRatioLimit,'Children'),'Enable','off');  
+end
+% Hint: get(hObject,'Value') returns toggle state of checkbox10_gapExcludeMS
