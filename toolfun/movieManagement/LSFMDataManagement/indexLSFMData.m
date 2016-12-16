@@ -239,6 +239,9 @@ while ~written
     end;
 end
 
+function mkdir(path)
+system(['mkdir ' path]);
+
 %% SNIPPETS
 %     outputDirFinal=[cPath filesep 'deskew' filesep 'final'];
 %     if(~isempty(p.rootPath))
