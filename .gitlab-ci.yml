@@ -223,7 +223,7 @@ test:utrack:R2014a-B2016b:
       - $TEST_DEBUG_TARGET_FOLDER
     when: always
     expire_in: 1 week
-  when: manual
+  # when: manual
 
 test:utrack:R2014a-B2014a:
   stage: test
@@ -244,7 +244,7 @@ test:utrack:R2014a-B2014a:
       - $TEST_DEBUG_TARGET_FOLDER
     when: always
     expire_in: 1 week
-  # when: manual
+  when: manual
 
   
 # Optional Runs with different Run versions
