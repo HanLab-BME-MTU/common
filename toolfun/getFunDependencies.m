@@ -57,7 +57,7 @@ else
     excludefilters = [{'toolbox'},ip.Results.excludefilters{:}];
 end
 
-use_depfun = verLessThan('matlab','8.3');
+use_depfun = verLessThan('matlab','8.4');
 
 % Get the initial set of file dependencies
 filesList=cellfun(@which,funList(:),'UniformOutput',false);

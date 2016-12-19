@@ -29,8 +29,10 @@
 % figure; boxplot2(prm, 'BarWidth', 0.8, 'XLabel', 'x label', 'YLabel', 'y label', ...
 %     'XTickLabel', arrayfun(@(k) ['Group label ' num2str(k)], 1:2, 'UniformOutput', false),...
 %     'Angle', 45, 'FaceColor', [1 0.5 0.5; 0.5 1 0.5], 'EdgeColor', [0.8 0 0; 0 0.8 0]);
-
+% 
+% 
 % Francois Aguet, 22 Feb 2011 (Last modified: 06/14/2013)
+% Andrew R. Jamieson, Dec 2016 -- setErrorbars deprecated now.
 
 function h = boxplot2(prm, varargin)
 
@@ -187,9 +189,9 @@ for g = 1:ng
         % plot whiskers
         wopts = {'Color', errorbarColor(ci,:), 'LineWidth', ip.Results.LineWidth, 'HandleVisibility', 'off'};
         he = errorbar(ha, xa{g}(b), p25(b), w1(b)-p25(b), 0, 'LineStyle', 'none', wopts{:});
-        setErrorbarStyle(he, ip.Results.ErrorBarWidth, 'Position', 'bottom');
+%         setErrorbarStyle(he, ip.Results.ErrorBarWidth, 'Position', 'bottom');
         he = errorbar(ha, xa{g}(b), p75(b), 0, w2(b)-p75(b), 'LineStyle', 'none', wopts{:});
-        setErrorbarStyle(he, ip.Results.ErrorBarWidth, 'Position', 'top');
+%         setErrorbarStyle(he, ip.Results.ErrorBarWidth, 'Position', 'top');
              
         hp = patch(xv(:,b), yv(:,b), faceColor(ci,:), 'EdgeColor', edgeColor(ci,:),...
             'LineWidth', ip.Results.LineWidth, 'Parent', ha);
