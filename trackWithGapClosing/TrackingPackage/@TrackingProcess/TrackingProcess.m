@@ -248,7 +248,12 @@ classdef TrackingProcess < DataProcessingProcess & NonSingularProcess
             
             costMatrices(1).parameters.gapPenalty = 1.5; %penalty for increasing temporary disappearance time (disappearing for n frames gets a penalty of gapPenalty^n).
             costMatrices(1).parameters.resLimit = []; % text field resolution limit, which is generally equal to 3 * point spread function sigma.
-            
+            % ---------------------------------
+            % NEW PARAMETERS by Khuloud - Dec 2016
+            costMatrices(1).parameters.gapExcludeMS = 0; %(1)%flag to allow gaps to exclude merges and splits
+            costMatrices(1).parameters.strategyBD = 0; %(-1)%strategy to calculate birth and death cost
+            % ---------------------------------
+
             % Linear motion
             plusTipCostMatrix.name = 'Microtubule plus-end dynamics';
             plusTipCostMatrix.funcName = func2str(@plusTipCostMatCloseGaps);
