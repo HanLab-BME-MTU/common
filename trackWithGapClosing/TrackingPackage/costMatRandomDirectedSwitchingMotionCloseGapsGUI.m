@@ -311,10 +311,12 @@ switch BDstateSelection
         prctBD = get(handles.edit_manual_percentile, 'String');
         if isempty(prctBD)
             errordlg('Please provide a valid value to parameter "Percentile of the gap closing and merging and splitting cost distribution to use for calculating the birth and death".','Error','modal');
+            return
         else
             prctBD = str2double(prctBD);
             if ~isPosScalar(prctBD) || (prctBD >= 100) || (prctBD < 0)
                 errordlg('Please provide a valid value to parameter "Percentile of the gap closing and merging and splitting cost distribution to use for calculating the birth and death".','Error','modal');
+                return
             else
                 parameters.strategyBD = prctBD;
             end
