@@ -4,6 +4,7 @@ classdef TrackingProcess < DataProcessingProcess & NonSingularProcess
     % Chuangang Ren, 11/2010
     % Sebastien Besson (last modified Dec 2011)
     % Mark Kittisopikul, Nov 2014, Added channelOutput cache
+    % Andrew R. Jamieson, Dec 2016, updated parameters for getDefaultGapClosingCostMatrices and GUI
     
     methods(Access = public)
         
