@@ -221,23 +221,31 @@ end
 
 
 function writeDeskewedFile(filePath,outputDir)
-[~,~,ef]=fileparts(filePath);
-written=false;
-% This while loop handles server instability
-while ~written
-    try
-        if(strcmp(ef,'.bz2'))
-            unzipAndDeskewLatticeTimePoint(filePath,outputDir);
-        elseif((strcmp(ef,'.tif')))
-            deskewLatticeTimePoint(filePath,outputDir);
-        else
-            error('unsupported format')
-        end
-        written=true;
-    catch
-        written=false;
-    end;
-end
+    [~,~,ef]=fileparts(filePath);
+    written=false;
+    % This while loop handles server instability
+    while ~written
+        try
+            if(strcmp(ef,'.bz2'))
+                unzipAndDeskewLatticeTimePoint(filePath,outputDir);
+            elseif((strcmp(ef,'.tif')))
+                deskewLatticeTimePoint(filePath,outputDir);
+            else
+                error('unsupported format')
+            end
+            written=true;
+        catch
+            written=false;
+        end;
+    end
+
+function mkdir(path)
+    if (~strcmp(computer('arch'), 'win64'))
+        system(['mkdir ' path]);
+    else
+        mkdir(path);
+    end
+
 
 %% SNIPPETS
 %     outputDirFinal=[cPath filesep 'deskew' filesep 'final'];
