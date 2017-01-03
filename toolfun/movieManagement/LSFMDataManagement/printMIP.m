@@ -5,22 +5,29 @@ ip = inputParser;
 ip.addRequired('MD',@(MD) isa(MD,'MovieData'));
 ip.parse(MD);
 
-
+%progressText(0,'Print MIP');
 
 % turn a specific warning off
 warning('off', 'MATLAB:imagesci:tifftagsread:expectedAsciiDataFormat');
 
 if(MD.zSize_==1)
-    error('This seems to be a 2D movie, No MIP produced.');
+    warning('This seems to be a 2D movie, No MIP produced.');
+    return;
 end
 
 savePath=[MD.outputDirectory_ filesep 'MIP'];
 if ~isdir(savePath) || ~isdir([savePath filesep 'XY']) || ~isdir([savePath filesep 'ZY']) || ~isdir([savePath filesep 'ZX']) || ~isdir([savePath filesep 'Three'])
-    mkdir(savePath)
-    mkdir([savePath filesep 'XY'])
-    mkdir([savePath filesep 'ZY'])
-    mkdir([savePath filesep 'ZX'])
-    mkdir([savePath filesep 'Three'])
+    system(['mkdir -p ' savePath]);
+    system(['mkdir -p ' [savePath filesep 'XY']]);
+    system(['mkdir -p ' [savePath filesep 'ZY']]);
+    system(['mkdir -p ' [savePath filesep 'ZX']]);
+    system(['mkdir -p ' [savePath filesep 'Three']]);
+% 
+%     mkdir(savePath)
+%     mkdir([savePath filesep 'XY'])
+%     mkdir([savePath filesep 'ZY'])
+%     mkdir([savePath filesep 'ZX'])
+%     mkdir([savePath filesep 'Three'])
 end
 nameCells=MD.getChannel(1).getImageFileNames;
 % fprintf('printing MIP:');
@@ -34,12 +41,9 @@ for chIdx=1:length(MD.channels_)
     maxIntensityNorm=[ maxIntensityNorm max(vol(:))];
 end
 
-threeVideo = VideoWriter([savePath filesep 'three.avi']);
-myVideo.FrameRate = 4;  % Default 30
-myVideo.Quality = 90;    % Default 75
-open(threeVideo)
 
-for frameIdx=1:MD.nFrames_
+parfor frameIdx=1:MD.nFrames_
+%     progressText(frameIdx/MD.nFrames_,'Print MIP');
     maxXY=[];maxZY=[];maxZX=[];three=[];
     for chIdx=1:length(MD.channels_)
         vol=MD.getChannel(chIdx).loadStack(frameIdx);  
@@ -55,6 +59,16 @@ for frameIdx=1:MD.nFrames_
     imwrite(maxZY, [savePath filesep 'ZY' filesep 'ZY_'  nameCells{frameIdx}], 'Compression', 'none');
     imwrite(maxZX, [savePath filesep 'ZX' filesep 'ZX_'  nameCells{frameIdx}], 'Compression', 'none');
     imwrite(three, [savePath filesep 'Three' filesep nameCells{frameIdx}], 'Compression', 'none');
+%     fprintf('\b|\n');
+end
+threeVideo = VideoWriter([savePath filesep 'three.avi']);
+myVideo.FrameRate = 4;  % Default 30
+myVideo.Quality = 90;    % Default 75
+
+open(threeVideo)
+for frameIdx=1:MD.nFrames_
+    % save the maximum intensity projections
+    three=imread([savePath filesep 'Three' filesep nameCells{frameIdx}]);
     writeVideo(threeVideo,three)
 %     fprintf('\b|\n');
 end

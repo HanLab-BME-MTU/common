@@ -105,6 +105,27 @@ function [costMat,nonlinkMarker,indxMerge,numMerge,indxSplit,numSplit,...
 %                               smaller than resolution limit.
 %                               Default: 0, i.e. resolution limit is not
 %                               used for search radius expansion.
+%             .gapsExcludeMS  : 1 to impose that the possibility of gap closing
+%                               prohibits merging/splitting for an
+%                               end/start, 0 to allow the two to compete.
+%                               In other words, if 1, then gaps are given
+%                               absolute priority.
+%                               Default: 0, i.e. no prioritization.
+%             .strategyBD     : Strategy for calculating the birth and
+%                               death cost. 
+%                               If a positive number, then this is taken as
+%                               the percentile of the gap closing and merging
+%                               and splitting cost distribution to use for
+%                               calculating the birth and death cost.
+%                               If 0, then the percentile is calculated
+%                               from the structure (in essence the
+%                               over-connectivity) of the cost matrix.
+%                               If -1, then the birth and death cost is not
+%                               calculated as a percentile but rather its
+%                               value is determined by the definitions of
+%                               the various factors contributing to the gap
+%                               closing and merging and splitting costs.
+%                               Default: 0 (middle option above).
 %       gapCloseParam  : Structure containing variables needed for gap closing.
 %                        Contains the fields:
 %             .timeWindow : Largest time gap between the end of a track and the
@@ -114,7 +135,9 @@ function [costMat,nonlinkMarker,indxMerge,numMerge,indxSplit,numSplit,...
 %                           iteration stops.
 %             .mergeSplit : Logical variable with value 1 if the merging
 %                           and splitting of trajectories are to be consided;
-%                           and 0 if merging and splitting are not allowed.
+%                           0 if merging and splitting are not allowed, 2
+%                           if only merging is allowed, and 3 if only
+%                           splitting is allowed.
 %       kalmanFilterInfo:Structure array with number of entries equal to
 %                        number of frames in movie. Contains the fields:
 %             .stateVec   : Kalman filter state vector for each
@@ -217,8 +240,18 @@ if isfield(costMatParam,'resLimit') && ~isempty(costMatParam.resLimit)
 else
     resLimit = 0;
 end
+if isfield(costMatParam,'gapsExcludeMS') && ~isempty(costMatParam.gapsExcludeMS)
+    gapsExcludeMS = costMatParam.gapsExcludeMS;
+else
+    gapsExcludeMS = 0;
+end
+if isfield(costMatParam,'strategyBD') && ~isempty(costMatParam.strategyBD)
+    strategyBD = costMatParam.strategyBD;
+else
+    strategyBD = 0;
+end
 
-%get gap closing parameters
+%get gap closing/merging & splitting parameters
 timeWindow = gapCloseParam.timeWindow;
 mergeSplit = gapCloseParam.mergeSplit;
 
@@ -701,7 +734,9 @@ for iPair = 1 : numPairs
         if isfinite(cost12)
             
             %penalize cost for gap length considerations
-            cost12 = cost12 * gapPenalty^(timeGap-1);
+            %by using timeGap - 2, there is no penalty for things that disappear for one frame and then come back
+            %this puts those gaps at the same cost level as merging and splitting
+            cost12 = cost12 * gapPenalty^(timeGap-2);
             
             %store time gap
             %             timeGapAll = [timeGapAll; timeGap];
@@ -760,6 +795,12 @@ if mergeSplit > 0
 
             %find tracks that end in this frame
             endsToConsider = tracksPerFrame(endTime).ends;
+            
+            %if requested, remove tracks that have a gap closing 
+            %possibility - no merging allowed in this case
+            if gapsExcludeMS
+                endsToConsider = setdiff(endsToConsider,indx1);
+            end
 
             %find tracks that start before or in this frame and end after this
             %frame
@@ -1049,6 +1090,12 @@ if mergeSplit > 0
 
             %find tracks that start in this frame
             startsToConsider = tracksPerFrame(startTime).starts;
+            
+            %if requested, remove tracks that have a gap closing 
+            %possibility - no splits allowed in this case
+            if gapsExcludeMS
+                startsToConsider = setdiff(startsToConsider,indx2);
+            end
 
             %find tracks that start before this frame and end after or in this frame
             splitsToConsider = intersect(vertcat(tracksPerFrame(1:startTime-1).starts),...
@@ -1317,7 +1364,7 @@ if mergeSplit > 0
             altCostMS = altCostMS(possibleSplits);
             indxMSMS  = indxMSMS(possibleSplits);
             clear possiblePairs possibleSplits
-
+            
             %append these vectors to overall cost and related vectors
             indx1 = [indx1; indx1MS];
             indx2 = [indx2; indx2MS];
@@ -1339,18 +1386,44 @@ costMat = sparse(indx1,indx2,cost,numEndSplit,numStartMerge);
 %% Append cost matrix to allow births and deaths ...
 
 %determine the cost of birth and death
-tmp = (costMat~=0);
-numPotAssignRow = full(sum(tmp,2));
-numPotAssignCol = full(sum(tmp)');
-numPotAssignColAll = sum(numPotAssignCol);
-numPotAssignRowAll = sum(numPotAssignRow);
-numPartCol = length(numPotAssignCol) * 2;
-extraCol = (numPotAssignColAll-numPartCol)/numPotAssignColAll;
-numPartRow = length(numPotAssignRow) * 2;
-extraRow = (numPotAssignRowAll-numPartRow)/numPotAssignRowAll;
-prctile2use = min(100, 100 - mean([extraRow extraCol])*100);
+if strategyBD == -1 %value determined from cost definitions
+    
+    costBD = 9 ... %maximum expected contribution to cost from [displacement/mean(displacement)]^2
+        * 2 ... %maximum expected contribution to cost from angle penalty
+        * gapPenalty^(timeWindow-2); %maximum expected contribution to cost from gap penalty
+    
+    if mergeSplit > 0 && useAmp %maximum contribution to cost from amplitude ratio when merging & splitting
+        if minAmpRatio > 0 && maxAmpRatio < Inf
+            costBDTmp = 9 * 2 * max(maxAmpRatio,minAmpRatio^-2);
+        else
+            disp('With chosen parameters, there are no bounds on amplitude ratio for merging and splitting. Thus, birth and death cost cannot be calculated from cost definitions, and will be calculated using an automatically-determine percentile.');
+            strategyBD = 0;
+            costBDTmp = NaN;
+        end
+        costBD = max(costBD,costBDTmp);
+    end
+    
+end
 
-costBD = 1.05*prctile(cost(:),prctile2use);
+if strategyBD == 0 %automatically-determined percentile
+    
+    tmp = (costMat~=0);
+    numPotAssignRow = full(sum(tmp,2));
+    numPotAssignCol = full(sum(tmp)');
+    numPotAssignColAll = sum(numPotAssignCol);
+    numPotAssignRowAll = sum(numPotAssignRow);
+    numPartCol = length(numPotAssignCol) * 2;
+    extraCol = (numPotAssignColAll-numPartCol)/numPotAssignColAll;
+    numPartRow = length(numPotAssignRow) * 2;
+    extraRow = (numPotAssignRowAll-numPartRow)/numPotAssignRowAll;
+    prctile2use = min(100, 100 - mean([extraRow extraCol])*100);
+    costBD = 1.05*prctile(cost(:),prctile2use);
+    
+elseif strategyBD > 0 %user-defined percentile
+    
+    costBD = 1.05*prctile(cost(:),strategyBD);
+        
+end
 
 %get the cost for the lower right block
 % costLR = min(min(min(costMat))-1,-1);

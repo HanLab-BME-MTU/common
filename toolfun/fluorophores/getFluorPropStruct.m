@@ -59,6 +59,11 @@ s(26).name = 'mruby2';
 s(26).lambda_em = 600e-9;
 s(27).name = 'tmr';
 s(27).lambda_em = 578e-9;
+s(28).name = 'mneongreen';
+s(28).lambda_em = 517e-9;
+s(29).name = 'cyofp';
+s(29).lambda_em = 589e-9;
+
 
 [~,i] = sort([s.lambda_em]);
 s = s(i);

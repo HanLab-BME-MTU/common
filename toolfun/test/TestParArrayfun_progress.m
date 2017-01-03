@@ -7,7 +7,7 @@ classdef TestParArrayfun_progress < TestParCellfun_progress
     methods
         function self = TestParArrayfun_progress(name)
             self = self@TestParCellfun_progress(name);
-            self.func = @pararrayfun_progress;
+            self.func = @(varargin) pararrayfun_progress(varargin{:},'DisplayFunc',@(d) 0);
             self.nonparfunc = @arrayfun;
         end
         function setUp(self,A,B)

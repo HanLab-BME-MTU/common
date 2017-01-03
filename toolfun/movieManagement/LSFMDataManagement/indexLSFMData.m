@@ -1,4 +1,4 @@
-function ML=indexLSFMData(moviePaths,movieListAnalysisDir,varargin)
+function ML=indexLSFMData(moviePaths,varargin)
 % - If necessary, batch sort time points in ch0/, ch1/ 
 % - Optionnaly deskew, dezip on demand)
 % - Create movieData and analysis folder for each movie
@@ -19,10 +19,10 @@ function ML=indexLSFMData(moviePaths,movieListAnalysisDir,varargin)
 %                 - The option 'filePattern' must thus be used to describe channel name for example: 
 %                   'Iter_ sample_scan_3p35ms_zp4um_ch{ch}_stack*'
 %
-%         - moviesRoot: original root for the list of movies:
-%               ** contain the analysis folder with the movieList.mat and
+%         - movieListRoot: original root for the list of movies:
+%               ** will contain the analysis folder with the movieList.mat and
 %               associated outputdir
-%               **  
+%               
 %         
 %
 % OPTION: - newDataPath {[]}: if specificied, all the new
@@ -31,32 +31,52 @@ function ML=indexLSFMData(moviePaths,movieListAnalysisDir,varargin)
 %         - copyFile {false}: copy of move file. 
 %         - copyFile {false}: if true copy the file instead of moving them. 
 %         - 'writeData' {true}: If false, do not write data, only create MovieData under movieRoots or  NewDataPath
-
-
-
 ip = inputParser;
 ip.CaseSensitive = false;
 ip.KeepUnmatched = true;
 ip.addRequired('moviePaths', @(x)(iscell(x)||ischar(x)));
-ip.addRequired('movieListAnalysisDir', @ischar);
-ip.addParamValue('movieListName','movieList.mat', @ischar);
-ip.addParamValue('movieDataName','movieData.mat', @ischar);
-ip.addParamValue('deskew',false, @islogical);
-ip.addParamValue('writeData',true, @islogical);
-ip.addParamValue('copyFile',false, @islogical);
-ip.addParamValue('translocateMovieData',false, @islogical);
-ip.addParamValue('createMIP',true, @islogical);
-ip.addParamValue('is3D',true, @islogical);
-ip.addParamValue('lateralPixelSize',1, @isfloat);
-ip.addParamValue('axialPixelSize',1, @isfloat);
-ip.addParamValue('timeInterval',1, @isfloat);
-ip.addParamValue('newDataPath',[], @ischar);
-ip.addParamValue('chStartIdx',1, @isnumeric);
-ip.addParamValue('filePattern','Iter_ sample_scan_3p35ms_zp4um_ch{ch}_stack*', @ischar); 
-ip.parse(moviePaths,movieListAnalysisDir,varargin{:});
+ip.addOptional('movieListRoot','', @ischar);
+ip.addParameter('movieListName','movieList.mat', @ischar);
+ip.addParameter('movieDataName','movieData.mat', @ischar);
+ip.addParameter('deskew',false, @islogical);
+ip.addParameter('writeData',true, @islogical);
+ip.addParameter('copyFile',false, @islogical);
+ip.addParameter('translocateMovieData',false, @islogical);
+ip.addParameter('createMIP',true, @islogical);
+ip.addParameter('is3D',true, @islogical);
+ip.addParameter('lateralPixelSize',1, @isfloat);
+ip.addParameter('axialPixelSize',1, @isfloat);
+ip.addParameter('useBF',false, @islogical);
+ip.addParameter('timeInterval',1, @isfloat);
+ip.addParameter('newDataPath',[], @ischar);
+ip.addParameter('chStartIdx',1, @isnumeric);
+ip.addParameter('filePattern','Iter_ sample_scan_3p35ms_zp4um_ch{ch}_stack*', @ischar); 
+
+%% For backward compatibily, if there is an un even number of optional argument (no
+%% movieRoot). Add one on second position
+if(even(length(varargin)))
+    varargin=[{''} varargin];
+end
+%%
+
+ip.parse(moviePaths,varargin{:});
 
 p=ip.Results;
 writeData=p.writeData;
+
+if(p.useBF)
+    writeData=false;
+end;
+
+% If global analysis directory is not provided, create it from the input
+% folder.movieListAnalysisDir
+movieListAnalysisDir=p.movieListRoot;
+if(isempty(movieListAnalysisDir))
+    movieListAnalysisDir=moviePaths;
+    while (~isempty(strfind(movieListAnalysisDir,'*'))||~isempty(strfind(movieListAnalysisDir,'{ch}')) )
+            movieListAnalysisDir=fileparts(movieListAnalysisDir);
+    end
+end
     
 % Optional regexp processing: 
 % - Define a path per cell <moviePaths> from the regexp
@@ -118,96 +138,114 @@ for cellIdx=1:length(moviePaths)
 
     chIdx=ip.Results.chStartIdx;
     % While there is new channels
-    while(true)      
-
-        
-        filelistCH=dir([cPath filesep strrep(channelOriginalFilePattern,'{ch}',num2str(chIdx))]);
-        outputDirCH=[cPath filesep fileparts(strrep(channelFileOutputPattern,'{ch}',num2str(chIdx)))];
-        
-        % If this channel does not exist, stop building channels. 
-        if(isempty(filelistCH))
-           break;
-        end
-        
-        if(~exist(outputDirCH,'dir')) mkdir(outputDirCH); end;
-        if( writeData && (~strcmp(channelOriginalFilePattern,channelFileOutputPattern)))
-            for fileIdx=1:length(filelistCH)
-                file=filelistCH(fileIdx).name;
-                if(p.deskew)
-                    writeDeskewedFile([cPath filesep file],outputDirCH);
-                else
-                    if(p.copyFile)
-                        copyfile([cPath filesep file],outputDirCH);
-                    else
-                        movefile([cPath filesep file],outputDirCH);
-                    end
-                end
-                
-            end
-        end
-        channelList=[channelList Channel(outputDirCH)];
-        chIdx=chIdx+1;
-    end
-    
-
-    if(~exist([cPath filesep 'analysis'],'dir')) mkdir([cPath filesep 'analysis']); end
     %%
     MD=[];
     try
-    if(~isempty(channelList))
-        %%
-        MD=MovieData(channelList,[cPath filesep 'analysis'],'movieDataFileName_','movieData.mat','movieDataPath_',[cPath filesep 'analysis'], ...
-            'pixelSize_',p.lateralPixelSize,'pixelSizeZ_',p.axialPixelSize,'timeInterval_',p.timeInterval);
-        
-        if(p.is3D)
-            tiffReader=TiffSeriesReader({channelList.channelPath_},'force3D',true);
-            MD.setReader(tiffReader);
-        end;
-        MD.sanityCheck();
-        MD.save();
-        if(p.is3D)
-            if(p.createMIP)
-                printMIP(MD);
+        if(p.useBF)           
+            filelistCH=dir([cPath filesep strrep(channelOriginalFilePattern,'{ch}',num2str(chIdx))]);
+            file=filelistCH(1).name;
+            MD=MovieData([cPath filesep file],[cPath filesep 'analysis']);
+        else
+            while(true)               
+                filelistCH=dir([cPath filesep strrep(channelOriginalFilePattern,'{ch}',num2str(chIdx))]);
+                outputDirCH=[cPath filesep fileparts(strrep(channelFileOutputPattern,'{ch}',num2str(chIdx)))];
+                
+                % If this channel does not exist, stop building channels.
+                if(isempty(filelistCH))
+                    break;
+                end
+                
+                if(~exist(outputDirCH,'dir')) mkdir(outputDirCH); end;
+                if( writeData && (~strcmp(channelOriginalFilePattern,channelFileOutputPattern)))
+                    for fileIdx=1:length(filelistCH)
+                        file=filelistCH(fileIdx).name;
+                        if(p.deskew)
+                            writeDeskewedFile([cPath filesep file],outputDirCH);
+                        else
+                            if(p.copyFile)
+                                copyfile([cPath filesep file],outputDirCH);
+                            else
+                                movefile([cPath filesep file],outputDirCH);
+                            end
+                        end
+                        
+                    end
+                end
+                channelList=[channelList Channel(outputDirCH)];
+                chIdx=chIdx+1;
             end
-        end
-    else
-        warning(['No files found for movie ' num2str(cellIdx)]);
-        MD=MovieData([],[cPath filesep 'analysis'],'movieDataFileName_',p.movieDataName,'movieDataPath_',[cPath filesep 'analysis']);
-    end;
+            
+            
+            if(~exist([cPath filesep 'analysis'],'dir')) mkdir([cPath filesep 'analysis']); end
+            
+            
+            if(~isempty(channelList))
+                %%
+                MD=MovieData(channelList,[cPath filesep 'analysis'],'movieDataFileName_','movieData.mat','movieDataPath_',[cPath filesep 'analysis'], ...
+                    'pixelSize_',p.lateralPixelSize,'pixelSizeZ_',p.axialPixelSize,'timeInterval_',p.timeInterval);
+                MD.sanityCheck();
+                MD.save();
+                if(p.is3D)
+                    tiffReader=TiffSeriesReader({channelList.channelPath_},'force3D',true);
+                    MD.setReader(tiffReader);
+                end;
+            else
+                warning(['No files found for movie ' num2str(cellIdx)]);
+                MD=MovieData([],[cPath filesep 'analysis'],'movieDataFileName_',p.movieDataName,'movieDataPath_',[cPath filesep 'analysis']);
+            end;
 
-    MDs{cellIdx}=MD;
+        end;
     catch
         warning(['Movie building fail, exluding ' cPath ]);
         MDs{cellIdx}=[];
+        MD=[];
+    end;
+    
+    if(p.is3D && ~isempty(MD))
+        if(p.createMIP)
+            printMIP(MD);
+        end
     end
-        
+    MDs{cellIdx}=MD;
+    
 end
 builtMovies=cellfun(@(x) ~isempty(x),MDs)
 MDs=[MDs{builtMovies}];
 
-mkdir([movieListAnalysisDir filesep 'analysis']);
-ML=MovieList(MDs,[movieListAnalysisDir filesep 'analysis'],'movieListFileName_',p.movieListName,'movieListPath_',[movieListAnalysisDir filesep 'analysis']);
-ML.save();
+ML=[];
+if(~isempty(MDs))
+    mkdir([movieListAnalysisDir filesep 'analysis']);
+    ML=MovieList(MDs,[movieListAnalysisDir filesep 'analysis'],'movieListFileName_',p.movieListName,'movieListPath_',[movieListAnalysisDir filesep 'analysis']);
+    ML.save();
+end
 
 
 function writeDeskewedFile(filePath,outputDir)
-[~,~,ef]=fileparts(filePath);
-written=false;
-% This while loop handles server instability
-while ~written
-    try
-        if(strcmp(ef,'.bz2'))
-            unzipAndDeskewLatticeTimePoint(filePath,outputDir);
-        elseif((strcmp(ef,'.tif')))
-            deskewLatticeTimePoint(filePath,outputDir);
-        else
-            error('unsupported format')
-        end
-        written=true;
-    catch
-        written=false;
-    end;
-end
+    [~,~,ef]=fileparts(filePath);
+    written=false;
+    % This while loop handles server instability
+    while ~written
+        try
+            if(strcmp(ef,'.bz2'))
+                unzipAndDeskewLatticeTimePoint(filePath,outputDir);
+            elseif((strcmp(ef,'.tif')))
+                deskewLatticeTimePoint(filePath,outputDir);
+            else
+                error('unsupported format')
+            end
+            written=true;
+        catch
+            written=false;
+        end;
+    end
+
+function mkdir(path)
+    if (~strcmp(computer('arch'), 'win64'))
+        system(['mkdir -p ' path]);
+    else
+        mkdir(path);
+    end
+
 
 %% SNIPPETS
 %     outputDirFinal=[cPath filesep 'deskew' filesep 'final'];

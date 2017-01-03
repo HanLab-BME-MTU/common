@@ -41,7 +41,7 @@ ip = inputParser;
 ip.addRequired('MO',@(x) isa(x,'MovieObject'));
 ip.addOptional('procId',[],@isnumeric);
 ip.addOptional('refresher',[],@isstr);
-ip.addParamValue('movieIndex',0,@isscalar);
+ip.addParameter('movieIndex',0,@isscalar);
 ip.parse(MO,varargin{:});
 
 if strcmp(ip.Results.refresher, '1') == 1
@@ -133,7 +133,7 @@ if isa(userData.MO,'MovieData')
     % Create controls for switching between process image output
     hPosition=10;
     nProc = numel(imageProc);
-    for iProc=nProc:-1:1;
+    for iProc=nProc:-1:1
         output=imageProc{iProc}.getDrawableOutput;
         validChan = imageProc{iProc}.checkChannelOutput;
         validOutput = find(strcmp({output.type},'image'));
@@ -178,7 +178,7 @@ if ~isempty(overlayProc)
     % Create overlay options
     hPosition=10;
     nProc = numel(overlayProc);
-    for iProc=nProc:-1:1;
+    for iProc=nProc:-1:1
         output=overlayProc{iProc}.getDrawableOutput;
         
         % Create checkboxes for movie overlays
@@ -582,8 +582,9 @@ nFrames = userData.MO.nFrames_;
 startFrame = get(handles.slider_frame,'Value');
 if startFrame == nFrames, startFrame =1; end;
 if get(hObject,'Value')
-   action = 'Stop'; 
-else action = 'Run'; 
+    action = 'Stop'; 
+else
+    action = 'Run';
 end
 set(hObject,'String',[action ' movie']);
 
@@ -593,7 +594,7 @@ saveFrames = get(handles.checkbox_saveFrames,'Value');
 props = get(handles.popupmenu_movieFormat,{'String','Value'});
 movieFormat = props{1}{props{2}};
 
-if saveMovie,
+if saveMovie
     moviePath = fullfile(userData.MO.outputDirectory_,['Movie.' lower(movieFormat)]);
 end
 
@@ -635,7 +636,13 @@ end
 % Finish frame/movie creation
 if saveFrames; fprintf('\n'); end
 if saveMovie && strcmpi(movieFormat,'mov'), MakeQTMovie('finish'); end
-if saveMovie && strcmpi(movieFormat,'avi'), movie2avi(movieFrames,moviePath); end
+
+if saveMovie && strcmpi(movieFormat,'avi') 
+    v = VideoWriter(moviePath);
+    open(v);
+    writeVideo(v, movieFrames);
+    close(v); 
+end
 
 % Reset button
 set(hObject,'String', 'Run movie', 'Value', 0);
@@ -699,7 +706,12 @@ end
 % Finish frame/movie creation
 if saveFrames; fprintf('\n'); end
 if saveMovie && strcmpi(movieFormat,'mov'), MakeQTMovie('finish'); end
-if saveMovie && strcmpi(movieFormat,'avi'), movie2avi(movieFrames,moviePath); end
+if saveMovie && strcmpi(movieFormat,'avi')
+    v = VideoWriter(moviePath);
+    open(v);
+    writeVideo(v, movieFrames);
+    close(v); 
+end
 
 % Reset button
 set(hObject,'String', 'Show 3D', 'Value', 0);

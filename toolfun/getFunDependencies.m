@@ -8,7 +8,8 @@ function [depList, toolboxes] = getFunDependencies(funList, varargin)
 % Returns a cell array with the paths of every m file which the input list
 % of m files calls / depends on, including object classes, but excluding
 % those functions which are provided by mathworks - toolbox functions,
-% built-in matlab functions etc. The matlab function depfun will return
+% built-in matlab functions etc. The matlab function 
+% matlab.codetools.requiredFilesAndProducts will return
 % toolboxes in a recursive search, so this function is used to find
 % non-toolbox functions which are required.
 % Additionally returns the matlab toolboxes required to run these dependencies. 
@@ -36,6 +37,11 @@ function [depList, toolboxes] = getFunDependencies(funList, varargin)
 
 % Hunter Elliott,  June 2010
 % Sebastien Besson, July 2011
+% Mark Kittisopikul, February 2016 depfun is now deprecated in lieu of
+%                           matlab.codetools.requiredFilesAndProducts
+% Hunter Elliott, August 2016
+% Mark Kittisopikul, Merged with Hunter Elliot changes in d63ebd9d, October 2016
+% Philippe Roudot, Changed use_depfun line to 8.3 from R2014b, October 2016
 % Based on depfun_notoolbox.m and toolboxesUsed.m
 
 % Input check
@@ -51,6 +57,8 @@ else
     excludefilters = [{'toolbox'},ip.Results.excludefilters{:}];
 end
 
+use_depfun = verLessThan('matlab','8.4');
+
 % Get the initial set of file dependencies
 filesList=cellfun(@which,funList(:),'UniformOutput',false);
 depList={};
@@ -59,26 +67,49 @@ depList={};
 filter = @(f, l) cellfun(@(x)(isempty(regexp(x,f,'once'))), l);
 
 while true
+    disp(' -- looping over file dependency search -- ')
     %Find dependencies of current list
-    %newFiles = depfun(filesList{:},'-toponly','-quiet');
-    newFiles = matlab.codetools.requiredFilesAndProducts(filesList,'toponly')';
+    if(use_depfun)
+        newFiles = depfun(filesList{:},'-toponly','-quiet');
+    else
+        newFiles = matlab.codetools.requiredFilesAndProducts(filesList);
+    end
         
     % Filter new found files using regular expression
     for i = 1:numel(excludefilters)
         newFiles = newFiles(filter(excludefilters{i}, newFiles));
     end
-    
+        
     % Update the dependencies file list
     nFiles=numel(depList);
     filesList = setdiff(newFiles,depList);
-    depList = unique(vertcat(depList,newFiles));
+    depList = unique(vertcat(depList(:), newFiles(:)));
     
-    % Break if no new file or the same set of files is found
-    if isempty(newFiles) || nFiles==numel(depList), break; end
+    if (use_depfun)
+        % Break if no new file or the same set of files is found
+        if isempty(newFiles) || nFiles==numel(depList), break; end
+    else
+        disp('Used matlab.codetools.requiredFilesAndProducts - Break loop.')
+        break;
+    end
 end
 
+if(use_depfun)
 % Matlab toolbox files are named '*/toolbox/name_of_toolbox/*'
-[~,toolboxes] = matlab.codetools.requiredFilesAndProducts(depList,'toponly');
+    allDepFiles = depfun(depList{:},'-toponly','-quiet');
+    toolboxToken = ['toolbox' regexptranslate('escape',filesep) '(\w+)' regexptranslate('escape',filesep)];
+    foundTokens=regexp(allDepFiles,toolboxToken,'tokens','once');
+    tb_namespaces = unique(vertcat(foundTokens{:}));
+
+    % Remove the "toolboxes" that come with MATLAB by default
+    v = cellfun(@ver, tb_namespaces, 'UniformOutput', false);
+    v = v(~cellfun(@isempty, v));
+    tb_names = cellfun(@(x) x.Name, v, 'UniformOutput', false);
+    toolboxes = tb_names(~cellfun(@isempty, tb_names));
+else
+    [~,productList] = matlab.codetools.requiredFilesAndProducts(depList(:),'toponly');
+    toolboxes = {productList.Name}';
+end
 
 if ip.Results.allMex
     %Find any mex binaries.

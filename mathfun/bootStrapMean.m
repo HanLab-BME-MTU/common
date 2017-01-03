@@ -18,9 +18,9 @@ function [conf,meanS] = bootStrapMean(variable,alpha,nBoot)
 % Marco Vilela, 2012
 
 opt = statset('UseParallel','never');
-% if matlabpool('size')
-%     opt = statset('UseParallel','always');
-% end
+if(~isempty(gcp('nocreate')))
+     opt = statset('UseParallel','always');
+ end
 
 [conf,meanSample] = bootci(nBoot,{@nanmean,variable},'alpha',alpha,...
     'type','bca','Options',opt);

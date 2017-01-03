@@ -15,7 +15,7 @@ classdef TestParCellfun_progress < TestCase
     methods
         function self = TestParCellfun_progress(name)
             self = self@TestCase(name);
-            self.func = @parcellfun_progress;
+            self.func = @(varargin) parcellfun_progress(varargin{:},'DisplayFunc',@(d) 0);
             self.nonparfunc = @cellfun;
         end
         function setUp(self,A,B)
@@ -94,8 +94,11 @@ classdef TestParCellfun_progress < TestCase
             assert(parTime < time);
             assertEqual(parout,out);
         end
-        function testHeading(self)
+        function headingActual(self)
             self.func(@self.identity,self.A,'Heading','Hello world: ');
+        end
+        function testHeading(self)
+            out = evalc('self.headingActual');
         end
         function testReturnFutures(self)
             F = self.func(@self.identity,self.A,'ReturnFutures',true);
@@ -105,8 +108,11 @@ classdef TestParCellfun_progress < TestCase
             self.func(@disp,self.A);
             self.func(@self.identity,self.A,'NumOutputs',0);
         end
-        function testDisplayDiaries(self)
+        function displayDiariesActual(self)
             self.func(@disp,self.A,'DisplayDiaries',true);
+        end
+        function testDisplayDiaries(self)
+            out = evalc('self.displayDiariesActual');
         end
         function testUseErrorStruct(self)
             % The default backwards compatible behavior with cellfun is to use an

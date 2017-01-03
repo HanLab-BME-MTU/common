@@ -20,9 +20,13 @@ function [trackClass,mssSlope,genDiffCoef,scalingPower,normDiffCoef] ...
 %                     which will be used for all motion types, or 2 values,
 %                     which will be used for confined and directed, respectively.
 %                     Optional. Default: 0.1 for all.
-%                     Value of -1 will have varying false positve rate using 
-%                     new thresholds based on distributions of all
-%                     diffusion types
+
+%                     NEW DIFFUSION CLASSIFICATION: New method (see Remark
+%                     #5) uses best thresholds to separate
+%                     immobile,confined, and free tracks in unbiased manner. 
+%                     To use, enter only the desired alpha value for directed 
+%                     motion with a preceding minus sign (ex. -0.05). Will 
+%                     not work for multiple inputs.
 %
 %OUTPUT trackClass  : # tracks x 1 vector of track classification.
 %                     Values mean the following ...
@@ -67,6 +71,13 @@ function [trackClass,mssSlope,genDiffCoef,scalingPower,normDiffCoef] ...
 %Currently taken as the threshold for confined divided by 4. Validated
 %visually on 2D data only. This seems to work better than deriving a
 %threshold from simulating positional jitter. Investigate further.
+%
+%(5) New diffusion classification method: 
+% New method considers not only MSS value distributions resulting from simulations of
+% freely diffusing tracks, but also looks at confined and immobile simulations.
+% Threshold values were then chosen that minimize the error rate for
+% adjacent distributions (ex. free/confined, confined/immobile). Not
+% implemented for free/direct.
 %
 %Khuloud Jaqaman, March 2008
 %                 Feb 2015: Expanded to include immobile.
@@ -118,19 +129,41 @@ clear criteria
 %% alpha-value for classification
 
 %determine threshold based on alpha-value and dimensionality
-if alphaMSS(1) ==-1  && probDim ==2%Maybe change to only allow
+if alphaMSS(1) ~= abs(alphaMSS(1))  && probDim ==2
     p = mfilename('fullpath');
-    load(strcat(p(1:95),'newDiffTypeThreshold.mat'))
+    load(strcat(p(1:end-16),'newDiffTypeThreshold.mat'))
     mssThreshImm = Mdl.mssThreshImm;
-    mssThreshPos = Mdl.mssThreshPos;
     mssThreshNeg = Mdl.mssThreshNeg;
+    mssThreshNeg = [mssThreshNeg(1:min(500,numFramesMovie)); mssThreshNeg(500)*ones(max(0,numFramesMovie-500),1)];
+    mssThreshImm = [mssThreshImm(1:min(500,numFramesMovie)); mssThreshImm(500)*ones(max(0,numFramesMovie-500),1)];
+    switch abs(alphaMSSDir)
+    case 0.2 %10th percentile and 90th percentile
+        [~,mssThreshPos] = threshMSS2D_p20(numFramesMovie);
+    case 0.1 %5th percentile and 95th percentile
+        [~,mssThreshPos] = threshMSS2D_p10(numFramesMovie);
+    case 0.05 %2.5th percentile and 97.5th percentile
+        [~,mssThreshPos] = threshMSS2D_p05(numFramesMovie);
+    case 0.01 %0.5th percentile and 99.5th percentile
+        [~,mssThreshPos] = threshMSS2D_p01(numFramesMovie);
+    end
 
-elseif alphaMSS(1) ==-1  && probDim ==1%Maybe change to only allow
+elseif alphaMSS(1) ~= abs(alphaMSS(1))  && probDim ==1
     p = mfilename('fullpath');
-    load(strcat(p(1:95),'newDiffTypeThreshold1D.mat'))
+    load(strcat(p(1:end-16),'newDiffTypeThreshold1D.mat'))
     mssThreshImm = Mdl1D.mssThreshImm;
-    mssThreshPos = Mdl1D.mssThreshPos;
     mssThreshNeg = Mdl1D.mssThreshNeg;
+    mssThreshNeg = [mssThreshNeg(1:min(500,numFramesMovie)); mssThreshNeg(500)*ones(max(0,numFramesMovie-500),1)];
+    mssThreshImm = [mssThreshImm(1:min(500,numFramesMovie)); mssThreshImm(500)*ones(max(0,numFramesMovie-500),1)];    
+    switch abs(alphaMSSDir)
+    case 0.2 %10th percentile and 90th percentile
+        [~,mssThreshPos] = threshMSS1D_p20(numFramesMovie);
+    case 0.1 %5th percentile and 95th percentile
+        [~,mssThreshPos] = threshMSS1D_p10(numFramesMovie);
+    case 0.05 %2.5th percentile and 97.5th percentile
+        [~,mssThreshPos] = threshMSS1D_p05(numFramesMovie);
+    case 0.01 %0.5th percentile and 99.5th percentile
+        [~,mssThreshPos] = threshMSS1D_p01(numFramesMovie);
+    end
 else
     switch probDim
         case 1

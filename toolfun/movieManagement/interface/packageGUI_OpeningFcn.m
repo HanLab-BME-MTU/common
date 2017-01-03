@@ -58,6 +58,7 @@ ip.addOptional('MO',[],@(x) isa(x,'MovieObject'));
 ip.addParamValue('MD',[],@(x) isempty(x) || isa(x,'MovieData'));
 ip.addParamValue('ML',[],@(x) isempty(x) || isa(x,'MovieList'));
 ip.addParamValue('packageConstr','',@(x) isa(x,'function_handle'));
+ip.addParamValue('cluster',[],@(x) isempty(x) || isa(x,'parallel.Cluster'));
 ip.parse(hObject,eventdata,handles,packageName,varargin{:});
 
 % Read the package name
@@ -71,6 +72,9 @@ if isempty(userData), userData = struct(); end
 userData.packageName = packageName;
 userData.MD = ip.Results.MD;
 userData.ML = ip.Results.ML;
+if(~isempty(ip.Results.cluster))
+    uTrackParCluster(ip.Results.cluster);
+end
 
 %If package GUI supplied without argument, saves a boolean which will be
 %read by packageNameGUI_OutputFcn
@@ -333,8 +337,8 @@ end
 set(handles.pushbutton_run, 'Callback', @(hObject,eventdata)packageGUI_RunFcn(hObject,eventdata,guidata(hObject)));
 % Set web links in menu
 set(handles.menu_about_gpl,'UserData','http://www.gnu.org/licenses/gpl.html')
-set(handles.menu_about_lccb,'UserData','http://lccb.hms.harvard.edu/')
-set(handles.menu_about_lccbsoftware,'UserData','http://lccb.hms.harvard.edu/software.html')
+set(handles.menu_about_lccb,'UserData','http://www.utsouthwestern.edu/labs/danuser/')
+set(handles.menu_about_lccbsoftware,'UserData','http://www.utsouthwestern.edu/labs/danuser/software/')
  
 % Update handles structure
 set(handles.figure1,'UserData',userData);

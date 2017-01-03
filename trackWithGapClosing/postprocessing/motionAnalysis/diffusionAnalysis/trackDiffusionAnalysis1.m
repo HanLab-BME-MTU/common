@@ -29,6 +29,14 @@ function [diffAnalysisRes,errFlag] = trackDiffusionAnalysis1(tracks,...
 %                     entered, it is taken as the alpha-value for MSS
 %                     analysis, while the alpha-value for asymmetry
 %                     analysis is given the default value.
+%
+%                     NEW DIFFUSION CLASSIFICATION: New method (see Remark
+%                     #2) uses best thresholds to separate
+%                     immobile,confined, and free tracks in unbiased manner. 
+%                     To use, enter for the first entry the desired alpha value for directed 
+%                     motion with a preceding minus sign (ex. -0.05).
+%                     Second entry for asymmetry is unaffected.
+%
 %       plotRes     : 1 to plot results, 0 otherwise. Optional. Default: 0.
 %                     Results can be plotted only if problem is 2D.
 %                     See plotTracksDiffAnalysis2D for color code.
@@ -82,8 +90,16 @@ function [diffAnalysisRes,errFlag] = trackDiffusionAnalysis1(tracks,...
 %                            there is no need for repetition.
 %       errFlag         : 0 if executed normally, 1 otherwise.
 %
-%REMARKS While tracks do not have to be linear in order to be asymmetric,
+%REMARKS 
+%(1)While tracks do not have to be linear in order to be asymmetric,
 %the last analysis step assumes that tracks are linear.
+%
+%(2) New diffusion classification method: 
+% New method considers not only MSS value distributions resulting from simulations of
+% freely diffusing tracks, but also looks at confined and immobile simulations.
+% Threshold values were then chosen that minimize the error rate for
+% adjacent distributions (ex. free/confined, confined/immobile). Not
+% implemented for free/direct.
 %
 %Khuloud Jaqaman, March 2008
 

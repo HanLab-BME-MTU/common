@@ -21,6 +21,12 @@ function [ objectFig ] = ftexplore( I )
 % This is especially useful for filtering in frequency space since the
 % response of the filter is the pointwise multiplication with 
 
+% Mark Kittiospikul, October 2016
+% Jaqaman Lab
+% UT Southwestern
+
+doGaussian = true;
+
 I = double(I);
 Iz = I - mean(I(:));
 
@@ -41,6 +47,19 @@ posCallback(getPosition(h_ellipse));
 
 freqFig = figure;
 hfreq = imshow(abs(fftshift(fft(Iz))),[]);
+info = @real;
+hax(1) = viscircles(hfreq.Parent,repmat([mean(xlim)-0.5 mean(ylim)-0.5],5,1),max([xlim ylim])*[0.1 0.2 0.4 0.8 1],'DrawBackgroundCircle',false,'EdgeColor',[1 1 1],'LineStyle',':','LineWidth',1);
+hax(2) = line(xlim-0.5,repmat(sum(xlim)/2,1,2),'Color',[1 1 1],'LineWidth',1,'LineStyle',':','Parent',hfreq.Parent);
+hax(3) = line(repmat(sum(ylim)/2,1,2),ylim-0.5,'Color',[1 1 1],'LineWidth',1,'LineStyle',':','Parent',hfreq.Parent);
+menu = uicontextmenu(freqFig);
+m_real = uimenu(menu,'Label','Real','Checked','on','Callback',@selectInfo);
+m_imag = uimenu(menu,'Label','Imag','Checked','off','Callback',@selectInfo);
+m_abs  = uimenu(menu,'Label','Magnitude','Checked','off','Callback',@selectInfo);
+m_angle = uimenu(menu,'Label','Phase','Checked','off','Callback',@selectInfo);
+m_info = [m_real m_imag m_abs m_angle];
+m_axes = uimenu(menu,'Label','Axes','Checked','on','Callback',@toggleAxes,'Separator','on');
+m_gaussian = uimenu(menu,'Label','Gaussian','Checked','on','Callback',@toggleGaussian);
+hfreq.UIContextMenu = menu;
 colorbar
 cm = vertcat(bsxfun(@times,(1-(0:32)/32)',[0 1 1]),bsxfun(@times,(1:32)'/32,[1 1 0]));
 
@@ -53,9 +72,13 @@ end
     function posCallback(p)
         center = [p(2)+p(4)/2,p(1)+p(3)/2];
         center = round(center);
-        gaussianWindow = imgaussfilt(circshift(delta,center),p(3)/3,'FilterSize',round(p(3))*4+1);
-        cdata = imfuse(gaussianWindow.*I,I,'Scaling','independent');
-        set(him,'CData',cdata);
+        if(doGaussian)
+            gaussianWindow = imgaussfilt(circshift(delta,center),p(3)/3,'FilterSize',round(p(3))*4+1);
+            cdata = imfuse(gaussianWindow.*I,I,'Scaling','independent');
+            set(him,'CData',cdata);
+        else
+            set(him,'CData',I);
+        end
         setPosition(h_pt,fliplr(center));
     end
     function showLocalizedFreq(p)
@@ -63,15 +86,54 @@ end
         center = round(center);
         gaussianWindow = ifftshift(imgaussfilt(fftshift(delta),p(3)/3,'FilterSize',round(p(3))*4+1));
         Is = circshift(Iz,-center+1);
-        Is = Is.*gaussianWindow;
+        if(doGaussian)
+            Is = Is.*gaussianWindow;
+        end
 %         Is = Is - mean(Is(:));
-        If = real(fftshift(fft2(Is)));
+        If = info(fftshift(fft2(Is)));
         cmax = max(abs(If(:)));
         figure(freqFig);
         set(hfreq,'CData',If);
 %         imshow(real(fftshift(fft2(Is))),[]);
         caxis(hfreq.Parent,cmax*[-1 1]);
         colormap(hfreq.Parent,cm);
+    end
+    function selectInfo(hObject,~)
+        set(m_info,'Checked','off');
+        switch(hObject.Label)
+            case 'Real'
+                info = @real;
+                set(m_real,'Checked','on');
+            case 'Imag'
+                info = @imag;
+                set(m_imag,'Checked','on');
+            case 'Magnitude'
+                info = @abs;
+                set(m_abs,'Checked','on');
+            case 'Phase'
+                info = @angle;
+                set(m_angle,'Checked','on');
+        end
+        showLocalizedFreq(getPosition(h_ellipse));
+    end
+    function toggleAxes(hObject,~)
+        switch(hax(1).Visible)
+            case 'on'
+                set(hax,'Visible','off');
+                m_axes.Checked = 'off';
+            case 'off'
+                set(hax,'Visible','on');
+                m_axes.Checked = 'on';
+        end
+    end
+    function toggleGaussian(hObject,~)
+        doGaussian = ~doGaussian;
+        if(doGaussian)
+            m_gaussian.Checked = 'on';
+        else
+            m_gaussian.Checked = 'off';
+        end
+        showLocalizedFreq(getPosition(h_ellipse));
     end
 
 end
