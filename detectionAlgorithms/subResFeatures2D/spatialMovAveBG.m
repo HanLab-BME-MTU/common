@@ -48,7 +48,7 @@ clear nhoodIdx
 firstFullX = startPixelX - blockRadius;
 lastFullX = firstFullX + size(bgMeanFull,1) - 1;
 firstFullY = startPixelY - blockRadius;
-lastFullY = firstFullY + size(bgMeanFull,1) - 1;
+lastFullY = firstFullY + size(bgMeanFull,2) - 1;
 
 %% Pad array by replication
 % 
