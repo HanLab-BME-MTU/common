@@ -241,7 +241,7 @@ function writeDeskewedFile(filePath,outputDir)
 
 function mkdir(path)
     if (~strcmp(computer('arch'), 'win64'))
-        system(['mkdir ' path]);
+        system(['mkdir -p ' path]);
     else
         mkdir(path);
     end
