@@ -17,11 +17,11 @@ end
 
 savePath=[MD.outputDirectory_ filesep 'MIP'];
 if ~isdir(savePath) || ~isdir([savePath filesep 'XY']) || ~isdir([savePath filesep 'ZY']) || ~isdir([savePath filesep 'ZX']) || ~isdir([savePath filesep 'Three'])
-    system(['mkdir -p ' savePath]);
-    system(['mkdir -p ' [savePath filesep 'XY']]);
-    system(['mkdir -p ' [savePath filesep 'ZY']]);
-    system(['mkdir -p ' [savePath filesep 'ZX']]);
-    system(['mkdir -p ' [savePath filesep 'Three']]);
+    system(['mkdir -p "' savePath '"']);
+    system(['mkdir -p "' [savePath filesep 'XY'] '"' ]);
+    system(['mkdir -p "' [savePath filesep 'ZY'] '"']);
+    system(['mkdir -p "' [savePath filesep 'ZX'] '"']);
+    system(['mkdir -p "' [savePath filesep 'Three'] '"']);
 % 
 %     mkdir(savePath)
 %     mkdir([savePath filesep 'XY'])
