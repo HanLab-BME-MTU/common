@@ -222,8 +222,10 @@ function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_
             clear maxima_value_inf;
             numMax = sum(maxima_map);
             numMax = max(numMax(:));
-            maxima = maxima(1:numMax,:,:);
-            maxima_value = maxima_value(1:numMax,:,:);
+            colons = {':'};
+            colons = colons(ones(1,ndims(maxima)-1));
+            maxima = maxima(1:numMax,colons{:});
+            maxima_value = maxima_value(1:numMax,colons{:});
             
             if(nargout > 1)
                 minima_value_inf = minima_value;
@@ -232,8 +234,8 @@ function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_
                 clear minima_value_inf;
                 numMin = sum(minima_map);
                 numMin = max(numMin(:));
-                minima = minima(1:numMin,:,:);
-                minima_value = minima_value(1:numMin,:,:);
+                minima = minima(1:numMin,colons{:});
+                minima_value = minima_value(1:numMin,colons{:});
             end
                        
         end
