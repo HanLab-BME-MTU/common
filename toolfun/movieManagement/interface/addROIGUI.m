@@ -22,7 +22,7 @@ function varargout = addROIGUI(varargin)
 
 % Edit the above text to modify the response to help addROIGUI
 
-% Last Modified by GUIDE v2.5 27-Jan-2017 02:24:53
+% Last Modified by GUIDE v2.5 27-Jan-2017 03:42:19
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -99,6 +99,16 @@ userData.imPadded = constructPaddedImage(userData.imData,userData.padSize);
 set(handles.listbox_selectedChannels,'Callback',@(h,event) update_data(h,event,guidata(h)));
 
 userData_main = get(ip.Results.mainFig, 'UserData');
+% Tool help
+set(handles.figure1,'CurrentAxes',handles.axesToolHelp);
+Img = image(userData_main.questIconData);
+set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'),...
+    'visible','off','YDir','reverse');
+set(Img,'ButtonDownFcn', ...
+    @(hObject,eventdata)addROIGUI('toolHelp',hObject,eventdata,guidata(hObject)));
+
+
+% Main help
 set(handles.figure1,'CurrentAxes',handles.axes_help);
 Img = image(userData_main.questIconData);
 set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'),...
@@ -265,7 +275,8 @@ function impoly_finish_cb(hObject,eventdata,handles)
                 if(isempty(userData.ROI))
                     helpdlg(['Click "Save" to store the ROI, or ' ...
                              'Click "Draw new region of interest" to reset. ' ...
-                             'See impoly documentation for other commands.']);
+                             'See ' func2str(userData.roiFcn) ...
+                             ' documentation for other commands.']);
                 end
             end
         end
@@ -455,3 +466,38 @@ function popupToolSelection_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
+
+% --- Executes on button press in pushbuttonPreview.
+function pushbuttonPreview_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbuttonPreview (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+    userData=get(handles.figure1,'UserData');
+    if(~userData.imPolyHandle.isvalid)
+        warndlg('No ROI selected');
+        return;
+    end
+    mask=createMask(userData.imPolyHandle);
+    mask = mask(userData.padSize(1)+(1:size(userData.imData,1)), ...
+                userData.padSize(2)+(1:size(userData.imData,2)));
+    
+    % Show binary mask
+    figure('Units','normalized','OuterPosition',[0 0.25 0.5 1]);
+    imshow(mask,[]);
+    
+    % Show mask overlaid on image
+    figure('Units','normalized','OuterPosition',[0.5 0.25 0.5 1])
+    notInMaskColor = shiftdim([0.5 0 0],-1);
+%     rgb = zeros([size(userData.imData) 3]);
+%     rgb(:,:,1) = mask.*userData.imData + (~mask).*notInMaskColor(1).*userData.imData;
+%     rgb(:,:,2) = mask.*userData.imData + (~mask).*notInMaskColor(2).*userData.imData;
+%     rgb(:,:,3) = mask.*userData.imData + (~mask).*notInMaskColor(3).*userData.imData;
+    rgb = mask.*userData.imData;
+    rgb = bsxfun(@plus,rgb,bsxfun(@times,(~mask).*userData.imData,notInMaskColor));
+    imshow(rgb,[]);
+
+function toolHelp(hObject, eventdata, handles)
+userData=get(handles.figure1,'UserData');
+roiFcn = getROIFunctionFromName(userData.tools{get(handles.popupToolSelection,'Value')});
+doc(func2str(roiFcn));
