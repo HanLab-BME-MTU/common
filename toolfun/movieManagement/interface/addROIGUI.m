@@ -88,6 +88,8 @@ if userData.nFrames == 1
 end
 userData.imIndx=1;
 userData.imData=mat2gray(userData.MD.channels_(userData.chanIndex).loadImage(userData.imIndx));
+userData.padSize = [20 20];
+userData.imPadded = constructPaddedImage(userData.imData,userData.padSize);
     
 set(handles.listbox_selectedChannels,'Callback',@(h,event) update_data(h,event,guidata(h)));
 
@@ -162,6 +164,7 @@ imIndx = get(handles.slider_frameNumber,'Value');
 if (chanIndex~=userData.chanIndex) ||  (imIndx~=userData.imIndx)
     % Update image flag and dat
     userData.imData=mat2gray(userData.MD.channels_(chanIndex).loadImage(imIndx));
+    userData.imPadded = constructPaddedImage(userData.imData,userData.padSize);
     userData.updateImage=1;
     userData.chanIndex=chanIndex;
     userData.imIndx=imIndx;
@@ -191,10 +194,10 @@ end
 imHandle =findobj(userData.previewFig,'Type','image');
 if userData.newFigure || userData.updateImage
     if isempty(imHandle)
-        imHandle=imshow(userData.imData);
+        imHandle=imshow(userData.imPadded);
         axis off;
     else
-        set(imHandle,'CData',userData.imData);
+        set(imHandle,'CData',userData.imPadded);
     end
 end
 
@@ -307,7 +310,9 @@ update_data(hObject,eventdata,handles);
 % Create ROI mask and save it in the outputDirectory
 userData = get(handles.figure1, 'UserData');
 try
-    mask=createMask(userData.imPolyHandle);           
+    mask=createMask(userData.imPolyHandle);
+    mask = mask(userData.padSize(1)+(1:size(userData.imData,1)), ...
+                userData.padSize(2)+(1:size(userData.imData,2)));
     
     if get(handles.checkbox_addROI, 'Value')
         
@@ -387,3 +392,10 @@ if userData.imPolyHandle.isvalid
 end
 set(hObject, 'UserData', userData);
 update_data(hObject,eventdata,handles);
+
+function paddedImage = constructPaddedImage(I,padsize)
+    padColor = [0 1 1];
+    paddedImage = zeros([size(I)+padsize*2 3]);
+    paddedImage(:,:,1) = padarray(I,padsize,padColor(1));
+    paddedImage(:,:,2) = padarray(I,padsize,padColor(2));
+    paddedImage(:,:,3) = padarray(I,padsize,padColor(3));
