@@ -22,7 +22,7 @@ function varargout = addROIGUI(varargin)
 
 % Edit the above text to modify the response to help addROIGUI
 
-% Last Modified by GUIDE v2.5 29-Apr-2015 14:56:21
+% Last Modified by GUIDE v2.5 27-Jan-2017 02:24:53
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -73,9 +73,14 @@ set(handles.listbox_selectedChannels,'String',userData.MD.getChannelPaths(), ...
 % Save the image directories and names (for cropping preview)
 userData.nFrames = userData.MD.nFrames_;
 userData.imPolyHandle.isvalid=0;
+userData.roiFcn = @impoly;
+userData.tools = {'Polygon','Freehand','Rectangle','Ellipse'};
 userData.ROI = [];
 userData.previewFig=-1;
 userData.helpFig=-1;
+
+
+set(handles.popupToolSelection,'String',userData.tools);
 
 % Read the first image and update the sliders max value and steps
 userData.chanIndex = 1;
@@ -206,21 +211,36 @@ end
 set(handles.figure1, 'UserData', userData);
 guidata(hObject,handles);
 
+lastRoiFcn = userData.roiFcn;
+userData.roiFcn = getROIFunctionFromName(userData.tools{get(handles.popupToolSelection,'Value')});
+roiFcnStr = func2str(userData.roiFcn);
+
+if(~isequal(lastRoiFcn,userData.roiFcn))
+    if(userData.imPolyHandle.isvalid)
+        delete(userData.imPolyHandle);
+    end
+    userData.ROI = [];
+end
+
 if userData.imPolyHandle.isvalid
     % Update the imPoly position
-    setPosition(userData.imPolyHandle,userData.ROI)
+    try
+        setPosition(userData.imPolyHandle,userData.ROI);
+    catch err
+        % imfreehand does not have a setPosition method
+    end
 else
     % Do not create a new impoly if one is in progress
-    if(isempty(findobj(gca,'Tag','impoly')))
+    if(isempty(findobj(gca,'Tag',roiFcnStr)))
     
         % Create a new imPoly object and store the handle
         % since impoly blocks, create the constraint function first in case
         % something happens later
-        fcn = makeConstrainToRectFcn('impoly',get(imHandle,'XData'),get(imHandle,'YData'));
+        fcn = makeConstrainToRectFcn(roiFcnStr,get(imHandle,'XData'),get(imHandle,'YData'));
         if ~isempty(userData.ROI)
-            userData.imPolyHandle = impoly(get(imHandle,'Parent'), []);
+            userData.imPolyHandle = userData.roiFcn(get(imHandle,'Parent'), []);
         else
-            userData.imPolyHandle = impoly(get(imHandle,'Parent'),userData.ROI);
+            userData.imPolyHandle = userData.roiFcn(get(imHandle,'Parent'),userData.ROI);
         end
         setPositionConstraintFcn(userData.imPolyHandle,fcn);
     end
@@ -399,3 +419,39 @@ function paddedImage = constructPaddedImage(I,padsize)
     paddedImage(:,:,1) = padarray(I,padsize,padColor(1));
     paddedImage(:,:,2) = padarray(I,padsize,padColor(2));
     paddedImage(:,:,3) = padarray(I,padsize,padColor(3));
+    
+function roiFcn = getROIFunctionFromName(roiName)
+    switch(roiName)
+        case 'Polygon'
+            roiFcn = @impoly;
+        case 'Rectangle'
+            roiFcn = @imrect;
+        case 'Ellipse'
+            roiFcn = @imellipse;
+        case 'Freehand'
+            roiFcn = @imfreehand;
+        otherwise
+            roiFcn = @impoly;
+    end
+
+% --- Executes on selection change in popupToolSelection.
+function popupToolSelection_Callback(hObject, eventdata, handles)
+% hObject    handle to popupToolSelection (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns popupToolSelection contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from popupToolSelection
+
+
+% --- Executes during object creation, after setting all properties.
+function popupToolSelection_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to popupToolSelection (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
