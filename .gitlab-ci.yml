@@ -1,5 +1,5 @@
 # Gitlab CI Script for danuser/common
-# Andrew R. Jamieson - 2016
+# Andrew R. Jamieson - 2017
 
 
 stages:
@@ -146,7 +146,7 @@ build:utrack:R2014a:
       - $TARGET_FOLDER
     when: on_success
     expire_in: 4 weeks
-  when: manual
+  # when: manual
 
 # ===========[CME]===================
 
@@ -220,6 +220,32 @@ build:Biosensors:R2016b:
     - module load texlive/2014
     - echo "-Xmx1024m" > java.opts
     - $CI_SCRIPT_PATH/build/Biosensors/runCIbuild_Biosensors_Package_m.sh
+  artifacts:
+    name: "${BUILD_NAME}-b${CI_BUILD_ID}"
+    paths:
+      - $TARGET_FOLDER
+    when: on_success
+    expire_in: 4 weeks
+  # when: manual
+
+# ===========[QFSM]===================
+
+build:QFSM:R2016b:
+  stage: build
+  variables:
+    MATLAB_VERSION: "2016b"
+    PACKAGE_NAME:  "QFSMPackage"
+    PACKAGE_CLASS: "QFSMPackage"
+    BUILD_NAME: $PACKAGE_NAME
+    RELEASE: "v1.1.2"
+    DOCUMENTATION_DIR: "${CLEAN_REPO_PATH}/documentation"
+    TARGET_FOLDER: "${PACKAGE_NAME}"
+  script:
+    - module unload matlab
+    - module load matlab/$MATLAB_VERSION
+    - module load texlive/2014
+    - echo "-Xmx1024m" > java.opts
+    - $CI_SCRIPT_PATH/build/QFSM/runCIbuild_QFSM_Package_m.sh
   artifacts:
     name: "${BUILD_NAME}-b${CI_BUILD_ID}"
     paths:
@@ -472,6 +498,29 @@ test:Biosensors:R2016b:
     expire_in: 6 weeks
   dependencies:
     - build:Biosensors:R2016b
+  # when: manual
+
+# ===========[QFSM]===================
+
+test:QFSM:R2016b:
+  stage: test
+  variables:
+    MATLAB_TEST_VERSION: "2016b"
+    MATLAB_BUILD_VERSION: "2016b"
+    BUILT_PACKAGE_PATH: "${CI_PROJECT_DIR}/QFSMPackage/"
+  script:
+    - module unload matlab
+    - module load matlab/$MATLAB_TEST_VERSION
+    - echo "-Xmx1024m" > java.opts
+    - ${CI_SCRIPT_PATH}/test/QFSM/QFSM_test.sh
+  artifacts:
+    name: "MATLAB_dump_b${CI_BUILD_ID}_${MATLAB_TEST_VERSION}_${MATLAB_BUILD_VERSION}"
+    paths:
+      - $TEST_DEBUG_TARGET_FOLDER
+    when: always
+    expire_in: 6 weeks
+  dependencies:
+    - build:QFSM:R2016b
   # when: manual
 
 
