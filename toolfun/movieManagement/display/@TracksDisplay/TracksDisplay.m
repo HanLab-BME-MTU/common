@@ -140,7 +140,7 @@ classdef TracksDisplay < MovieDataDisplay
                 eventTrackIdx = cumsum([1 cellfun('length',{tracks(hasSplitEvents).splitEvents})]);
                 hasSplitEventsIdx = find(hasSplitEvents);
             else
-                hasSplitEventsIdx = {};
+                hasSplitEventsIdx = [];
             end
 
 
@@ -170,7 +170,7 @@ classdef TracksDisplay < MovieDataDisplay
                 eventTrackIdx = cumsum([1 cellfun('length',{tracks(hasMergeEvents).mergeEvents})]);
                 hasMergeEventsIdx = find(hasMergeEvents);
             else
-                hasMergeEventsIdx = {};
+                hasMergeEventsIdx = [];
             end
 
             if(~isempty(hasMergeEventsIdx))
