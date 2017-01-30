@@ -188,5 +188,7 @@ classdef (Abstract = true) Tracks < handle  & matlab.mixin.Copyable
         [ obj ] = setFeatFromIdx(obj,movieInfo);
         [ obj ] = setMovieInfo(obj,movieInfo);
         [ movieInfo ] = getMovieInfo(obj);
+        %mapFramesToTime map frames to timepoints for the collection of Tracks
+        [ obj ] = mapFramesToTimepoints( obj, timepoints, frames )
     end
 end
