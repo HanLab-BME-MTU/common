@@ -79,7 +79,7 @@ try
         h = ezcontour(@(x,y)pdf(bestObj,[x y]),[0 5],[0 5]);
         hold off
         xlabel('Lateral standard deviation of 3D Gaussian model (pixels)');
-        zlabel('Axial standard deviation of 3D Gaussian model (pixels)');
+        ylabel('Axial standard deviation of 3D Gaussian model (pixels)');
     end
 catch
     fprintf('Could not determine distribution, potentially due to insufficient samples.');

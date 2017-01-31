@@ -16,5 +16,5 @@ function copyright = getLCCBCopyright()
 % Andrew Jamieson, Nov 2016 - UTSW
 
 % Set year and version information
-str_year = '2016';
+str_year = datestr(date,'YYYY');
 copyright = sprintf('Copyright %s Danuser Lab - UTSouthwestern', str_year);

@@ -1,11 +1,14 @@
 function []=boxPlotCellArray(cellArrayData,nameList,convertFactor,notchOn,plotIndivPoint,forceShowP)
-% function []=boxPlotCellArray(FAarea) automatically converts cell array
+% function []=boxPlotCellArray(cellArrayData,nameList,convertFactor,notchOn,plotIndivPoint,forceShowP) automatically converts cell array
 % format input to matrix input to use matlab function 'boxplot'
-% input: cellArrayData      cell array data
+% input: cellArrayData          cell array data
 %           nameList            cell array containing name of each
-%                                       condition (ex: {'condition1' 'condition2' 'condition3'})
-%           convertFactor     conversion factor for physical unit (ex.
-%           pixelSize, timeInterval etc...)
+%                               condition (ex: {'condition1' 'condition2' 'condition3'})
+%           convertFactor       conversion factor for physical unit (ex.
+%                               pixelSize, timeInterval etc...)
+%           forceShowP          0 if you want to show only significant p
+%                               1 if you want to show all p 
+%                               2 if you do not want to show any p
 % Sangyoon Han, March 2016
 [lengthLongest]=max(cellfun(@(x) length(x),cellArrayData));
 %If there is no data, exclude them in the plot
@@ -45,16 +48,17 @@ whiskerRatio=1.5;
 matrixData=matrixData*convertFactor;
 nameListNew = cellfun(@(x,y) [x '(N=' num2str(length(y)) ')'],nameList,cellArrayData,'UniformOutput', false);
 
-% individual data jitter plot
-numCategories = size(matrixData,2);
-% width=boxWidth/2;
-for ii=1:numCategories
-    xData = ii+0.1*boxWidth*(randn(size(matrixData,1),1));
-    scatter(xData,matrixData(:,ii),'filled','MarkerFaceColor',[.3 .3 .3],'MarkerEdgeColor','none','SizeData',2)
-    hold on
+if plotIndivPoint
+    % individual data jitter plot
+    numCategories = size(matrixData,2);
+    % width=boxWidth/2;
+    for ii=1:numCategories
+        xData = ii+0.1*boxWidth*(randn(size(matrixData,1),1));
+        scatter(xData,matrixData(:,ii),'filled','MarkerFaceColor',[.3 .3 .3],'MarkerEdgeColor','none','SizeData',2)
+        hold on
+    end
+    alpha(.5)
 end
-alpha(.5)
-
 if notchOn %min(sum(~isnan(matrixData),1))>20 || 
     boxplot(matrixData,'whisker',whiskerRatio,'notch','on',...
         'labels',nameListNew,'symbol','','widths',boxWidth,'jitter',1,'colors','k');%, 'labelorientation','inline');
@@ -74,14 +78,14 @@ set(gca,'XTickLabelRotation',45)
 maxPoint = quantile(matrixData,[0.25 0.75]);
 maxPoint2 = maxPoint(2,:)+(maxPoint(2,:)-maxPoint(1,:))*whiskerRatio;
 maxPoint2 = max(maxPoint2);
-lineGap=maxPoint2*0.05;
+lineGap=maxPoint2*0.01;
 q=0;
 for k=1:(numConditions-1)
     for ii=k+1:numConditions
         if numel(cellArrayData{k})>1 && numel(cellArrayData{ii})>1
             if kstest(cellArrayData{k}) % this means the test rejects the null hypothesis
                 [p]=ranksum(cellArrayData{k},cellArrayData{ii});
-                if p<0.05 || forceShowP
+                if (p<0.05 && forceShowP~=2) || forceShowP==1 
                     q=q+lineGap;
                     line([k ii], ones(1,2)*(maxPoint2+q),'Color','k')    
                     q=q+lineGap;
@@ -89,7 +93,7 @@ for k=1:(numConditions-1)
                 end
             else
                 [~,p]=ttest2(cellArrayData{k},cellArrayData{ii});
-                if p<0.05 || forceShowP
+                if (p<0.05 && forceShowP~=2) || forceShowP==1
                     q=q+lineGap;
                     line([k ii], ones(1,2)*(maxPoint2+q),'Color','k')    
                     q=q+lineGap;
@@ -103,9 +107,7 @@ q=q+lineGap*3;
 minPoint = quantile(matrixData,[0.25 0.75]);
 minPoint2 = minPoint(1,:)-(minPoint(2,:)-minPoint(1,:))*whiskerRatio;
 minPoint2 = min(minPoint2);
-if plotIndivPoint && ~forceShowP
-    maxPoint2 = quantile(matrixData(:),0.99);
-else
+if ~plotIndivPoint && forceShowP
     maxPoint2 = maxPoint2+q;
 end
 ylim([minPoint2-lineGap*2 maxPoint2])
