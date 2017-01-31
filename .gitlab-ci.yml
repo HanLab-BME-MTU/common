@@ -146,7 +146,7 @@ build:utrack:R2014a:
       - $TARGET_FOLDER
     when: on_success
     expire_in: 4 weeks
-  # when: manual
+  when: manual
 
 # ===========[CME]===================
 
