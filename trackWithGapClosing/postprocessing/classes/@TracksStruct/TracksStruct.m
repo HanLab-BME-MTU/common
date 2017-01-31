@@ -152,8 +152,24 @@ classdef TracksStruct < Tracks & dynamicprops
         function startTime = get.startFrame(obj)
             startTime = obj.seqOfEvents(1,1);
         end
+        function set.startFrame(obj,f)
+            if(isempty(obj.seqOfEvents))
+                obj.seqOfEvents = ...
+                    [ 1 1 1 NaN; ...
+                      2 2 1 NaN];
+            end
+            obj.seqOfEvents(1,1) = f;
+        end
         function endTime = get.endFrame(obj)
             endTime = obj.seqOfEvents(end,1);
+        end
+        function set.endFrame(obj,f)
+            if(isempty(obj.seqOfEvents))
+                obj.seqOfEvents = ...
+                    [ 1 1 1 NaN; ...
+                      2 2 1 NaN];
+            end
+            obj.seqOfEvents(end,1) = f;
         end
         function N = get.numSegments(obj)
             N = size(obj.tracksCoordAmpCG3D,1);
