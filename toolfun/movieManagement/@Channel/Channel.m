@@ -158,7 +158,7 @@ classdef Channel < hgsetget & matlab.mixin.Copyable
             if(~obj.checkProperty(property))
                 propName = lower(property(1:end-(property(end) == '_')));
                 error('lccb:set:readonly',...
-                    ['The channel''s' propName ' has been set previously and cannot be changed!']);
+                    ['The channel''s ' propName ' has been set previously and cannot be changed!']);
             end
             
             % Test if the supplied value is valid
