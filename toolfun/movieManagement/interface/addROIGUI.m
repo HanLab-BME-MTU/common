@@ -22,7 +22,7 @@ function varargout = addROIGUI(varargin)
 
 % Edit the above text to modify the response to help addROIGUI
 
-% Last Modified by GUIDE v2.5 29-Apr-2015 14:56:21
+% Last Modified by GUIDE v2.5 31-Jan-2017 17:15:37
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -73,9 +73,14 @@ set(handles.listbox_selectedChannels,'String',userData.MD.getChannelPaths(), ...
 % Save the image directories and names (for cropping preview)
 userData.nFrames = userData.MD.nFrames_;
 userData.imPolyHandle.isvalid=0;
+userData.roiFcn = @impoly;
+userData.tools = {'Polygon','Freehand','Rectangle','Ellipse'};
 userData.ROI = [];
 userData.previewFig=-1;
 userData.helpFig=-1;
+
+
+set(handles.popupToolSelection,'String',userData.tools);
 
 % Read the first image and update the sliders max value and steps
 userData.chanIndex = 1;
@@ -88,10 +93,22 @@ if userData.nFrames == 1
 end
 userData.imIndx=1;
 userData.imData=mat2gray(userData.MD.channels_(userData.chanIndex).loadImage(userData.imIndx));
+userData.padSize = [20 20];
+userData.imPadded = constructPaddedImage(userData.imData,userData.padSize);
     
 set(handles.listbox_selectedChannels,'Callback',@(h,event) update_data(h,event,guidata(h)));
 
 userData_main = get(ip.Results.mainFig, 'UserData');
+% Tool help
+set(handles.figure1,'CurrentAxes',handles.axesToolHelp);
+Img = image(userData_main.questIconData);
+set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'),...
+    'visible','off','YDir','reverse');
+set(Img,'ButtonDownFcn', ...
+    @(hObject,eventdata)addROIGUI('toolHelp',hObject,eventdata,guidata(hObject)));
+
+
+% Main help
 set(handles.figure1,'CurrentAxes',handles.axes_help);
 Img = image(userData_main.questIconData);
 set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'),...
@@ -162,6 +179,7 @@ imIndx = get(handles.slider_frameNumber,'Value');
 if (chanIndex~=userData.chanIndex) ||  (imIndx~=userData.imIndx)
     % Update image flag and dat
     userData.imData=mat2gray(userData.MD.channels_(chanIndex).loadImage(imIndx));
+    userData.imPadded = constructPaddedImage(userData.imData,userData.padSize);
     userData.updateImage=1;
     userData.chanIndex=chanIndex;
     userData.imIndx=imIndx;
@@ -191,10 +209,10 @@ end
 imHandle =findobj(userData.previewFig,'Type','image');
 if userData.newFigure || userData.updateImage
     if isempty(imHandle)
-        imHandle=imshow(userData.imData);
+        imHandle=imshow(userData.imPadded);
         axis off;
     else
-        set(imHandle,'CData',userData.imData);
+        set(imHandle,'CData',userData.imPadded);
     end
 end
 
@@ -203,21 +221,36 @@ end
 set(handles.figure1, 'UserData', userData);
 guidata(hObject,handles);
 
+lastRoiFcn = userData.roiFcn;
+userData.roiFcn = getROIFunctionFromName(userData.tools{get(handles.popupToolSelection,'Value')});
+roiFcnStr = func2str(userData.roiFcn);
+
+if(~isequal(lastRoiFcn,userData.roiFcn))
+    if(userData.imPolyHandle.isvalid)
+        delete(userData.imPolyHandle);
+    end
+    userData.ROI = [];
+end
+
 if userData.imPolyHandle.isvalid
     % Update the imPoly position
-    setPosition(userData.imPolyHandle,userData.ROI)
+    try
+        setPosition(userData.imPolyHandle,userData.ROI);
+    catch err
+        % imfreehand does not have a setPosition method
+    end
 else
     % Do not create a new impoly if one is in progress
-    if(isempty(findobj(gca,'Tag','impoly')))
+    if(isempty(findobj(gca,'Tag',roiFcnStr)))
     
         % Create a new imPoly object and store the handle
         % since impoly blocks, create the constraint function first in case
         % something happens later
-        fcn = makeConstrainToRectFcn('impoly',get(imHandle,'XData'),get(imHandle,'YData'));
+        fcn = makeConstrainToRectFcn(roiFcnStr,get(imHandle,'XData'),get(imHandle,'YData'));
         if ~isempty(userData.ROI)
-            userData.imPolyHandle = impoly(get(imHandle,'Parent'), []);
+            userData.imPolyHandle = userData.roiFcn(get(imHandle,'Parent'), []);
         else
-            userData.imPolyHandle = impoly(get(imHandle,'Parent'),userData.ROI);
+            userData.imPolyHandle = userData.roiFcn(get(imHandle,'Parent'),userData.ROI);
         end
         setPositionConstraintFcn(userData.imPolyHandle,fcn);
     end
@@ -242,7 +275,8 @@ function impoly_finish_cb(hObject,eventdata,handles)
                 if(isempty(userData.ROI))
                     helpdlg(['Click "Save" to store the ROI, or ' ...
                              'Click "Draw new region of interest" to reset. ' ...
-                             'See impoly documentation for other commands.']);
+                             'See ' func2str(userData.roiFcn) ...
+                             ' documentation for other commands.']);
                 end
             end
         end
@@ -307,7 +341,9 @@ update_data(hObject,eventdata,handles);
 % Create ROI mask and save it in the outputDirectory
 userData = get(handles.figure1, 'UserData');
 try
-    mask=createMask(userData.imPolyHandle);           
+    mask=createMask(userData.imPolyHandle);
+    mask = mask(userData.padSize(1)+(1:size(userData.imData,1)), ...
+                userData.padSize(2)+(1:size(userData.imData,2)));
     
     if get(handles.checkbox_addROI, 'Value')
         
@@ -387,3 +423,81 @@ if userData.imPolyHandle.isvalid
 end
 set(hObject, 'UserData', userData);
 update_data(hObject,eventdata,handles);
+
+function paddedImage = constructPaddedImage(I,padsize)
+    padColor = [0 1 1];
+    paddedImage = zeros([size(I)+padsize*2 3]);
+    paddedImage(:,:,1) = padarray(I,padsize,padColor(1));
+    paddedImage(:,:,2) = padarray(I,padsize,padColor(2));
+    paddedImage(:,:,3) = padarray(I,padsize,padColor(3));
+    
+function roiFcn = getROIFunctionFromName(roiName)
+    switch(roiName)
+        case 'Polygon'
+            roiFcn = @impoly;
+        case 'Rectangle'
+            roiFcn = @imrect;
+        case 'Ellipse'
+            roiFcn = @imellipse;
+        case 'Freehand'
+            roiFcn = @imfreehand;
+        otherwise
+            roiFcn = @impoly;
+    end
+
+% --- Executes on selection change in popupToolSelection.
+function popupToolSelection_Callback(hObject, eventdata, handles)
+% hObject    handle to popupToolSelection (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns popupToolSelection contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from popupToolSelection
+
+
+% --- Executes during object creation, after setting all properties.
+function popupToolSelection_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to popupToolSelection (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on button press in pushbuttonPreview.
+function pushbuttonPreview_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbuttonPreview (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+    userData=get(handles.figure1,'UserData');
+    if(~userData.imPolyHandle.isvalid)
+        warndlg('No ROI selected');
+        return;
+    end
+    mask=createMask(userData.imPolyHandle);
+    mask = mask(userData.padSize(1)+(1:size(userData.imData,1)), ...
+                userData.padSize(2)+(1:size(userData.imData,2)));
+    
+    % Show binary mask
+    figure('Units','normalized','OuterPosition',[0 0.25 0.5 1]);
+    imshow(mask,[]);
+    
+    % Show mask overlaid on image
+    figure('Units','normalized','OuterPosition',[0.5 0.25 0.5 1])
+    notInMaskColor = shiftdim([0.5 0 0],-1);
+%     rgb = zeros([size(userData.imData) 3]);
+%     rgb(:,:,1) = mask.*userData.imData + (~mask).*notInMaskColor(1).*userData.imData;
+%     rgb(:,:,2) = mask.*userData.imData + (~mask).*notInMaskColor(2).*userData.imData;
+%     rgb(:,:,3) = mask.*userData.imData + (~mask).*notInMaskColor(3).*userData.imData;
+    rgb = mask.*userData.imData;
+    rgb = bsxfun(@plus,rgb,bsxfun(@times,(~mask).*userData.imData,notInMaskColor));
+    imshow(rgb,[]);
+
+function toolHelp(hObject, eventdata, handles)
+userData=get(handles.figure1,'UserData');
+roiFcn = getROIFunctionFromName(userData.tools{get(handles.popupToolSelection,'Value')});
+doc(func2str(roiFcn));
