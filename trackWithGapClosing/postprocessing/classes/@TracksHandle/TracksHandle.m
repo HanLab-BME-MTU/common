@@ -210,6 +210,9 @@ classdef TracksHandle < Tracks & dynamicprops
         end
         function out = subsasgn(A,S,B,varargin)
             try
+                if(isempty(A))
+                    A = TracksHandle.empty;
+                end
                 out = builtin('subsasgn',A,S,B,varargin{:});
             catch err
                 switch(err.identifier)
