@@ -125,6 +125,10 @@ for i = 1 : nSeries
             try
                 channelArgs = getChannelMetadata(r, iSeries, iChan-1);
             catch err
+                warning('bfImport:importMetadataFailed', ...
+                    ['Failed to import channel metadata for ' dataPath ...
+                     ', Series ' num2str(iSeries) ... 
+                     ', Channel ' num2str(iChan)]);
                 channelArgs = {};
             end
         else
