@@ -1,4 +1,4 @@
-function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_extrema(x,dim,sorted,TOL)
+function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_extrema(x,dim,sorted,TOL,dofft)
 % interpft_extrema finds the extrema of the function when interpolated by fourier transform
 % This is the equivalent of doing sinc interpolation.
 %
@@ -11,6 +11,7 @@ function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_
 %       the root of the derivative is real.
 %       If tolerance is negative, then use 10*abs(log(abs(root))) as the
 %       tolerance only if no roots are found with tolerance at -TOL.
+% dofft - logical. If true, transforms dim with fft. Default: true
 %
 % OUTPUT
 % maxima - angle between 0 and 2*pi indicating location of local maxima
@@ -53,7 +54,7 @@ function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_
 % Author: Mark Kittisopikul, May 2016
     
 %     original_size = size(x);
-    if(nargin > 1)
+    if(nargin > 1 && ~isempty(dim))
         x = shiftdim(x,dim-1);
         unshift = ndims(x) - dim + 1;
     else
@@ -68,13 +69,16 @@ function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_
         end
     end
     
-    if(nargin < 3)
+    if(nargin < 3 || isempty(sorted))
         sorted = false;
     end
-    if(nargin < 4)
+    if(nargin < 4 || isempty(TOL))
     	% Tolerance for log(abs(root)) to be near zero, in which case the root is real
         % Set negative so that tolerance adapts if no roots are found
         TOL = -eps*1e2;
+    end
+    if(nargin < 5 || isempty(dofft))
+        dofft = true;
     end
 
 
@@ -97,7 +101,11 @@ function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_
     end
 
     % Calculate fft and nyquist frequency
-    x_h = fft(x);
+    if(dofft)
+        x_h = fft(x);
+    else
+        x_h = x;
+    end
     nyquist = ceil((s(1)+1)/2);
 
     % If there is an even number of fourier coefficients, split the nyquist frequency
