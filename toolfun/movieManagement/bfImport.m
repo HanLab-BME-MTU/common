@@ -122,7 +122,15 @@ for i = 1 : nSeries
     for iChan = 1:nChan
         
         if ip.Results.importMetadata
-            channelArgs = getChannelMetadata(r, iSeries, iChan-1);
+            try
+                channelArgs = getChannelMetadata(r, iSeries, iChan-1);
+            catch err
+                warning('bfImport:importMetadataFailed', ...
+                    ['Failed to import channel metadata for ' dataPath ...
+                     ', Series ' num2str(iSeries) ... 
+                     ', Channel ' num2str(iChan)]);
+                channelArgs = {};
+            end
         else
             channelArgs = {};
         end
