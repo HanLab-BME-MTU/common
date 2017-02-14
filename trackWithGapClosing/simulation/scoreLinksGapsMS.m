@@ -1,4 +1,4 @@
-function [linkStats,gapStats,mergeSplitStats] = scoreLinksGapsMS(tracksFinal,tracksSim)
+function [linkStats,gapStats] = scoreLinksGapsMS(tracksFinal,tracksSim)
 %SCORELINKSGAPSMS compares links, closed gaps and merges/splits obtained via tracking to the ground truth
 %
 %SYNOPSIS [linkStats,gapStats,mergeSplitStats] = scoreLinksGapsMS(tracksFinal,tracksSim)
@@ -90,7 +90,7 @@ for iFrame = 1 : numFrames1
     
     %find matching using LAP
     costMat = createDistanceMatrix(coord1,coord0);
-    posStd = 1;
+    posStd = 2;
     costMat(costMat>3*posStd) = -1;
     link1to0 = lap(costMat,-1,0,1);
     link1to0 = link1to0(1:size(coord1,1));
@@ -107,7 +107,7 @@ for iFrame = 1 : numFrames1
         coord1 = [xyCoordM1(indxM1,2:3); xyCoordM1(indxM2,4:5); xyCoordM1(indxM2,6:7)];
         if ~isempty(coord1)
             costMat = createDistanceMatrix(coord1,coord0);
-            posStd = 1;
+            posStd = 2;
             costMat(costMat>3*posStd) = -1;
             link1to0 = lap(costMat,-1,0,1);
             link1to0 = link1to0(1:size(coord1,1));
@@ -126,7 +126,7 @@ for iFrame = 1 : numFrames1
         coord1 = [xyCoordS1(indxS1,4:5); xyCoordS1(indxS1,6:7); xyCoordS1(indxS2,2:3)];
         if ~isempty(coord1)
             costMat = createDistanceMatrix(coord1,coord0);
-            posStd = 1;
+            posStd = 2;
             costMat(costMat>3*posStd) = -1;
             link1to0 = lap(costMat,-1,0,1);
             link1to0 = link1to0(1:size(coord1,1));
@@ -250,132 +250,133 @@ for iGap = 1 : numGaps
     
 end
 
-%% check merges and splits
+% %% check merges and splits
+% 
+% if mergeSplit
+%     
+%     %initialize number of correct merges
+%     numCorrectMerges = 0;
+%     
+%     %get number of merges in ground truth and tracking results
+%     numMerge0 = size(xyCoordM0,1);
+%     numMerge1 = size(xyCoordM1,1);
+%     
+%     %go over all merges in tracking results ...
+%     for iMerge = 1 : numMerge1
+%         
+%         %get time of merge
+%         timeMerge = xyCoordM1(iMerge,1);
+%         
+%         %get coordinates before and after merge
+%         xyCoordMAft1  = xyCoordM1(iMerge,2:3);
+%         xyCoordMBef11 = xyCoordM1(iMerge,4:5);
+%         xyCoordMBef12 = xyCoordM1(iMerge,6:7);
+%         
+%         %check if this merge exists in the ground truth
+%         xyCoordM0tmp = xyCoordM0;
+%         [~,indxGTtmp] = ismember([timeMerge xyCoordMAft1],xyCoordM0tmp(:,1:3),'rows');
+%         indxGT = [];
+%         i = -1;
+%         while indxGTtmp > 0
+%             i = i + 1;
+%             indxGT = [indxGT; indxGTtmp+i]; %#ok<AGROW>
+%             xyCoordM0tmp(indxGTtmp,:) = [];
+%             [~,indxGTtmp] = ismember([timeMerge xyCoordMAft1],xyCoordM0tmp(:,1:3),'rows');
+%         end
+%         
+%         %if merge exists in ground truth ...
+%         if ~isempty(indxGT)
+%             numCorrectMergesTmp = zeros(size(indxGT));
+%             for iLoop = 1 : length(indxGT)
+%                 
+%                 %get merge index in ground truth list
+%                 iGT = indxGT(iLoop);
+%                 
+%                 %get coordinates of merging features in ground truth
+%                 xyCoordMBef01 = xyCoordM0(iGT,4:5);
+%                 xyCoordMBef02 = xyCoordM0(iGT,6:7);
+%                 
+%                 %find how many tracking and ground truth coordinates are equivalent
+%                 numEquiv = sum( ismember([xyCoordMBef11; xyCoordMBef12],...
+%                     [xyCoordMBef01; xyCoordMBef02],'rows') );
+%                 
+%                 %update number of correct merges based on numEquiv
+%                 %1 = both correct; 0.5 = 1 is correct; 0 = both not correct
+%                 numCorrectMergesTmp(iLoop) = numEquiv ;
+%                 
+%             end %(for iLoop = 1 : length(indxGT))
+%             
+%             numCorrectMerges = numCorrectMerges + max(numCorrectMergesTmp);
+%         end %(if ~isempty(indxGT))
+%         
+%     end %(for iMerge = 1 : numMerge1)
+%     
+%     %initialize number of correct splits
+%     numCorrectSplits = 0;
+%     
+%     %get number of splits in ground truth and tracking results
+%     numSplit0 = size(xyCoordS0,1);
+%     numSplit1 = size(xyCoordS1,1);
+%     
+%     %go over all splits in tracking results ...
+%     for iSplit = 1 : numSplit1
+%         
+%         %get time of split
+%         timeSplit = xyCoordS1(iSplit,1);
+%         
+%         %get coordinates before and after split
+%         xyCoordSBef1  = xyCoordS1(iSplit,2:3);
+%         xyCoordSAft11 = xyCoordS1(iSplit,4:5);
+%         xyCoordSAft12 = xyCoordS1(iSplit,6:7);
+%         
+%         %check if this split exists in the ground truth
+%         xyCoordS0tmp = xyCoordS0;
+%         [~,indxGTtmp] = ismember([timeSplit xyCoordSBef1],xyCoordS0tmp(:,1:3),'rows');
+%         indxGT = [];
+%         i = -1;
+%         while indxGTtmp > 0
+%             i = i + 1;
+%             indxGT = [indxGT; indxGTtmp+i]; %#ok<AGROW>
+%             xyCoordS0tmp(indxGTtmp,:) = [];
+%             [~,indxGTtmp] = ismember([timeSplit xyCoordSBef1],xyCoordS0tmp(:,1:3),'rows');
+%         end
+%         
+%         %if split exists in ground truth ...
+%         if ~isempty(indxGT)
+%             numCorrectSplitsTmp = zeros(size(indxGT));
+%             for iLoop = 1 : length(indxGT)
+%                 
+%                 %get split index in ground truth list
+%                 iGT = indxGT(iLoop);
+%                 
+%                 %get coordinates of splitting features in ground truth
+%                 xyCoordSAft01 = xyCoordS0(iGT,4:5);
+%                 xyCoordSAft02 = xyCoordS0(iGT,6:7);
+%                 
+%                 %find how many tracking and ground truth coordinates are equivalent
+%                 numEquiv = sum( ismember([xyCoordSAft11; xyCoordSAft12],...
+%                     [xyCoordSAft01; xyCoordSAft02],'rows') );
+%                 
+%                 %update number of correct splits based on numEquiv
+%                 %1 = both correct; 0.5 = 1 is correct; 0 = both not correct
+%                 numCorrectSplitsTmp(iLoop) = numEquiv;
+%                 
+%             end %(for iLoop = 1 : length(indxGT))
+%             
+%             numCorrectSplits = numCorrectSplits + max(numCorrectSplitsTmp);
+%         end %(if ~isempty(indxGT))
+%         
+%     end %(for iSplit = 1 : numSplit1)
+%     
+%     mergeSplitStats = [numMerge0 numMerge1 numCorrectMerges; ...
+%         numSplit0 numSplit1 numCorrectSplits];
+%     
+% else
+%     
+%     mergeSplitStats = [];
+%     
+% end %(if mergeSplit)
 
-if mergeSplit
-    
-    %initialize number of correct merges
-    numCorrectMerges = 0;
-    
-    %get number of merges in ground truth and tracking results
-    numMerge0 = size(xyCoordM0,1);
-    numMerge1 = size(xyCoordM1,1);
-    
-    %go over all merges in tracking results ...
-    for iMerge = 1 : numMerge1
-        
-        %get time of merge
-        timeMerge = xyCoordM1(iMerge,1);
-        
-        %get coordinates before and after merge
-        xyCoordMAft1  = xyCoordM1(iMerge,2:3);
-        xyCoordMBef11 = xyCoordM1(iMerge,4:5);
-        xyCoordMBef12 = xyCoordM1(iMerge,6:7);
-        
-        %check if this merge exists in the ground truth
-        xyCoordM0tmp = xyCoordM0;
-        [~,indxGTtmp] = ismember([timeMerge xyCoordMAft1],xyCoordM0tmp(:,1:3),'rows');
-        indxGT = [];
-        i = -1;
-        while indxGTtmp > 0
-            i = i + 1;
-            indxGT = [indxGT; indxGTtmp+i]; %#ok<AGROW>
-            xyCoordM0tmp(indxGTtmp,:) = [];
-            [~,indxGTtmp] = ismember([timeMerge xyCoordMAft1],xyCoordM0tmp(:,1:3),'rows');
-        end
-        
-        %if merge exists in ground truth ...
-        if ~isempty(indxGT)
-            numCorrectMergesTmp = zeros(size(indxGT));
-            for iLoop = 1 : length(indxGT)
-                
-                %get merge index in ground truth list
-                iGT = indxGT(iLoop);
-                
-                %get coordinates of merging features in ground truth
-                xyCoordMBef01 = xyCoordM0(iGT,4:5);
-                xyCoordMBef02 = xyCoordM0(iGT,6:7);
-                
-                %find how many tracking and ground truth coordinates are equivalent
-                numEquiv = sum( ismember([xyCoordMBef11; xyCoordMBef12],...
-                    [xyCoordMBef01; xyCoordMBef02],'rows') );
-                
-                %update number of correct merges based on numEquiv
-                %1 = both correct; 0.5 = 1 is correct; 0 = both not correct
-                numCorrectMergesTmp(iLoop) = numEquiv / 2;
-                
-            end %(for iLoop = 1 : length(indxGT))
-            
-            numCorrectMerges = numCorrectMerges + max(numCorrectMergesTmp);
-        end %(if ~isempty(indxGT))
-        
-    end %(for iMerge = 1 : numMerge1)
-    
-    %initialize number of correct splits
-    numCorrectSplits = 0;
-    
-    %get number of splits in ground truth and tracking results
-    numSplit0 = size(xyCoordS0,1);
-    numSplit1 = size(xyCoordS1,1);
-    
-    %go over all splits in tracking results ...
-    for iSplit = 1 : numSplit1
-        
-        %get time of split
-        timeSplit = xyCoordS1(iSplit,1);
-        
-        %get coordinates before and after split
-        xyCoordSBef1  = xyCoordS1(iSplit,2:3);
-        xyCoordSAft11 = xyCoordS1(iSplit,4:5);
-        xyCoordSAft12 = xyCoordS1(iSplit,6:7);
-        
-        %check if this split exists in the ground truth
-        xyCoordS0tmp = xyCoordS0;
-        [~,indxGTtmp] = ismember([timeSplit xyCoordSBef1],xyCoordS0tmp(:,1:3),'rows');
-        indxGT = [];
-        i = -1;
-        while indxGTtmp > 0
-            i = i + 1;
-            indxGT = [indxGT; indxGTtmp+i]; %#ok<AGROW>
-            xyCoordS0tmp(indxGTtmp,:) = [];
-            [~,indxGTtmp] = ismember([timeSplit xyCoordSBef1],xyCoordS0tmp(:,1:3),'rows');
-        end
-        
-        %if split exists in ground truth ...
-        if ~isempty(indxGT)
-            numCorrectSplitsTmp = zeros(size(indxGT));
-            for iLoop = 1 : length(indxGT)
-                
-                %get split index in ground truth list
-                iGT = indxGT(iLoop);
-                
-                %get coordinates of splitting features in ground truth
-                xyCoordSAft01 = xyCoordS0(iGT,4:5);
-                xyCoordSAft02 = xyCoordS0(iGT,6:7);
-                
-                %find how many tracking and ground truth coordinates are equivalent
-                numEquiv = sum( ismember([xyCoordSAft11; xyCoordSAft12],...
-                    [xyCoordSAft01; xyCoordSAft02],'rows') );
-                
-                %update number of correct splits based on numEquiv
-                %1 = both correct; 0.5 = 1 is correct; 0 = both not correct
-                numCorrectSplitsTmp(iLoop) = numEquiv / 2;
-                
-            end %(for iLoop = 1 : length(indxGT))
-            
-            numCorrectSplits = numCorrectSplits + max(numCorrectSplitsTmp);
-        end %(if ~isempty(indxGT))
-        
-    end %(for iSplit = 1 : numSplit1)
-    
-    mergeSplitStats = [numMerge0 numMerge1 numCorrectMerges; ...
-        numSplit0 numSplit1 numCorrectSplits];
-    
-else
-    
-    mergeSplitStats = [];
-    
-end %(if mergeSplit)
 
 %% Subfunction 1
 
