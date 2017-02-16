@@ -139,8 +139,12 @@ if isa(userData.MO,'MovieData')
         validOutput = find(strcmp({output.type},'image'));
         for iOutput=validOutput(end:-1:1)
             createOutputText(imagePanel,imageProcId(iProc),iOutput,hPosition,output(iOutput).name);
-            arrayfun(@(x) createProcButton(imagePanel,imageProcId(iProc),iOutput,x,hPosition),...
-                find(validChan));
+            if strcmp({output(iOutput).var},'merged')
+                createProcButton(imagePanel,imageProcId(iProc),iOutput,1,hPosition);
+            else
+                arrayfun(@(x) createProcButton(imagePanel,imageProcId(iProc),iOutput,x,hPosition),...
+                    find(validChan));            
+            end
             hPosition=hPosition+20;
         end
         createProcText(imagePanel,imageProcId(iProc),iOutput,hPosition,imageProc{iProc}.getName);
@@ -785,7 +789,7 @@ if(isfield(userData.figures,figName) ...
         && isvalid(handle(userData.figures.(figName))))
     h = userData.figures.(figName);
 else
-    h = findobj(0,'-regexp','Name',['^' figName '$']);;
+    h = findobj(0,'-regexp','Name',['^' figName '$']);
 end
 if ~isempty(h)
     figure(h);
