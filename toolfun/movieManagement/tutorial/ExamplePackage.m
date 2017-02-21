@@ -32,7 +32,7 @@ classdef ExamplePackage < Package
         function m = getDependencyMatrix(i,j)
             
             %    1 2 3
-            m = [0 0 0;  %1 ExampleProcess
+            m = [0 0 0;   %1 ExampleProcess
                  0 0 0;   %2 ThresholdProcess
                  0 1 0;]; %3 MaskRefinementProcess
             if nargin<2, j=1:size(m,2); end
