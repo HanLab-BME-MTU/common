@@ -35,8 +35,8 @@ classdef PostTrackingProcess < DataProcessingProcess
         function procClasses = getConcreteClasses()
             procClasses = ...
                 {'MotionAnalysisProcess';
-                'CometPostTrackingProcess';                
-                'TrackGroupingProcess'};
+                 'CometPostTrackingProcess';                
+                 'TrackGroupingProcess'};
         end
     end
 end

@@ -30,9 +30,9 @@ ip.addRequired('handles',@isstruct);
 ip.addRequired('string',@(x) isequal(x,'mainFig'));
 ip.addOptional('mainFig',[],@ishandle);
 ip.addOptional('procID',[],@isscalar);
-ip.addParamValue('procConstr',[],@(x) isa(x,'function_handle'));
-ip.addParamValue('procClassName','',@ischar);
-ip.addParamValue('initChannel',0,@isscalar);
+ip.addParameter('procConstr',[],@(x) isa(x,'function_handle'));
+ip.addParameter('procClassName','',@ischar);
+ip.addParameter('initChannel',0,@isscalar);
 ip.parse(hObject,eventdata,handles,string,varargin{:});
 
 % Retrieve userData and read function input 

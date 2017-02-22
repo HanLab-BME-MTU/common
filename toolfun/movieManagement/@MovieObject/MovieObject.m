@@ -199,7 +199,7 @@ classdef  MovieObject < hgsetget
         
         function proc = getProcess(obj, i)
             % Return process corresponding to the specified index
-            assert(isscalar(i) && ismember(i,1:numel(obj.processes_)));
+            assert(isscalar(i) && ismember(i,1:numel(obj.processes_)), ['Process Index [' num2str(i) '] does Not exist!']);
             proc = obj.processes_{i};
         end
         

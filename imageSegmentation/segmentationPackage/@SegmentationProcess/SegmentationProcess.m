@@ -37,10 +37,10 @@ classdef SegmentationProcess < MaskProcess
         function procClasses = getConcreteClasses()
             procClasses = ...
                 {@ThresholdProcess;
-                @MSSSegmentationProcess;
-                @ThresholdProcess3D;
-                @ExternalSegmentationProcess;
-                @NucSegProcess;
+                 @MSSSegmentationProcess;
+                 @ThresholdProcess3D;
+                 @ExternalSegmentationProcess;
+                 @NucSegProcess;
                 };
             procClasses = cellfun(@func2str, procClasses, 'Unif', 0);
         end
