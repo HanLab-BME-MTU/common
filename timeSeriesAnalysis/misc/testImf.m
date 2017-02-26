@@ -46,7 +46,12 @@ imfOut = imf;
 %Decomposing noise into IMF's
 for i=1:nSurr
     
-    wnImf{i}  = emdc([],Wn(:,i));
+    try 
+        wnImf{i}  = emdc([],Wn(:,i)); %(T,X)
+    catch
+        warning('mex emdc failed, reverting to slower matlab-based emd');
+        wnImf{i}  = emd(Wn(:,i), 'T', []);
+    end
     
 end
 
