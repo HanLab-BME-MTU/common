@@ -16,6 +16,7 @@ function optionsFig = movieViewerOptions(mainFig)
 % See also: graphViewer, movieViewerOptions
 %
 % Sebastien Besson, Nov 2012
+% Andrew R. Jamieson - Modified Feb 2017
 
 % Check existence of viewer
 h=findobj(0,'Name','Movie options');
@@ -110,6 +111,12 @@ uicontrol(imagePanel,'Style','popupmenu',...
     'Position',[130 hPosition 120 20],'Tag','popupmenu_colormap',...
     'String',{'Gray','Jet','HSV'},'Value',1,...
     'HorizontalAlignment','left','Callback',@(h,event) setColormap(guidata(h)));
+
+% Colormap inversion
+uicontrol(imagePanel,'Style','checkbox',...
+    'Position',[250 hPosition 120 20],'Tag','checkbox_invertcolormap',...
+    'Value',0, 'String',' Invert', ...
+    'HorizontalAlignment','left','Callback',@(h,event) setColormapInvert(guidata(h)));
 
 % Colorbar 
 hPosition=hPosition+30;
@@ -365,7 +372,12 @@ allCmap=get(handles.popupmenu_colormap,'String');
 selectedCmap = get(handles.popupmenu_colormap,'Value');
 
 userData = get(handles.figure1,'UserData');
-userData.redrawImageFcn('Colormap',allCmap{selectedCmap})
+userData.redrawImageFcn('Colormap', allCmap{selectedCmap})
+
+function setColormapInvert(handles)
+invertCmap = get(handles.checkbox_invertcolormap,'Value');
+userData = get(handles.figure1,'UserData');
+userData.redrawImageFcn('invertColormap', logical(invertCmap))
 
 function setColorbar(handles)
 cbar=get(handles.checkbox_colorbar,'Value');
