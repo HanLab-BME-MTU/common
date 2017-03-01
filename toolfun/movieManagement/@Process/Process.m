@@ -297,8 +297,8 @@ classdef Process < hgsetget
             ip.addRequired('obj',@(x) isa(x,'Process'));
             ip.addRequired('iChan',@isnumeric);
             ip.addOptional('iFrame',[],@isnumeric);
-            ip.addParamValue('output',outputList(1).var,@(x) any(cellfun(@(y) isequal(x,y),{outputList.var})));
-            ip.addParamValue('useCache',false,@islogical);
+            ip.addParameter('output',outputList(1).var,@(x) any(cellfun(@(y) isequal(x,y),{outputList.var})));
+            ip.addParameter('useCache',false,@islogical);
             ip.KeepUnmatched = true;
             if obj.owner_.is3D()
                 ip.addOptional('iZ',[],@(x) ismember(x,1:obj.owner_.zSize_));
