@@ -72,7 +72,8 @@ while true
     if(use_depfun)
         newFiles = depfun(filesList{:},'-toponly','-quiet');
     else
-        newFiles = matlab.codetools.requiredFilesAndProducts(filesList);
+        [newFiles, productList] = matlab.codetools.requiredFilesAndProducts(filesList);
+%         toolboxes = {productList.Name}'
     end
         
     % Filter new found files using regular expression
@@ -107,8 +108,8 @@ if(use_depfun)
     tb_names = cellfun(@(x) x.Name, v, 'UniformOutput', false);
     toolboxes = tb_names(~cellfun(@isempty, tb_names));
 else
-    [~,productList] = matlab.codetools.requiredFilesAndProducts(depList(:),'toponly');
-    toolboxes = {productList.Name}';
+%     [~,productList] = matlab.codetools.requiredFilesAndProducts(depList(:),'toponly');
+    toolboxes = {productList.Name}'
 end
 
 if ip.Results.allMex
