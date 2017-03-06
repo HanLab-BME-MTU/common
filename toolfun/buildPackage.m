@@ -32,7 +32,7 @@ ip = inputParser;
 isClass = @(x) exist(x,'class')==8;
 ip.addOptional('packageList',{},@(x) ischar(x) || iscell(x));
 ip.addOptional('outDir','',@ischar);
-ip.addParameter('exclude', ['extern' filesep], @(x) (ischar(x) || iscell(x)));
+ip.addParameter('exclude', {[]}, @(x) (ischar(x) || iscell(x)));
 ip.parse(varargin{:});
 
 if isempty(ip.Results.packageList)
@@ -156,6 +156,22 @@ else
     nsDirs = {};
 end
 
+
+% Also Handle functions from extern differently.
+fromExtern = ~cellfun(@isempty, cellfun(@(x)strfind(x, [filesep 'extern' filesep]), packageFiles, 'Uniform', 0));
+if any(fromExtern)
+    
+    packExtern = packageFiles(fromExtern);
+    exBF = cellfun(@isempty, cellfun(@(x) strfind(x, [filesep 'bioformats' filesep]), packageFiles(fromExtern),'Uniform', 0));
+    packExternXBF = packExtern(exBF);
+    packageFiles(fromExtern) = [];
+       
+else
+    packExternXBF = [];
+end
+
+
+
 %% Export package files
 % Create package output directory if non-existing
 disp('Creating release directory...')
@@ -222,8 +238,23 @@ if ~isempty(packageMexFuns)
 end
 
 %% External libraries
+disp('Creating external directory...')
+externDir=[outDir filesep 'extern'];
+if ~isdir(externDir), mkdir(externDir); end
+if ~isempty(packExternXBF)
+    % Copy function files
+    nFiles = numel(packExternXBF);
+    disp(['Copying all (extern) '  num2str(nFiles) ' files ...'])
+    for j = 1:nFiles
+        iLFS = max(regexp(packExternXBF{j},filesep));
+        copyfile(packExternXBF{j},[outDir filesep packExternXBF{j}(iLFS+1:end)]);
+    end    
+else
+    
+end
 
-% Bio-Formats
+
+% % Bio-Formats (Jar File)
 disp('Creating Bio-Formats directory...')
 bfSourceDir=fileparts(which('bfGetReader.m'));
 bfTargetDir=[outDir filesep 'bioformats'];
