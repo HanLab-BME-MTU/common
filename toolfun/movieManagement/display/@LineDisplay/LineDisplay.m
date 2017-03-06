@@ -52,7 +52,7 @@ classdef LineDisplay < MovieDataDisplay
     methods (Static)
         function params=getParamValidators()
             params(1).name='Color';
-            params(1).validator=@ischar;
+            params(1).validator=@(x)(ischar(x) || (numel(x)==3 && isnumeric(x)));
             params(2).name='Marker';
             params(2).validator=@ischar;
             params(3).name='LineStyle';
