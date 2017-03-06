@@ -66,34 +66,67 @@ depList={};
 % Construct anonymous functions for filtering files
 filter = @(f, l) cellfun(@(x)(isempty(regexp(x,f,'once'))), l);
 
-while true
-    disp(' -- looping over file dependency search -- ')
-    %Find dependencies of current list
-    if(use_depfun)
+if use_depfun
+
+    while true
+        disp(' -- looping over file dependency search -- ')
+        %Find dependencies of current list
+  
         newFiles = depfun(filesList{:},'-toponly','-quiet');
-    else
-        [newFiles, productList] = matlab.codetools.requiredFilesAndProducts(filesList);
-%         toolboxes = {productList.Name}'
+  
+        % Filter new found files using regular expression
+        for i = 1:numel(excludefilters)
+            newFiles = newFiles(filter(excludefilters{i}, newFiles));
+        end
+
+        % Update the dependencies file list
+        nFiles=numel(depList);
+        filesList = setdiff(newFiles,depList);
+        depList = unique(vertcat(depList(:), newFiles(:)));
+
+            % Break if no new file or the same set of files is found
+        if isempty(newFiles) || nFiles==numel(depList), break; end
     end
-        
+else
+    
+    [newFiles, productList] = matlab.codetools.requiredFilesAndProducts(filesList);
     % Filter new found files using regular expression
     for i = 1:numel(excludefilters)
         newFiles = newFiles(filter(excludefilters{i}, newFiles));
     end
-        
-    % Update the dependencies file list
-    nFiles=numel(depList);
-    filesList = setdiff(newFiles,depList);
     depList = unique(vertcat(depList(:), newFiles(:)));
     
-    if (use_depfun)
-        % Break if no new file or the same set of files is found
-        if isempty(newFiles) || nFiles==numel(depList), break; end
-    else
-        disp('Used matlab.codetools.requiredFilesAndProducts - Break loop.')
-        break;
-    end
 end
+% 
+% while true
+%     disp(' -- looping over file dependency search -- ')
+%     %Find dependencies of current list
+%     if(use_depfun)
+%         newFiles = depfun(filesList{:},'-toponly','-quiet');
+%     else
+%         [newFiles, productList] = matlab.codetools.requiredFilesAndProducts(filesList);
+% %         toolboxes = {productList.Name}'
+%     end
+%         
+%     % Filter new found files using regular expression
+%     for i = 1:numel(excludefilters)
+%         newFiles = newFiles(filter(excludefilters{i}, newFiles));
+%     end
+%         
+%     % Update the dependencies file list
+%     nFiles=numel(depList);
+%     filesList = setdiff(newFiles,depList);
+%     depList = unique(vertcat(depList(:), newFiles(:)));
+%     
+%     if (use_depfun)
+%         % Break if no new file or the same set of files is found
+%         if isempty(newFiles) || nFiles==numel(depList), break; end
+%     else
+%         disp('Used matlab.codetools.requiredFilesAndProducts - Break loop.')
+%         break;
+%     end
+% end
+
 
 if(use_depfun)
 % Matlab toolbox files are named '*/toolbox/name_of_toolbox/*'

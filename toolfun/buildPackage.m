@@ -32,7 +32,7 @@ ip = inputParser;
 isClass = @(x) exist(x,'class')==8;
 ip.addOptional('packageList',{},@(x) ischar(x) || iscell(x));
 ip.addOptional('outDir','',@ischar);
-ip.addParamValue('exclude', ['extern' filesep], @(x) ischar(x) || iscell(x));
+ip.addParameter('exclude', ['extern' filesep], @(x) (ischar(x) || iscell(x)));
 ip.parse(varargin{:});
 
 if isempty(ip.Results.packageList)
