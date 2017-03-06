@@ -32,7 +32,7 @@ classdef TextDisplay < MovieDataDisplay
             if iscell(h)
                 cellfun(@(x) set(x,'Tag',tag),h);
                 cellfun(@(x) set(x,'Visible',obj.Visible),h);
-                cellfun(@(x) uistack(x,'top'),h);            
+%                 cellfun(@(x) uistack(x,'top'),h);  % Commenting out as causes viewwe to stall.          
             else
                 set(h,'Tag',tag);
                 set(h,'Visible',obj.Visible)
