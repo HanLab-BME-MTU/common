@@ -247,7 +247,7 @@ if ~isempty(packExternXBF)
     disp(['Copying all (extern) '  num2str(nFiles) ' files ...'])
     for j = 1:nFiles
         iLFS = max(regexp(packExternXBF{j},filesep));
-        copyfile(packExternXBF{j},[outDir filesep packExternXBF{j}(iLFS+1:end)]);
+        copyfile(packExternXBF{j},[outDir filesep 'extern' filesep  packExternXBF{j}(iLFS+1:end)]);
     end    
 else
     
