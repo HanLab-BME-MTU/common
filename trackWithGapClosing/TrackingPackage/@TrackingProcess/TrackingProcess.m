@@ -45,7 +45,7 @@ classdef TrackingProcess < DataProcessingProcess & NonSingularProcess
             ip.addRequired('obj');
             ip.addRequired('iChan', @(x) obj.checkChanNum(x));
             ip.addOptional('iFrame', [] ,@(x) obj.checkFrameNum(x));
-            ip.addParameter('useCache',false,@islogical);
+            ip.addParameter('useCache', true, @islogical);
             ip.addParameter('output', outputList{1}, @(x) all(ismember(x,outputList)));
             ip.parse(obj,iChan,varargin{:})
             output = ip.Results.output;
@@ -54,7 +54,6 @@ classdef TrackingProcess < DataProcessingProcess & NonSingularProcess
             
             % Data loading
 
-            % load outFilePaths_{1,iChan}
             s = cached.load(obj.outFilePaths_{1,iChan}, '-useCache', ip.Results.useCache, 'tracksFinal');
 
             varargout = cell(numel(output), 1);
