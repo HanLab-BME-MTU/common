@@ -1,4 +1,4 @@
-classdef ThresholdProcess < SegmentationProcess
+classdef ThresholdProcess < SegmentationProcess & NonSingularProcess
     %A function-specific process for segmenting via thresholding using
     %thresholdMovie.m
     

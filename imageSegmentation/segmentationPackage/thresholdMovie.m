@@ -1,4 +1,4 @@
-function movieData = thresholdMovie(movieData,paramsIn)
+function movieData = thresholdMovie(movieDataOrProcess,paramsIn)
 %THRESHOLDMOVIE applies automatic or manual thresholding to every frame in input movie
 %
 % movieData = thresholdMovie(movieData)
@@ -83,9 +83,9 @@ dName = 'masks_for_channel_';%String for naming the mask directories for each ch
 
 
 %Check that input object is a valid moviedata TEMP
-if nargin < 1 || ~isa(movieData,'MovieData')
-    error('The first input argument must be a valid MovieData object!')
-end
+% if nargin < 1 || ~isa(movieData,'MovieData')
+%     error('The first input argument must be a valid MovieData object!')
+% end
 
 if nargin < 2
     paramsIn = [];
@@ -93,19 +93,22 @@ end
 
 
 %Get the indices of any previous threshold processes from this function                                                                              
-iProc = movieData.getProcessIndex('ThresholdProcess',1,0);
-
-%If the process doesn't exist, create it
-if isempty(iProc)
-    iProc = numel(movieData.processes_)+1;
-    movieData.addProcess(ThresholdProcess(movieData,movieData.outputDirectory_));                                                                                                 
-end
-
-thresProc= movieData.processes_{iProc};
+% iProc = movieData.getProcessIndex('ThresholdProcess',1,0);
+% 
+% %If the process doesn't exist, create it
+% if isempty(iProc)
+%     iProc = numel(movieData.processes_)+1;
+%     movieData.addProcess(ThresholdProcess(movieData,movieData.outputDirectory_));                                                                                                 
+% end
+% 
+% thresProc= movieData.processes_{iProc};
 
 
 %Parse input, store in parameter structure
-p = parseProcessParams(movieData.processes_{iProc},paramsIn);
+% p = parseProcessParams(movieData.processes_{iProc},paramsIn);
+
+[movieData,thresProc] = getOwnerAndProcess(movieDataOrProcess,'ThresholdProcess',true);
+p = parseProcessParams(thresProc,paramsIn);
 
 nChan = numel(movieData.channels_);
 
@@ -196,6 +199,8 @@ for iChan = 1:nChanThresh
         else
             currImage = movieData.processes_{p.ProcessIndex}.loadOutImage(p.ChannelIndex(iChan),iImage);
         end
+        
+
 
         %KJ: filter image before thesholding if requested
         if p.GaussFilterSigma > 0
@@ -205,7 +210,11 @@ for iChan = 1:nChanThresh
         
         if isempty(p.ThresholdValue)
             try
-                currThresh = threshMethod(currImage);             
+                if(isfield(p,'PreThreshold') && ~isempty(p.PreThreshold))
+                    currThresh = threshMethod(currImage(currImage > p.PreThreshold(min(iChan,length(p.PreThreshold)))));
+                else
+                    currThresh = threshMethod(currImage);             
+                end
             catch %#ok<CTCH>
                 %If auto-threshold selection fails, and jump-correction is
                 %enabled, force use of previous threshold
