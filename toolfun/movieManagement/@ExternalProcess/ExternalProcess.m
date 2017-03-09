@@ -57,6 +57,9 @@ classdef ExternalProcess < NonSingularProcess
         function funParams = getDefaultParams(varargin)
             funParams = struct();
         end
+        function func = GUI(varargin)
+            func = @cliGUI;
+        end
         
     end
 end
