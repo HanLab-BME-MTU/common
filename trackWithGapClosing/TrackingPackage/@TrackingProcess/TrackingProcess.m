@@ -45,8 +45,8 @@ classdef TrackingProcess < DataProcessingProcess & NonSingularProcess
             ip.addRequired('obj');
             ip.addRequired('iChan', @(x) obj.checkChanNum(x));
             ip.addOptional('iFrame', [] ,@(x) obj.checkFrameNum(x));
-            ip.addParameter('useCache', true, @islogical);
-            ip.addParameter('output', outputList{1}, @(x) all(ismember(x,outputList)));
+            ip.addParamValue('useCache', false, @islogical);
+            ip.addParamValue('output', outputList{1}, @(x) all(ismember(x,outputList)));
             ip.parse(obj,iChan,varargin{:})
             output = ip.Results.output;
             iFrame = ip.Results.iFrame;
