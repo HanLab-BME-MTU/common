@@ -22,7 +22,7 @@ function varargout = thresholdProcessGUI(varargin)
 
 % Edit the above text to modify the response to help thresholdProcessGUI
 
-% Last Modified by GUIDE v2.5 12-Dec-2011 17:52:57
+% Last Modified by GUIDE v2.5 09-Mar-2017 15:29:02
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -101,6 +101,13 @@ if isempty(funParams.ThresholdValue)
     else
         set(handles.edit_jump, 'Enable', 'off');
     end
+    if isfield(funParams,'PreThreshold') && ~isempty(funParams.PreThreshold)
+        set(handles.checkbox_preThreshold, 'Value', 1);
+        set(handles.edit_preThreshold, 'Enable','on','String',funParams.PreThreshold);
+    else
+        set(handles.edit_preThreshold, 'Enable', 'off');
+    end
+        
     nSelectedChannels  = numel(get(handles.listbox_selectedChannels, 'String'));
     set(handles.listbox_thresholdValues, 'String',...
         num2cell(zeros(1,nSelectedChannels)));
@@ -190,6 +197,16 @@ if get(handles.checkbox_auto, 'value')
             return;
         end    
         funParams.MaxJump = str2double(get(handles.edit_jump,'String'));
+    end
+    
+    if get(handles.checkbox_preThreshold, 'Value')
+        % If both checkbox are checked
+        preThreshold=str2double(get(handles.edit_preThreshold, 'String'));
+        if isnan(preThreshold)
+            errordlg('Please provide a valid input for ''The fixed threshold applied before automatic thresholding''.','Setting Error','modal');
+            return;
+        end    
+        funParams.PreThreshold = preThreshold;
     end
 else
     threshold = get(handles.listbox_thresholdValues, 'String');
@@ -322,10 +339,12 @@ if get(hObject, 'Value')
     set(get(handles.uipanel_automaticThresholding,'Children'),'Enable','on');
     set(get(handles.uipanel_fixedThreshold,'Children'),'Enable','off');
     if ~get(handles.checkbox_max,'Value'), set(handles.edit_jump,'Enable','off'); end
+    if ~get(handles.checkbox_preThreshold,'Value'), set(handles.edit_preThreshold,'Enable','off'); end
 else 
     set(get(handles.uipanel_automaticThresholding,'Children'),'Enable','off');
     set(get(handles.uipanel_fixedThreshold,'Children'),'Enable','on')
     set(handles.checkbox_max, 'Value', 0);
+    set(handles.checkbox_preThreshold, 'Value', 0);
     set(handles.checkbox_applytoall, 'Value',0);
     set(handles.checkbox_preview, 'Value',1);
 end
@@ -352,6 +371,40 @@ else
     set(handles.edit_jump, 'Enable', 'off');
 end
 
+function edit_preThreshold_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_preThreshold (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_preThreshold as text
+%        str2double(get(hObject,'String')) returns contents of edit_preThreshold as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_preThreshold_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_preThreshold (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on button press in checkbox_preThreshold.
+function checkbox_preThreshold_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox_preThreshold (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of checkbox_preThreshold
+if get(hObject, 'value')
+    set(handles.edit_preThreshold, 'Enable', 'on');
+else 
+    set(handles.edit_preThreshold, 'Enable', 'off');
+end
 
 % --- Executes on key press with focus on pushbutton_done and none of its controls.
 function pushbutton_done_KeyPressFcn(hObject, eventdata, handles)
@@ -565,3 +618,6 @@ if get(handles.checkbox_preview,'Value')
     set(handles.figure1, 'UserData', userData);
     guidata(hObject,handles);
 end
+
+
+
