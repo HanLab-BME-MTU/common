@@ -256,27 +256,28 @@ build:QFSM:R2016b:
 
 
 build:FA:R2016b:
-stage: build
-variables:
-  MATLAB_VERSION: "2016b"
-  PACKAGE_NAME:  "FocalAdhesionPackage"
-  PACKAGE_CLASS: "FocalAdhesionPackage"
-  BUILD_NAME: $PACKAGE_NAME
-  RELEASE: "v1.1.2"
-  DOCUMENTATION_DIR: "${CLEAN_REPO_PATH}/documentation"
-  TARGET_FOLDER: "${PACKAGE_NAME}"
-script:
-  - module unload matlab
-  - module load matlab/$MATLAB_VERSION
-  - module load texlive/2014
-  - echo "-Xmx1024m" > java.opts
-  - $CI_SCRIPT_PATH/build/FA/runCIbuild_FA_Package_m.sh
-artifacts:
-  name: "${BUILD_NAME}-b${CI_BUILD_ID}"
-  paths:
-    - $TARGET_FOLDER
-  when: on_success
-  expire_in: 4 weeks
+  stage: build
+  variables:
+    MATLAB_VERSION: "2016b"
+    PACKAGE_NAME:  "FocalAdhesionPackage"
+    PACKAGE_CLASS: "FocalAdhesionPackage"
+    BUILD_NAME: $PACKAGE_NAME
+    RELEASE: "v1.1.2"
+    DOCUMENTATION_DIR: "${CLEAN_REPO_PATH}/documentation"
+    TARGET_FOLDER: "${PACKAGE_NAME}"
+  script:
+    - module unload matlab
+    - module load matlab/$MATLAB_VERSION
+    - module load texlive/2014
+    - echo "-Xmx1024m" > java.opts
+    - $CI_SCRIPT_PATH/build/FA/runCIbuild_FA_Package_m.sh
+  artifacts:
+    name: "${BUILD_NAME}-b${CI_BUILD_ID}"
+    paths:
+      - $TARGET_FOLDER
+    when: on_success
+    expire_in: 4 weeks
+  
 # when: manual
 # === ************* =======================  
 # === Test Packages =======================  
