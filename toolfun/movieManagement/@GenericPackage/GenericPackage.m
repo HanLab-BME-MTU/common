@@ -106,10 +106,25 @@ classdef GenericPackage < Package
             end
         end
         function varargout = showGUI(obj,varargin)
-            if nargin>0 && isa(obj.owner_,'MovieList')
-                varargout{1} = packageGUI('GenericPackage',[obj.owner_.getMovies{:}],...
-                    varargin{:}, 'ML', varargin{1});
+            if nargin>0 && ~isscalar(obj)
+                % obj represents multiple packages
+                packageIndx = cell(1,numel(obj));
+                for m = 1:numel(obj)
+                    packageIndx{m} = find(cellfun(@(x) x == obj(m),obj(m).owner_.packages_),1,'first');
+                    if(isempty(packageIndx{m}))
+                        obj(m).owner_.addPackage(obj(m));
+                        packageIndx{m} = numel(obj(m).owner_.packages_);
+                    end
+                end
+                varargout{1} = packageGUI('GenericPackage',[obj.owner_],'packageIndx',packageIndx,varargin{:});
+%             elseif nargin>0 && isa(obj.owner_,'MovieList')
+%                 % Object is a MovieList
+%                 % Disabled for now, just use the static GUI in this case
+%                 movies = [obj.owner_.getMovies{:}];
+%                 varargout{1} = packageGUI('GenericPackage',movies,...
+%                     varargin{:}, 'ML', obj.owner_);
             else
+                % obj is scalar
                 packageIndx = {find(cellfun(@(x) x == obj,obj.owner_.packages_),1,'first')};
                 if(isempty(packageIndx{1}))
                     obj.owner_.addPackage(obj);
