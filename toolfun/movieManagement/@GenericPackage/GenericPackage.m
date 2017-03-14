@@ -50,12 +50,12 @@ classdef GenericPackage < Package
                 else
                     % Add all processes to the generic package
                     obj.owner_ = ownerOrProcesses;
-                    obj.processes_ = owner.processes_;
+                    obj.processes_ = obj.owner_.processes_;
                 end
                 if(nargin > 1 && ~isempty(outputDirectory))
                     obj.outputDirectory_ = outputDirectory;
                 else
-                    obj.outputDirectory_ = MD.outputDirectory_;
+                    obj.outputDirectory_ = obj.owner_.outputDirectory_;
                 end
                 
                 nVarargin = numel(varargin);
