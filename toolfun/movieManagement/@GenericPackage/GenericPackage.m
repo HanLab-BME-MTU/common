@@ -43,14 +43,22 @@ classdef GenericPackage < Package
             
             if nargin > 0
                 if(iscell(ownerOrProcesses))
-                    % owner is actually a list of processes
+                    % ownerOrProcesses is actually a list of processes
                     obj.processes_ = ownerOrProcesses;
                     % get owner from first process
                     obj.owner_ = obj.processes_{1}.getOwner();
-                else
+                elseif(isa(ownerOrProcesses,'Process'))
+                    % ownerOrProcesses is a single process
+                    obj.processes_ = {ownerOrProcesses};
+                    obj.owner_ = obj.processes_{1}.getOwner();
+                elseif(isa(ownerOrProcesses,'MovieObject'))
+                    % ownerOrProcesses is a MovieObject?
                     % Add all processes to the generic package
                     obj.owner_ = ownerOrProcesses;
                     obj.processes_ = obj.owner_.processes_;
+                else
+                    error('GenericPackage:InvalidArgument', ...
+                        'First argument for a GenericPackage must either be a cell array of Process, a Process, or a MovieObject');
                 end
                 if(nargin > 1 && ~isempty(outputDirectory))
                     obj.outputDirectory_ = outputDirectory;
@@ -95,6 +103,27 @@ classdef GenericPackage < Package
                 'UniformOutput',false);
             if(nargin > 1)
                 procConstr = procConstr(index);
+            end
+        end
+        function varargout = showGUI(obj,varargin)
+            if nargin>0 && isa(obj.owner_,'MovieList')
+                varargout{1} = packageGUI('GenericPackage',[obj.owner_.getMovies{:}],...
+                    varargin{:}, 'ML', varargin{1});
+            else
+                packageIndx = {find(cellfun(@(x) x == obj,obj.owner_.packages_),1,'first')};
+                if(isempty(packageIndx{1}))
+                    obj.owner_.addPackage(obj);
+                    packageIndx = {numel(obj.owner_.packages_)};
+                end
+                varargout{1} = packageGUI('GenericPackage',obj.owner_,'packageIndx',packageIndx,varargin{:});
+                
+                % Check to make sure that this package is the current
+                % package
+                userData = get(varargout{1},'UserData');
+                if(userData.crtPackage ~= obj)
+                    close(varargout{1});
+                    varargout{1} = obj.showGUI(varargin{:});
+                end
             end
         end
     end
