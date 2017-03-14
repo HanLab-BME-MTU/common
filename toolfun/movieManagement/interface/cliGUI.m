@@ -22,10 +22,12 @@ function out = cliGUI(string,hfig1,procID,varargin)
     disp('Welcome to Command Line Interface "GUI"');
     disp('---------------------------------------');
     disp('Stored in the struct <a href="matlab:funParams">funParams</a> are the process'' parameters.');
+    disp('Type <a href="matlab:openvar(''funParams'')">openvar(''funParams'')</a> to use the variable editor.')
     disp('Type <a href="matlab:dbcont">dbcont</a> to apply your changes to funParam.');
     disp('Type <a href="matlab:dbquit">dbquit</a> to cancel.')
     who
     funParams = userData.crtProc.getParameters()
+    openvar('funParams');
     
     % Turn over command to the user
     keyboard;

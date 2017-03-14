@@ -168,8 +168,8 @@ classdef ImageProcessingProcess < Process
         
         
         
-        function outIm = loadOutImage(obj,iChan,iFrame)
-            outIm=obj.loadChannelOutput(iChan,iFrame);
+        function outIm = loadOutImage(obj,iChan,iFrame,varargin)
+            outIm=obj.loadChannelOutput(iChan,iFrame,varargin{:});
         end
         
         function outIm = loadChannelOutput(obj,iChan,iFrame,varargin)

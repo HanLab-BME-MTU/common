@@ -6,6 +6,10 @@ classdef TrackingProcess < DataProcessingProcess & NonSingularProcess
     % Mark Kittisopikul, Nov 2014, Added channelOutput cache
     % Andrew R. Jamieson, Dec 2016, updated parameters for getDefaultGapClosingCostMatrices and GUI
     
+    properties
+        useCache_ = false;
+    end
+    
     methods(Access = public)
         
         function obj = TrackingProcess(owner, varargin)
@@ -45,8 +49,10 @@ classdef TrackingProcess < DataProcessingProcess & NonSingularProcess
             ip.addRequired('obj');
             ip.addRequired('iChan', @(x) obj.checkChanNum(x));
             ip.addOptional('iFrame', [] ,@(x) obj.checkFrameNum(x));
-            ip.addParameter('useCache', true, @islogical);
-            ip.addParameter('output', outputList{1}, @(x) all(ismember(x,outputList)));
+            ip.addParamValue('useCache', ...
+                obj.useCache_, ...
+                @islogical);
+            ip.addParamValue('output', outputList{1}, @(x) all(ismember(x,outputList)));
             ip.parse(obj,iChan,varargin{:})
             output = ip.Results.output;
             iFrame = ip.Results.iFrame;
@@ -152,8 +158,8 @@ classdef TrackingProcess < DataProcessingProcess & NonSingularProcess
             
             funParams.costMatrices(1) = TrackingProcess.getDefaultLinkingCostMatrices(owner, funParams.gapCloseParam.timeWindow,1);
             funParams.costMatrices(2) = TrackingProcess.getDefaultGapClosingCostMatrices(owner, funParams.gapCloseParam.timeWindow,1);
-            
-            
+
+
         end
         
         function kalmanFunctions = getKalmanFunctions(index)
