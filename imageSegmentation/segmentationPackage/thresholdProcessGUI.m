@@ -22,7 +22,7 @@ function varargout = thresholdProcessGUI(varargin)
 
 % Edit the above text to modify the response to help thresholdProcessGUI
 
-% Last Modified by GUIDE v2.5 09-Mar-2017 15:29:02
+% Last Modified by GUIDE v2.5 13-Mar-2017 18:18:53
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -90,35 +90,50 @@ threshMethods = userData.crtProc.getMethods();
 set(handles.popupmenu_thresholdingMethod,'String',{threshMethods(:).name},...
     'Value',funParams.MethodIndx);
 
-if isempty(funParams.ThresholdValue)
+if(~isfield(funParams,'PreThreshold'))
+    funParams.PreThreshold = false;
+end
+
+useAutomatic = isempty(funParams.ThresholdValue) || funParams.PreThreshold;
+useFixed = ~isempty(funParams.ThresholdValue) || funParams.PreThreshold;
+
+if useAutomatic
    
     set(handles.checkbox_auto, 'Value', 1);
     set(get(handles.uipanel_automaticThresholding,'Children'),'Enable','on');
-    set(get(handles.uipanel_fixedThreshold,'Children'),'Enable','off');
     if funParams.MaxJump
         set(handles.checkbox_max, 'Value', 1);
         set(handles.edit_jump, 'Enable','on','String',funParams.MaxJump);
     else
         set(handles.edit_jump, 'Enable', 'off');
     end
-    if isfield(funParams,'PreThreshold') && ~isempty(funParams.PreThreshold)
+    if funParams.PreThreshold
         set(handles.checkbox_preThreshold, 'Value', 1);
-        set(handles.edit_preThreshold, 'Enable','on','String',funParams.PreThreshold);
-    else
-        set(handles.edit_preThreshold, 'Enable', 'off');
     end
         
+
+else
+    set(handles.checkbox_auto, 'Value', 0);
+    set(get(handles.uipanel_automaticThresholding,'Children'),'Enable','off');
+    
+end
+
+if useFixed    
+    if(isempty(funParams.ThresholdValue))
+        funParams.ThresholdValue(1) = 0;
+    end
+%     set(handles.checkbox_auto, 'Value', 0);
+    set(get(handles.uipanel_fixedThreshold,'Children'),'Enable','on');
+%     set(get(handles.uipanel_automaticThresholding,'Children'),'Enable','off');
+    set(handles.listbox_thresholdValues, 'String', num2cell(funParams.ThresholdValue));
+    userData.thresholdValue=funParams.ThresholdValue(1);
+    set(handles.slider_threshold, 'Value',funParams.ThresholdValue(1))
+else
+    set(get(handles.uipanel_fixedThreshold,'Children'),'Enable','off');
     nSelectedChannels  = numel(get(handles.listbox_selectedChannels, 'String'));
     set(handles.listbox_thresholdValues, 'String',...
         num2cell(zeros(1,nSelectedChannels)));
     userData.thresholdValue=0;
-else
-    set(handles.checkbox_auto, 'Value', 0);
-    set(get(handles.uipanel_fixedThreshold,'Children'),'Enable','on');
-    set(get(handles.uipanel_automaticThresholding,'Children'),'Enable','off');
-    set(handles.listbox_thresholdValues, 'String', num2cell(funParams.ThresholdValue));
-    userData.thresholdValue=funParams.ThresholdValue(1);
-    set(handles.slider_threshold, 'Value',funParams.ThresholdValue(1))
 end
 
 % Initialize the frame number slider and eidt
@@ -184,9 +199,11 @@ if isnan(gaussFilterSigma) || gaussFilterSigma < 0
 end
 funParams.GaussFilterSigma=gaussFilterSigma;
 
+useAutomatic = get(handles.checkbox_auto, 'value');
+useFixed = ~useAutomatic || get(handles.checkbox_preThreshold, 'value');
 
-if get(handles.checkbox_auto, 'value')
-    funParams.ThresholdValue = [ ];
+if useAutomatic
+%     funParams.ThresholdValue = [ ];
     funParams.MethodIndx=get(handles.popupmenu_thresholdingMethod,'Value');
     
     if get(handles.checkbox_max, 'Value')
@@ -199,16 +216,21 @@ if get(handles.checkbox_auto, 'value')
         funParams.MaxJump = str2double(get(handles.edit_jump,'String'));
     end
     
-    if get(handles.checkbox_preThreshold, 'Value')
+    if useFixed
         % If both checkbox are checked
-        preThreshold=str2double(get(handles.edit_preThreshold, 'String'));
-        if isnan(preThreshold)
-            errordlg('Please provide a valid input for ''The fixed threshold applied before automatic thresholding''.','Setting Error','modal');
-            return;
-        end    
-        funParams.PreThreshold = preThreshold;
+%         preThreshold=str2double(get(handles.edit_preThreshold, 'String'));
+%         if isnan(preThreshold)
+%             errordlg('Please provide a valid input for ''The fixed threshold applied before automatic thresholding''.','Setting Error','modal');
+%             return;
+%         end    
+        funParams.PreThreshold = true;
+    else
+        funParams.PreThreshold = false;
+        funParams.ThresholdValue = [ ];
     end
-else
+end
+
+if useFixed
     threshold = get(handles.listbox_thresholdValues, 'String');
     if isempty(threshold)
        errordlg('Please provide at least one threshold value.','Setting Error','modal')
@@ -337,9 +359,11 @@ function checkbox_auto_Callback(hObject, eventdata, handles)
 % Hint: get(hObject,'Value') returns toggle state of checkbox_auto
 if get(hObject, 'Value')
     set(get(handles.uipanel_automaticThresholding,'Children'),'Enable','on');
-    set(get(handles.uipanel_fixedThreshold,'Children'),'Enable','off');
+    if ~get(handles.checkbox_preThreshold,'Value')
+%         set(handles.edit_preThreshold,'Enable','off'); 
+        set(get(handles.uipanel_fixedThreshold,'Children'),'Enable','off');
+    end
     if ~get(handles.checkbox_max,'Value'), set(handles.edit_jump,'Enable','off'); end
-    if ~get(handles.checkbox_preThreshold,'Value'), set(handles.edit_preThreshold,'Enable','off'); end
 else 
     set(get(handles.uipanel_automaticThresholding,'Children'),'Enable','off');
     set(get(handles.uipanel_fixedThreshold,'Children'),'Enable','on')
@@ -401,10 +425,17 @@ function checkbox_preThreshold_Callback(hObject, eventdata, handles)
 
 % Hint: get(hObject,'Value') returns toggle state of checkbox_preThreshold
 if get(hObject, 'value')
-    set(handles.edit_preThreshold, 'Enable', 'on');
+    set(get(handles.uipanel_fixedThreshold,'Children'),'Enable','on')
+%     set(handles.checkbox_max, 'Value', 0);
+%     set(handles.checkbox_preThreshold, 'Value', 0);
+%     set(handles.checkbox_applytoall, 'Value',0);
+    set(handles.checkbox_preview, 'Value',1);
 else 
-    set(handles.edit_preThreshold, 'Enable', 'off');
+    set(get(handles.uipanel_fixedThreshold,'Children'),'Enable','off');
+%     set(handles.edit_preThreshold, 'Enable', 'off');
 end
+update_data(hObject,eventdata,handles);
+
 
 % --- Executes on key press with focus on pushbutton_done and none of its controls.
 function pushbutton_done_KeyPressFcn(hObject, eventdata, handles)
@@ -458,7 +489,7 @@ end
 thresholdValue=round(thresholdValue);
 
 % Check the validity of the supplied threshold
-if isnan(thresholdValue) || thresholdValue < 0 || thresholdValue > get(handles.slider_threshold,'Max')
+if isnan(thresholdValue) || thresholdValue < get(handles.slider_threshold,'Min') || thresholdValue > get(handles.slider_threshold,'Max')
     warndlg('Please provide a valid coefficient.','Setting Error','modal');
     thresholdValue=userData.thresholdValue;
 end
@@ -546,10 +577,12 @@ if (chanIndx~=userData.chanIndx) ||  (imIndx~=userData.imIndx)
     
     % Get the value of the new maximum threshold
     maxThresholdValue=max(max(userData.imData(:)),1);
+    minThresholdValue=min(min(userData.imData(:)),0);
     % Update the threshold Value if above the new maximum
     thresholdValue=min(thresholdValue,maxThresholdValue);
     
     set(handles.slider_threshold,'Value',thresholdValue,'Max',maxThresholdValue,...
+        'Min',minThresholdValue, ...
         'SliderStep',[1/double(maxThresholdValue)  10/double(maxThresholdValue)]);
     set(handles.edit_threshold,'String',thresholdValue);
     
@@ -603,7 +636,13 @@ if get(handles.checkbox_preview,'Value')
         threshMethod = userData.crtProc.getMethods(methodIndx).func;
         
         try %#ok<TRYNC>
-            currThresh = threshMethod( imData);
+            if ~get(handles.checkbox_preThreshold,'Value')
+                currThresh = threshMethod( imData);
+            else
+                thresholdValue = get(handles.slider_threshold, 'Value');
+                currThresh = threshMethod( imData(imData > thresholdValue) );
+                currThresh = max(currThresh,thresholdValue);
+            end
             alphamask(imData<=currThresh)=.4;
         end
     else
@@ -618,6 +657,3 @@ if get(handles.checkbox_preview,'Value')
     set(handles.figure1, 'UserData', userData);
     guidata(hObject,handles);
 end
-
-
-

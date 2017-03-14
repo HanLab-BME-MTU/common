@@ -207,11 +207,18 @@ for iChan = 1:nChanThresh
             currImage = filterGauss2D(double(currImage),p.GaussFilterSigma);
         end
 
+        if ~isfield(p,'PreThreshold') || isempty(p.PreThreshold)
+            % PreThreshold is false by default
+            p.PreThreshold = false;
+        end
         
-        if isempty(p.ThresholdValue)
+        if isempty(p.ThresholdValue) || p.PreThreshold
             try
-                if(isfield(p,'PreThreshold') && ~isempty(p.PreThreshold))
-                    currThresh = threshMethod(currImage(currImage > p.PreThreshold(min(iChan,length(p.PreThreshold)))));
+                if(p.PreThreshold)
+                    % Use automatic thresholding method only on pixels
+                    % above fixed threshold
+                    currThresh = threshMethod(currImage(currImage > p.ThresholdValue(iChan)));
+                    currThresh = max(currThresh,p.ThresholdValue(iChan));
                 else
                     currThresh = threshMethod(currImage);             
                 end
