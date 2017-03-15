@@ -48,13 +48,49 @@ classdef TrackingPackage < Package
             classes=classes(index);
         end
         
-        function objects = getConcretePackages()
-            objects(1).name = 'Single particles';
+        function objects = getConcretePackages(varargin)
+            % Check if 3D movie.
+            % Check input
+            ip =inputParser;
+            ip.addOptional('MO', [], @(x) isa(x,'MovieData') || isa(x,'MovieList'));
+            ip.parse(varargin{:});
+            MO = ip.Results.MO;
+            
+            if ~isempty(MO)
+                if isa(MO,'MovieList')
+                    MD = MO.getMovie(1);
+                elseif length(MO) > 1
+                    MD = MO(1);
+                else
+                    MD = MO;
+                end                
+            end
+            
+            % 2D options
+            objects(1).name = '[2D]Single particles';
             objects(1).packageConstr = @UTrackPackage;
-            objects(2).name = 'Microtubules plus-ends';
+            objects(2).name = '[2D]Microtubules plus-ends';
             objects(2).packageConstr = @PlusTipTrackerPackage;                        
-            objects(3).name = 'Nuclei';
+            objects(3).name = '[2D]Nuclei';
             objects(3).packageConstr = @NucleiTrackingPackage;
+            % 3D options
+            objects(4).name = '[3D]Single particles';
+            objects(4).packageConstr = @UTrackPackage3D;
+            objects(5).name = '[3D]Microtubules plus-ends';
+            objects(5).packageConstr = @PlusTipTrackerPackage3D; 
+            
+            if isempty(MD)
+               warning('MovieData properties not specified (2D vs. 3D)');
+               disp('Displaying both 2D and 3D tracking options');
+            elseif MD.is3D
+                disp('Detected 3D movie');
+                disp('Displaying 3D tracking package options only');
+                objects(1:3) = [];
+            elseif ~MD.is3D
+                disp('Detected 2D movie');
+                disp('Displaying 2D tracking package options only');
+                objects(3:5) = [];
+            end
         end
         
     end 

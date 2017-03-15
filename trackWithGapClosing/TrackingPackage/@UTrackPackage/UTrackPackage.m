@@ -3,7 +3,6 @@ classdef UTrackPackage < TrackingPackage
     
     methods (Access = public)
         function obj = UTrackPackage (varargin)
-            
             % Call the superclass constructor
             obj = obj@TrackingPackage(varargin{:});
         end

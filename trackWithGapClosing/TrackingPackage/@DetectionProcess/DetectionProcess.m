@@ -5,6 +5,7 @@ classdef DetectionProcess < ImageAnalysisProcess
     % Chuangang Ren, 11/2010
     % Sebastien Besson (last modified May 2012)
     % Mark Kittisopikul, Nov 2014, Added channelOutput cache
+    % Andrew R. Jamieson, mar 2017, adding 3D support.
     
     methods(Access = public)
         
@@ -87,10 +88,10 @@ classdef DetectionProcess < ImageAnalysisProcess
         function procClasses = getConcreteClasses()
             procClasses = ...
                 {@SubResolutionProcess;
-                @CometDetectionProcess;
-                @AnisoGaussianDetectionProcess;
-                @NucleiDetectionProcess;
-                @PointSourceDetectionProcess;
+                 @CometDetectionProcess;
+                 @AnisoGaussianDetectionProcess;
+                 @NucleiDetectionProcess;
+                 @PointSourceDetectionProcess;
                 };
             procClasses = cellfun(@func2str, procClasses, 'Unif', 0);
         end
