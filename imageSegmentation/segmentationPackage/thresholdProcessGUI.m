@@ -22,7 +22,7 @@ function varargout = thresholdProcessGUI(varargin)
 
 % Edit the above text to modify the response to help thresholdProcessGUI
 
-% Last Modified by GUIDE v2.5 13-Mar-2017 18:18:53
+% Last Modified by GUIDE v2.5 14-Mar-2017 18:58:52
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -122,12 +122,16 @@ if useFixed
     if(isempty(funParams.ThresholdValue))
         funParams.ThresholdValue(1) = 0;
     end
+    if(isempty(funParams.IsPercentile))
+        funParams.IsPercentile = false(size(funParams.ThresholdValue));
+    end
 %     set(handles.checkbox_auto, 'Value', 0);
     set(get(handles.uipanel_fixedThreshold,'Children'),'Enable','on');
 %     set(get(handles.uipanel_automaticThresholding,'Children'),'Enable','off');
-    set(handles.listbox_thresholdValues, 'String', num2cell(funParams.ThresholdValue));
+    set(handles.listbox_thresholdValues, 'String', thresholdsToString(funParams.ThresholdValue,funParams.IsPercentile));
     userData.thresholdValue=funParams.ThresholdValue(1);
     set(handles.slider_threshold, 'Value',funParams.ThresholdValue(1))
+    set(handles.checkbox_is_percentile,'Value',funParams.IsPercentile(1));
 else
     set(get(handles.uipanel_fixedThreshold,'Children'),'Enable','off');
     nSelectedChannels  = numel(get(handles.listbox_selectedChannels, 'String'));
@@ -239,13 +243,15 @@ if useFixed
        errordlg('Please provide the same number of threshold values as the input channels.','Setting Error','modal')
        return
     else
-        threshold = str2double(threshold);
+        [threshold,isPercentile] = stringToThresholds(threshold);
+%         threshold = str2double(threshold);
         if any(isnan(threshold)) || any(threshold < 0)
             errordlg('Please provide valid threshold values. Threshold cannot be a negative number.','Setting Error','modal')
             return            
         end
     end
     funParams.ThresholdValue = threshold;
+    funParams.IsPercentile = isPercentile;
 end
    
 
@@ -302,7 +308,8 @@ id = get(handles.listbox_availableChannels, 'Value');
 % If channel has already been added, return;
 chanIndex1 = get(handles.listbox_availableChannels, 'Userdata');
 chanIndex2 = get(handles.listbox_selectedChannels, 'Userdata');
-thresholdValues = cellfun(@str2num,get(handles.listbox_thresholdValues,'String'));
+[thresholdValues,isPercentile] = stringToThresholds(get(handles.listbox_thresholdValues,'String'));
+% thresholdValues = cellfun(@str2num,get(handles.listbox_thresholdValues,'String'));
 
 for i = id
     if any(strcmp(contents1{i}, contents2) )
@@ -310,13 +317,14 @@ for i = id
     else
         contents2{end+1} = contents1{i};
         thresholdValues(end+1) = 0;
+        isPercentile(end+1) = false;
         chanIndex2 = cat(2, chanIndex2, chanIndex1(i));
 
     end
 end
 
 set(handles.listbox_selectedChannels, 'String', contents2, 'Userdata', chanIndex2);
-set(handles.listbox_thresholdValues,'String',num2cell(thresholdValues))
+set(handles.listbox_thresholdValues,'String',thresholdsToString(thresholdValues,isPercentile))
 update_data(hObject,eventdata,handles);
 
 
@@ -340,9 +348,11 @@ chanIndex2(id) = [ ];
 set(handles.listbox_selectedChannels, 'Userdata', chanIndex2);
 
 % Update thresholdValues
-thresholdValues = cellfun(@str2num,get(handles.listbox_thresholdValues,'String'));
+% thresholdValues = cellfun(@str2num,get(handles.listbox_thresholdValues,'String'));
+[thresholdValues,isPercentile] = stringToThresholds(get(handles.listbox_thresholdValues,'String'));
 thresholdValues(id) = [];
-set(handles.listbox_thresholdValues,'String',num2cell(thresholdValues));
+isPercentile(id) = [];
+set(handles.listbox_thresholdValues,'String',thresholdsToString(thresholdValues,isPercentile));
 
 % Point 'Value' to the second last item in the list once the 
 % last item has been deleted
@@ -456,10 +466,13 @@ end
 function pushbutton_set_threshold_Callback(hObject, eventdata, handles)
 
 newThresholdValue = get(handles.slider_threshold,'Value');
+newIsPercentile = get(handles.checkbox_is_percentile,'Value');
 indx = get(handles.listbox_selectedChannels,'Value');
-thresholdValues = cellfun(@str2num,get(handles.listbox_thresholdValues,'String'));
+% thresholdValues = cellfun(@str2num,get(handles.listbox_thresholdValues,'String'));
+[thresholdValues,isPercentile] = stringToThresholds(get(handles.listbox_thresholdValues,'String'));
 thresholdValues(indx) = newThresholdValue;
-set(handles.listbox_thresholdValues,'String',num2cell(thresholdValues));
+isPercentile(indx) = newIsPercentile;
+set(handles.listbox_thresholdValues,'String',thresholdsToString(thresholdValues,isPercentile));
 
 
 % --- Executes on button press in checkbox_preview.
@@ -544,12 +557,14 @@ if strcmp(get(get(hObject,'Parent'),'Tag'),'uipanel_channels') ||...
     end
     thresholdString = get(handles.listbox_thresholdValues,'String');
     if ~isempty(thresholdString)
-        thresholdValue = str2double(thresholdString{value});
+%         thresholdValue = str2double(thresholdString{value});
+        [thresholdValue,isPercentile] = stringToThresholds(thresholdString{value});
     else
         thresholdValue=0;
     end
     set(handles.edit_threshold,'String',thresholdValue);
     set(handles.slider_threshold,'Value',thresholdValue);
+    setPercentileMode(handles,isPercentile);
     if isempty(thresholdString),
         if isfield(userData, 'previewFig'), delete(userData.previewFig); end
         set(handles.figure1, 'UserData', userData);
@@ -576,8 +591,13 @@ if (chanIndx~=userData.chanIndx) ||  (imIndx~=userData.imIndx)
     end
     
     % Get the value of the new maximum threshold
-    maxThresholdValue=max(max(userData.imData(:)),1);
-    minThresholdValue=min(min(userData.imData(:)),0);
+    if(get(handles.checkbox_is_percentile,'Value'))
+        maxThresholdValue = 100;
+        minThresholdValue = 0;
+    else
+        maxThresholdValue=max(max(userData.imData(:)),1);
+        minThresholdValue=min(min(userData.imData(:)),0);
+    end
     % Update the threshold Value if above the new maximum
     thresholdValue=min(thresholdValue,maxThresholdValue);
     
@@ -640,6 +660,9 @@ if get(handles.checkbox_preview,'Value')
                 currThresh = threshMethod( imData);
             else
                 thresholdValue = get(handles.slider_threshold, 'Value');
+                if(get(handles.checkbox_is_percentile,'Value'))
+                    thresholdValue = prctile(userData.imData(:),thresholdValue);
+                end
                 currThresh = threshMethod( imData(imData > thresholdValue) );
                 currThresh = max(currThresh,thresholdValue);
             end
@@ -648,6 +671,9 @@ if get(handles.checkbox_preview,'Value')
     else
         % Preview manual threshold
         thresholdValue = get(handles.slider_threshold, 'Value');
+        if(get(handles.checkbox_is_percentile,'Value'))
+            thresholdValue = prctile(userData.imData(:),thresholdValue);
+        end
         alphamask(imData<=thresholdValue)=.4;
     end
     set(imHandle,'AlphaData',alphamask,'AlphaDataMapping','none');
@@ -657,3 +683,56 @@ if get(handles.checkbox_preview,'Value')
     set(handles.figure1, 'UserData', userData);
     guidata(hObject,handles);
 end
+
+
+% --- Executes on button press in checkbox_is_percentile.
+function checkbox_is_percentile_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox_is_percentile (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of checkbox_is_percentile
+if get(handles.checkbox_is_percentile,'Value')
+    % Convert threshold values into percentiles
+    thresholdValue = get(handles.slider_threshold, 'Value');
+    userData = get(handles.figure1, 'UserData');
+    threshPercent = sum(userData.imData(:) < thresholdValue)/numel(userData.imData(:))*100;
+    set(handles.slider_threshold,'Value',threshPercent,'Min',0,'Max',100, ...
+        'SliderStep',[0.01 0.1] ...
+        );
+    set(handles.edit_threshold,'String',threshPercent);
+    set(handles.text_percentile,'String','%');
+    update_data(hObject,eventdata, handles)
+else
+    % Convert percentile to threshold values
+    thresholdPercent = get(handles.slider_threshold, 'Value');
+    userData = get(handles.figure1, 'UserData');
+    thresholdValue = prctile(userData.imData(:),thresholdPercent);
+    maxThresholdValue=max(max(userData.imData(:)),1);
+    minThresholdValue=min(min(userData.imData(:)),0);
+    set(handles.slider_threshold,'Value',thresholdValue,'Min',minThresholdValue,'Max',maxThresholdValue, ...
+        'SliderStep',[1/double(maxThresholdValue)  10/double(maxThresholdValue)]);
+    set(handles.edit_threshold,'String',thresholdValue);
+    set(handles.text_percentile,'String','');
+end
+
+function strings = thresholdsToString(thresholdValues,isPercentile)
+    strings = num2cell(thresholdValues);
+    strings = cellfun(@num2str,strings,'UniformOutput',false);
+    percent = cell(size(strings));
+    [percent{isPercentile}] = deal('%');
+    strings = strcat(strings,percent);
+    
+    
+function [thresholdValues,isPercentile] = stringToThresholds(thresholdStrings)
+    if(ischar(thresholdStrings))
+        thresholdStrings = {thresholdStrings};
+    end
+    isPercentile = cellfun(@(x) x(end) == '%',thresholdStrings);
+    thresholdStrings(isPercentile) = cellfun(@(x) x(1:end-1),thresholdStrings(isPercentile),'UniformOutput',false);
+    thresholdValues = str2double(thresholdStrings);
+
+function setPercentileMode(handles,isPercentile)
+    percent = '%';
+    set(handles.text_percentile,'String',percent(isPercentile));
+    set(handles.checkbox_is_percentile,'Value',isPercentile);

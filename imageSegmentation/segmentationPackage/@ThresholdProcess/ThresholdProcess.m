@@ -67,7 +67,9 @@ classdef ThresholdProcess < SegmentationProcess & NonSingularProcess
             funParams.ChannelIndex = 1:numel(owner.channels_);
             funParams.OutputDirectory = [outputDir  filesep 'masks'];
             funParams.ProcessIndex = [];%Default is to use raw images
+            funParams.PreThreshold = false; % use fixed threshold before automatic threshold
             funParams.ThresholdValue = []; % automatic threshold selection
+            funParams.IsPercentile = []; % use percentile rather than absolute
             funParams.MaxJump = 0; %Default is no jump suppression
             funParams.GaussFilterSigma = 0; %Default is no filtering.
             funParams.BatchMode = false;

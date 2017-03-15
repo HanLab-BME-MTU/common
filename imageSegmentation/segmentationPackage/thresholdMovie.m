@@ -211,14 +211,21 @@ for iChan = 1:nChanThresh
             % PreThreshold is false by default
             p.PreThreshold = false;
         end
+        if ~isfield(p,'IsPercentile')
+            p.IsPercentile = false(size(p.ThresholdValue));
+        end
         
         if isempty(p.ThresholdValue) || p.PreThreshold
             try
                 if(p.PreThreshold)
                     % Use automatic thresholding method only on pixels
                     % above fixed threshold
-                    currThresh = threshMethod(currImage(currImage > p.ThresholdValue(iChan)));
-                    currThresh = max(currThresh,p.ThresholdValue(iChan));
+                    actualThreshold = p.ThresholdValue(iChan);
+                    if(p.IsPercentile(iChan))
+                        actualThreshold = prctile(currImage(:),actualThreshold);
+                    end
+                    currThresh = threshMethod(currImage(currImage > actualThreshold));
+                    currThresh = max(currThresh,actualThreshold);
                 else
                     currThresh = threshMethod(currImage);             
                 end
@@ -241,6 +248,9 @@ for iChan = 1:nChanThresh
             end
         else            
             currThresh = p.ThresholdValue(iChan);
+            if(p.IsPercentile(iChan))
+                currThresh = prctile(currImage(:),currThresh);
+            end
         end
         
         if p.MaxJump > 0
