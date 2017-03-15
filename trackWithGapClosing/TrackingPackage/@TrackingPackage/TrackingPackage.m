@@ -49,8 +49,7 @@ classdef TrackingPackage < Package
         end
         
         function objects = getConcretePackages(varargin)
-            % Check if 3D movie.
-            % Check input
+            % If input, check if 2D or 3D movie(s).
             ip =inputParser;
             ip.addOptional('MO', [], @(x) isa(x,'MovieData') || isa(x,'MovieList'));
             ip.parse(varargin{:});
