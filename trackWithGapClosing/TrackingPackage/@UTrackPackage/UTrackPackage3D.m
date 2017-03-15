@@ -8,8 +8,14 @@ classdef UTrackPackage3D < TrackingPackage
         end        
 
         function [status processExceptions] = sanityCheck(obj, varargin) % throws Exception Cell Array
-            %% TODO - sanitycheck
+            
+            %% TODO - add more to sanitycheck
             disp('TODO: SanityCheck!');
+            assert(obj.owner_.is3D, errorMsg('MovieData is not 3D!'));
+            assert(~isempty(obj.owner_.pixelSize_), errorMsg('pixel size not defined!'));
+            assert(~isempty(obj.owner_.pixelSizeZ_), errorMsg('pixel Z size defined!'));
+            assert(~isempty(obj.owner_.timeInterval_), errorMsg('time interval defined!'));
+            [status, processExceptions] = sanityCheck@Package(obj, varargin{:});
 
         end
     end
