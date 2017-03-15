@@ -1,15 +1,15 @@
 function varargout = pointSourceDetectionProcessGUI3D(varargin)
 % anisoGaussianDetectionProcessGUI M-file for anisoGaussianDetectionProcessGUI.fig
-%      anisoGaussianDetectionProcessGUI, by itself, creates a new anisoGaussianDetectionProcessGUI or raises the existing
+%      anisoGaussianDetectionProcessGUI, by itself, creates a new pointSourceDetectionProcessGUI3D or raises the existing
 %      singleton*.
 %
-%      H = anisoGaussianDetectionProcessGUI returns the handle to a new anisoGaussianDetectionProcessGUI or the handle to
+%      H = anisoGaussianDetectionProcessGUI returns the handle to a new pointSourceDetectionProcessGUI3D or the handle to
 %      the existing singleton*.
 %
 %      anisoGaussianDetectionProcessGUI('CALLBACK',hObject,eventData,handles,...) calls the local
-%      function named CALLBACK in anisoGaussianDetectionProcessGUI.M with the given input arguments.
+%      function named CALLBACK in pointSourceDetectionProcessGUI3D.M with the given input arguments.
 %
-%      anisoGaussianDetectionProcessGUI('Property','Value',...) creates a new anisoGaussianDetectionProcessGUI or raises the
+%      anisoGaussianDetectionProcessGUI('Property','Value',...) creates a new pointSourceDetectionProcessGUI3D or raises the
 %      existing singleton*.  Starting from the left, property value pairs are
 %      applied to the GUI before anisoGaussianDetectionProcessGUI_OpeningFcn gets called.  An
 %      unrecognized property name or invalid value makes property application
@@ -22,7 +22,7 @@ function varargout = pointSourceDetectionProcessGUI3D(varargin)
 
 % Edit the above text to modify the response to help anisoGaussianDetectionProcessGUI
 
-% Last Modified by GUIDE v2.5 01-Oct-2013 19:23:29
+% Last Modified by GUIDE v2.5 15-Mar-2017 15:06:26
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -50,7 +50,7 @@ function pointSourceDetectionProcessGUI_OpeningFcn(hObject, eventdata, handles, 
 processGUI_OpeningFcn(hObject, eventdata, handles, varargin{:},'initChannel',1);
 
 % Set-up parameters
-userData=get(handles.figure1,'UserData');
+userData = get(handles.figure1,'UserData');
 funParams = userData.crtProc.funParams_;
 %Remove the output directory as we don't want to replicate it to other
 %movies if the "apply to all movies" box is checked. Ideally we would
@@ -641,6 +641,8 @@ for i =1 : numel(funParams.PerChannelParams)
         
 end
 
+funParams.filterSigma = [funParams.filterSigmaXY funParams.filterSigmaZ];
+
 set(handles.popupmenu_CurrentChannel,'UserData',funParams);
 
 
@@ -689,6 +691,29 @@ function edit_WindowSize_Callback(hObject, eventdata, handles)
 % --- Executes during object creation, after setting all properties.
 function edit_WindowSize_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to edit_WindowSize (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function edit_filterSigmaXY_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_filterSigmaXY (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_filterSigmaXY as text
+%        str2double(get(hObject,'String')) returns contents of edit_filterSigmaXY as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_filterSigmaXY_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_filterSigmaXY (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 

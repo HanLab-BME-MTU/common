@@ -23,22 +23,19 @@ ip = inputParser;
 ip.CaseSensitive = false;
 ip.addRequired('movieDataOrProcess', @isProcessOrMovieData);
 ip.addOptional('paramsIn',[], @isstruct);
-ip.addParamValue('UseIntersection',false,@islogical);
+ip.addParamValue('UseIntersection',false, @islogical);
+% ip.addParamValue('EstimateSigma', false, @islogical); %%TODO
 ip.parse(movieDataOrProcess,varargin{:});
 ip.KeepUnmatched = true;
-paramsIn=ip.Results.paramsIn;
+paramsIn = ip.Results.paramsIn;
 
 % Get MovieData object and Process
 [movieData, pointSourceDetProc3D] = getOwnerAndProcess(movieDataOrProcess,'PointSourceDetectionProcess3D',true);
 
-if ~movieData.is3D
-    error('detectMoviePointSources3D is specifically designed for 3D images. Please use detectMoviePointSources for 2D images.');
-end
+assert(movieData.is3D, 'detectMoviePointSources3D is specifically designed for 3D images. Please use detectMoviePointSources for 2D images.');
 
 %Parse input, store in parameter structure
-p = parseProcessParams(pointSourceDetProc3D,paramsIn);
-
-
+p = parseProcessParams(pointSourceDetProc3D, paramsIn);
 
 
 %% --------------- Initialization ---------------%%
@@ -99,11 +96,11 @@ imDirs = cell(1,nChanDet);
 imLoader = cell(1,nChanDet);
 for j = 1:nChanDet
     
-    if p.ProcessIndex(j) > 0
+    if p.InputImageProcessIndex(j) > 0
         %Check the specified input process
-        assert(movieData.processes_{p.ProcessIndex(j)}.checkChannelOutput(p.ChannelIndex(j)),['No valid output for input process specified for channel ' num2str(p.ChannelIndex(j))]);
-        imDirs{p.ChannelIndex(j)} = movieData.processes_{p.ProcessIndex(j)}.outFilePaths_{p.ChannelIndex(j)};
-        imLoader{p.ChannelIndex(j)} = @(f)(movieData.processes_{p.ProcessIndex(j)}.loadChannelOutput(p.ChannelIndex(j),f));                    
+        assert(movieData.processes_{p.InputImageProcessIndex(j)}.checkChannelOutput(p.ChannelIndex(j)),['No valid output for input process specified for channel ' num2str(p.ChannelIndex(j))]);
+        imDirs{p.ChannelIndex(j)} = movieData.processes_{p.InputImageProcessIndex(j)}.outFilePaths_{p.ChannelIndex(j)};
+        imLoader{p.ChannelIndex(j)} = @(f)(movieData.processes_{p.InputImageProcessIndex(j)}.loadChannelOutput(p.ChannelIndex(j),f));                    
         
     else
         %If raw data specified
@@ -137,6 +134,10 @@ pointSourceDetProc3D.setOutFilePaths(outFilePaths);
 
 %Get ROI mask if any.
 %roiMask = movieData.getROIMask;
+
+%% --------------- Add optional auio-estimation of PSF sigma ---------------%%% 
+
+
 
 %% --------------- Point source detection ---------------%%% 
 

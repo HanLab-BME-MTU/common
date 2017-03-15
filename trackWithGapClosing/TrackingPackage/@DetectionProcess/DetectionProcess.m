@@ -92,6 +92,7 @@ classdef DetectionProcess < ImageAnalysisProcess
                  @AnisoGaussianDetectionProcess;
                  @NucleiDetectionProcess;
                  @PointSourceDetectionProcess;
+                 @PointSourceDetectionProcess3D;
                 };
             procClasses = cellfun(@func2str, procClasses, 'Unif', 0);
         end

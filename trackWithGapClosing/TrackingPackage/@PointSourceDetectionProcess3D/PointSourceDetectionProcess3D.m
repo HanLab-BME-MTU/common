@@ -3,7 +3,7 @@ classdef PointSourceDetectionProcess3D < DetectionProcess
 %detection process for 3d
     
     methods (Access = public)
-        function obj = PointSourceDetectionProcess3D(owner, outputDir, funParams )
+        function obj = PointSourceDetectionProcess3D(owner, outputDir, funParams)
             % Constructor of the SubResolutionProcess
             super_args{1} = owner;
             super_args{2} = PointSourceDetectionProcess3D.getName;
@@ -11,7 +11,7 @@ classdef PointSourceDetectionProcess3D < DetectionProcess
             
             if nargin < 3 || isempty(funParams)  % Default funParams
                 if nargin <2, outputDir = owner.outputDirectory_; end
-                funParams=PointSourceDetectionProcess3D.getDefaultParams(owner,outputDir);
+                funParams = PointSourceDetectionProcess3D.getDefaultParams(owner,outputDir);
             end
             
             super_args{4} = funParams;
@@ -82,6 +82,19 @@ classdef PointSourceDetectionProcess3D < DetectionProcess
             end            
             
         end
+
+        %% TODO WIP -- TO FINISH (using Philippe'method)
+        function scales = getEstSigmaPSF3D(obj, channel, varargin)
+
+            volList=[];
+            for i=1:5
+                volList = [volList double(obj.owner_.getChannel(channel).loadStack(i))];
+            end
+            scales = getGaussianPSFsigmaFrom3DData(volList, varargin{:});
+            disp(['Estimated scales: ' num2str(scales)]);
+
+        end
+
     end
     methods (Static)
         
@@ -92,44 +105,50 @@ classdef PointSourceDetectionProcess3D < DetectionProcess
             h = @pointSourceDetectionProcessGUI3D;
         end
         
-        function funParams = getDefaultParams(owner,varargin)
+        function funParams = getDefaultParams(owner, varargin)
             % Input check
             ip=inputParser;
             ip.addRequired('owner',@(x) isa(x,'MovieData'));
             ip.addOptional('outputDir',owner.outputDirectory_,@ischar);
             ip.parse(owner, varargin{:})
-            outputDir=ip.Results.outputDir;
+            outputDir = ip.Results.outputDir;
             
             % Set default parameters
-            funParams.ChannelIndex=1;
-            funParams.ProcessIndex = 0;
+            funParams.ChannelIndex = 1;
+            funParams.InputImageProcessIndex = 0; % ??
             funParams.MaskChannelIndex = []; %1:numel(owner.channels_);
             funParams.MaskProcessIndex = [];            
             funParams.OutputDirectory = [outputDir  filesep 'point_sources'];
+            
             funParams.alpha=.05;
-            funParams.maskRadius=40;
             funParams.Mode = {'xyzAc'};
             funParams.FitMixtures = false;
             funParams.MaxMixtures = 5;
+            funParams.RemoveRedundant = true;
             funParams.RedundancyRadius = .25;
-            funParams.UseIntersection = true;            
-            funParams.PreFilter = true;
+            funParams.RefineMaskLoG = false;
+            funParams.RefineMaskValid = false;
+            % funParams.ConfRadius = []; 
+            % funParams.WindowSize = [];       
+
+            % sigma estimation            
+            nChan = numel(owner.channels_);
+            funParams.filterSigma = 1.2*ones(1,nChan); %Minimum numerically stable sigma is ~1.2 pixels.
+            hasPSFSigma = arrayfun(@(x) ~isempty(x.psfSigma_), owner.channels_);
+            funParams.filterSigma(hasPSFSigma) = [owner.channels_(hasPSFSigma).psfSigma_];            
+            funParams.filterSigma(funParams.filterSigma<1.2) = 1.2; %Make sure default isn't set to too small.
+            funParams.filterSigma = repmat(funParams.filterSigma,[2 1]); %TEMP - use z-PSF estimate as well!!
+            % For the GUI
+            funParams.filterSigmaXY = funParams.filterSigma(1);
+            funParams.filterSigmaZ = funParams.filterSigma(2);
+            funParams.ConfRadius = arrayfun(@(x)(2*x), funParams.filterSigma);
+            funParams.WindowSize = arrayfun(@(x)(ceil(4*x)), funParams.filterSigma);                       
+
             %list of parameters which can be specified at a per-channel
             %level. If specified as scalar these will  be replicated
             funParams.PerChannelParams = {'alpha','Mode','FitMixtures','MaxMixtures','RedundancyRadius',...
                 'filterSigma','PreFilter','ConfRadius','WindowSize','RefineMaskLoG','ProcessIndex'};
-            
-            nChan = numel(owner.channels_);
-            funParams.filterSigma = 1.2*ones(1,nChan);%Minimum numerically stable sigma is ~1.2 pixels.
-            hasPSFSigma = arrayfun(@(x) ~isempty(x.psfSigma_), owner.channels_);
-            funParams.filterSigma(hasPSFSigma) = [owner.channels_(hasPSFSigma).psfSigma_];            
-            funParams.filterSigma(funParams.filterSigma<1.2) = 1.2;%Make sure default isn't set to too small.
-            funParams.filterSigma = repmat(funParams.filterSigma,[2 1]);%TEMP - use z-PSF estimate as well!!
-            
-            funParams.ConfRadius = arrayfun(@(x)(2*x),funParams.filterSigma);
-            funParams.WindowSize = arrayfun(@(x)(ceil(4*x)),funParams.filterSigma);
-            
-            funParams = prepPerChannelParams(funParams,nChan);
+            funParams = prepPerChannelParams(funParams, nChan);
         end
         
         function positions = formatOutput(pstruct)
@@ -137,5 +156,6 @@ classdef PointSourceDetectionProcess3D < DetectionProcess
             %positions = positions(pstruct.isPSF, :);
         end
           
+
     end    
 end

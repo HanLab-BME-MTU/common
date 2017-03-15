@@ -2,7 +2,8 @@ classdef UTrackPackage3D < TrackingPackage
     % A concrete process for UTrack Package
     
     methods (Access = public)
-        function obj = UTrackPackage3D (varargin)
+        function obj = UTrackPackage3D(varargin)
+
             % Call the superclass constructor
             obj = obj@TrackingPackage(varargin{:});
         end        
@@ -11,11 +12,17 @@ classdef UTrackPackage3D < TrackingPackage
             
             %% TODO - add more to sanitycheck
             disp('TODO: SanityCheck!');
+            missingMetadataMsg = ['Missing %s! The %s is necessary to analyze '...
+            '3D Tracking Movies. Please edit the movie and fill the %s.'];
+            errorMsg = @(x) sprintf(missingMetadataMsg, x, x, x);
+            
             assert(obj.owner_.is3D, errorMsg('MovieData is not 3D!'));
             assert(~isempty(obj.owner_.pixelSize_), errorMsg('pixel size not defined!'));
             assert(~isempty(obj.owner_.pixelSizeZ_), errorMsg('pixel Z size defined!'));
             assert(~isempty(obj.owner_.timeInterval_), errorMsg('time interval defined!'));
             [status, processExceptions] = sanityCheck@Package(obj, varargin{:});
+
+            % possible PSF sanity check?
 
         end
     end
@@ -32,22 +39,21 @@ classdef UTrackPackage3D < TrackingPackage
 
         function procConstr = getDefaultProcessConstructors(index)
             procConstr = {
-                @(x,y)PointSourceDetectionProcess(x,y,UTrackPackage3D.getDefaultDetectionParams(x,y)),...
-                @(x,y)TrackingProcess(x,y,UTrackPackage.getDefaultTrackingParams(x,y)),...
-                @MotionAnalysisProcess};
+                @(x,y)PointSourceDetectionProcess3D(x,y,UTrackPackage3D.getDefaultDetectionParams(x,y)),...
+                @(x,y)TrackingProcess(x,y,UTrackPackage.getDefaultTrackingParams(x,y))};%,...
+
+                % @MotionAnalysisProcess};
             if nargin==0, index=1:numel(procConstr); end
             procConstr=procConstr(index);
         end
         
         function funParams = getDefaultDetectionParams(owner, outputDir)
 
-            funParams = PointSourceDetectionProcess.getDefaultParams(owner, outputDir);
+            funParams = PointSourceDetectionProcess3D.getDefaultParams(owner, outputDir);
             
-            %% TODO - Verify ideal default settings here.
             % Set default parameters
-            funParams.ChannelIndex = 1;
+            funParams.OutputDirectory = [outputDir  filesep 'pointsource3D_detect'];
 
-            % Check if segmentation occured.
             %% TODO -- Update 
             iProc = owner.getProcessIndex('MaskRefinementProcess', 'askUser', false);
             if isempty(iProc)
@@ -58,30 +64,14 @@ classdef UTrackPackage3D < TrackingPackage
                 funParams.MaskProcessIndex = iProc; % Specify Process Index with cell mask output
                 funParams.MaskChannelIndex = 1:numel(owner.channels_);
             end
+            
+            funParams.alpha = .01;
 
-            funParams.OutputDirectory = [outputDir  filesep 'point_sources'];
-            funParams.alpha=.05;
-            funParams.maskRadius=40;
-            funParams.Mode = {'xyAc'};
-            funParams.FitMixtures = false;
-            funParams.MaxMixtures = 5;
-            funParams.RedundancyRadius = .25;
-            funParams.UseIntersection = true;            
-            funParams.PreFilter = true;
-            %list of parameters which can be specified at a per-channel
-            %level. If specified as scalar these will  be replicated
-            funParams.PerChannelParams = {'alpha','Mode','FitMixtures','MaxMixtures','RedundancyRadius','filterSigma','PreFilter','ConfRadius','WindowSize'};
-            
-            nChan = numel(owner.channels_);
-            funParams.filterSigma = 1.2*ones(1,nChan); %Minimum numerically stable sigma is ~1.2 pixels.
-            hasPSFSigma = arrayfun(@(x) ~isempty(x.psfSigma_), owner.channels_);
-            funParams.filterSigma(hasPSFSigma) = [owner.channels_(hasPSFSigma).psfSigma_];            
-            funParams.filterSigma(funParams.filterSigma<1.2) = 1.2; %Make sure default isn't set to too small.
-            
-            funParams.ConfRadius = arrayfun(@(x)(2*x),funParams.filterSigma);
-            funParams.WindowSize = arrayfun(@(x)(ceil(4*x)),funParams.filterSigma);
-            
-            funParams = prepPerChannelParams(funParams,nChan);
+            % Extra outputs? (convert to obj methods)
+            % funParams.printAll ???? <<<<<<<<<< (convert to obj methods)
+            % funParams.showAll ???? <<<<<<< (convert to obj methods)
+
+            funParams = prepPerChannelParams(funParams, numel(owner.channels_));
         end
 
         function funParams = getDefaultTrackingParams(owner,outputDir)
