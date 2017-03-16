@@ -85,6 +85,9 @@ classdef PointSourceDetectionProcess3D < DetectionProcess
             
         end
 
+        %% TODO 
+        %% draw Amira? function
+
         %% TODO WIP -- TO FINISH (using Philippe'method)
         function scales = getEstSigmaPSF3D(obj, channel, varargin)
 
