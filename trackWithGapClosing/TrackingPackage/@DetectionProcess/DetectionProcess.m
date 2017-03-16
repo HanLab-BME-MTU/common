@@ -79,13 +79,17 @@ classdef DetectionProcess < ImageAnalysisProcess
         
     end
     methods(Static)
+
         function name = getName()
             name = 'Detection';
         end
+
         function h = GUI()
             h = @abstractProcessGUI;
         end
-        function procClasses = getConcreteClasses()
+
+        function procClasses = getConcreteClasses(varargin)
+
             procClasses = ...
                 {@SubResolutionProcess;
                  @CometDetectionProcess;
@@ -94,6 +98,35 @@ classdef DetectionProcess < ImageAnalysisProcess
                  @PointSourceDetectionProcess;
                  @PointSourceDetectionProcess3D;
                 };
+
+            % If input, check if 2D or 3D movie(s).
+            ip =inputParser;
+            ip.addOptional('MO', [], @(x) isa(x,'MovieData') || isa(x,'MovieList'));
+            ip.parse(varargin{:});
+            MO = ip.Results.MO;
+            
+            if ~isempty(MO)
+                if isa(MO,'MovieList')
+                    MD = MO.getMovie(1);
+                elseif length(MO) > 1
+                    MD = MO(1);
+                else
+                    MD = MO;
+                end                
+            end
+
+            if isempty(MD)
+               warning('MovieData properties not specified (2D vs. 3D)');
+               disp('Displaying both 2D and 3D Detection processes');
+            elseif MD.is3D
+                disp('Detected 3D movie');
+                disp('Displaying 3D Detection processes only');
+                procClasses(1:end-1) = [];
+            elseif ~MD.is3D
+                disp('Detected 2D movie');
+                disp('Displaying 2D Detection processes only');
+                procClasses(6) = [];
+            end
             procClasses = cellfun(@func2str, procClasses, 'Unif', 0);
         end
         

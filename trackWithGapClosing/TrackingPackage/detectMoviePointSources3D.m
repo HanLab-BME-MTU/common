@@ -179,7 +179,7 @@ for i = 1:numel(p.ChannelIndex)
         end    
         
         % Call main detection function       
-        pstruct = pointSourceDetection3D(vol,p.filterSigma(:,iChan),detP);
+        pstruct = pointSourceDetection3D(vol, p.filterSigma(:,iChan), detP);
 
 
         % add xCoord, yCoord, amp fields for compatibilty  with tracker

@@ -59,7 +59,7 @@ set(handles.text_methods, 'String', ['Choose a ' lower(procName) ' method']);
 
 % Get current process constructer, set-up GUIs and mask refinement process
 % constructor
-userData.subProcClassNames = eval([userData.crtProcClassName '.getConcreteClasses()']);
+userData.subProcClassNames = eval([userData.crtProcClassName '.getConcreteClasses(userData.MD)']);
 isGraphicalProcess = @(x) Process.isProcess(x) && Process.hasGUI(x);
 validClasses = cellfun(isGraphicalProcess, userData.subProcClassNames);
 userData.subProcClassNames = userData.subProcClassNames(validClasses);

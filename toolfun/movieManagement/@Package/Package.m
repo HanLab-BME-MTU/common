@@ -2,17 +2,18 @@ classdef Package < hgsetget
     % Defines the abstract class Package from which every user-defined packages
     % will inherit. This class cannot be instantiated.
 
-    properties(SetAccess = protected)
-        createTime_ % The time when object is created.
-        owner_ % The MovieData object this package belongs to
-        processes_ % Cell array containing all processes who will be used in this package 
+    properties (SetAccess = protected)
+        createTime_     % The time when object is created.
+        owner_          % The MovieData object this package belongs to
+        processes_      % Cell array containing all processes who will be used in this package 
+        is3Dcompatible_ % can process handle 3D movie data
     end
 
     properties
-        notes_ % The notes users put down
-        outputDirectory_ %The parent directory where results will be stored.
-                         %Individual processes will save their results to
-                         %sub-directories of this directory.
+        notes_           % The notes users put down
+        outputDirectory_ % The parent directory where results will be stored.
+                         % Individual processes will save their results to
+                         % sub-directories of this directory.
     end
 
     methods (Access = protected)

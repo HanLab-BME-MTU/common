@@ -25,6 +25,8 @@ classdef Process < hgsetget
         inFilePaths_    % Path to the process input
         outFilePaths_   % Path to the process output
         
+        is3Dcompatible_ % can process handle 3D movie data
+
     end
     properties
         notes_          % Process notes
@@ -64,6 +66,11 @@ classdef Process < hgsetget
         function parameters = getParameters(obj)
             % Get the process parameters
             parameters = obj.funParams_;
+        end
+
+        function is3Dcompatible = get3DCompatible(obj)
+            % Get the process parameters
+            is3Dcompatible = obj.is3Dcompatible_;
         end
         
         function setParameters(obj, para)

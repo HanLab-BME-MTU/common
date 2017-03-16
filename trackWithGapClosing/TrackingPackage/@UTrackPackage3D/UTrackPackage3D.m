@@ -40,9 +40,8 @@ classdef UTrackPackage3D < TrackingPackage
         function procConstr = getDefaultProcessConstructors(index)
             procConstr = {
                 @(x,y)PointSourceDetectionProcess3D(x,y,UTrackPackage3D.getDefaultDetectionParams(x,y)),...
-                @(x,y)TrackingProcess(x,y,UTrackPackage.getDefaultTrackingParams(x,y))};%,...
-
-                % @MotionAnalysisProcess};
+                @(x,y)TrackingProcess(x,y,UTrackPackage.getDefaultTrackingParams(x,y)),...
+                @MotionAnalysisProcess};
             if nargin==0, index=1:numel(procConstr); end
             procConstr=procConstr(index);
         end

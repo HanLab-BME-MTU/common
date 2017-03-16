@@ -17,6 +17,8 @@ classdef PointSourceDetectionProcess3D < DetectionProcess
             super_args{4} = funParams;
             
             obj = obj@DetectionProcess(super_args{:});
+            obj.is3Dcompatible_ = true;
+
         end
         
         function movieInfo = loadChannelOutput(obj,iChan,varargin)
@@ -99,7 +101,7 @@ classdef PointSourceDetectionProcess3D < DetectionProcess
     methods (Static)
         
         function name = getName()
-            name = 'Point source detection';
+            name = 'Point source detection 3D';
         end
         function h = GUI()
             h = @pointSourceDetectionProcessGUI3D;
@@ -115,7 +117,10 @@ classdef PointSourceDetectionProcess3D < DetectionProcess
             
             % Set default parameters
             funParams.ChannelIndex = 1;
-            funParams.InputImageProcessIndex = 0; % ??
+            
+            %## TODO
+            funParams.InputImageProcessIndex = 0; % ?? (can we add some way to check what is availble.)
+            
             funParams.MaskChannelIndex = []; %1:numel(owner.channels_);
             funParams.MaskProcessIndex = [];            
             funParams.OutputDirectory = [outputDir  filesep 'point_sources'];
@@ -139,15 +144,15 @@ classdef PointSourceDetectionProcess3D < DetectionProcess
             funParams.filterSigma(funParams.filterSigma<1.2) = 1.2; %Make sure default isn't set to too small.
             funParams.filterSigma = repmat(funParams.filterSigma,[2 1]); %TEMP - use z-PSF estimate as well!!
             % For the GUI
-            funParams.filterSigmaXY = funParams.filterSigma(1);
-            funParams.filterSigmaZ = funParams.filterSigma(2);
+            funParams.filterSigmaXY = funParams.filterSigma(1,1);
+            funParams.filterSigmaZ = funParams.filterSigma(2,1);
             funParams.ConfRadius = arrayfun(@(x)(2*x), funParams.filterSigma);
             funParams.WindowSize = arrayfun(@(x)(ceil(4*x)), funParams.filterSigma);                       
 
             %list of parameters which can be specified at a per-channel
             %level. If specified as scalar these will  be replicated
             funParams.PerChannelParams = {'alpha','Mode','FitMixtures','MaxMixtures','RedundancyRadius',...
-                'filterSigma','PreFilter','ConfRadius','WindowSize','RefineMaskLoG','ProcessIndex'};
+                'ConfRadius','WindowSize','RefineMaskLoG','filterSigma'};
             funParams = prepPerChannelParams(funParams, nChan);
         end
         

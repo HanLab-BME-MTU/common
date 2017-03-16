@@ -22,7 +22,7 @@ function varargout = pointSourceDetectionProcessGUI3D(varargin)
 
 % Edit the above text to modify the response to help anisoGaussianDetectionProcessGUI
 
-% Last Modified by GUIDE v2.5 15-Mar-2017 15:06:26
+% Last Modified by GUIDE v2.5 16-Mar-2017 10:47:06
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -592,11 +592,18 @@ iChan = get(handles.popupmenu_CurrentChannel,'Value');
 % Set-up parameters
 for i =1 : numel(funParams.PerChannelParams)
     paramName = funParams.PerChannelParams{i};
-    parVal = funParams.(paramName)(iChan);
-    if ~islogical(funParams.(paramName))
-        set(handles.(['edit_' paramName]), 'String',parVal);
+    if string(paramName) ~= 'filterSigma'
+        parVal = funParams.(paramName)(iChan);
+        if ~islogical(funParams.(paramName))
+            set(handles.(['edit_' paramName]), 'String',parVal);
+        else
+            set(handles.(['edit_' paramName]), 'Value',parVal);
+        end
     else
-        set(handles.(['edit_' paramName]), 'Value',parVal);
+        filterSigmaXY = funParams.filterSigma(1,iChan);
+        filterSigmaZ = funParams.filterSigma(2,iChan);
+        set(handles.('edit_filterSigmaZ'), 'String', filterSigmaZ);
+        set(handles.('edit_filterSigmaXY'), 'String', filterSigmaXY);
     end
 end
 
@@ -628,20 +635,25 @@ funParams = get(handles.popupmenu_CurrentChannel,'UserData');
 
 for i =1 : numel(funParams.PerChannelParams)
     paramName = funParams.PerChannelParams{i};
-    if islogical(funParams.(paramName))
-        parVal = get(handles.(['edit_' paramName]), 'Value');
-        funParams.(paramName)(iChan) = parVal;
-    elseif iscell(funParams.(paramName))   
-        parVal = get(handles.(['edit_' paramName]), 'String');
-        funParams.(paramName)(iChan) = parVal;
+    if string(paramName) ~= 'filterSigma'
+        if islogical(funParams.(paramName))
+            parVal = get(handles.(['edit_' paramName]), 'Value');
+            funParams.(paramName)(iChan) = parVal;
+        elseif iscell(funParams.(paramName))   
+            parVal = get(handles.(['edit_' paramName]), 'String');
+            funParams.(paramName)(iChan) = parVal;
+        else
+            parVal = get(handles.(['edit_' paramName]), 'String');
+            funParams.(paramName)(iChan) = str2double(parVal);
+        end
     else
-        parVal = get(handles.(['edit_' paramName]), 'String');
-        funParams.(paramName)(iChan) = str2double(parVal);
+        filterSigmaZ = get(handles.('edit_filterSigmaZ'), 'String');
+        filterSigmaXY = get(handles.('edit_filterSigmaXY'), 'String');
+        funParams.filterSigma(:,iChan) = [str2double(filterSigmaXY); str2double(filterSigmaZ)];
     end
-        
 end
 
-funParams.filterSigma = [funParams.filterSigmaXY funParams.filterSigmaZ];
+
 
 set(handles.popupmenu_CurrentChannel,'UserData',funParams);
 
@@ -722,3 +734,28 @@ function edit_filterSigmaXY_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
+
+% --- Executes on button press in edit_RefineMaskLoG.
+function edit_RefineMaskLoG_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_RefineMaskLoG (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of edit_RefineMaskLoG
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_RefineMaskLoG_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_RefineMaskLoG (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+
+% --- Executes on button press in edit_RefineMaskValid.
+function edit_RefineMaskValid_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_RefineMaskValid (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of edit_RefineMaskValid
