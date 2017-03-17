@@ -88,7 +88,7 @@ classdef TrackingPackage < Package
             elseif ~MD.is3D
                 disp('Detected 2D movie');
                 disp('Displaying 2D tracking package options only');
-                objects(3:5) = [];
+                objects(4:5) = [];
             end
         end
         
