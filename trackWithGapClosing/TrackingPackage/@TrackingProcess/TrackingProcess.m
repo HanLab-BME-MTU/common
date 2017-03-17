@@ -179,16 +179,6 @@ classdef TrackingProcess < DataProcessingProcess & NonSingularProcess
             kalmanFunctions(2).calcGain    = func2str(@plusTipKalmanGainLinearMotion);
             kalmanFunctions(2).timeReverse = func2str(@kalmanReverseLinearMotion);
 
-            % Quantum Dot 3D
-            kalmanFunctions(3).name = 'QD & Kinetechore 3D';
-            kalmanFunctions(3).reserveMem = func2str(@kalmanResMemLM);
-            kalmanFunctions(3).initialize  = func2str(@kalmanInitLinearMotion);
-            kalmanFunctions(3).initializeGUI  = @kalmanInitializationGUI;
-            kalmanFunctions(3).calcGain    = func2str(@kalmanGainLinearMotion);
-            kalmanFunctions(3).timeReverse = func2str(@kalmanReverseLinearMotion);
-
-            % 
-            
             if nargin>0
                 assert(all(ismember(index, 1:numel(kalmanFunctions))));
                 kalmanFunctions=kalmanFunctions(index);
@@ -226,7 +216,7 @@ classdef TrackingProcess < DataProcessingProcess & NonSingularProcess
             plusTipCostMatrix.parameters.kalmanInitParam.searchRadiusFirstIteration = 20; %Kalman filter initialization parameters.
             plusTipCostMatrix.parameters.diagnostics = [];
             costMatrices(2)=plusTipCostMatrix;
-            
+
             ip=inputParser;
             ip.addRequired('owner',@(x) isa(x,'MovieData'));
             ip.addRequired('timeWindow',@isscalar);
