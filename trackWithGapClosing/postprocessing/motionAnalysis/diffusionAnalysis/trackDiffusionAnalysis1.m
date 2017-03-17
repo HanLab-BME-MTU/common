@@ -386,22 +386,6 @@ if ~isempty(indxConf)
         principalComponents = [-0.3059 0.9518; 0.9518 0.3059];
         traj = xyzCoord(:,1:2);
         trajLength = length(traj);
-        if trajLength <= 100 %Could even go up to 100, look into further
-            trajMean = nanmean(xyzCoord(:,1:probDim));
-            distXYConf = traj- repmat(trajMean,trajLength,1);
-            distConf = sqrt(sum(distXYConf.^2,2));
-            posXYConf = distXYConf > 0;
-            numSwitchConf = length(find(sum(diff(posXYConf),2) > 0));
-            fracSwitchConf(iTrack) = numSwitchConf / (trajLength-1);
-            sTest(:,1) = fracSwitchConf(iTrack);
-            sTest(:,2)= mssSlope(iTrack);
-            pc = sTest*principalComponents;
-            if pc(1) <0.01
-% %                 trackClassMSS(iTrack) = 0;
-% %             else
-% %                 trackClassMSS(iTrack) = 1;
-            end
-        end
     end
 end
 
