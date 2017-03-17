@@ -70,7 +70,7 @@ function [transDiffAnalysisRes,errFlag] = trackTransientDiffusionAnalysis1(track
 %the last analysis step assumes that tracks are linear.
 %
 %Khuloud Jaqaman, March 2008
-
+%Edited: Tony Vega 2017
 %% Output
 
 transDiffAnalysisRes = [];
@@ -414,11 +414,11 @@ for iTrack = indx4analysis'
 
                 end %(for iWindow = 1 : numRollWindows)
 
-                %replace NaN with 0 in pointClassMSS
-                pointClassMSS(isnan(pointClassMSS)) = 0;
+                %replace NaN with -1 in pointClassMSS
+                pointClassMSS(isnan(pointClassMSS)) = -1;
 
                 %if this part got some classification ...
-                if ~isempty(pointClassMSS~=0)
+                if ~isempty(pointClassMSS~=-1)
                     
                     %reclassify unclassified subparts
                     pointClassMSS = reclassUnclassPoints(pointClassMSS,...
@@ -484,7 +484,7 @@ for iTrack = indx4analysis'
                     end
 
                     %update subpart classification
-                    classMSSTmp(isnan(classMSSTmp)) = 0;
+                    classMSSTmp(isnan(classMSSTmp)) = -1;
                     partClassMSS(:,3) = classMSSTmp;
 
                     %merge subparts that now have the same classification
@@ -648,7 +648,7 @@ function pointClassMSS = reclassUnclassPoints(pointClassMSS,mssSlope,...
 switch123Mod(:,1) = switch123(:,1) + trackPartStart + halfWindowMSS*expandWindow - 1;
 
 %find all subparts that are unclassified
-badClass = find(classDuration(:,2) == 0);
+badClass = find(classDuration(:,2) == -1);
 
 if ~isempty(badClass) && size(classDuration,1) > 1
 
@@ -806,7 +806,7 @@ for iClass = badClass'
 end
 
 %add to pointClassMSS and mssSlope the first and last halfWindowMSS points
-pointClassMSS = [zeros(halfWindowMSS,1); pointClassMSS; zeros(halfWindowMSS,1)];
+pointClassMSS = [-1.*ones(halfWindowMSS,1); pointClassMSS; -1.*ones(halfWindowMSS,1)];
 mssSlope = [NaN(halfWindowMSS,1); mssSlope; NaN(halfWindowMSS,1)];
 
 %get points still classified as confined or directed
@@ -850,13 +850,13 @@ end
 
 %remove the first and last halfWindowMSS points if they remained unclassified
 halfWindowStartRemoved = 0;
-if pointClassMSS(1) == 0
+if pointClassMSS(1) == -1
     pointClassMSS = pointClassMSS(halfWindowMSS+1:end);
     mssSlope = mssSlope(halfWindowMSS+1:end);
     halfWindowStartRemoved = 1;
 end
 halfWindowEndRemoved = 0;
-if pointClassMSS(end) == 0
+if pointClassMSS(end) == -1
     pointClassMSS = pointClassMSS(1:end-halfWindowMSS);
     mssSlope = mssSlope(1:end-halfWindowMSS);
     halfWindowEndRemoved = 1;
