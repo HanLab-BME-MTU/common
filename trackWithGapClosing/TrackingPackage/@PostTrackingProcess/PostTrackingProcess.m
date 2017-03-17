@@ -61,7 +61,7 @@ classdef PostTrackingProcess < DataProcessingProcess
             elseif MD.is3D
                 disp('Detected 3D movie');
                 disp('Displaying 3D Detection processes only');
-                procClasses(2) = [];
+                procClasses(2:end) = [];
             elseif ~MD.is3D
                 disp('Detected 2D movie');
                 disp('Displaying 2D Detection processes only');
