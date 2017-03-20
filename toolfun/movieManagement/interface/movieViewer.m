@@ -793,8 +793,18 @@ else
 end
 if ~isempty(h)
     figure(h);
-    userData.figures.(figName) = h;
-    set(handles.figure1,'UserData',userData);
+    try
+        userData.figures.(figName) = h;
+        set(handles.figure1,'UserData',userData);
+    catch err
+        switch(err.identifier)
+            case 'MATLAB:AddField:InvalidFieldName'
+                % figName may not be a proper field name
+                % Ignore error
+            otherwise
+                rethrow(err)
+        end
+    end
     return;
 end
 
