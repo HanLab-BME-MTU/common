@@ -260,8 +260,22 @@ set(h,'Tag','graphFig');
 
 upSample = str2double(get(handles.edit_UpSample,'String'));
 smoothParam = str2double(get(handles.edit_SmoothParam,'String'));
-userData.MO.processes_{procId}.draw(inputArgs{:}, 'output', output,...
+
+if userData.MO.is3D() % && userData.MO.processes_{procId}.is3DP()
+    try 
+        ZNr = get(findobj(0,'-regexp','Tag','slider_depth'),'Value');
+    catch
+        ZNr = [];
+        warning('Z slice not provided correctly to graphViewer');
+    end
+    userData.MO.processes_{procId}.draw(inputArgs{:}, 'output', output,...
+    'UpSample', upSample,'SmoothParam', smoothParam, 'iZ', ZNr);
+else
+    userData.MO.processes_{procId}.draw(inputArgs{:}, 'output', output,...
     'UpSample', upSample,'SmoothParam', smoothParam);
+end
+
+
 set(h,'DeleteFcn',@(h,event)closeGraphFigure(hObject));
 
 
