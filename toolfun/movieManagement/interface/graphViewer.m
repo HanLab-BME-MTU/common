@@ -227,7 +227,7 @@ output = outputList(iOutput).var;
 tokens = regexp(graphTag,'_channel(\d+)$','tokens');
 if ~isempty(tokens)
     iChan = str2double(tokens{1}{1});
-    figName = [outputList(iOutput).name ' - Channel ' num2str(iChan)];
+    figName = [outputList(iOutput).name '_Channel_' num2str(iChan)];
     if strcmp({outputList(iOutput).type},'sampledGraph')
         inputArgs={iChan,iOutput};
     else
@@ -244,6 +244,13 @@ else
         inputArgs={};
         figName = outputList(iOutput).name;
     end
+end
+
+% Remove spaces... otherwise matlab throws error later for struct field
+% names
+if (any(ismember(figName,' ,.:;!')))
+%     warning('Invalid field name: (for struct [MATLAB]), removing spaces');
+    figName(ismember(figName,' ,.:;!')) = '_';
 end
 
 % Draw or delete the graph figure depending on the checkbox value
