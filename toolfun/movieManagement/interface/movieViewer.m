@@ -147,7 +147,7 @@ if isa(userData.MO,'MovieData')
             end
             hPosition=hPosition+20;
         end
-        createProcText(imagePanel,imageProcId(iProc),iOutput,hPosition,imageProc{iProc}.getName);
+        createProcText(imagePanel,imageProcId(iProc),iOutput,hPosition,imageProc{iProc}.name_);
         hPosition=hPosition+20;
     end
     
@@ -793,8 +793,18 @@ else
 end
 if ~isempty(h)
     figure(h);
-    userData.figures.(figName) = h;
-    set(handles.figure1,'UserData',userData);
+    try
+        userData.figures.(figName) = h;
+        set(handles.figure1,'UserData',userData);
+    catch err
+        switch(err.identifier)
+            case 'MATLAB:AddField:InvalidFieldName'
+                % figName may not be a proper field name
+                % Ignore error
+            otherwise
+                rethrow(err)
+        end
+    end
     return;
 end
 
@@ -965,7 +975,7 @@ if get(hObject,'Value')
     end    
     if userData.MO.is3D() % && userData.MO.processes_{procId}.is3DP()
         ZNr = get(handles.slider_depth,'Value');
-    userData.MO.processes_{procId}.draw(inputArgs{:},'output',output,... % draw method of process object modificiation for 3D!!!
+        userData.MO.processes_{procId}.draw(inputArgs{:},'output',output,... % draw method of process object modificiation for 3D!!!
         options{:}, 'iZ',ZNr);
     else
         userData.MO.processes_{procId}.draw(inputArgs{:},'output',output,... % draw method of process object modificiation for 3D!!!

@@ -65,7 +65,11 @@ end
 
 % Retrieve crtProc if procID step of the package is set up AND is the same
 % class as the current process
-crtProcName = eval([userData.crtProcClassName '.getName']);
+try
+    crtProcName = userData.crtPackage.processes_{userData.procID}.name_;
+catch
+    crtProcName = eval([userData.crtProcClassName '.getName']);
+end
 if isa(userData.crtPackage.processes_{userData.procID},userData.crtProcClassName)    
     userData.crtProc = userData.crtPackage.processes_{userData.procID};
 else

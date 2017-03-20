@@ -227,7 +227,7 @@ output = outputList(iOutput).var;
 tokens = regexp(graphTag,'_channel(\d+)$','tokens');
 if ~isempty(tokens)
     iChan = str2double(tokens{1}{1});
-    figName = [outputList(iOutput).name ' - Channel ' num2str(iChan)];
+    figName = [outputList(iOutput).name '_Channel_' num2str(iChan)];
     if strcmp({outputList(iOutput).type},'sampledGraph')
         inputArgs={iChan,iOutput};
     else
@@ -246,6 +246,13 @@ else
     end
 end
 
+% Remove spaces... otherwise matlab throws error later for struct field
+% names
+if (any(ismember(figName,' ,.:;!')))
+%     warning('Invalid field name: (for struct [MATLAB]), removing spaces');
+    figName(ismember(figName,' ,.:;!')) = '_';
+end
+
 % Draw or delete the graph figure depending on the checkbox value
 h = userData.getFigure(figName);
 if ~get(hObject,'Value'),delete(h); return; end
@@ -253,8 +260,22 @@ set(h,'Tag','graphFig');
 
 upSample = str2double(get(handles.edit_UpSample,'String'));
 smoothParam = str2double(get(handles.edit_SmoothParam,'String'));
-userData.MO.processes_{procId}.draw(inputArgs{:}, 'output', output,...
+
+if userData.MO.is3D() % && userData.MO.processes_{procId}.is3DP()
+    try 
+        ZNr = get(findobj(0,'-regexp','Tag','slider_depth'),'Value');
+    catch
+        ZNr = [];
+        warning('Z slice not provided correctly to graphViewer');
+    end
+    userData.MO.processes_{procId}.draw(inputArgs{:}, 'output', output,...
+    'UpSample', upSample,'SmoothParam', smoothParam, 'iZ', ZNr);
+else
+    userData.MO.processes_{procId}.draw(inputArgs{:}, 'output', output,...
     'UpSample', upSample,'SmoothParam', smoothParam);
+end
+
+
 set(h,'DeleteFcn',@(h,event)closeGraphFigure(hObject));
 
 
