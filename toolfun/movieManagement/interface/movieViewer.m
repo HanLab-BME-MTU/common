@@ -147,7 +147,7 @@ if isa(userData.MO,'MovieData')
             end
             hPosition=hPosition+20;
         end
-        createProcText(imagePanel,imageProcId(iProc),iOutput,hPosition,imageProc{iProc}.getName);
+        createProcText(imagePanel,imageProcId(iProc),iOutput,hPosition,imageProc{iProc}.name_);
         hPosition=hPosition+20;
     end
     

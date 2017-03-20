@@ -272,7 +272,11 @@ for i = 1 : nProc
   
     % Set name of the process in the corresponding checkbox
     processClassName = userData.crtPackage.getProcessClassNames{i};
-    processName=eval([processClassName '.getName']);
+    try
+        processName = userData.crtPackage.processes_{i}.name_;
+    catch err
+        processName=eval([processClassName '.getName']);
+    end
     checkboxString = [' Step ' num2str(i) ': ' processName];
     set(handles.(procTag{1}),'String',checkboxString)
     
