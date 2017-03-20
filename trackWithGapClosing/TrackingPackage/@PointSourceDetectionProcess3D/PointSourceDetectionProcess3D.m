@@ -21,28 +21,60 @@ classdef PointSourceDetectionProcess3D < DetectionProcess
 
         end
         
-        function movieInfo = loadChannelOutput(obj,iChan,varargin)
+        function varargout = loadChannelOutput(obj,iChan,varargin)
             
             % Input check
-            ip =inputParser;
+            outputList = {'movieInfo', 'detect3D'};
+            ip = inputParser;
             ip.addRequired('iChan',@(x) ismember(x,1:numel(obj.owner_.channels_)));
             ip.addOptional('iFrame',1:obj.owner_.nFrames_,...
                 @(x) ismember(x,1:obj.owner_.nFrames_));
-            ip.addParamValue('output', 'movieInfo',@(x) strcmp(x, 'movieInfo'));
-            ip.parse(iChan,varargin{:})
-            % z stack!!!!!!
-            % Data loading
-            s = load(obj.outFilePaths_{1,iChan}, 'movieInfo');
-            if ~isempty(s.movieInfo)
-                movieInfo = s.movieInfo(ip.Results.iFrame);
-            else
-                movieInfo = s.movieInfo;
-            end
+            ip.addParameter('useCache',true,@islogical);
+            ip.addParameter('iZ',[], @(x) ismember(x,1:obj.owner_.zSize_)); 
+            ip.addParameter('output', outputList{1}, @(x) all(ismember(x,outputList)));
+            ip.parse(iChan, varargin{:})
+            output = ip.Results.output;
+            iFrame = ip.Results.iFrame;
+            iZ = ip.Results.iZ;
+            varargout = cell(numel(output), 1);              
+
+            if ischar(output),output={output}; end
+            
+            for iout = 1:numel(output)
+                switch output{iout}             
+                    case 'detect3D'
+                        s = cached.load(obj.outFilePaths_{1, iChan}, '-useCache', ip.Results.useCache, 'movieInfo');
+
+                        if numel(ip.Results.iFrame)>1
+                            v1 = s.movieInfo;
+                        else
+                            v1 = s.movieInfo(iFrame);
+                        end
+                        if ~isempty(iZ)
+                            % Only show Detections in Z. 
+                            zThick = 1;
+                            tt = table(v1.xCoord(:,1), v1.yCoord(:,1), v1.zCoord(:,1), 'VariableNames', {'xCoord','yCoord','zCoord'});
+                            valid_states = (tt.zCoord>=(iZ-zThick) & tt.zCoord<=(iZ+zThick));
+                            dataOut = tt{valid_states, :};
+
+                            if isempty(dataOut) || numel(dataOut) <1 || ~any(valid_states)
+                                dataOut = [];
+                            end
+                        end
+                        varargout{iout} = dataOut;
+                
+                    case 'movieInfo'
+                        varargout{iout} = obj.loadChannelOutput@DetectionProcess(iChan, varargin{:});
+                    otherwise
+                        error('Incorrect Output Var type');
+                end
+            end 
         end
         
         function output = getDrawableOutput(obj)
             output = getDrawableOutput@DetectionProcess(obj);
-            output(1).name='Point sources';
+            output(1).name='Point sources 3D';
+            output(1).var = 'detect3D';
             output(1).formatData=@PointSourceDetectionProcess3D.formatOutput;
         end
         
@@ -106,6 +138,7 @@ classdef PointSourceDetectionProcess3D < DetectionProcess
         function name = getName()
             name = 'Point source detection 3D';
         end
+        
         function h = GUI()
             h = @pointSourceDetectionProcessGUI3D;
         end
@@ -160,10 +193,10 @@ classdef PointSourceDetectionProcess3D < DetectionProcess
         end
         
         function positions = formatOutput(pstruct)
-            positions = formatOutput@DetectionProcess(pstruct);
+            %% TODO
+            positions = DetectionProcess.formatOutput3D(pstruct);
             %positions = positions(pstruct.isPSF, :);
         end
           
-
     end    
 end

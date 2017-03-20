@@ -130,7 +130,12 @@ classdef DetectionProcess < ImageAnalysisProcess
             procClasses = cellfun(@func2str, procClasses, 'Unif', 0);
         end
         
-        function y =formatOutput(x)
+        function y = formatOutput(x)
+            % Format output in xy coordinate system
+            y = DetectionProcess.formatOutput2D(x);
+        end
+
+        function y = formatOutput2D(x)
             % Format output in xy coordinate system
             if isempty(x.xCoord)
                 y = NaN(1,2);
@@ -138,5 +143,14 @@ classdef DetectionProcess < ImageAnalysisProcess
                 y = horzcat(x.xCoord(:,1),x.yCoord(:,1));
             end
         end
+
+        function y = formatOutput3D(x)
+            if isempty(x)
+                y = NaN(1,3);
+            else
+                y = x;
+            end
+        end
+
     end
 end
