@@ -14,7 +14,8 @@
 % March 2017
 
 %% Configuration
-config.imageData = 'example.tif';
+% config.imageData = 'example.tif';
+config.imageData = which('cameraman.tif');
 
 %% Load arbitrary image dataset
 MD = MovieData.load(config.imageData);
@@ -39,11 +40,57 @@ MD.addPackage(GenericPackage(MD));
 
 % You may also want to configure the dependency matrix
 % openvar('MD.packages_{1}.dependencyMatrix_')
-% Or asssign a name
-% MD.packages_{1}.name_ = 'Hello World';
+% Assign a name
+MD.packages_{1}.name_ = 'Hello World';
 
 
 %% Show GUI
-MD.packages_{1}.GUI(MD);
+h = MD.packages_{1}.GUI(MD);
 % Alternatively, and with support for multiple GenericPackges use
 % MD.packages_{1}.showGUI()
+disp('');
+disp('Push any key to continue the demo');
+disp('');
+pause;
+if(isvalid(h))
+    close(h);
+end
+
+%% Extended ExternalProcess customization
+% This was not part of the original demo set.
+% This section demonstrates how to generate image, overlay, and graph
+% outputs for movieViewer.
+
+% Make sure Processes were run
+cellfun(@run,MD.processes_);
+% Just return an the parameter text when output is requested
+MD.processes_{2}.loadChannelOutputFcn_ = @(proc,iChan,iFrame,varargin) proc.getParameters().text;
+
+% Keep the default drawableOutput, but have formatData just return zeros
+MD.processes_{2}.drawableOutput_(1).formatData = @(x) zeros(MD.imSize_);
+
+% The second drawable output is just text
+MD.processes_{2}.drawableOutput_(2).name = 'Hello World';
+MD.processes_{2}.drawableOutput_(2).var = 'text';
+% We need to format the output from loadChannelOutput for TextDisplay below
+MD.processes_{2}.drawableOutput_(2).formatData = @(txt) struct('String',{{txt}},'Color',[1 0 0],'Position',[10 10]);
+% The types are image, overlay, and graph
+MD.processes_{2}.drawableOutput_(2).type = 'overlay';
+% Use the command "help movieManagement/display" for options
+MD.processes_{2}.drawableOutput_(2).defaultDisplayMethod = @TextDisplay;
+
+% Setup third drawable output as a graph
+hfig = figure('Visible','off');
+graphLocation = [MD.outputDirectory_ filesep 'test.fig'];
+plot(0:0.01:2,sin((0:0.01:2)*pi))
+savefig(hfig,graphLocation)
+close(hfig)
+
+MD.processes_{2}.drawableOutput_(3).name = 'Sin Graph';
+MD.processes_{2}.drawableOutput_(3).var = 'sin';
+MD.processes_{2}.drawableOutput_(3).formatData = @(varargin) graphLocation;
+MD.processes_{2}.drawableOutput_(3).type = 'graph';
+MD.processes_{2}.drawableOutput_(3).defaultDisplayMethod = @FigFileDisplay;
+
+%% Show movieViewer GUI as if you pushed the Results button
+movieViewer(MD,'procID',2);
