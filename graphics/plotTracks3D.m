@@ -1,5 +1,5 @@
-function plotTracks3D(trackedFeatureInfo,timeRange,colorTime,markerType,...
-    indicateSE,newFigure)
+function axH = plotTracks3D(trackedFeatureInfo,timeRange,colorTime,markerType,...
+    indicateSE, newFigure, figName)
 %PLOTTRACKS3D plots a group of tracks in 3D with time coloring
 %
 %SYNOPSIS plotTracks3D(trackedFeatureInfo,timeRange,colorTime,markerType,...
@@ -62,11 +62,15 @@ function plotTracks3D(trackedFeatureInfo,timeRange,colorTime,markerType,...
 %                           newFigure can also be a handle to the axes in
 %                           which to plot.
 %                           Optional. Default: 1.
+%       figName           : Figure Name. 
+%                           Default: "PlotTracks3D_wholeMovie"
 %
-%OUTPUT The plot.
+%OUTPUT The plot 
+% returns the figure handle h.
 %
 %Khuloud Jaqaman, July 2007
 %edits Philippe Roudot, October 2014
+% adapted for 3DUtrackPackage GUI simple figure display of output.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Input
@@ -130,6 +134,9 @@ else
         errFlag = 1;
     end
 end
+
+
+
 % check for axes handle
 if ishandle(newFigure) && strcmp(get(newFigure,'Type'),'axes')
     axH = newFigure;
@@ -137,6 +144,13 @@ if ishandle(newFigure) && strcmp(get(newFigure,'Type'),'axes')
 elseif newFigure == 0
     axH = gca;
 end
+
+%check whether newFigure was input
+if nargin < 7 || isempty(figName)
+    figName = 'PlotTracks3D';
+end
+
+
 
 %exit if there are problem in input variables
 if errFlag
@@ -234,10 +248,11 @@ numTimePlot = timeRange(2) - timeRange(1) + 1;
 
 %open a new figure window if requested
 if newFigure
-    figure
+    hfig = figure;
     % read axes handle of new figure
     axH = gca;
 end
+
 
 %hold on figure
 hold on

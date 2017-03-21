@@ -45,7 +45,8 @@ classdef TrackingProcess < DataProcessingProcess & NonSingularProcess
         function varargout = loadChannelOutput(obj, iChan, varargin)
             
             % Input check
-            outputList = {'tracksFinal', 'gapInfo', 'staticTracks'};
+            outputList = {'tracksFinal', 'gapInfo', 'staticTracks',...
+                          'plottracks3d'};
             ip =inputParser;
             ip.addRequired('obj');
             ip.addRequired('iChan', @(x) obj.checkChanNum(x));
@@ -65,7 +66,7 @@ classdef TrackingProcess < DataProcessingProcess & NonSingularProcess
             varargout = cell(numel(output), 1);
             for i = 1:numel(output)
                 switch output{i}
-                    case {'tracksFinal', 'staticTracks'}
+                    case {'tracksFinal', 'staticTracks', 'plottracks3d'}
                         varargout{i} = s.tracksFinal;
                     case 'gapInfo'
                         varargout{i} = findTrackGaps(s.tracksFinal);
@@ -110,11 +111,23 @@ classdef TrackingProcess < DataProcessingProcess & NonSingularProcess
             if obj.funParams_.probDim == 3
                 output(1).formatData=@TrackingProcess.formatTracks3D;
                 output(3).formatData=@TrackingProcess.formatTracks3D;
+
+                output(4).name='PlotTracks3D';
+                output(4).var='plottracks3d';
+                output(4).formatData=[];
+                output(4).type='graph';
+                % output(4).defaultDisplayMethod=@(x)plotTracks3DFigDisplay('plotFunc', @plotTracks3D);
+                output(4).defaultDisplayMethod=@(x)FigDisplay('plotFunc', @plotTracks3D,...
+                                                              'plotFunParams', {[], []});
+
+
             elseif obj.funParams_.probDim == 2
                 output(1).formatData=@TrackingProcess.formatTracks2D;
                 output(3).formatData=@TrackingProcess.formatTracks2D;                
             end
             
+
+
         end
             
     end
