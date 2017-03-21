@@ -116,9 +116,9 @@ classdef TrackingProcess < DataProcessingProcess & NonSingularProcess
                 output(4).var='plottracks3d';
                 output(4).formatData=[];
                 output(4).type='graph';
-                % output(4).defaultDisplayMethod=@(x)plotTracks3DFigDisplay('plotFunc', @plotTracks3D);
-                output(4).defaultDisplayMethod=@(x)FigDisplay('plotFunc', @plotTracks3D,...
-                                                              'plotFunParams', {[], []});
+                output(4).defaultDisplayMethod=@(x)plotTracks3DFigDisplay('plotFunc', @plotTracks3D);
+                % output(4).defaultDisplayMethod=@(x)FigDisplay('plotFunc', @plotTracks3D,...
+                %                                               'plotFunParams', {[], []});
 
 
             elseif obj.funParams_.probDim == 2
