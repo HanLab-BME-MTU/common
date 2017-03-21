@@ -103,7 +103,7 @@ classdef ExternalProcess < NonSingularProcess
            nChanTot = numel(obj.owner_.channels_);
            if nargin < 2 || isempty(iChan), iChan = 1:nChanTot; end
            assert(all(obj.checkChanNum(iChan)));
-           status = true;
+           status = true(size(iChan));
         end
     end
     methods (Static)
