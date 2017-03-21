@@ -131,7 +131,7 @@ classdef DetectionProcess < ImageAnalysisProcess
         end
         
         function y = formatOutput(x)
-            % Format output in xy coordinate system
+            % Format output in xy coordinate system (default-backwards compatible)
             y = DetectionProcess.formatOutput2D(x);
         end
 

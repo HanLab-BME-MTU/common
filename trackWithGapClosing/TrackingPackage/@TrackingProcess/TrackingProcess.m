@@ -154,7 +154,12 @@ classdef TrackingProcess < DataProcessingProcess & NonSingularProcess
             funParams.saveResults.export = 0; %FLAG allow additional export of the tracking results into matrix
             % --------------- Others ----------------            
             funParams.verbose = 1;
-            funParams.probDim = 2;
+            
+            if owner.is3D
+                funParams.probDim = 3;
+            else
+                funParams.probDim = 2;
+            end
             
             funParams.costMatrices(1) = TrackingProcess.getDefaultLinkingCostMatrices(owner, funParams.gapCloseParam.timeWindow,1);
             funParams.costMatrices(2) = TrackingProcess.getDefaultGapClosingCostMatrices(owner, funParams.gapCloseParam.timeWindow,1);
