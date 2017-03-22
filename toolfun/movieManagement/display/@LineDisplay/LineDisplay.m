@@ -22,7 +22,7 @@ classdef LineDisplay < MovieDataDisplay
         end
         function h=initDraw(obj,data,tag,varargin)
             % Plot data and set graphical options
-            h=plot(data(:,1),data(:,2),varargin{:});
+            h=line(data(:,1),data(:,2),varargin{:});
             set(h,'Tag',tag);
             obj.setLineProperties(h);
             obj.setAxesProperties();
@@ -30,8 +30,8 @@ classdef LineDisplay < MovieDataDisplay
         function updateDraw(obj,h,data)
             % Update handle xData and yData
             set(h,'XData',data(:,1),'YData',data(:,2));
-            obj.setLineProperties(h);
-            obj.setAxesProperties();
+            % obj.setLineProperties(h);
+            % obj.setAxesProperties();
         end
         
         function setLineProperties(obj, h)
@@ -52,7 +52,7 @@ classdef LineDisplay < MovieDataDisplay
     methods (Static)
         function params=getParamValidators()
             params(1).name='Color';
-            params(1).validator=@ischar;
+            params(1).validator=@(x)(ischar(x) || (numel(x)==3 && isnumeric(x)));
             params(2).name='Marker';
             params(2).validator=@ischar;
             params(3).name='LineStyle';

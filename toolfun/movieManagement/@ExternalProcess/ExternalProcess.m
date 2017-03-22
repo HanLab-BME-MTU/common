@@ -24,6 +24,31 @@ classdef ExternalProcess < NonSingularProcess
     % MD.addProcess(process)
     % MD.addProcess(process2);
     % cellfun(@run,MD.processes_);
+    properties
+        % drawableOutput - struct array
+        % .name - name of output used by movieViewer
+        % .var  - output requested as a parameter from
+        %         loadChannelOutputFcn_
+        % .type - one of image, overlay, or graph (see also graphViewer)
+        % .formatData - takes the output of loadChannelOutputFcn_ and feeds
+        %               it to .defaultDisplayMethod
+        % .defaultDisplayMethod - function_handle for constructor of
+        %                         MovieDataDisplay. For options, type
+        %                         'help movieManagement/Display'
+        drawableOutput_ = struct( ...
+            'name','something', ...
+            'var','output', ...
+            'type','image', ...
+            'formatData',@(x) x, ...
+            'defaultDisplayMethod',@ImageDisplay);
+        % loadChannelOutputFcn_ function_handle
+        % Takes the process as the first argument and usually the parameter
+        % output (see drawableOutput.var)
+        loadChannelOutputFcn_ = @(proc,varargin) zeros(proc.getOwner().imSize_);
+        % checkChannelOutputFcn_ function_handle
+        % Takes the process as the first argument and the channel number
+        checkChannelOutputFcn_ = @(proc,iChan) true;
+    end
     
     methods(Access = public)
         
@@ -39,6 +64,10 @@ classdef ExternalProcess < NonSingularProcess
             ip.addRequired('owner',@(x) isa(x,'MovieObject'));
             ip.addOptional('name',ExternalProcess.getName(),@ischar);
             ip.addOptional('fun',@(x) x,@(f) validateattributes(f,{'function_handle','char'},{}));
+            ip.addParameter('parameters',ExternalProcess.getDefaultParams(owner,varargin{:}));
+            ip.addParameter('drawableOutput',[]);
+            ip.addParameter('loadChannelOutputFcn',[]);
+            ip.addParameter('checkChannelOutputFcn',[]);
             ip.parse(owner,varargin{:});
             
             % Constructor of the ExternalProcess
@@ -46,8 +75,35 @@ classdef ExternalProcess < NonSingularProcess
             super_args{2} = ip.Results.name;
             obj = obj@NonSingularProcess(super_args{:});
             obj.funName_ = ip.Results.fun;
-            obj.funParams_ = obj.getDefaultParams(owner,varargin{:});
+
             
+            obj.funParams_ = ip.Results.parameters;
+            if(ischar(obj.funName_))
+                obj.funName_ = str2func(obj.funName_);
+            end
+            if(~isempty(ip.Results.drawableOutput))
+                obj.drawableOutput_ = ip.Results.drawableOutput;
+            end
+            if(~isempty(ip.Results.loadChannelOutputFcn))
+                obj.loadChannelOutputFcn_ = ip.Results.loadChannelOutputFcn;
+            end
+            if(~isempty(ip.Results.loadChannelOutputFcn))
+                obj.checkChannelOutputFcn_ = ip.Results.checkChannelOutputFcn;
+            end
+                
+            
+        end
+        function output = getDrawableOutput(obj)
+            output = obj.drawableOutput_;
+        end
+        function out = loadChannelOutput(obj,varargin)
+            out = obj.loadChannelOutputFcn_(obj,varargin{:});
+        end
+        function status = checkChannelOutput(obj,iChan)
+           nChanTot = numel(obj.owner_.channels_);
+           if nargin < 2 || isempty(iChan), iChan = 1:nChanTot; end
+           assert(all(obj.checkChanNum(iChan)));
+           status = true(size(iChan));
         end
     end
     methods (Static)
@@ -56,6 +112,9 @@ classdef ExternalProcess < NonSingularProcess
         end
         function funParams = getDefaultParams(varargin)
             funParams = struct();
+        end
+        function func = GUI(varargin)
+            func = @cliGUI;
         end
         
     end

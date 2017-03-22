@@ -58,6 +58,7 @@ ip.addOptional('MO',[],@(x) isa(x,'MovieObject'));
 ip.addParamValue('MD',[],@(x) isempty(x) || isa(x,'MovieData'));
 ip.addParamValue('ML',[],@(x) isempty(x) || isa(x,'MovieList'));
 ip.addParamValue('packageConstr','',@(x) isa(x,'function_handle'));
+ip.addParamValue('packageIndx',{},@iscell);
 ip.addParamValue('cluster',[],@(x) isempty(x) || isa(x,'parallel.Cluster'));
 ip.parse(hObject,eventdata,handles,packageName,varargin{:});
 
@@ -108,13 +109,19 @@ end
 
 % ----------------------------- Load MovieData ----------------------------
 nMovies = numel(ip.Results.MO);
-packageIndx = cell(1, nMovies);
+if(isempty(ip.Results.packageIndx))
+    packageIndx = cell(1, nMovies);
 
-% I. Before loading MovieData, firstly check if the current package exists
-for i = 1:nMovies
-    % Check for existing packages and create them if false
-    packageIndx{i} = ip.Results.MO(i).getPackageIndex(packageName,1,false);
+    % I. Before loading MovieData, firstly check if the current package exists
+    for i = 1:nMovies
+        % Check for existing packages and create them if false
+        packageIndx{i} = ip.Results.MO(i).getPackageIndex(packageName,1,false);
+    end
+else
+    % I (alt). If given the package index, use that instead
+    packageIndx = ip.Results.packageIndx;
 end
+
 
 for i = find(~cellfun(@isempty, packageIndx))
     userData.package(i) = ip.Results.MO(i).packages_{packageIndx{i}};
@@ -265,7 +272,11 @@ for i = 1 : nProc
   
     % Set name of the process in the corresponding checkbox
     processClassName = userData.crtPackage.getProcessClassNames{i};
-    processName=eval([processClassName '.getName']);
+    try
+        processName = userData.crtPackage.processes_{i}.name_;
+    catch err
+        processName=eval([processClassName '.getName']);
+    end
     checkboxString = [' Step ' num2str(i) ': ' processName];
     set(handles.(procTag{1}),'String',checkboxString)
     

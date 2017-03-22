@@ -235,7 +235,7 @@ if newFigure
     if ~isempty(image) %if user supplied an image
         imshow(image,[]); %plot the image
     else %if user did not supply an image
-        imshow(ones(maxYCoord,maxXCoord),[]); %plot an empty image
+%         imshow(ones(maxYCoord,maxXCoord),[]); %plot an empty image
     end
 
     %set figure axes limits
@@ -350,7 +350,7 @@ for k = 1:length(diffTypes)
 
                     for i=1:numTimePlot-1
                         validData=~all(isnan(copyX(i:i+1,:)),1);
-                        lineWithGaps(copyX(i:i+1,validData),copyY(i:i+1,validData), 'Color',[0 102/255 51/255]);%[1 1 0]
+                        lineWithGaps(copyX(i:i+1,validData),copyY(i:i+1,validData), 'Color',[0 0 1]);%[1 1 0][0 102/255 51/255]
                     end 
                 end
            %symmetric and unclassified
