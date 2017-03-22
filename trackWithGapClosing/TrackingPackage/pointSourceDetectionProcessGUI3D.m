@@ -592,14 +592,14 @@ iChan = get(handles.popupmenu_CurrentChannel,'Value');
 % Set-up parameters
 for i =1 : numel(funParams.PerChannelParams)
     paramName = funParams.PerChannelParams{i};
-    if string(paramName) ~= 'filterSigma' && string(paramName) ~= 'InputImageProcessIndex'
+    if ~strcmp(paramName,'filterSigma')  && ~strcmp(paramName,'InputImageProcessIndex')
         parVal = funParams.(paramName)(iChan);
         if ~islogical(funParams.(paramName))
             set(handles.(['edit_' paramName]), 'String',parVal);
         else
             set(handles.(['edit_' paramName]), 'Value',parVal);
         end
-    elseif string(paramName) == 'InputImageProcessIndex'
+    elseif strcmp(paramName,'InputImageProcessIndex')
 
 %         if userData.procID == 1
 %             selProc = 0;
