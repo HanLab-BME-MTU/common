@@ -188,7 +188,7 @@ classdef PointSourceDetectionProcess3D < DetectionProcess
             %list of parameters which can be specified at a per-channel
             %level. If specified as scalar these will  be replicated
             funParams.PerChannelParams = {'alpha','Mode','FitMixtures','MaxMixtures','RedundancyRadius',...
-                'ConfRadius','WindowSize','RefineMaskLoG','filterSigma'};
+                'ConfRadius','WindowSize','RefineMaskLoG','filterSigma','InputImageProcessIndex'};
             funParams = prepPerChannelParams(funParams, nChan);
         end
         

@@ -167,7 +167,7 @@ for i = 1:numel(p.ChannelIndex)
     
     %Set up parameter structure for detection on this channel
     detP = splitPerChannelParams(p, iChan);
-    sigmasPSF = detP.filterSigma(:,iChan);
+    sigmasPSF = detP.filterSigma;
     
     parfor frameIdx = 1:nFrames
                 
@@ -177,7 +177,7 @@ for i = 1:numel(p.ChannelIndex)
         % loading the entire stack
         % Hunter's approach
         detP_pf = detP;
-        vol = double(imLoader{p.ChannelIndex(iChan)}(frameIdx));
+        vol = double(imLoader{iChan}(frameIdx));
         
         % Philippe's approach
         % vol = double(movieData.getChannel(iChan).loadStack(timePoint)); #
