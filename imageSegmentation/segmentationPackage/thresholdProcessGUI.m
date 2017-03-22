@@ -218,6 +218,8 @@ if useAutomatic
             return;
         end    
         funParams.MaxJump = str2double(get(handles.edit_jump,'String'));
+    else
+        funParams.MaxJump = 0;
     end
     
     if useFixed
@@ -232,6 +234,10 @@ if useAutomatic
         funParams.PreThreshold = false;
         funParams.ThresholdValue = [ ];
     end
+else
+    funParams.PreThreshold = false;
+    funParams.ThresholdValue = [ ];
+    funParams.MaxJump = 0;
 end
 
 if useFixed
