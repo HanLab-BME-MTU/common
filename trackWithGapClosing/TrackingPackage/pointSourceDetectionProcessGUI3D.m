@@ -659,7 +659,7 @@ funParams = get(handles.popupmenu_CurrentChannel,'UserData');
 
 for i =1 : numel(funParams.PerChannelParams)
     paramName = funParams.PerChannelParams{i};
-    if string(paramName) ~= 'filterSigma'  && string(paramName) ~= 'InputImageProcessIndex'
+    if ~strcmp(paramName,'filterSigma')  && ~strcmp(paramName,'InputImageProcessIndex')
         if islogical(funParams.(paramName))
             parVal = get(handles.(['edit_' paramName]), 'Value');
             funParams.(paramName)(iChan) = parVal;
@@ -671,7 +671,7 @@ for i =1 : numel(funParams.PerChannelParams)
             funParams.(paramName)(iChan) = str2double(parVal);
         end
         
-    elseif string(paramName) == 'InputImageProcessIndex'
+    elseif strcmp(paramName,'InputImageProcessIndex')
         userData=get(handles.figure1,'UserData');
         selProc = 0:userData.procID-1;
         iProcSel = get(handles.(['edit_' paramName]), 'Value'); 
