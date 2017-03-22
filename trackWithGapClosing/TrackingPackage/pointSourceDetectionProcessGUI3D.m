@@ -22,7 +22,7 @@ function varargout = pointSourceDetectionProcessGUI3D(varargin)
 
 % Edit the above text to modify the response to help anisoGaussianDetectionProcessGUI
 
-% Last Modified by GUIDE v2.5 16-Mar-2017 10:47:06
+% Last Modified by GUIDE v2.5 22-Mar-2017 11:34:07
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -592,13 +592,37 @@ iChan = get(handles.popupmenu_CurrentChannel,'Value');
 % Set-up parameters
 for i =1 : numel(funParams.PerChannelParams)
     paramName = funParams.PerChannelParams{i};
-    if string(paramName) ~= 'filterSigma'
+    if string(paramName) ~= 'filterSigma' && string(paramName) ~= 'InputImageProcessIndex'
         parVal = funParams.(paramName)(iChan);
         if ~islogical(funParams.(paramName))
             set(handles.(['edit_' paramName]), 'String',parVal);
         else
             set(handles.(['edit_' paramName]), 'Value',parVal);
         end
+    elseif string(paramName) == 'InputImageProcessIndex'
+
+%         if userData.procID == 1
+%             selProc = 0;
+%             iSelProcIn  = 1;
+%         else
+            selProc = 0:userData.procID-1;
+%             if parVal > 0
+        iSelProcIn  = find(ismember(selProc, parVal));
+%             else
+%                 iSelProcIn  = 1;
+%             end
+%         end
+        if length(selProc) > 1
+            ProcStr = arrayfun(@(x)([userData.MD.processes_{x}.name]),selProc,'Unif',0);
+        else
+            ProcStr = ['0 (N/A)'];% arrayfun(@(x)(['NA ']),selProc,'Unif',0);
+        end
+        set(handles.(['edit_' paramName]), 'String', ProcStr);
+%         iProcSel = get(handles.(['edit_' paramName]), 'Value');
+%         if isempty(iProcSel)
+%             iProcSel = 0;
+%         end
+        set(handles.(['edit_' paramName]), 'Value', iSelProcIn);
     else
         filterSigmaXY = funParams.filterSigma(1,iChan);
         filterSigmaZ = funParams.filterSigma(2,iChan);
@@ -635,7 +659,7 @@ funParams = get(handles.popupmenu_CurrentChannel,'UserData');
 
 for i =1 : numel(funParams.PerChannelParams)
     paramName = funParams.PerChannelParams{i};
-    if string(paramName) ~= 'filterSigma'
+    if string(paramName) ~= 'filterSigma'  && string(paramName) ~= 'InputImageProcessIndex'
         if islogical(funParams.(paramName))
             parVal = get(handles.(['edit_' paramName]), 'Value');
             funParams.(paramName)(iChan) = parVal;
@@ -646,6 +670,14 @@ for i =1 : numel(funParams.PerChannelParams)
             parVal = get(handles.(['edit_' paramName]), 'String');
             funParams.(paramName)(iChan) = str2double(parVal);
         end
+        
+    elseif string(paramName) == 'InputImageProcessIndex'
+        userData=get(handles.figure1,'UserData');
+        selProc = 0:userData.procID-1;
+        iProcSel = get(handles.(['edit_' paramName]), 'Value'); 
+        parVal = selProc(iProcSel);
+        funParams.(paramName)(iChan) = parVal;
+        
     else
         filterSigmaZ = get(handles.('edit_filterSigmaZ'), 'String');
         filterSigmaXY = get(handles.('edit_filterSigmaXY'), 'String');
@@ -759,3 +791,26 @@ function edit_RefineMaskValid_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of edit_RefineMaskValid
+
+
+
+function edit_InputImageProcessIndex_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_InputImageProcessIndex (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_InputImageProcessIndex as text
+%        str2double(get(hObject,'String')) returns contents of edit_InputImageProcessIndex as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_InputImageProcessIndex_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_InputImageProcessIndex (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
