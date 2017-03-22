@@ -73,8 +73,12 @@ classdef TrackingPackage < Package
             objects(3).name = '[2D]Nuclei';
             objects(3).packageConstr = @NucleiTrackingPackage;
             % 3D options
+            %% NOTE: for coding expediency making new TrackingPackage3D 
             objects(4).name = '[3D]Single particles';
-            objects(4).packageConstr = @UTrackPackage3D;
+            objects(4).packageConstr = @UTrackPackage3D; 
+            
+            % Note this will redirect to superclass TrackingPackage3D, Not this superclass [TrackingPackage]
+            %% Need to make sure this will not cause errors...
             objects(5).name = '[3D]Microtubules plus-ends';
             objects(5).packageConstr = @PlusTipTrackerPackage3D; 
             
@@ -84,6 +88,7 @@ classdef TrackingPackage < Package
             elseif MD.is3D
                 disp('Detected 3D movie');
                 disp('Displaying 3D tracking package options only');
+                warning('Redirecting to 3D Package Constructor (TrackingPackage3D superclass)');
                 objects(1:3) = [];
             elseif ~MD.is3D
                 disp('Detected 2D movie');

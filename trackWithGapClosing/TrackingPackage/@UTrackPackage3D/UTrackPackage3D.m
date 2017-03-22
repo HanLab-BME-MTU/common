@@ -8,7 +8,7 @@ classdef UTrackPackage3D < TrackingPackage
             obj = obj@TrackingPackage(varargin{:});
         end        
 
-        function [status processExceptions] = sanityCheck(obj, varargin) % throws Exception Cell Array
+        function [status, processExceptions] = sanityCheck(obj, varargin) % throws Exception Cell Array
             
             %% TODO - add more to sanitycheck
             disp('TODO: SanityCheck!');
@@ -23,6 +23,12 @@ classdef UTrackPackage3D < TrackingPackage
             [status, processExceptions] = sanityCheck@Package(obj, varargin{:});
 
             % possible PSF sanity check?
+
+            % psfSigmaCheck = arrayfun(@(x) ~isempty(x.psfSigma_) || ~isempty(x.psfSigma_),obj.owner_.channels_);
+            % assert(any(psfSigmaCheck),...
+            %     ['Missing standard deviation of the theoretical point-spread function! '...
+            %     'Please fill the numerical aperture, pixel size and'...
+            %     ' emission wavelengths of all channels!']);
 
         end
     end
@@ -49,27 +55,9 @@ classdef UTrackPackage3D < TrackingPackage
         function funParams = getDefaultDetectionParams(owner, outputDir)
 
             funParams = PointSourceDetectionProcess3D.getDefaultParams(owner, outputDir);
-            
             % Set default parameters
             funParams.OutputDirectory = [outputDir  filesep 'pointsource3D_detect'];
-
-            %% TODO -- Update 
-            iProc = owner.getProcessIndex('MaskRefinementProcess', 'askUser', false);
-            if isempty(iProc)
-                disp('Note: No Cell Segmentation Mask found');
-                funParams.MaskChannelIndex = []; %1:numel(owner.channels_);
-                funParams.MaskProcessIndex = [];            
-            else
-                funParams.MaskProcessIndex = iProc; % Specify Process Index with cell mask output
-                funParams.MaskChannelIndex = 1:numel(owner.channels_);
-            end
-            
             funParams.alpha = .01;
-
-            % Extra outputs? (convert to obj methods)
-            % funParams.printAll ???? <<<<<<<<<< (convert to obj methods)
-            % funParams.showAll ???? <<<<<<< (convert to obj methods)
-
             funParams = prepPerChannelParams(funParams, numel(owner.channels_));
         end
 

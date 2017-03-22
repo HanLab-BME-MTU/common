@@ -20,17 +20,20 @@ function detectMoviePointSources3D(movieDataOrProcess,varargin)
 %% ----------- Input ----------- %%
 
 %Check input
+typeList = {'pointSourceAutoSigmaFit', 'pointSourceAutoSigmaLM'};
 ip = inputParser;
 ip.CaseSensitive = false;
 ip.addRequired('movieDataOrProcess', @isProcessOrMovieData);
 ip.addOptional('paramsIn',[], @isstruct);
 ip.addParameter('UseIntersection',false, @islogical);
+ip.addParameter('type', typeList{1}, @(x) ischar(x) && ismember(x, typeList) );
 % ip.addParamValue('EstimateSigma', false, @islogical); %%TODO
 ip.addParamValue('ROI',[], @isnumeric);
 ip.parse(movieDataOrProcess,varargin{:});
 ip.KeepUnmatched = true;
 paramsIn = ip.Results.paramsIn;
 ROI = ip.Results.ROI;
+detectType = ip.Results.type;
 
 % Get MovieData object and Process
 [movieData, pointSourceDetProc3D] = getOwnerAndProcess(movieDataOrProcess,'PointSourceDetectionProcess3D',true);
@@ -196,14 +199,28 @@ for i = 1:numel(p.ChannelIndex)
         else
             detP_pf.Mask = [];
         end
+
         
         % Call main detection function
         [pstruct, mask, imgLM, imgLoG] = pointSourceDetection3D(vol, sigmasPSF, detP_pf);
-        % add xCoord, yCoord, amp fields for compatibilty  with tracker
-        movieInfo(frameIdx)= pstructToMovieInfo(pstruct);
-        lab = double(mask); 
 
+        switch detectType
+
+            case {'pointSourceLM','pointSourceAutoSigmaLM'}
+                [pstruct,mask,imgLM,imgLoG]=pointSourceDetection3D(vol, sigmasPSF, detP_pf);
+                lab=double(mask); % adjust label
+                movieInfo(frameIdx)=pointCloudToMovieInfo(imgLM,vol);  
+            case {'pointSourceFit','pointSourceAutoSigmaFit'}
+                % add xCoord, yCoord, amp fields for compatibilty  with tracker
+                movieInfo(frameIdx)= pstructToMovieInfo(pstruct);
+                lab = double(mask); 
+            otherwise 
+                disp('Unsupported detection method.');
+                disp('Supported method:');
+                disp('\twatershed');
+        end
         
+
         if(~isempty(ROI))
             tmplab=zeros(volSize);
             tmplab(ROI>0)=lab;
@@ -211,18 +228,7 @@ for i = 1:numel(p.ChannelIndex)
             movieInfo(frameIdx).xCoord(:,1)=movieInfo(frameIdx).xCoord(:,1)+maskMinY-1;
             movieInfo(frameIdx).yCoord(:,1)=movieInfo(frameIdx).yCoord(:,1)+maskMinX-1;
             movieInfo(frameIdx).zCoord(:,1)=movieInfo(frameIdx).zCoord(:,1)+maskMinZ-1;
-        end
-       
-%         if p.showAll
-%             figure()
-%             vol=double(movieData.getChannel(iChan).loadStack(timePoint));
-%             imseriesmaskshow(vol,logical(labels{frameIdx}));
-%         end
-        
-%         if(p.printAll)
-%             stackWrite(uint8(255*lab/max(lab(:))),[outputDirDetect filesep 'mask' filesep 'detect_T_' num2str(timePoint,'%05d') '.tif']);
-%         end
-        
+        end    
         labels{frameIdx}=lab;
     end %%%% end parfor (frame loop)
     

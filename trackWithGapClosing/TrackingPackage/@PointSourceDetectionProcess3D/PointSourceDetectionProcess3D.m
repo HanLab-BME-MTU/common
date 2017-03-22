@@ -159,8 +159,10 @@ classdef PointSourceDetectionProcess3D < DetectionProcess
             
             funParams.MaskChannelIndex = []; %1:numel(owner.channels_);
             funParams.MaskProcessIndex = [];            
-            funParams.OutputDirectory = [outputDir  filesep 'point_sources'];
+            funParams.OutputDirectory = [outputDir  filesep 'pointsource3D_detect'];
             
+            funParams.type = 'pointSourceAutoSigmaFit';
+
             funParams.alpha=.05;
             funParams.Mode = {'xyzAc'};
             funParams.FitMixtures = false;
@@ -169,8 +171,21 @@ classdef PointSourceDetectionProcess3D < DetectionProcess
             funParams.RedundancyRadius = .25;
             funParams.RefineMaskLoG = false;
             funParams.RefineMaskValid = false;
+
             % funParams.ConfRadius = []; 
             % funParams.WindowSize = [];       
+
+
+            %% TODO -- Update 
+            % iProc = owner.getProcessIndex('MaskRefinementProcess', 'askUser', false);
+            % if isempty(iProc)
+            %     disp('Note: No Cell Segmentation Mask found');
+            %     funParams.MaskChannelIndex = []; %1:numel(owner.channels_);
+            %     funParams.MaskProcessIndex = [];            
+            % else
+            %     funParams.MaskProcessIndex = iProc; % Specify Process Index with cell mask output
+            %     funParams.MaskChannelIndex = 1:numel(owner.channels_);
+            % end
 
             % sigma estimation            
             nChan = numel(owner.channels_);
