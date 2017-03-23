@@ -43,6 +43,15 @@ classdef UTrackPackage3D < TrackingPackage
             varargout{1} = uTrackPackageGUI(varargin{:});
         end
 
+        function classes = getProcessClassNames(index)
+            classes = {
+                'PointSourceDetectionProcess3D',...
+                'TrackingProcess',...
+                'MotionAnalysisProcess'};
+            if nargin==0, index=1:numel(classes); end
+            classes=classes(index);
+        end
+
         function procConstr = getDefaultProcessConstructors(index)
             procConstr = {
                 @(x,y)PointSourceDetectionProcess3D(x,y,UTrackPackage3D.getDefaultDetectionParams(x,y)),...
