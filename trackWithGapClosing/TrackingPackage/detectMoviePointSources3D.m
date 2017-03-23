@@ -20,20 +20,34 @@ function detectMoviePointSources3D(movieDataOrProcess,varargin)
 %% ----------- Input ----------- %%
 
 %Check input
-typeList = {'pointSourceAutoSigmaFit', 'pointSourceAutoSigmaLM'};
+validTypes = {'watershedApplegateAuto', ...
+              'watershedApplegate',...
+              'bandPassWatershed',...
+              'watershedMatlab',...
+              'markedWatershed',...
+              'pointSourceLM',...
+              'pointSource',...
+              'pointSourceAutoSigma',...
+              'pointSourceAutoSigmaFit',...
+              'pSAutoSigmaMarkedWatershed',...
+              'pointSourceAutoSigmaMixture',... 
+              'pointSourceAutoSigmaLM',...     
+              'pointSourceAutoSigmaFitSig',... 
+              'pSAutoSigmaWatershed'};
 ip = inputParser;
 ip.CaseSensitive = false;
 ip.addRequired('movieDataOrProcess', @isProcessOrMovieData);
 ip.addOptional('paramsIn',[], @isstruct);
 ip.addParameter('UseIntersection',false, @islogical);
-ip.addParameter('type', typeList{1}, @(x) ischar(x) && ismember(x, typeList) );
+ip.addParameter('algorithmType', 'pointSourceAutoSigmaFit',...
+                @(x)ischar(x) && ismember(x, validTypes));
 % ip.addParamValue('EstimateSigma', false, @islogical); %%TODO
 ip.addParamValue('ROI',[], @isnumeric);
 ip.parse(movieDataOrProcess,varargin{:});
 ip.KeepUnmatched = true;
 paramsIn = ip.Results.paramsIn;
 ROI = ip.Results.ROI;
-detectType = ip.Results.type;
+algorithmType = ip.Results.algorithmType;
 
 % Get MovieData object and Process
 [movieData, pointSourceDetProc3D] = getOwnerAndProcess(movieDataOrProcess,'PointSourceDetectionProcess3D',true);
@@ -168,6 +182,7 @@ for i = 1:numel(p.ChannelIndex)
     disp('Results will be saved under:')
     disp(outFilePaths{1,iChan});
     
+    
     %Set up parameter structure for detection on this channel
     detP = splitPerChannelParams(p, iChan);
     sigmasPSF = detP.filterSigma;
@@ -200,24 +215,88 @@ for i = 1:numel(p.ChannelIndex)
             detP_pf.Mask = [];
         end
 
-        
-        % Call main detection function
-        [pstruct, mask, imgLM, imgLoG] = pointSourceDetection3D(vol, sigmasPSF, detP_pf);
+       
+        switch algorithmType
+            case {'pointSourceLM',...
+                  'pointSource',...
+                  'pointSourceAutoSigma',...
+                  'pointSourceAutoSigmaFit',...
+                  'pSAutoSigmaMarkedWatershed',... 
+                  'pointSourceAutoSigmaLM',...     
+                  'pSAutoSigmaWatershed'}
+                
+                [pstruct, mask, imgLM, imgLoG] = pointSourceDetection3D(vol, sigmasPSF, detP_pf);
+                
+                switch algorithmType
+                      case {'pointSource','pointSourceAutoSigma'}
+                       lab = double(mask); 
+                        movieInfo(frameIdx) = labelToMovieInfo(double(mask),vol);
+                      case {'pointSourceLM','pointSourceAutoSigmaLM'}
+                        lab = double(mask); 
+                        movieInfo(frameIdx) = pointCloudToMovieInfo(imgLM,vol);  
+                      case 'pSAutoSigmaMarkedWatershed'
+                        wat = markedWatershed(vol,sigmasPSF,0);
+                        wat(mask==0) = 0;       
+                        lab = double(wat); 
+                        movieInfo(frameIdx) = labelToMovieInfo(double(wat),vol);
+                      case 'pSAutoSigmaWatershed'
+                        wat = watershed(-vol.*mask);
+                        wat(mask==0) = 0;
+                        lab = double(wat); 
+                        movieInfo(frameIdx) = labelToMovieInfo(double(wat),vol);
+                      case {'pointSourceFit','pointSourceAutoSigmaFit'}
+                        movieInfo(frameIdx) = pstructToMovieInfo(pstruct);
+                        lab = double(mask); %.*imgLoG;
+                    otherwise
+                end
+            
+            case {'pointSourceAutoSigmaMixture'}
+                detPt = detP;
+                detPt.FitMixtures = true;
+                [pstruct, mask, imgLM, imgLoG] = pointSourceDetection3D(vol,sigmasPSF,detPt);
+                movieInfo(frameIdx) = pstructToMovieInfo(pstruct);
+                lab = double(mask); % adjust label
+            
+            case {'pointSourceAutoSigmaFitSig'}
+                detPt = detP;
+                detPt.Mode = 'xyzAcsr';
+                [pstruct,mask,imgLM,imgLoG] = pointSourceDetection3D(vol,sigmasPSF,detPt);
+                movieInfo(frameIdx) = pstructToMovieInfo(pstruct);
+                lab = double(mask); % adjust label
 
-        switch detectType
+            % ----------------------------------------------------------------------------------------
+            case 'watershedApplegate'
+                filterVol = filterGauss3D(vol,detP.highFreq)-filterGauss3D(vol,detP.lowFreq);
+                [movieInfo(frameIdx),lab] = detectComets3D(filterVol,detP.waterStep,detP.waterThresh,[1 1 1]);
 
-            case {'pointSourceLM','pointSourceAutoSigmaLM'}
-                [pstruct,mask,imgLM,imgLoG]=pointSourceDetection3D(vol, sigmasPSF, detP_pf);
-                lab=double(mask); % adjust label
-                movieInfo(frameIdx)=pointCloudToMovieInfo(imgLM,vol);  
-            case {'pointSourceFit','pointSourceAutoSigmaFit'}
-                % add xCoord, yCoord, amp fields for compatibilty  with tracker
-                movieInfo(frameIdx)= pstructToMovieInfo(pstruct);
-                lab = double(mask); 
+            case 'watershedApplegateAuto'
+                filterVol = filterGauss3D(vol,detP.highFreq)-filterGauss3D(vol,detP.lowFreq);
+                thresh = QDApplegateThesh(filterVol,detP.showAll);
+                [movieInfo(frameIdx),lab] = detectComets3D(filterVol,detP.waterStep,thresh,[1 1 1]);
+
+            % ----------------------------------------------------------------------------------------
+            case 'bandPassWatershed'
+                filterVol = filterGauss3D(vol,detP.highFreq) - filterGauss3D(vol,detP.lowFreq);
+                label = watershed(-filterVol); 
+                label(filterVol < detP.waterThresh) = 0;
+                lab = label;
+                movieInfo(frameIdx)=labelToMovieInfo(label,filterVol);
+
+            % ----------------------------------------------------------------------------------------
+            case 'watershedMatlab'
+                label = watershed(-vol); 
+                label(vol<p.waterThresh) = 0;
+                [dummy,nFeats] = bwlabeln(label);
+                lab = label;
+                movieInfo(frameIdx) = labelToMovieInfo(label,vol);
+                
+            case 'markedWatershed'
+                lab = markedWatershed(vol,scales,p.waterThresh);
+                movieInfo(frameIdx) = labelToMovieInfo(labels{frameIdx},vol);
+              % ----------------------------------------------------------------------------------------                
+            
             otherwise 
-                disp('Unsupported detection method.');
-                disp('Supported method:');
-                disp('\twatershed');
+                error('Supported detection algorithm method:');
         end
         
 

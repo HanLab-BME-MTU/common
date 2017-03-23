@@ -76,7 +76,45 @@ classdef DetectionProcess < ImageAnalysisProcess
             output(1).defaultDisplayMethod=@(x) LineDisplay('Marker','o',...
                 'LineStyle','none','Color',colors(x,:));
         end  
-        
+
+        function drawImaris(obj,iceConn)
+            
+            dataSet = iceConn.mImarisApplication.GetDataSet;
+            
+            nChan = numel(obj.owner_.channels_);
+            
+            %Create data container
+            spotFolder = iceConn.mImarisApplication.GetFactory.CreateDataContainer;
+            spotFolder.SetName(obj.name_);
+            iceConn.mImarisApplication.GetSurpassScene.AddChild(spotFolder,-1);
+            for iChan = 1:nChan
+                
+                
+                if obj.checkChannelOutput(iChan)
+                    %TEMP - doesn't support timelapse yet!!
+                    pts = obj.loadChannelOutput(iChan);
+                    if ~isempty(pts)
+                        chanCol = iceConn.mapRgbaScalarToVector(dataSet.GetChannelColorRGBA(iChan-1));
+                        nPts = numel(pts.x);
+                        ptXYZ = [pts.y' pts.x' pts.z'];%Swap xy for imaris display
+                        ptXYZ(:,1:2) =ptXYZ(:,1:2) * obj.owner_.pixelSize_ / 1e3;
+                        ptXYZ(:,3) =ptXYZ(:,3) * obj.owner_.pixelSizeZ_ / 1e3;
+                        ptRad = pts.s(1,:)' * obj.owner_.pixelSize_ / 1e3;
+                        ptObj = iceConn.createAndSetSpots(ptXYZ,zeros(nPts,1),...
+                            ptRad,['Spots ' char(dataSet.GetChannelName(iChan-1))],chanCol,spotFolder);                    
+
+                        if ismethod(ptObj,'SetRadiiXYZ')
+                            %Make sure we have a version of imaris which supports anisotropic points                        
+                            ptRad = zeros(nPts,3);
+                            ptRad(:,1:2) = repmat(pts.s(1,:)' * obj.owner_.pixelSize_ / 1e3,[1 2]);
+                            ptRad(:,3) = pts.s(2,:) * obj.owner_.pixelSizeZ_ / 1e3;
+                            ptObj.SetRadiiXYZ(ptRad);                                            
+                        end
+                    end
+                end
+            end            
+        end    
+  
     end
     methods(Static)
 
@@ -97,6 +135,8 @@ classdef DetectionProcess < ImageAnalysisProcess
                  @NucleiDetectionProcess;
                  @PointSourceDetectionProcess;
                  @PointSourceDetectionProcess3D;
+                 @CometDetectionProcess3D;
+                 @WatershedDetectionProcess3D
                 };
 
             % If input, check if 2D or 3D movie(s).

@@ -73,9 +73,9 @@ classdef PointSourceDetectionProcess3D < DetectionProcess
         
         function output = getDrawableOutput(obj)
             output = getDrawableOutput@DetectionProcess(obj);
-            output(1).name='Point sources 3D';
+            output(1).name='Detected Objects 3D';
             output(1).var = 'detect3D';
-            output(1).formatData=@PointSourceDetectionProcess3D.formatOutput;
+            output(1).formatData=@DetectionProcess.formatOutput3D;
         end
         
         function drawImaris(obj,iceConn)
@@ -120,6 +120,7 @@ classdef PointSourceDetectionProcess3D < DetectionProcess
         %% TODO 
         %% draw Amira? function
 
+        
         %% TODO WIP -- TO FINISH (using Philippe'method)
         function scales = getEstSigmaPSF3D(obj, channel, varargin)
 
@@ -136,7 +137,7 @@ classdef PointSourceDetectionProcess3D < DetectionProcess
     methods (Static)
         
         function name = getName()
-            name = 'Point source detection 3D';
+            name = 'Detection 3D';
         end
         
         function h = GUI()
@@ -153,18 +154,16 @@ classdef PointSourceDetectionProcess3D < DetectionProcess
             
             % Set default parameters
             funParams.ChannelIndex = 1;
-            
-            %## TODO
             funParams.InputImageProcessIndex = 0; % ?? (can we add some way to check what is availble.)
-            
             funParams.MaskChannelIndex = []; %1:numel(owner.channels_);
             funParams.MaskProcessIndex = [];            
-            funParams.OutputDirectory = [outputDir  filesep 'pointsource3D_detect'];
+            funParams.OutputDirectory = [outputDir  filesep 'detect3D'];
             
-            funParams.type = 'pointSourceAutoSigmaFit';
+%             types = PointSourceDetectionProcess3D.getDetectionTypeOptions;
+            funParams.algorithmType = pointSourceAutoSigmaFit;
 
             funParams.alpha=.05;
-            funParams.Mode = {'xyzAc'};
+            funParams.Mode = 'xyzAc';
             funParams.FitMixtures = false;
             funParams.MaxMixtures = 5;
             funParams.RemoveRedundant = true;
@@ -172,21 +171,13 @@ classdef PointSourceDetectionProcess3D < DetectionProcess
             funParams.RefineMaskLoG = false;
             funParams.RefineMaskValid = false;
 
-            % funParams.ConfRadius = []; 
-            % funParams.WindowSize = [];       
-
-
-            %% TODO -- Update 
-            % iProc = owner.getProcessIndex('MaskRefinementProcess', 'askUser', false);
-            % if isempty(iProc)
-            %     disp('Note: No Cell Segmentation Mask found');
-            %     funParams.MaskChannelIndex = []; %1:numel(owner.channels_);
-            %     funParams.MaskProcessIndex = [];            
-            % else
-            %     funParams.MaskProcessIndex = iProc; % Specify Process Index with cell mask output
-            %     funParams.MaskChannelIndex = 1:numel(owner.channels_);
-            % end
-
+            % DetectComets3D & watershed params
+            funParams.waterThresh = 120;
+            funParams.waterStep = 10;
+            funParams.lowFreq = 3;
+            funParams.highFreq = 1;
+            funParams.showAll = 0;
+            
             % sigma estimation            
             nChan = numel(owner.channels_);
             funParams.filterSigma = 1.2*ones(1,nChan); %Minimum numerically stable sigma is ~1.2 pixels.
@@ -203,15 +194,26 @@ classdef PointSourceDetectionProcess3D < DetectionProcess
             %list of parameters which can be specified at a per-channel
             %level. If specified as scalar these will  be replicated
             funParams.PerChannelParams = {'alpha','Mode','FitMixtures','MaxMixtures','RedundancyRadius',...
-                'ConfRadius','WindowSize','RefineMaskLoG','filterSigma','InputImageProcessIndex'};
+                'ConfRadius','WindowSize','RefineMaskLoG','filterSigma','InputImageProcessIndex',...
+                'type', 'waterThresh', 'waterStep', 'lowFreq', 'highFreq'};
             funParams = prepPerChannelParams(funParams, nChan);
         end
         
-        function positions = formatOutput(pstruct)
-            %% TODO
-            positions = DetectionProcess.formatOutput3D(pstruct);
-            %positions = positions(pstruct.isPSF, :);
+        function validTypes =  getValidAlgorithmTypes()
+            validTypes = {'watershedApplegateAuto', ...
+                          'watershedApplegate',...
+                          'bandPassWatershed',...
+                          'watershedMatlab',...
+                          'markedWatershed',...
+                          'pointSourceLM',...
+                          'pointSource',...
+                          'pointSourceAutoSigma',...
+                          'pointSourceAutoSigmaFit',...
+                          'pSAutoSigmaMarkedWatershed',...
+                          'pointSourceAutoSigmaMixture',... 
+                          'pointSourceAutoSigmaLM',...     
+                          'pointSourceAutoSigmaFitSig',... 
+                          'pSAutoSigmaWatershed'};
         end
-          
     end    
 end
