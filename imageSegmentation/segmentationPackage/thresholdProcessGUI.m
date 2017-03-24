@@ -22,7 +22,7 @@ function varargout = thresholdProcessGUI(varargin)
 
 % Edit the above text to modify the response to help thresholdProcessGUI
 
-% Last Modified by GUIDE v2.5 14-Mar-2017 18:58:52
+% Last Modified by GUIDE v2.5 23-Mar-2017 14:27:51
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -110,7 +110,16 @@ if useAutomatic
     if funParams.PreThreshold
         set(handles.checkbox_preThreshold, 'Value', 1);
     end
-        
+    
+    if funParams.ExcludeOutliers
+        set(handles.checkbox_exclude_outliers,'Value',1);
+        set(handles.edit_exclude_outliers_k_sigma,'Enable','on','String',num2str(funParams.ExcludeOutliers));
+    else
+        set(handles.checkbox_exclude_outliers,'Value',0);
+        set(handles.edit_exclude_outliers_k_sigma,'Enable','off','String','');
+    end
+    
+    set(handles.checkbox_exclude_zero,'Value',funParams.ExcludeZero);      
 
 else
     set(handles.checkbox_auto, 'Value', 0);
@@ -203,6 +212,8 @@ if isnan(gaussFilterSigma) || gaussFilterSigma < 0
 end
 funParams.GaussFilterSigma=gaussFilterSigma;
 
+% Automatic and fixed are not mutually exclusive.
+% If PreThreshold, one could use both automatic and fixed thresholds.
 useAutomatic = get(handles.checkbox_auto, 'value');
 useFixed = ~useAutomatic || get(handles.checkbox_preThreshold, 'value');
 
@@ -222,20 +233,35 @@ if useAutomatic
         funParams.MaxJump = 0;
     end
     
+    if get(handles.checkbox_exclude_outliers, 'Value')
+        excludeOutliersKSigma = str2double(get(handles.edit_exclude_outliers_k_sigma, 'String'));
+        if isnan(excludeOutliersKSigma) || excludeOutliersKSigma <= 0
+            errordlg('Please provide a valid input for ''Exclude Outliers Sigma''.','Setting Error','modal');
+            return;
+        end
+        funParams.ExcludeOutliers = excludeOutliersKSigma;
+    else
+        funParams.ExcludeOutliers = 0;
+    end
+    
+    if get(handles.checkbox_exclude_zero, 'Value')
+        funParams.ExcludeZero = true;
+    else
+        funParams.ExcludeZero = false;
+    end
+    
     if useFixed
-        % If both checkbox are checked
-%         preThreshold=str2double(get(handles.edit_preThreshold, 'String'));
-%         if isnan(preThreshold)
-%             errordlg('Please provide a valid input for ''The fixed threshold applied before automatic thresholding''.','Setting Error','modal');
-%             return;
-%         end    
+        % Use the fixed thresholds below before automatic thresholding
         funParams.PreThreshold = true;
     else
+        % Threshold value will be determined only automatically
         funParams.PreThreshold = false;
         funParams.ThresholdValue = [ ];
     end
 else
+    % No automatic thresholding
     funParams.PreThreshold = false;
+    % Since ~useAutomatic, useFixed is true and thus will be set below
     funParams.ThresholdValue = [ ];
     funParams.MaxJump = 0;
 end
@@ -251,8 +277,8 @@ if useFixed
     else
         [threshold,isPercentile] = stringToThresholds(threshold);
 %         threshold = str2double(threshold);
-        if any(isnan(threshold)) || any(threshold < 0)
-            errordlg('Please provide valid threshold values. Threshold cannot be a negative number.','Setting Error','modal')
+        if any(isnan(threshold))
+            errordlg('Please provide valid threshold values.','Setting Error','modal')
             return            
         end
     end
@@ -661,18 +687,79 @@ if get(handles.checkbox_preview,'Value')
         methodIndx=get(handles.popupmenu_thresholdingMethod,'Value');
         threshMethod = userData.crtProc.getMethods(methodIndx).func;
         
-        try %#ok<TRYNC>
-            if ~get(handles.checkbox_preThreshold,'Value')
-                currThresh = threshMethod( imData);
-            else
-                thresholdValue = get(handles.slider_threshold, 'Value');
-                if(get(handles.checkbox_is_percentile,'Value'))
-                    thresholdValue = prctile(userData.imData(:),thresholdValue);
-                end
-                currThresh = threshMethod( imData(imData > thresholdValue) );
-                currThresh = max(currThresh,thresholdValue);
+        try
+            p.PreThreshold = get(handles.checkbox_preThreshold,'Value');
+            p.ExcludeZero = get(handles.checkbox_exclude_zero,'Value');
+            p.ExcludeOutliers = get(handles.checkbox_exclude_outliers,'Value') ...
+                              * str2double(get(handles.edit_exclude_outliers_k_sigma,'String'));
+            % iChan is not really 1, but we are reusing code from thresholdMovie              
+            iChan = 1;
+            p.ThresholdValue = get(handles.slider_threshold, 'Value');
+            p.IsPercentile = get(handles.checkbox_is_percentile,'Value')
+            
+            if(isnan(p.ExcludeOutliers))
+                p.ExcludeOutliers = 0;
             end
+            
+            data = imData;
+            
+            %% Perform automatic thresholding
+            if(p.PreThreshold)
+                % Use automatic thresholding method only on pixels
+                % above fixed threshold
+                absoluteThreshold = p.ThresholdValue(iChan);
+                if(p.IsPercentile(iChan))
+                    absoluteThreshold = prctile(data(:),absoluteThreshold);
+                end
+                data = data(data > absoluteThreshold);
+            end
+            if(p.ExcludeZero)
+                data = data(data ~= 0);
+            end
+            if(p.ExcludeOutliers)
+                % Exclude outliers before perforing automatic
+                % thresholding
+                [~,inliers] = detectOutliers(data,p.ExcludeOutliers);
+                data = data(inliers);
+            end
+
+            currThresh = threshMethod(data);
+
+            if(p.PreThreshold)
+                % Ensure absolute threshold is above fixed threshold
+                currThresh = max(currThresh,absoluteThreshold);
+            end
+            if(p.ExcludeZero)
+                % Threshold must be at least zero if excluding zeros
+                currThresh = max(currThresh,0);
+            end
+            currThresh
+            %% Use automatic thresholding
+
+            
+%             if get(handles.checkbox_preThreshold,'Value')
+%                 thresholdValue = get(handles.slider_threshold, 'Value');
+%                 if(get(handles.checkbox_is_percentile,'Value'))
+%                     thresholdValue = prctile(userData.imData(:),thresholdValue);
+%                 end
+%                 data = data(data > thresholdValue);
+%             end
+%             
+%             
+%             if ~get(handles.checkbox_preThreshold,'Value')
+%                 currThresh = threshMethod( imData);
+%             else
+%                 thresholdValue = get(handles.slider_threshold, 'Value');
+%                 if(get(handles.checkbox_is_percentile,'Value'))
+%                     thresholdValue = prctile(userData.imData(:),thresholdValue);
+%                 end
+%                 currThresh = threshMethod( imData(imData > thresholdValue) );
+%                 currThresh = max(currThresh,thresholdValue);
+%             end
             alphamask(imData<=currThresh)=.4;
+        catch err
+            % To debug breakpoint here
+            rethrow(err);
         end
     else
         % Preview manual threshold
@@ -742,3 +829,60 @@ function setPercentileMode(handles,isPercentile)
     percent = '%';
     set(handles.text_percentile,'String',percent(isPercentile));
     set(handles.checkbox_is_percentile,'Value',isPercentile);
+
+
+% --- Executes on button press in checkbox_exclude_outliers.
+function checkbox_exclude_outliers_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox_exclude_outliers (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of checkbox_exclude_outliers
+if get(hObject,'Value')
+    set(handles.edit_exclude_outliers_k_sigma,'Enable','on','String','3');
+else
+    set(handles.edit_exclude_outliers_k_sigma,'Enable','off');
+end
+
+
+function edit_exclude_outliers_k_sigma_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_exclude_outliers_k_sigma (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_exclude_outliers_k_sigma as text
+%        str2double(get(hObject,'String')) returns contents of edit_exclude_outliers_k_sigma as a double
+userData = get(hObject, 'UserData');
+k_sigma = str2double(get(hObject,'String'));
+try
+    validateattributes(k_sigma,{'numeric'},{'nonnan','positive'})
+    userData.k_sigma = k_sigma;
+    set(hObject,'UserData',userData);
+catch err
+    warndlg('Please provide a valid sigma multiplier','Setting Error','modal');
+    if(isempty(userData.k_sigma))
+        userData.k_sigma = 3;
+    end
+    set(hObject,'String',userData.k_sigma);
+end
+
+% --- Executes during object creation, after setting all properties.
+function edit_exclude_outliers_k_sigma_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_exclude_outliers_k_sigma (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on button press in checkbox_exclude_zero.
+function checkbox_exclude_zero_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox_exclude_zero (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of checkbox_exclude_zero
