@@ -19,35 +19,16 @@ function detectMoviePointSources3D(movieDataOrProcess,varargin)
 
 %% ----------- Input ----------- %%
 
-%Check input
-validTypes = {'watershedApplegateAuto', ...
-              'watershedApplegate',...
-              'bandPassWatershed',...
-              'watershedMatlab',...
-              'markedWatershed',...
-              'pointSourceLM',...
-              'pointSource',...
-              'pointSourceAutoSigma',...
-              'pointSourceAutoSigmaFit',...
-              'pSAutoSigmaMarkedWatershed',...
-              'pointSourceAutoSigmaMixture',... 
-              'pointSourceAutoSigmaLM',...     
-              'pointSourceAutoSigmaFitSig',... 
-              'pSAutoSigmaWatershed'};
 ip = inputParser;
 ip.CaseSensitive = false;
 ip.addRequired('movieDataOrProcess', @isProcessOrMovieData);
 ip.addOptional('paramsIn',[], @isstruct);
 ip.addParameter('UseIntersection',false, @islogical);
-ip.addParameter('algorithmType', 'pointSourceAutoSigmaFit',...
-                @(x)ischar(x) && ismember(x, validTypes));
-% ip.addParamValue('EstimateSigma', false, @islogical); %%TODO
 ip.addParamValue('ROI',[], @isnumeric);
 ip.parse(movieDataOrProcess,varargin{:});
 ip.KeepUnmatched = true;
 paramsIn = ip.Results.paramsIn;
 ROI = ip.Results.ROI;
-algorithmType = ip.Results.algorithmType;
 
 % Get MovieData object and Process
 [movieData, pointSourceDetProc3D] = getOwnerAndProcess(movieDataOrProcess,'PointSourceDetectionProcess3D',true);
@@ -185,6 +166,7 @@ for i = 1:numel(p.ChannelIndex)
     
     %Set up parameter structure for detection on this channel
     detP = splitPerChannelParams(p, iChan);
+    
     sigmasPSF = detP.filterSigma;
     
     parfor frameIdx = 1:nFrames
@@ -216,7 +198,7 @@ for i = 1:numel(p.ChannelIndex)
         end
 
        
-        switch algorithmType
+        switch detP.algorithmType
             case {'pointSourceLM',...
                   'pointSource',...
                   'pointSourceAutoSigma',...
@@ -227,7 +209,7 @@ for i = 1:numel(p.ChannelIndex)
                 
                 [pstruct, mask, imgLM, imgLoG] = pointSourceDetection3D(vol, sigmasPSF, detP_pf);
                 
-                switch algorithmType
+                switch detP.algorithmType
                       case {'pointSource','pointSourceAutoSigma'}
                        lab = double(mask); 
                         movieInfo(frameIdx) = labelToMovieInfo(double(mask),vol);
@@ -251,14 +233,14 @@ for i = 1:numel(p.ChannelIndex)
                 end
             
             case {'pointSourceAutoSigmaMixture'}
-                detPt = detP;
+                detPt = detP_pf;
                 detPt.FitMixtures = true;
                 [pstruct, mask, imgLM, imgLoG] = pointSourceDetection3D(vol,sigmasPSF,detPt);
                 movieInfo(frameIdx) = pstructToMovieInfo(pstruct);
                 lab = double(mask); % adjust label
             
             case {'pointSourceAutoSigmaFitSig'}
-                detPt = detP;
+                detPt = detP_pf;
                 detPt.Mode = 'xyzAcsr';
                 [pstruct,mask,imgLM,imgLoG] = pointSourceDetection3D(vol,sigmasPSF,detPt);
                 movieInfo(frameIdx) = pstructToMovieInfo(pstruct);
@@ -291,8 +273,8 @@ for i = 1:numel(p.ChannelIndex)
                 movieInfo(frameIdx) = labelToMovieInfo(label,vol);
                 
             case 'markedWatershed'
-                lab = markedWatershed(vol,scales,p.waterThresh);
-                movieInfo(frameIdx) = labelToMovieInfo(labels{frameIdx},vol);
+                label = markedWatershed(vol,sigmasPSF,p.waterThresh);
+                movieInfo(frameIdx) = labelToMovieInfo(label, vol);
               % ----------------------------------------------------------------------------------------                
             
             otherwise 
@@ -331,16 +313,21 @@ function movieInfo= labelToMovieInfo(label,vol)
     [feats,nFeats] = bwlabeln(label);
     featsProp = regionprops(feats,vol,'Area','WeightedCentroid','MeanIntensity','MaxIntensity','PixelValues');
 
+    movieInfo=struct('xCoord',[],'yCoord',[],'zCoord',[],'amp',[],'int',[]);
+    
     % centroid coordinates with 0.5 uncertainties
     tmp = vertcat(featsProp.WeightedCentroid)-1;
-    xCoord = [tmp(:,1) 0.5*ones(nFeats,1)]; yCoord = [tmp(:,2) 0.5*ones(nFeats,1)]; zCoord = [tmp(:,3) 0.5*ones(nFeats,1)];
-    amp=[vertcat(featsProp.MaxIntensity) 0.5*ones(nFeats,1)];
+    if ~isempty(featsProp)
+        xCoord = [tmp(:,1) 0.5*ones(nFeats,1)]; yCoord = [tmp(:,2) 0.5*ones(nFeats,1)]; zCoord = [tmp(:,3) 0.5*ones(nFeats,1)];
+        amp=[vertcat(featsProp.MaxIntensity) 0.5*ones(nFeats,1)];
+    
+        movieInfo.xCoord= xCoord;movieInfo.yCoord=yCoord;movieInfo.zCoord=zCoord;
+        movieInfo.amp=amp;
+        movieInfo.int=amp;
+    end
 
     % u-track formating
-    movieInfo=struct('xCoord',[],'yCoord',[],'zCoord',[],'amp',[],'int',[]);
-    movieInfo.xCoord= xCoord;movieInfo.yCoord=yCoord;movieInfo.zCoord=zCoord;
-    movieInfo.amp=amp;
-    movieInfo.int=amp;
+
 
 function movieInfo= pointCloudToMovieInfo(imgLM,vol)
     lmIdx = find(imgLM~=0);

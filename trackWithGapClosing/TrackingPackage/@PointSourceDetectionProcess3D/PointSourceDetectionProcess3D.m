@@ -50,7 +50,7 @@ classdef PointSourceDetectionProcess3D < DetectionProcess
                         else
                             v1 = s.movieInfo(iFrame);
                         end
-                        if ~isempty(iZ)
+                        if ~isempty(v1.xCoord) && ~isempty(iZ)
                             % Only show Detections in Z. 
                             zThick = 1;
                             tt = table(v1.xCoord(:,1), v1.yCoord(:,1), v1.zCoord(:,1), 'VariableNames', {'xCoord','yCoord','zCoord'});
@@ -60,6 +60,8 @@ classdef PointSourceDetectionProcess3D < DetectionProcess
                             if isempty(dataOut) || numel(dataOut) <1 || ~any(valid_states)
                                 dataOut = [];
                             end
+                        else
+                            dataOut = [];
                         end
                         varargout{iout} = dataOut;
                 
@@ -160,10 +162,10 @@ classdef PointSourceDetectionProcess3D < DetectionProcess
             funParams.OutputDirectory = [outputDir  filesep 'detect3D'];
             
 %             types = PointSourceDetectionProcess3D.getDetectionTypeOptions;
-            funParams.algorithmType = pointSourceAutoSigmaFit;
+            funParams.algorithmType = {'pointSourceAutoSigmaFit'};
 
             funParams.alpha=.05;
-            funParams.Mode = 'xyzAc';
+            funParams.Mode = {'xyzAc'};
             funParams.FitMixtures = false;
             funParams.MaxMixtures = 5;
             funParams.RemoveRedundant = true;
@@ -195,7 +197,7 @@ classdef PointSourceDetectionProcess3D < DetectionProcess
             %level. If specified as scalar these will  be replicated
             funParams.PerChannelParams = {'alpha','Mode','FitMixtures','MaxMixtures','RedundancyRadius',...
                 'ConfRadius','WindowSize','RefineMaskLoG','filterSigma','InputImageProcessIndex',...
-                'type', 'waterThresh', 'waterStep', 'lowFreq', 'highFreq'};
+                'algorithmType', 'waterThresh', 'waterStep', 'lowFreq', 'highFreq'};
             funParams = prepPerChannelParams(funParams, nChan);
         end
         

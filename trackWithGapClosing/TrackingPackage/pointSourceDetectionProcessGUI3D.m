@@ -592,37 +592,29 @@ iChan = get(handles.popupmenu_CurrentChannel,'Value');
 % Set-up parameters
 for i =1 : numel(funParams.PerChannelParams)
     paramName = funParams.PerChannelParams{i};
-    if ~strcmp(paramName,'filterSigma')  && ~strcmp(paramName,'InputImageProcessIndex')
+    if ~strcmp(paramName,'filterSigma')  && ~strcmp(paramName,'InputImageProcessIndex') && ~strcmp(paramName,'algorithmType')
         parVal = funParams.(paramName)(iChan);
         if ~islogical(funParams.(paramName))
-            set(handles.(['edit_' paramName]), 'String',parVal);
+            set(handles.(['edit_' paramName]), 'String', parVal);
         else
-            set(handles.(['edit_' paramName]), 'Value',parVal);
+            set(handles.(['edit_' paramName]), 'Value', parVal);
         end
     elseif strcmp(paramName,'InputImageProcessIndex')
 
-%         if userData.procID == 1
-%             selProc = 0;
-%             iSelProcIn  = 1;
-%         else
-            selProc = 0:userData.procID-1;
-%             if parVal > 0
+        selProc = 0:userData.procID-1;
         iSelProcIn  = find(ismember(selProc, parVal));
-%             else
-%                 iSelProcIn  = 1;
-%             end
-%         end
         if length(selProc) > 1
             ProcStr = arrayfun(@(x)([userData.MD.processes_{x}.name]),selProc,'Unif',0);
         else
             ProcStr = ['0 (N/A)'];% arrayfun(@(x)(['NA ']),selProc,'Unif',0);
         end
         set(handles.(['edit_' paramName]), 'String', ProcStr);
-%         iProcSel = get(handles.(['edit_' paramName]), 'Value');
-%         if isempty(iProcSel)
-%             iProcSel = 0;
-%         end
         set(handles.(['edit_' paramName]), 'Value', iSelProcIn);
+    elseif strcmp(paramName,'algorithmType') 
+        set(handles.(['edit_' paramName]), 'String', PointSourceDetectionProcess3D.getValidAlgorithmTypes); 
+        parVal = funParams.(paramName)(iChan);
+        valSel  = find(ismember(PointSourceDetectionProcess3D.getValidAlgorithmTypes, parVal));
+        set(handles.(['edit_' paramName]), 'Value', valSel); 
     else
         filterSigmaXY = funParams.filterSigma(1,iChan);
         filterSigmaZ = funParams.filterSigma(2,iChan);
@@ -630,6 +622,43 @@ for i =1 : numel(funParams.PerChannelParams)
         set(handles.('edit_filterSigmaXY'), 'String', filterSigmaXY);
     end
 end
+
+selType = get(handles.edit_algorithmType, 'Value'); 
+algoType = PointSourceDetectionProcess3D.getValidAlgorithmTypes{selType};
+
+if any(ismember(algoType,{'watershedApplegateAuto', ...
+                      'watershedApplegate',...
+                      'bandPassWatershed',...
+                      'watershedMatlab',...
+                      'markedWatershed'}))
+    
+    children = get(handles.uipanel_pointSource,'Children');
+    set(children(strcmpi ( get (children,'Type'),'UIControl')),'enable','off')
+    
+    children = get(handles.uipanel_water,'Children');
+    set(children(strcmpi ( get (children,'Type'),'UIControl')),'enable','on')
+    
+elseif any(ismember(algoType,{'pointSourceLM',...
+                              'pointSource',...
+                              'pointSourceAutoSigma',...
+                              'pointSourceAutoSigmaFit',...
+                              'pSAutoSigmaMarkedWatershed',...
+                              'pointSourceAutoSigmaMixture',... 
+                              'pointSourceAutoSigmaLM',...     
+                              'pointSourceAutoSigmaFitSig',... 
+                              'pSAutoSigmaWatershed'}))
+
+    children = get(handles.uipanel_pointSource,'Children');
+    set(children(strcmpi ( get (children,'Type'),'UIControl')),'enable','on')
+    
+    children = get(handles.uipanel_water,'Children');
+    set(children(strcmpi ( get (children,'Type'),'UIControl')),'enable','off')
+                          
+end
+
+
+
+
 
 % --- Executes during object creation, after setting all properties.
 function popupmenu_CurrentChannel_CreateFcn(hObject, eventdata, handles)
@@ -659,7 +688,7 @@ funParams = get(handles.popupmenu_CurrentChannel,'UserData');
 
 for i =1 : numel(funParams.PerChannelParams)
     paramName = funParams.PerChannelParams{i};
-    if ~strcmp(paramName,'filterSigma')  && ~strcmp(paramName,'InputImageProcessIndex')
+    if ~strcmp(paramName,'filterSigma')  && ~strcmp(paramName,'InputImageProcessIndex') && ~strcmp(paramName,'algorithmType') 
         if islogical(funParams.(paramName))
             parVal = get(handles.(['edit_' paramName]), 'Value');
             funParams.(paramName)(iChan) = parVal;
@@ -671,6 +700,11 @@ for i =1 : numel(funParams.PerChannelParams)
             funParams.(paramName)(iChan) = str2double(parVal);
         end
         
+    elseif strcmp(paramName,'algorithmType')      
+        selType = get(handles.(['edit_' paramName]), 'Value'); 
+        parVal = PointSourceDetectionProcess3D.getValidAlgorithmTypes{selType};
+        funParams.(paramName)(iChan) = {parVal};
+    
     elseif strcmp(paramName,'InputImageProcessIndex')
         userData=get(handles.figure1,'UserData');
         selProc = 0:userData.procID-1;
@@ -824,7 +858,43 @@ function edit_algorithmType_Callback(hObject, eventdata, handles)
 
 % Hints: contents = cellstr(get(hObject,'String')) returns edit_algorithmType contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from edit_algorithmType
+    selType = get(handles.edit_algorithmType, 'Value'); 
+    algoType = PointSourceDetectionProcess3D.getValidAlgorithmTypes{selType};
+    
 
+if any(ismember(algoType,{'watershedApplegateAuto', ...
+                      'watershedApplegate',...
+                      'bandPassWatershed',...
+                      'watershedMatlab',...
+                      'markedWatershed'}))
+    
+    children = get(handles.uipanel_pointSource,'Children');
+    set(children(strcmpi ( get (children,'Type'),'UIControl')),'enable','off')
+    
+    children = get(handles.uipanel_water,'Children');
+    set(children(strcmpi ( get (children,'Type'),'UIControl')),'enable','on')
+    
+elseif any(ismember(algoType,{'pointSourceLM',...
+                              'pointSource',...
+                              'pointSourceAutoSigma',...
+                              'pointSourceAutoSigmaFit',...
+                              'pSAutoSigmaMarkedWatershed',...
+                              'pointSourceAutoSigmaMixture',... 
+                              'pointSourceAutoSigmaLM',...     
+                              'pointSourceAutoSigmaFitSig',... 
+                              'pSAutoSigmaWatershed'}))
+
+    children = get(handles.uipanel_pointSource,'Children');
+    set(children(strcmpi ( get (children,'Type'),'UIControl')),'enable','on')
+    
+    children = get(handles.uipanel_water,'Children');
+    set(children(strcmpi ( get (children,'Type'),'UIControl')),'enable','off')
+                          
+end
+
+        
+
+    
 
 % --- Executes during object creation, after setting all properties.
 function edit_algorithmType_CreateFcn(hObject, eventdata, handles)
@@ -929,3 +999,6 @@ function edit_highFreq_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
+
+
