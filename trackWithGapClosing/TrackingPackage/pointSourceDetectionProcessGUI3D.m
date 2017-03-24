@@ -22,7 +22,7 @@ function varargout = pointSourceDetectionProcessGUI3D(varargin)
 
 % Edit the above text to modify the response to help anisoGaussianDetectionProcessGUI
 
-% Last Modified by GUIDE v2.5 23-Mar-2017 15:40:59
+% Last Modified by GUIDE v2.5 24-Mar-2017 12:54:38
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -62,41 +62,48 @@ end
 
 set(handles.popupmenu_CurrentChannel,'UserData',funParams);
 
+% Set Channel options
+selChan = handles.listbox_selectedChannels.String;
+availChan = handles.listbox_availableChannels.String;
+[C ia is] = intersect(availChan, selChan);
+% 
+chanStr = arrayfun(@(x)(['Channel ' num2str(x)]), 1:numel(availChan),'Unif',0);
+set(handles.popupmenu_CurrentChannel, 'String', chanStr);
+
 iChan = get(handles.popupmenu_CurrentChannel,'Value');
-if isempty(iChan)
-    iChan = 1;
-    set(handles.popupmenu_CurrentChannel,'Value',1);
+
+if isempty(iChan) || iChan ~= ia(1)
+    iChan = ia(1);
+    set(handles.popupmenu_CurrentChannel,'Value',iChan);
 end
 
-% %Specify parameters
-% userData.numParams = {'filterSigma', 'alpha','Mode','MaxMixtures','RedundancyRadius'};
-% %Set the intersection checkbox 
-% userData.checkParams ={'FitMixtures'};
-% 
+handles.text_warningChan.Visible = 'off';
 
-% for i =1 : numel(userData.numParams)
-%     paramName = userData.numParams{i};        
-%     if any(strcmp(paramName,funParams.PerChannelParams))
-%         parVal = funParams.(paramName)(iChan);
-%     else
-%         parVal = funParams.(paramName);
-%     end
-%     set(handles.(['edit_' paramName]), 'String',parVal);
-% end
-% 
-% 
-% 
-% set(handles.edit_UseIntersection,,'Value',funParams.UseIntersection)
-% 
-% for i =1 : numel(userData.checkParams)
-%     paramName = userData.checkParams{i};        
-%     if any(strcmp(paramName,funParams.PerChannelParams))
-%         parVal = funParams.(paramName)(iChan);
-%     else
-%         parVal = funParams.(paramName);
-%     end
-%     set(handles.(['edit_' paramName]), 'Value',parVal);
-% end
+
+%%%%%%%%
+
+ImProcP =  cellfun(@(x) isa(x,'ImageProcessingProcess'), userData.MD.processes_);
+ImProcPID = find(ImProcP);
+ImProcPNames = cellfun(@(x) x.getName(),userData.MD.processes_(ImProcP),'Unif',false);
+ImProcPString = vertcat('Raw Channel Input', ImProcPNames(:));
+
+imProcData = horzcat({[]},num2cell(ImProcPID));
+imProcValue = find(cellfun(@(x) isequal(x,funParams.ChannelIndex),imProcData));
+if isempty(imProcValue), imProcValue = 1; end
+
+set(handles.edit_InputImageProcessIndex,'String', ImProcPString,...
+    'UserData',imProcData,'Value',imProcValue);
+%%%%%%%%%%%%%%%
+
+
+% Set default channels callback function
+set(handles.checkbox_all,'Callback',@(hObject,eventdata)...
+    checkallChannels_Callback(hObject,eventdata,guidata(hObject)));
+set(handles.pushbutton_select,'Callback',@(hObject,eventdata)...
+    selectChannel_Callback(hObject,eventdata,guidata(hObject)));
+set(handles.pushbutton_delete,'Callback',@(hObject,eventdata)...
+    deleteChannel_Callback(hObject,eventdata,guidata(hObject)));
+
 
 % Set up available mask channels
 set(handles.listbox_availableMaskChannels,'String',userData.MD.getChannelPaths(), ...
@@ -123,6 +130,16 @@ segProcValue = find(cellfun(@(x) isequal(x,funParams.MaskProcessIndex),segProcDa
 if isempty(segProcValue), segProcValue = 1; end
 set(handles.popupmenu_SegProcessIndex,'String',segProcString,...
     'UserData',segProcData,'Value',segProcValue);
+
+
+
+if ~ismember(handles.listbox_availableChannels.String{iChan}, handles.listbox_selectedChannels.String)
+    handles.uipanel_1.BackgroundColor = [1 .08 .18];
+    handles.text_warningChan.Visible = 'off';
+else
+    handles.uipanel_1.BackgroundColor = [.94 .94 .94];
+    handles.text_warningChan.Visible = 'on';
+end
 
 % Update channels listboxes depending on the selected process
 popupmenu_SegProcessIndex_Callback(hObject, eventdata, handles)
@@ -577,17 +594,18 @@ function popupmenu_CurrentChannel_Callback(hObject, eventdata, handles)
 
 % Hints: contents = cellstr(get(hObject,'String')) returns popupmenu_CurrentChannel contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from popupmenu_CurrentChannel
-userData=get(handles.figure1,'UserData');
+userData = get(handles.figure1,'UserData');
 funParams = get(handles.popupmenu_CurrentChannel,'UserData');
 
-selChan = 1:numel(userData.MD.channels_);%For now just let them set parameters for all channels.
-%selChan = get(handles.listbox_selectedChannels,'UserData');
-chanStr = arrayfun(@(x)(['Channel ' num2str(x)]),selChan,'Unif',0);
-set(handles.popupmenu_CurrentChannel,'String',chanStr);
 iChan = get(handles.popupmenu_CurrentChannel,'Value');
-%set(handles.popupmenu_CurrentChannel,'UserData',iChan);
 
-
+if ~ismember(handles.listbox_availableChannels.String{iChan}, handles.listbox_selectedChannels.String)
+    handles.uipanel_1.BackgroundColor = [.64 .08 .18];
+    handles.text_warningChan.Visible = 'on';
+else
+    handles.uipanel_1.BackgroundColor = [.94 .94 .94];
+    handles.text_warningChan.Visible = 'off';
+end
 
 % Set-up parameters
 for i =1 : numel(funParams.PerChannelParams)
@@ -606,7 +624,7 @@ for i =1 : numel(funParams.PerChannelParams)
         if length(selProc) > 1
             ProcStr = arrayfun(@(x)([userData.MD.processes_{x}.name]),selProc,'Unif',0);
         else
-            ProcStr = ['0 (N/A)'];% arrayfun(@(x)(['NA ']),selProc,'Unif',0);
+            ProcStr = ['Raw Channel Input'];% arrayfun(@(x)(['NA ']),selProc,'Unif',0);
         end
         set(handles.(['edit_' paramName]), 'String', ProcStr);
         set(handles.(['edit_' paramName]), 'Value', iSelProcIn);
@@ -683,7 +701,7 @@ function pushbutton_saveChannelParams_Callback(hObject, eventdata, handles)
 %Get settings for the current channel before switching to another
 iChan = get(handles.popupmenu_CurrentChannel,'Value');
 
-%userData=get(handles.figure1,'UserData');
+userData = get(handles.figure1,'UserData');
 funParams = get(handles.popupmenu_CurrentChannel,'UserData');
 
 for i =1 : numel(funParams.PerChannelParams)
@@ -706,10 +724,18 @@ for i =1 : numel(funParams.PerChannelParams)
         funParams.(paramName)(iChan) = {parVal};
     
     elseif strcmp(paramName,'InputImageProcessIndex')
-        userData=get(handles.figure1,'UserData');
+%         userData = get(handles.figure1,'UserData');
+        MD = userData.MD;
+        
         selProc = 0:userData.procID-1;
         iProcSel = get(handles.(['edit_' paramName]), 'Value'); 
         parVal = selProc(iProcSel);
+        
+        if parVal ~= 0
+            assert(MD.processes_{parVal}.checkChannelOutput(iChan),...
+               ['No valid output for input process specified for channel ' num2str(iChan)]);
+        end
+        
         funParams.(paramName)(iChan) = parVal;
         
     else
@@ -869,10 +895,9 @@ if any(ismember(algoType,{'watershedApplegateAuto', ...
                       'markedWatershed'}))
     
     children = get(handles.uipanel_pointSource,'Children');
-    set(children(strcmpi ( get (children,'Type'),'UIControl')),'enable','off')
-    
+    set(children(strcmpi ( get (children,'Type'),'UIControl')),'enable','off');
     children = get(handles.uipanel_water,'Children');
-    set(children(strcmpi ( get (children,'Type'),'UIControl')),'enable','on')
+    set(children(strcmpi ( get (children,'Type'),'UIControl')),'enable','on');
     
 elseif any(ismember(algoType,{'pointSourceLM',...
                               'pointSource',...
@@ -885,10 +910,9 @@ elseif any(ismember(algoType,{'pointSourceLM',...
                               'pSAutoSigmaWatershed'}))
 
     children = get(handles.uipanel_pointSource,'Children');
-    set(children(strcmpi ( get (children,'Type'),'UIControl')),'enable','on')
-    
+    set(children(strcmpi ( get (children,'Type'),'UIControl')),'enable','on');
     children = get(handles.uipanel_water,'Children');
-    set(children(strcmpi ( get (children,'Type'),'UIControl')),'enable','off')
+    set(children(strcmpi ( get (children,'Type'),'UIControl')),'enable','off');
                           
 end
 
@@ -1001,4 +1025,65 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
+function checkallChannels_Callback(hObject, eventdata, handles)
 
+% Retrieve available channels properties
+availableProps = get(handles.listbox_availableChannels, {'String','UserData'});
+if isempty(availableProps{1}), return; end
+
+% Update selected channels
+if get(hObject,'Value')
+    set(handles.listbox_selectedChannels, 'String', availableProps{1},...
+        'UserData',availableProps{2});
+else
+    set(handles.listbox_selectedChannels, 'String', {}, 'UserData',[], 'Value',1);
+end
+% Set Channel options
+% selChan = handles.listbox_selectedChannels.String;
+% availChan = handles.listbox_availableChannels.String;
+% [C ia is] = intersect(availChan, selChan);
+% chanStr = arrayfun(@(x)(['Channel ' num2str(x)]), ia,'Unif',0);
+% set(handles.popupmenu_CurrentChannel, 'String', chanStr);
+popupmenu_CurrentChannel_Callback(hObject, eventdata, handles)
+
+
+function deleteChannel_Callback(hObject, eventdata, handles)
+% Generic callback to be exectuted when a selected channel is removed from
+% the graphical settings interface
+
+% Get selected properties and returin if empty
+selectedProps = get(handles.listbox_selectedChannels, {'String','UserData','Value'});
+if isempty(selectedProps{1}) || isempty(selectedProps{3}),return; end
+
+% Delete selected item
+selectedProps{1}(selectedProps{3}) = [ ];
+selectedProps{2}(selectedProps{3}) = [ ];
+set(handles.listbox_selectedChannels, 'String', selectedProps{1},'UserData',selectedProps{2},...
+    'Value',max(1,min(selectedProps{3},numel(selectedProps{1}))));
+% Set Channel options
+% selChan = handles.listbox_selectedChannels.String;
+% availChan = handles.listbox_availableChannels.String;
+% [C ia is] = intersect(availChan, selChan);
+% chanStr = arrayfun(@(x)(['Channel ' num2str(x)]), ia,'Unif',0);
+% set(handles.popupmenu_CurrentChannel, 'String', chanStr);
+popupmenu_CurrentChannel_Callback(hObject, eventdata, handles)
+
+function selectChannel_Callback(hObject, eventdata, handles)
+
+% Retrieve  channels properties
+availableProps = get(handles.listbox_availableChannels, {'String','UserData','Value'});
+selectedProps = get(handles.listbox_selectedChannels, {'String','UserData'});
+
+% Find new elements and set them to the selected listbox
+newID = availableProps{3}(~ismember(availableProps{1}(availableProps{3}),selectedProps{1}));
+selectedChannels = horzcat(selectedProps{1}',availableProps{1}(newID)');
+selectedData = horzcat(selectedProps{2}, availableProps{2}(newID));
+set(handles.listbox_selectedChannels, 'String', selectedChannels, 'UserData', selectedData);
+
+popupmenu_CurrentChannel_Callback(hObject, eventdata, handles)
+% % Set Channel options
+% selChan = handles.listbox_selectedChannels.String;
+% availChan = handles.listbox_availableChannels.String;
+% [C ia is] = intersect(availChan, selChan);
+% chanStr = arrayfun(@(x)(['Channel ' num2str(x)]), ia,'Unif',0);
+% set(handles.popupmenu_CurrentChannel, 'String', chanStr);
