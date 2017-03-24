@@ -75,49 +75,11 @@ classdef PointSourceDetectionProcess3D < DetectionProcess
         
         function output = getDrawableOutput(obj)
             output = getDrawableOutput@DetectionProcess(obj);
-            output(1).name='Detected Objects 3D';
+            output(1).name='Detected Objects';
             output(1).var = 'detect3D';
             output(1).formatData=@DetectionProcess.formatOutput3D;
         end
         
-        function drawImaris(obj,iceConn)
-            
-            dataSet = iceConn.mImarisApplication.GetDataSet;
-            
-            nChan = numel(obj.owner_.channels_);
-            
-            %Create data container
-            spotFolder = iceConn.mImarisApplication.GetFactory.CreateDataContainer;
-            spotFolder.SetName(obj.name_);
-            iceConn.mImarisApplication.GetSurpassScene.AddChild(spotFolder,-1);
-            for iChan = 1:nChan
-                
-                
-                if obj.checkChannelOutput(iChan)
-                    %TEMP - doesn't support timelapse yet!!
-                    pts = obj.loadChannelOutput(iChan);
-                    if ~isempty(pts)
-                        chanCol = iceConn.mapRgbaScalarToVector(dataSet.GetChannelColorRGBA(iChan-1));
-                        nPts = numel(pts.x);
-                        ptXYZ = [pts.y' pts.x' pts.z'];%Swap xy for imaris display
-                        ptXYZ(:,1:2) =ptXYZ(:,1:2) * obj.owner_.pixelSize_ / 1e3;
-                        ptXYZ(:,3) =ptXYZ(:,3) * obj.owner_.pixelSizeZ_ / 1e3;
-                        ptRad = pts.s(1,:)' * obj.owner_.pixelSize_ / 1e3;
-                        ptObj = iceConn.createAndSetSpots(ptXYZ,zeros(nPts,1),...
-                            ptRad,['Spots ' char(dataSet.GetChannelName(iChan-1))],chanCol,spotFolder);                    
-
-                        if ismethod(ptObj,'SetRadiiXYZ')
-                            %Make sure we have a version of imaris which supports anisotropic points                        
-                            ptRad = zeros(nPts,3);
-                            ptRad(:,1:2) = repmat(pts.s(1,:)' * obj.owner_.pixelSize_ / 1e3,[1 2]);
-                            ptRad(:,3) = pts.s(2,:) * obj.owner_.pixelSizeZ_ / 1e3;
-                            ptObj.SetRadiiXYZ(ptRad);                                            
-                        end
-                    end
-                end
-            end            
-            
-        end
 
         %% TODO 
         %% draw Amira? function
@@ -139,7 +101,7 @@ classdef PointSourceDetectionProcess3D < DetectionProcess
     methods (Static)
         
         function name = getName()
-            name = 'Detection 3D';
+            name = 'Detection in 3D';
         end
         
         function h = GUI()
