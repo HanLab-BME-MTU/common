@@ -20,24 +20,30 @@ classdef TrackingPackage3D < Package
             % Call the superclass constructor
             obj = obj@Package(super_args{:});        
         end
-    end
-
-    function [status, processExceptions] = sanityCheck(obj, varargin) % throws Exception Cell Array
         
-        %% TODO - add more to sanitycheck
-        disp('TODO: SanityCheck!');
-        missingMetadataMsg = ['Missing %s! The %s is necessary to analyze '...
-        '3D Tracking Movies. Please edit the movie and fill the %s.'];
-        errorMsg = @(x) sprintf(missingMetadataMsg, x, x, x);
         
-        assert(obj.owner_.is3D, errorMsg('MovieData is not 3D!'));
-        assert(~isempty(obj.owner_.pixelSize_), errorMsg('pixel size not defined!'));
-        assert(~isempty(obj.owner_.pixelSizeZ_), errorMsg('pixel Z size defined!'));
-        assert(~isempty(obj.owner_.timeInterval_), errorMsg('time interval defined!'));
-        [status, processExceptions] = sanityCheck@Package(obj, varargin{:});
-        % possible PSF sanity check?
-    end
+        function [status, processExceptions] = sanityCheck(obj, varargin) % throws Exception Cell Array
 
+            %% TODO - add more to sanitycheck
+            disp('TODO: SanityCheck!');
+            missingMetadataMsg = ['Missing %s! The %s is necessary to analyze '...
+            '3D Tracking Movies. Please edit the movie and fill the %s.'];
+            errorMsg = @(x) sprintf(missingMetadataMsg, x, x, x);
+
+            assert(obj.owner_.is3D, errorMsg('MovieData is not 3D!'));
+            assert(~isempty(obj.owner_.pixelSize_), errorMsg('pixel size not defined!'));
+            assert(~isempty(obj.owner_.pixelSizeZ_), errorMsg('pixel Z size defined!'));
+            assert(~isempty(obj.owner_.timeInterval_), errorMsg('time interval defined!'));
+            [status, processExceptions] = sanityCheck@Package(obj, varargin{:});
+            % possible PSF sanity check?
+
+
+            % Check channels?
+            % Check detections process when feeding to tracking ...
+
+        end    
+        
+    end
 
     methods (Static)
         function name = getName()
