@@ -94,6 +94,16 @@ if(~isfield(funParams,'PreThreshold'))
     funParams.PreThreshold = false;
 end
 
+if(~isfield(funParams,'ExcludeOutliers'))
+    funParams.ExcludeOutliers = false;
+end
+
+if(~isfield(funParams,'ExcludeZero'))
+    funParams.ExcludeZero = false;
+end
+
+
+
 useAutomatic = isempty(funParams.ThresholdValue) || funParams.PreThreshold;
 useFixed = ~isempty(funParams.ThresholdValue) || funParams.PreThreshold;
 
