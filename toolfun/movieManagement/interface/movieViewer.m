@@ -202,7 +202,7 @@ if ~isempty(overlayProc)
                 'Callback',@(h,event) redrawOverlay(h,guidata(h))),find(validChan));
             hPosition=hPosition+20;
         end
-        createProcText(overlayPanel,overlayProcId(iProc),iOutput,hPosition,overlayProc{iProc}.getName);
+        createProcText(overlayPanel,overlayProcId(iProc),iOutput,hPosition,overlayProc{iProc}.name_);
         hPosition=hPosition+20;
     end
     
@@ -975,7 +975,7 @@ if get(hObject,'Value')
     end    
     if userData.MO.is3D() % && userData.MO.processes_{procId}.is3DP()
         ZNr = get(handles.slider_depth,'Value');
-    userData.MO.processes_{procId}.draw(inputArgs{:},'output',output,... % draw method of process object modificiation for 3D!!!
+        userData.MO.processes_{procId}.draw(inputArgs{:},'output',output,... % draw method of process object modificiation for 3D!!!
         options{:}, 'iZ',ZNr);
     else
         userData.MO.processes_{procId}.draw(inputArgs{:},'output',output,... % draw method of process object modificiation for 3D!!!

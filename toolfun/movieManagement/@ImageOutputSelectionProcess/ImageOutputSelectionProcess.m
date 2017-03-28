@@ -85,7 +85,7 @@ classdef ImageOutputSelectionProcess < ImageProcessingProcess & NonSingularProce
         end
     end
     methods (Static)
-        function funParams = getDefaultParams(owner,varargin)
+        function funParams = getDefaultParams(owner,processIndex,varargin)
             isImageOutputSelectionProcess = ...
                 cellfun(@(p) isa(p,'ImageOutputSelectionProcess'), ...
                 owner.processes_);
@@ -95,7 +95,11 @@ classdef ImageOutputSelectionProcess < ImageProcessingProcess & NonSingularProce
             %          processIndex
             % outFilePaths - Usually the outFilePaths of the Process of
             %                interest
-            funParams.processIndex = find(~isImageOutputSelectionProcess,1,'last');
+            if(nargin < 2)
+                funParams.processIndex = find(~isImageOutputSelectionProcess,1,'last');
+            else
+                funParams.processIndex = processIndex;
+            end
             funParams.output = '';
             funParams.outFilePaths = {};
             if(~isempty(funParams.processIndex))
