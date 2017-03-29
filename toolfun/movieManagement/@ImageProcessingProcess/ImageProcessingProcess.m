@@ -179,14 +179,14 @@ classdef ImageProcessingProcess < Process
             ip.addRequired('iChan', @obj.checkChanNum);
             ip.addRequired('iFrame', @obj.checkFrameNum);
             if obj.owner_.is3D()
-                ip.addOptional('iZ', @obj.checkDepthNum);
+                ip.addOptional('iZ',[], @obj.checkDepthNum);
             end
             ip.addParamValue('output',[],@ischar);            
             ip.parse(obj,iChan,iFrame,varargin{:})
             imNames = obj.getOutImageFileNames(iChan);
             if obj.getOwner().is3D()
-                %iZ = ip.Results.iZ;
-                if ~exist('iZ', 'var')
+                iZ = ip.Results.iZ;
+                if isempty(iZ)
                     outIm = tif3Dread([obj.outFilePaths_{1,iChan} filesep imNames{1}{iFrame}]);
                 else 
                     outIm =imread([obj.outFilePaths_{1,iChan} filesep imNames{1}{iFrame}], iZ);

@@ -90,8 +90,8 @@ else
 end
 
 %Check the input processes if any and get loader handles for each channel
-imDirs = cell(1,nChanDet);
-imLoader = cell(1,nChanDet);
+imDirs = cell(1, nChanDet);
+imLoader = cell(1, nChanDet);
 for j = 1:nChanDet
     if p.InputImageProcessIndex(j) > 0
         %Check the specified input process
@@ -128,9 +128,7 @@ pointSourceDetProc3D.setOutFilePaths(outFilePaths);
 %Get ROI mask if any.
 %roiMask = movieData.getROIMask;
 
-% find mask offset (WARNING works only for cubic mask)
-[maskMinX,maskMinY,maskMinZ]=ind2sub(size(ROI), find(ROI,1));
-[maskMaxX,maskMaxY,maskMaxZ]=ind2sub(size(ROI), find(ROI,1,'last'));
+
 
 %% --------------- Add optional auio-estimation of PSF sigma ---------------%%% 
 
@@ -183,6 +181,13 @@ for i = 1:numel(p.ChannelIndex)
         % vol = double(movieData.getChannel(iChan).loadStack(timePoint)); #
         volSize = size(vol);
         lab = [];
+        
+        % find mask offset (WARNING works only for cubic mask)
+        if (~isempty(ROI))
+            [maskMinX,maskMinY,maskMinZ]=ind2sub(size(ROI), find(ROI,1));
+            [maskMaxX,maskMaxY,maskMaxZ]=ind2sub(size(ROI), find(ROI,1,'last'));
+        end
+        
         if(~isempty(ROI))
             tmp = nan(1+[maskMaxX,maskMaxY,maskMaxZ]-[maskMinX,maskMinY,maskMinZ]);
             tmp(:) = vol(ROI>0);
@@ -299,6 +304,8 @@ for i = 1:numel(p.ChannelIndex)
     end
     
     save(outFilePaths{1,iChan}, 'movieInfo');
+    save(outFilePaths{2,iChan}, 'labels');
+    
     clear movieInfo;
 
 end %%% channel loop
