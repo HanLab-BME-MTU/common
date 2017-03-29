@@ -135,8 +135,6 @@ classdef DetectionProcess < ImageAnalysisProcess
                  @NucleiDetectionProcess;
                  @PointSourceDetectionProcess;
                  @PointSourceDetectionProcess3D;
-                 @CometDetectionProcess3D;
-                 @WatershedDetectionProcess3D
                 };
 
             % If input, check if 2D or 3D movie(s).

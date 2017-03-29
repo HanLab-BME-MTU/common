@@ -117,10 +117,11 @@ end
 pointSourceDetProc3D.setInFilePaths(inFilePaths);
     
 % Set up the output directories
-outFilePaths = cell(1, numel(movieData.channels_));
+outFilePaths = cell(2, numel(movieData.channels_));
 for i = p.ChannelIndex;    
     %Create string for current directory
     outFilePaths{1,i} = [p.OutputDirectory filesep 'channel_' num2str(i) '.mat'];
+    outFilePaths{2,i} = [p.OutputDirectory filesep 'channel_detectionLabRef' num2str(i) '.mat'];
 end
 mkClrDir(p.OutputDirectory)
 pointSourceDetProc3D.setOutFilePaths(outFilePaths);
@@ -302,11 +303,17 @@ for i = 1:numel(p.ChannelIndex)
         %in the case that no channels/frames had detected points
         movieInfo = [];
     end
-    
-    save(outFilePaths{1,iChan}, 'movieInfo', 'labels');
 
+    % 
+    detectionLabRef = movieInfo;
+    for fIdx=1:length(detectionLabRef)
+        detectionLabRef(fIdx).zCoord(:,1)=detectionLabRef(fIdx).zCoord(:,1)*movieData.pixelSizeZ_/movieData.pixelSize_;
+    end
+
+    save(outFilePaths{1,iChan}, 'movieInfo', 'labels');
+    save(outFilePaths{2,iChan}, 'detectionLabRef');
     
-    clear movieInfo;
+    clear movieInfo detectionLabRef;
 
 end %%% channel loop
 

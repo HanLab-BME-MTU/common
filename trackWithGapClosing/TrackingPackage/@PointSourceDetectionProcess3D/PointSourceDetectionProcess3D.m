@@ -24,7 +24,7 @@ classdef PointSourceDetectionProcess3D < DetectionProcess
         function varargout = loadChannelOutput(obj,iChan,varargin)
             
             % Input check
-            outputList = {'movieInfo', 'detect3D'};
+            outputList = {'movieInfo', 'detect3D', 'detectionsLabRef'};
             ip = inputParser;
             ip.addRequired('iChan',@(x) ismember(x,1:numel(obj.owner_.channels_)));
             ip.addOptional('iFrame',1:obj.owner_.nFrames_,...
@@ -67,6 +67,8 @@ classdef PointSourceDetectionProcess3D < DetectionProcess
                 
                     case 'movieInfo'
                         varargout{iout} = obj.loadChannelOutput@DetectionProcess(iChan, varargin{:});
+                    case 'detectionsLabRef'
+                        varargout{iout} = load(obj.outFilePaths_{2, iChan}, 'detectionLabRef');
                     otherwise
                         error('Incorrect Output Var type');
                 end

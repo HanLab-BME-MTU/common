@@ -2,6 +2,7 @@ function trackMovie(processOrMovieData,varargin)
 % Track features in a movie which has been processed by a detection method
 %
 % Sebastien Besson, 5/2011
+% Updated Andrew R. Jamieson Mar 2017
 
 %% Input
 %Check input
@@ -71,7 +72,7 @@ if ~isempty(p.timeRange) && isequal(unique(size(p.timeRange)), [1 2])
         endFrame = nFrames;
     end
 elseif ~isempty(p.timeRange)
-    error('--plusTipCometTracker: timeRange should be [startFrame endFrame] or [] for all frames')
+    error('--TrackingProcess: timeRange should be [startFrame endFrame] or [] for all frames')
 end
 
 %% --------------- Displacement field calculation ---------------%%% 

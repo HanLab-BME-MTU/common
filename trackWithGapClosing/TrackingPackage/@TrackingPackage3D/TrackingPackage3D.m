@@ -52,14 +52,16 @@ classdef TrackingPackage3D < Package
 
         function m = getDependencyMatrix(i,j)   
                 %1 2 3 4 5 6 7 8
-            m = [0 0 0 0 0 0 0 0;   %1 MIP Process (1) [optional]
-                 0 0 0 0 0 0 0 0;   %2 DetectionProcess
-                 0 1 0 0 0 0 0 0;   %3 Registration [optional] (if not done lab ref is selected)
-                 0 0 0 0 0 0 0 0;   %4 Fiduciary/Pole Detection Process [optional?]
-                 0 1 2 2 0 0 0 0;   %5 TrackingProcess (can use spindle, stage, or lab ref)
-                 0 1 2 2 1 0 0 0;   %6 PostTrackingProcess
-                 0 1 2 2 1 0 0 0;   %7 Projection Process [optional]
-                 0 1 2 2 1 2 2 0;]; %8 export external rendering Process [optional]?
+            m = [0 0 0 0 0 0 0 0 0;   %1 MIP Process (1) [optional]
+                 0 0 0 0 0 0 0 0 0;   %2 DetectionProcess {{export option}}
+                 0 1 0 0 0 0 0 0 0;   %3 Registration [optional]
+                 0 1 1 0 0 0 0 0 0;   %4 DefineNewReferenceFrame [optional] (if not done lab ref is selected) {{export option}}
+                 0 0 0 2 0 0 0 0 0;   %5 Fiduciary/Pole Detection Process [optional?]
+                 0 1 1 0 0 0 0 0 0;   %4 DefineNewReferenceFrame [optional] (if not done lab ref is selected) {{export option}}                
+                 0 1 2 0 2 0 0 0 0;   %6 TrackingProcess (can use spindle, stage, or lab ref) {{export option}}
+                 0 1 2 0 2 1 0 0 0;   %7 PostTrackingProcess
+                 0 1 2 0 2 1 0 0 0;   %8 Projection Process [optional]
+                 0 1 2 0 2 1 2 2 0;]; %9 export external rendering Process [optional]?
 
             if nargin<2, j=1:size(m,2); end
             if nargin<1, i=1:size(m,1); end
@@ -74,7 +76,9 @@ classdef TrackingPackage3D < Package
         function classes = getProcessClassNames(index)
             classes = {'ExternalProcess'    ,...
                        'DetectionProcess'   ,...
-                       'StageDriftCorrectionProcess'    ,...
+                       'StageDriftCorrectionProcess',...
+                       'CreateReferenceFrameProcess',...
+                       'ExternalProcess'    ,...
                        'ExternalProcess'    ,...
                        'TrackingProcess'    ,...
                        'PostTrackingProcess',...
