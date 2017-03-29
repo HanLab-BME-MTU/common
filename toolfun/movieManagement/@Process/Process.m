@@ -4,7 +4,6 @@ classdef Process < hgsetget
     %
     
     properties (SetAccess = private, GetAccess = public)
-        name_           % Process name
         owner_          % Movie data object owning the process
         createTime_     % Time process was created
         startTime_      % Time process was last started
@@ -12,6 +11,8 @@ classdef Process < hgsetget
     end
     
     properties  (SetAccess = protected)
+        name_           % Process name
+        
         % Success/Uptodate flags
         procChanged_   % Whether process parameters have been changed
         success_       % If the process has been successfully run
