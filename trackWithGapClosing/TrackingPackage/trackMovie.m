@@ -17,20 +17,20 @@ paramsIn=ip.Results.paramsIn;
 [movieData, trackProc] = getOwnerAndProcess(processOrMovieData,'TrackingProcess',true);
 
 %Parse input, store in parameter structure
-p = parseProcessParams(trackProc,paramsIn);
+p = parseProcessParams(trackProc, paramsIn);
 
 %% --------------- Initialization ---------------%%
 
 % Check detection process first
 if isempty(p.DetProcessIndex)
-    p.DetProcessIndex =movieData.getProcessIndex('DetectionProcess',1,1);
+    p.DetProcessIndex = movieData.getProcessIndex('DetectionProcess',1,1);
 
     if isempty(p.DetProcessIndex)
         error(['Detection has not been run! '...
             'Please run detection prior to tracking!'])
     end
 end
-detProc=movieData.processes_{p.DetProcessIndex};
+detProc = movieData.processes_{p.DetProcessIndex};
 
 if ~detProc.checkChannelOutput(p.ChannelIndex)
     error(['Missing detection output ! Please apply detection before ' ...
@@ -56,12 +56,45 @@ end
 mkClrDir(p.OutputDirectory);
 trackProc.setOutFilePaths(outFilePaths);
 
+
+%% --------------- Adding capability to select time range frames ---------------%%% 
+
+% use movieInfo to check start/end frames for tracking
+% then get rid of detected features in movieInfo outside this range
+if ~isempty(p.timeRange) && isequal(unique(size(p.timeRange)), [1 2])
+    nFrames = length(movieInfo);
+    if p.timeRange(1) <= p.timeRange(2) && p.timeRange(2) <= nFrames
+        startFrame = p.timeRange(1);
+        endFrame = p.timeRange(2);
+    else
+        startFrame = 1;
+        endFrame = nFrames;
+    end
+elseif ~isempty(p.timeRange)
+    error('--plusTipCometTracker: timeRange should be [startFrame endFrame] or [] for all frames')
+end
+
 %% --------------- Displacement field calculation ---------------%%% 
 
 disp('Starting tracking...')
 
 for i = p.ChannelIndex
+
     movieInfo = detProc.loadChannelOutput(i);
+
+    if ~isempty(p.timeRange)
+        %% --------------- Adding capability to select time range frames ---------------%%% 
+        % Initialize a new movieInfo structure array with the old movieInfo fields 
+        % movieInfo fields may vary depending of the detection method 
+        oldMovieInfo = movieInfo;
+        clear movieInfo;
+        movieFields = fieldnames(oldMovieInfo)';
+        emptyFields = [movieFields; cell(size(movieFields))];
+        movieInfo(nFrames,1) = struct(emptyFields{:});
+        movieInfo(startFrame:endFrame,:) = oldMovieInfo(startFrame:endFrame,:);
+        clear oldMovieInfo
+        %% --------------- Adding capability to select time range frames ---------------%%% 
+    end
     
     % Call function - return tracksFinal for reuse in the export
     % feature

@@ -152,6 +152,8 @@ classdef TrackingProcess < DataProcessingProcess & NonSingularProcess
             funParams.ChannelIndex =1:numel(owner.channels_);
             funParams.DetProcessIndex = [];
             funParams.OutputDirectory = [outputDir  filesep 'tracks'];
+            % --------------- time range ----------------
+            funParams.timeRange = []; % empty implies entier movie
             % --------------- gapCloseParam ----------------
             funParams.gapCloseParam.timeWindow = 5; %IMPORTANT maximum allowed time gap (in frames) between a track segment end and a track segment start that allows linking them.
             funParams.gapCloseParam.mergeSplit = 0; % (SORT OF FLAG: 4 options for user) 1 if merging and splitting are to be considered, 2 if only merging is to be considered, 3 if only splitting is to be considered, 0 if no merging or splitting are to be considered.
