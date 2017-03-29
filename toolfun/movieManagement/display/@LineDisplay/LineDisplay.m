@@ -29,7 +29,11 @@ classdef LineDisplay < MovieDataDisplay
         end
         function updateDraw(obj,h,data)
             % Update handle xData and yData
-            set(h,'XData',data(:,1),'YData',data(:,2));
+            if(~isempty(data))
+                set(h,'XData',data(:,1),'YData',data(:,2));
+            else
+                set(h,'XData',[],'YData',[]);
+            end
             % obj.setLineProperties(h);
             % obj.setAxesProperties();
         end

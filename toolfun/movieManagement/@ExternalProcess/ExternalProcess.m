@@ -1,4 +1,4 @@
-classdef ExternalProcess < NonSingularProcess
+classdef ExternalProcess < NonSingularProcess & NameableProcess
     % ExternalProcess A minimalist implementation of a Process that can run
     % an arbitrary function with the ExternalProcess handle as an argument
     %
@@ -103,7 +103,7 @@ classdef ExternalProcess < NonSingularProcess
            nChanTot = numel(obj.owner_.channels_);
            if nargin < 2 || isempty(iChan), iChan = 1:nChanTot; end
            assert(all(obj.checkChanNum(iChan)));
-           status = true;
+           status = true(size(iChan));
         end
     end
     methods (Static)
