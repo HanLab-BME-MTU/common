@@ -117,7 +117,7 @@ end
 pointSourceDetProc3D.setInFilePaths(inFilePaths);
     
 % Set up the output directories
-outFilePaths = cell(1,numel(movieData.channels_));
+outFilePaths = cell(1, numel(movieData.channels_));
 for i = p.ChannelIndex;    
     %Create string for current directory
     outFilePaths{1,i} = [p.OutputDirectory filesep 'channel_' num2str(i) '.mat'];
@@ -303,8 +303,8 @@ for i = 1:numel(p.ChannelIndex)
         movieInfo = [];
     end
     
-    save(outFilePaths{1,iChan}, 'movieInfo');
-    save(outFilePaths{2,iChan}, 'labels');
+    save(outFilePaths{1,iChan}, 'movieInfo', 'labels');
+
     
     clear movieInfo;
 

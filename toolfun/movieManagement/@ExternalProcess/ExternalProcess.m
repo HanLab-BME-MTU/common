@@ -64,7 +64,7 @@ classdef ExternalProcess < NonSingularProcess
             ip.addRequired('owner',@(x) isa(x,'MovieObject'));
             ip.addOptional('name',ExternalProcess.getName(),@ischar);
             ip.addOptional('fun',@(x) x,@(f) validateattributes(f,{'function_handle','char'},{}));
-            ip.addParameter('parameters',ExternalProcess.getDefaultParams(owner,varargin{:}));
+            ip.addParameter('parameters',ExternalProcess.getDefaultParams(owner,varargin{:}), @isstruct);
             ip.addParameter('drawableOutput',[]);
             ip.addParameter('loadChannelOutputFcn',[]);
             ip.addParameter('checkChannelOutputFcn',[]);
