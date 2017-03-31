@@ -7,6 +7,7 @@ ip.addRequired('ML',@(MD) isa(ML,'MovieList'));
 ip.addParamValue('maxWidth',1600,@isnumeric);
 ip.addParamValue('maxHeight',900,@isnumeric);
 ip.addParamValue('MIPSize',250,@isnumeric);
+ip.addParamValue('invertLUT',0,@islogical);
 ip.parse(ML,varargin{:});
 p=ip.Results;
 % turn a specific warning off
@@ -15,7 +16,12 @@ warning('off', 'MATLAB:imagesci:tifftagsread:expectedAsciiDataFormat');
 
 % set parameters
 stripeSize = 8; % the width of the stripes in the image that combines all three maximum intensity projections
-stripeColor = 0; %the stripe color, a number between 0 (black) and 1 (white).  (If you're not using all of the bit depth then white might be much lower than 1, and black might be higher than 0.)
+%the stripe color, a number between 0 (black) and 1 (white).  (If you're not using all of the bit depth then white might be much lower than 1, and black might be higher than 0.)
+% if(p.invertLUT); 
+%     stripeColor = 1; 
+% else
+    stripeColor = 0; 
+% end;
 
 savePath=[ML.outputDirectory_ filesep 'MIPArray'];
 if ~isdir(savePath) 
@@ -99,6 +105,10 @@ for frameIdx=1:max(frameNb)
         maxXY=[maxXY; stripeColor*ones(stripeSize,p.maxWidth); movieLine];
     end
 
+    if(p.invertLUT)
+        maxXY = imcomplement(maxXY);
+    end
+    
     imwrite(maxXY, [savePath filesep 'MIPArray_' num2str(frameIdx,'%04d') '.tif' ], 'Compression', 'none');
     writeVideo(video,maxXY)
     

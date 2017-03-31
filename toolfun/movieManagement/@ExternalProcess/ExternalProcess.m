@@ -1,4 +1,4 @@
-classdef ExternalProcess < NonSingularProcess
+classdef ExternalProcess < NonSingularProcess & NameableProcess
     % ExternalProcess A minimalist implementation of a Process that can run
     % an arbitrary function with the ExternalProcess handle as an argument
     %
