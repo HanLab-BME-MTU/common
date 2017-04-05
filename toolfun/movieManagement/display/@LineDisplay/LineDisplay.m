@@ -22,7 +22,11 @@ classdef LineDisplay < MovieDataDisplay
         end
         function h=initDraw(obj,data,tag,varargin)
             % Plot data and set graphical options
-            h=line(data(:,1),data(:,2),varargin{:});
+            if(isempty(data))
+                h=line([],[],varargin{:});
+            else
+                h=line(data(:,1),data(:,2),varargin{:});
+            end
             set(h,'Tag',tag);
             obj.setLineProperties(h);
             obj.setAxesProperties();
