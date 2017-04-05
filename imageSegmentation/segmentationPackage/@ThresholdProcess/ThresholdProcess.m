@@ -41,6 +41,7 @@ classdef ThresholdProcess < SegmentationProcess & NonSingularProcess
         end
         function mask = loadChannelOutput(obj, iChan, iFrame, varargin)
             ip = inputParser;
+            ip.addOptional('iFrame',1,@isnumeric);
             ip.addParameter('output','',@ischar);
             ip.StructExpand = true;
             try
