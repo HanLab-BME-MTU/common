@@ -22,7 +22,7 @@ function varargout = thresholdProcessGUI(varargin)
 
 % Edit the above text to modify the response to help thresholdProcessGUI
 
-% Last Modified by GUIDE v2.5 23-Mar-2017 14:27:51
+% Last Modified by GUIDE v2.5 05-Apr-2017 17:20:52
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -102,7 +102,11 @@ if(~isfield(funParams,'ExcludeZero'))
     funParams.ExcludeZero = false;
 end
 
+if(~isfield(funParams,'Invert'))
+    funParams.Invert = false;
+end
 
+set(handles.checkbox_invert, 'Value', funParams.Invert);
 
 useAutomatic = isempty(funParams.ThresholdValue) || funParams.PreThreshold;
 useFixed = ~isempty(funParams.ThresholdValue) || funParams.PreThreshold;
@@ -221,6 +225,8 @@ if isnan(gaussFilterSigma) || gaussFilterSigma < 0
     return;
 end
 funParams.GaussFilterSigma=gaussFilterSigma;
+
+funParams.Invert = get(handles.checkbox_invert,'Value');
 
 % Automatic and fixed are not mutually exclusive.
 % If PreThreshold, one could use both automatic and fixed thresholds.
@@ -705,7 +711,8 @@ if get(handles.checkbox_preview,'Value')
             % iChan is not really 1, but we are reusing code from thresholdMovie              
             iChan = 1;
             p.ThresholdValue = get(handles.slider_threshold, 'Value');
-            p.IsPercentile = get(handles.checkbox_is_percentile,'Value')
+            p.IsPercentile = get(handles.checkbox_is_percentile,'Value');
+            p.Invert = get(handles.checkbox_invert,'Value');
             
             if(isnan(p.ExcludeOutliers))
                 p.ExcludeOutliers = 0;
@@ -743,30 +750,14 @@ if get(handles.checkbox_preview,'Value')
                 % Threshold must be at least zero if excluding zeros
                 currThresh = max(currThresh,0);
             end
-            currThresh
+            
             %% Use automatic thresholding
 
-            
-%             if get(handles.checkbox_preThreshold,'Value')
-%                 thresholdValue = get(handles.slider_threshold, 'Value');
-%                 if(get(handles.checkbox_is_percentile,'Value'))
-%                     thresholdValue = prctile(userData.imData(:),thresholdValue);
-%                 end
-%                 data = data(data > thresholdValue);
-%             end
-%             
-%             
-%             if ~get(handles.checkbox_preThreshold,'Value')
-%                 currThresh = threshMethod( imData);
-%             else
-%                 thresholdValue = get(handles.slider_threshold, 'Value');
-%                 if(get(handles.checkbox_is_percentile,'Value'))
-%                     thresholdValue = prctile(userData.imData(:),thresholdValue);
-%                 end
-%                 currThresh = threshMethod( imData(imData > thresholdValue) );
-%                 currThresh = max(currThresh,thresholdValue);
-%             end
-            alphamask(imData<=currThresh)=.4;
+            if(p.Invert)
+                alphamask(imData>=currThresh)=.4;
+            else
+                alphamask(imData<=currThresh)=.4;
+            end
         catch err
             % To debug breakpoint here
             rethrow(err);
@@ -777,7 +768,11 @@ if get(handles.checkbox_preview,'Value')
         if(get(handles.checkbox_is_percentile,'Value'))
             thresholdValue = prctile(userData.imData(:),thresholdValue);
         end
-        alphamask(imData<=thresholdValue)=.4;
+        if(get(handles.checkbox_invert,'Value'))
+            alphamask(imData>=thresholdValue)=.4;
+        else
+            alphamask(imData<=thresholdValue)=.4;
+        end
     end
     set(imHandle,'AlphaData',alphamask,'AlphaDataMapping','none');
 
@@ -896,3 +891,13 @@ function checkbox_exclude_zero_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of checkbox_exclude_zero
+
+
+% --- Executes on button press in checkbox_invert.
+function checkbox_invert_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox_invert (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of checkbox_invert
+update_data(hObject,eventdata,handles);
