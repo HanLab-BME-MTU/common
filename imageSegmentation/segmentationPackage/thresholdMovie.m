@@ -1,4 +1,4 @@
-function movieData = thresholdMovie(movieData,paramsIn)
+function movieData = thresholdMovie(movieDataOrProcess,paramsIn)
 %THRESHOLDMOVIE applies automatic or manual thresholding to every frame in input movie
 %
 % movieData = thresholdMovie(movieData)
@@ -39,6 +39,10 @@ function movieData = thresholdMovie(movieData,paramsIn)
 %       each element specifies the value to use for a specific channel.
 %       Must be the same order and size as ChannelIndex. (requires good
 %       SNR, significant area of background in image).
+%
+%       ('IsPercentile' -> True / False vector, same size as
+%       ThresholdValue) Optional. Interpret ThresholdValue as a percentile
+%       rather than an absolute intensity value. Default: False
 % 
 %       ('MaxJump' -> Positive scalar) If this is non-zero, any changes in
 %       the auto-selected threshold value greater than this will be
@@ -54,6 +58,20 @@ function movieData = thresholdMovie(movieData,paramsIn)
 %       The filter kernel will be taken as a Gaussian with the input sigma.
 %       Optional. Default is 0 (no filtering)
 %           -- KJ
+%
+%       ('PreThreshold' -> True/False) Optional. If true, apply automatic
+%       thresholding only to the values above a fixed threshold
+%       Default: False
+%
+%       ('ExcludeOutliers' -> Nonnengative scalar) Optional. If this is
+%       non-zero, then exclude outliers more than ExcludeOutliers*sigma
+%       away from the mean see detectOutliers
+%       Default: 0 (do not exclude outliers)
+%
+%       ('ExcludeZero' -> True/False) Optional. If true, then remove the
+%       value zero from the data before automatic thresholding.
+%       Default: False (do not exclude zero)
+%       
 % 
 %       ('BatchMode' -> True/False)
 %       If true, graphical output and user interaction is
@@ -83,9 +101,9 @@ dName = 'masks_for_channel_';%String for naming the mask directories for each ch
 
 
 %Check that input object is a valid moviedata TEMP
-if nargin < 1 || ~isa(movieData,'MovieData')
-    error('The first input argument must be a valid MovieData object!')
-end
+% if nargin < 1 || ~isa(movieData,'MovieData')
+%     error('The first input argument must be a valid MovieData object!')
+% end
 
 if nargin < 2
     paramsIn = [];
@@ -93,19 +111,22 @@ end
 
 
 %Get the indices of any previous threshold processes from this function                                                                              
-iProc = movieData.getProcessIndex('ThresholdProcess',1,0);
-
-%If the process doesn't exist, create it
-if isempty(iProc)
-    iProc = numel(movieData.processes_)+1;
-    movieData.addProcess(ThresholdProcess(movieData,movieData.outputDirectory_));                                                                                                 
-end
-
-thresProc= movieData.processes_{iProc};
+% iProc = movieData.getProcessIndex('ThresholdProcess',1,0);
+% 
+% %If the process doesn't exist, create it
+% if isempty(iProc)
+%     iProc = numel(movieData.processes_)+1;
+%     movieData.addProcess(ThresholdProcess(movieData,movieData.outputDirectory_));                                                                                                 
+% end
+% 
+% thresProc= movieData.processes_{iProc};
 
 
 %Parse input, store in parameter structure
-p = parseProcessParams(movieData.processes_{iProc},paramsIn);
+% p = parseProcessParams(movieData.processes_{iProc},paramsIn);
+
+[movieData,thresProc] = getOwnerAndProcess(movieDataOrProcess,'ThresholdProcess',true);
+p = parseProcessParams(thresProc,paramsIn);
 
 nChan = numel(movieData.channels_);
 
@@ -196,16 +217,73 @@ for iChan = 1:nChanThresh
         else
             currImage = movieData.processes_{p.ProcessIndex}.loadOutImage(p.ChannelIndex(iChan),iImage);
         end
+        
+
 
         %KJ: filter image before thesholding if requested
         if p.GaussFilterSigma > 0
             currImage = filterGauss2D(double(currImage),p.GaussFilterSigma);
         end
 
+        if ~isfield(p,'PreThreshold') || isempty(p.PreThreshold)
+            % PreThreshold is false by default
+            p.PreThreshold = false;
+        end
+        if ~isfield(p,'IsPercentile')
+            p.IsPercentile = false(size(p.ThresholdValue));
+        end
+               
+        if ~isfield(p,'ExcludeZero')
+            p.ExcludeZero = false;
+        end
         
-        if isempty(p.ThresholdValue)
+        if ~isfield(p,'ExcludeOutliers')
+            p.ExcludeOutliers = false;
+        end
+        
+        if ~isfield(p,'Invert')
+            p.Invert = false;
+        end
+        
+        if ~isfield(p,'SingleFile')
+            p.SingleFile = false;
+        end
+        
+        if isempty(p.ThresholdValue) || p.PreThreshold
+            % Automatic thresholding
             try
-                currThresh = threshMethod(currImage);             
+                data = currImage;
+                
+                %% Perform automatic thresholding
+                if(p.PreThreshold)
+                    % Use automatic thresholding method only on pixels
+                    % above fixed threshold
+                    absoluteThreshold = p.ThresholdValue(iChan);
+                    if(p.IsPercentile(iChan))
+                        absoluteThreshold = prctile(data(:),absoluteThreshold);
+                    end
+                    data = data(data > absoluteThreshold);
+                end
+                if(p.ExcludeZero)
+                    data = data(data ~= 0);
+                end
+                if(p.ExcludeOutliers)
+                    % Exclude outliers before perforing automatic
+                    % thresholding
+                    [~,inliers] = detectOutliers(data,p.ExcludeOutliers);
+                    data = data(inliers);
+                end
+                
+                currThresh = threshMethod(data);
+                   
+                if(p.PreThreshold)
+                    % Ensure absolute threshold is above fixed threshold
+                    currThresh = max(currThresh,absoluteThreshold);
+                end
+                if(p.ExcludeZero)
+                    % Threshold must be at least zero if excluding zeros
+                    currThresh = max(currThresh,0);
+                end
             catch %#ok<CTCH>
                 %If auto-threshold selection fails, and jump-correction is
                 %enabled, force use of previous threshold
@@ -225,6 +303,9 @@ for iChan = 1:nChanThresh
             end
         else            
             currThresh = p.ThresholdValue(iChan);
+            if(p.IsPercentile(iChan))
+                currThresh = prctile(currImage(:),currThresh);
+            end
         end
         
         if p.MaxJump > 0
@@ -246,10 +327,19 @@ for iChan = 1:nChanThresh
         end
         
         %Apply the threshold to create the mask
-        imageMask = currImage > currThresh;
+        if(p.Invert)
+            imageMask = currImage < currThresh;
+        else
+            % prior behavior
+            imageMask = currImage > currThresh;
+        end
     
-        %write the mask to file                    
-        imwrite(imageMask,[maskDirs{iChan} filesep pString imageFileNames{iChan}{iImage}]);
+        %write the mask to file
+        if(p.SingleFile)
+            imwrite(imageMask,[maskDirs{iChan} filesep pString imageFileNames{iChan}{1}],'WriteMode','append');
+        else
+            imwrite(imageMask,[maskDirs{iChan} filesep pString imageFileNames{iChan}{iImage}]);
+        end
         
         if ishandle(wtBar) && mod(iImage,5)
             %Update the waitbar occasionally to minimize slowdown
