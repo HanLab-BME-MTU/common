@@ -13,7 +13,7 @@ classdef MovieList < MovieObject
     end
     
     methods
-        function obj = MovieList(movies,outputDirectory, varargin)
+        function obj = MovieList(movies, outputDirectory, varargin)
             % Constructor for the MovieList object
             
             if nargin > 0
@@ -30,7 +30,11 @@ classdef MovieList < MovieObject
                 else
                     error('lccb:ml:constructor','Movies should be a cell array or a array of MovieData');
                 end
+                
                 obj.outputDirectory_ = outputDirectory;
+                if ~isempty(obj.outputDirectory_)
+                    obj.setPath(obj.outputDirectory_)
+                end
                 
                 % Construct the Channel object
                 nVarargin = numel(varargin);
