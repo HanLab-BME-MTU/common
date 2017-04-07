@@ -150,7 +150,7 @@ build:utrack:R2016b:
       - $TARGET_FOLDER
     when: on_success
     expire_in: 4 weeks
-  when: manual   
+  # when: manual   
 
 build:utrack:R2014a:
   stage: build
