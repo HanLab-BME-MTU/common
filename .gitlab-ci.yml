@@ -40,7 +40,7 @@ unit:R2016b:
     - module load matlab/$MATLAB_VERSION
     - echo "-Xmx1024m" > java.opts
     - $CI_SCRIPT_PATH/unit/runCITest_m.sh
-  when: manual
+  # when: manual
 
 # ======== [optional - other version] ==
 unit:R2016a:
@@ -124,7 +124,7 @@ build:utrack3D:R2016b:
       - $TARGET_FOLDER
     when: on_success
     expire_in: 4 weeks
-  when: manual   
+  # when: manual   
 
 #=======###
 
@@ -200,7 +200,7 @@ build:CME:R2016b:
       - $TARGET_FOLDER
     when: on_success
     expire_in: 4 weeks
-  when: manual
+  # when: manual
 
 
 # ===========[TFM]===================
@@ -227,7 +227,7 @@ build:TFM:R2016b:
       - $TARGET_FOLDER
     when: on_success
     expire_in: 4 weeks
-  when: manual
+  # when: manual
 
 
 # ===========[Biosensors]===================
@@ -254,7 +254,7 @@ build:Biosensors:R2016b:
       - $TARGET_FOLDER
     when: on_success
     expire_in: 4 weeks
-  when: manual
+  # when: manual
 
 # ===========[QFSM]===================
 
@@ -280,7 +280,7 @@ build:QFSM:R2016b:
       - $TARGET_FOLDER
     when: on_success
     expire_in: 4 weeks
-  when: manual
+  # when: manual
 
 
 build:FA:R2016b:
@@ -332,7 +332,7 @@ test:utrack3D:R2016b:
     expire_in: 6 weeks
   dependencies:
     - build:utrack3D:R2016b
-  when: manual
+  # when: manual
 
 test:utrack:R2016b:
   stage: test
@@ -353,7 +353,7 @@ test:utrack:R2016b:
     expire_in: 6 weeks
   dependencies:
     - build:utrack:R2016b
-  when: manual
+  # when: manual
 
 # Oldest
 test:utrack:R2014a-B2016b:
@@ -527,7 +527,7 @@ test:CME:R2016b:
     expire_in: 6 weeks
   dependencies:
     - build:CME:R2016b
-  when: manual
+  # when: manual
 
 
 # ===========[TFM]===================
@@ -551,7 +551,7 @@ test:TFM:R2016b:
     expire_in: 6 weeks
   dependencies:
     - build:TFM:R2016b
-  when: manual
+  # when: manual
 
 # ===========[BioSensors]===================
 
@@ -574,7 +574,7 @@ test:Biosensors:R2016b:
     expire_in: 6 weeks
   dependencies:
     - build:Biosensors:R2016b
-  when: manual
+  # when: manual
 
 # ===========[QFSM]===================
 
@@ -597,7 +597,7 @@ test:QFSM:R2016b:
     expire_in: 6 weeks
   dependencies:
     - build:QFSM:R2016b
-  when: manual
+  # when: manual
 
 # ===========[FA]===================
 
