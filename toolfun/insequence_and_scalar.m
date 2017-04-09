@@ -1,7 +1,7 @@
-function [ tf ] = insequence( x, start, stop , interval)
+function [ tf ] = insequence_and_scalar( x, start, stop , interval)
 %insequence Checks to see if value is in the sequence start:interval:stop
 %
-% Roughly equivalent to ismember(x,start:interval:stop)
+% Roughly equivalent to isscalar(x) && ismember(x,start:interval:stop)
 %
 % This function does not handle negative intervals
 % It is faster than ismember since for a sequence one can first check to
@@ -18,7 +18,7 @@ function [ tf ] = insequence( x, start, stop , interval)
 % OUTPUT
 % tf - logical vector same size as x
 %
-% See also ismember, insequence_and_scalar, all_insequence
+% See also ismember
 
 % Mark Kittisopikul, April 2017
 % Jaqaman Lab
@@ -41,14 +41,8 @@ if(isscalar(x))
 
 else
     
-    tf = x >= start & x <= stop;
-    
-    if(nargin < 4)
-        x = x(tf) - start;
-    else
-        x = (x(tf) - start)./interval;
-    end
-    tf(tf) = x == round(x);
+    tf = false;
+    return;
        
 end
 
