@@ -218,7 +218,7 @@ classdef Package < hgsetget
         
         function process = getProcess(obj, i)
             % Retrieve a process by index
-            assert(isscalar(i) && ismember(i, 1:numel(obj.processes_)));
+            assert(insequence_and_scalar(i, 1,numel(obj.processes_)));
             process = obj.processes_{i};
         end
         
