@@ -201,7 +201,16 @@ classdef MovieList < MovieObject
         function obj = load(varargin)
             % Load or a movie list
             
-            assert(nargin > 0);
+            if(nargin == 0)
+                %If called with no arguments prompt for a .mat file
+                [filename,pathname] = uigetfile('*.mat','Select .mat file containing a MovieList object');
+                if(filename)
+                    varargin{1} = [pathname filesep filename];
+                else
+                    obj = MovieList.empty;
+                    return;
+                end
+            end
 %             assert(MovieList.isOmeroSession(varargin{1}) || ...
 %                 exist(varargin{1}, 'file') == 2)
             
