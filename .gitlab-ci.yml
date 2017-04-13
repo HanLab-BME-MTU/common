@@ -130,7 +130,7 @@ build:utrack3D:R2016b:
     BUILD_NAME: $PACKAGE_NAME
     RELEASE: "2.2.1"
     DOCUMENTATION_DIR: "${CLEAN_REPO_PATH}/documentation"
-    TARGET_FOLDER: "${PACKAGE_NAME}-b${CI_BUILD_ID}"
+    TARGET_FOLDER: "${PACKAGE_NAME}"
   script:
     - module unload matlab
     - module load matlab/$MATLAB_VERSION
@@ -336,7 +336,7 @@ test:utrack3D:R2016b:
   variables:
     MATLAB_TEST_VERSION: "2016b"
     MATLAB_BUILD_VERSION: "2016b"
-    BUILT_PACKAGE_PATH: "$./u-track3D-b${CI_BUILD_ID}/"
+    BUILT_PACKAGE_PATH: "$./u-track3D/"
   script:
     - module unload matlab
     - module load matlab/$MATLAB_TEST_VERSION
