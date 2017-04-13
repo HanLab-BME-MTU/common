@@ -25,15 +25,21 @@ classdef ImageOutputSelectionProcess < ImageProcessingProcess & NonSingularProce
             ip.addRequired('owner',@(x) isa(x,'MovieData'));
             ip.addOptional('funParams', ...
                 ImageOutputSelectionProcess.getDefaultParams(owner), ...
-                @isstruct);
+                @(x) isstruct(x) || isnumeric(x));
             ip.parse(owner,varargin{:});
+            
+            if(isnumeric(ip.Results.funParams))
+                funParams = ImageOutputSelectionProcess.getDefaultParams(owner,ip.Results.funParams);
+            else
+                funParams = ip.Results.funParams;
+            end
             
             obj = obj@ImageProcessingProcess(owner, ... 
                 'ImageOutputSelectionProcess', ... % name
                 @(varargin) true, ... % funName
-                ip.Results.funParams, ... % funParams
+                funParams, ... % funParams
                 owner.getChannelPaths, ... % inFilePaths_
-                ip.Results.funParams.outFilePaths ... % outFilePaths_
+                funParams.outFilePaths ... % outFilePaths_
                 );
         end
         function varargout = loadChannelOutput(obj,iChan,varargin)

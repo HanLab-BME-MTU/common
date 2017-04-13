@@ -81,7 +81,7 @@ function [norm_values,interval_int,x_roots] = normft1(x,dim,TOL,dofft)
     % Wave number, unnormalized by number of points
     freq = [0:nyquist-1 -nyquist+1:1:-1]';
 
-    % calculate derivatives, unscaled by 2*pi since we are only concerned with the signs of the derivatives
+    % calculate integral, not including 2*pi factor here
     qx_h = bsxfun(@rdivide,x_h,freq * 1i);
     qx_h(1,:,:) = 0;
     
