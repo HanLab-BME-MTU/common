@@ -350,7 +350,7 @@ test:utrack3D:R2016b:
     expire_in: 6 weeks
   dependencies:
     - build:utrack3D:R2016b
-  when: manual
+  # when: manual
 
 test:utrack:R2016b:
   stage: test
@@ -638,6 +638,7 @@ test:FA:R2016b:
     expire_in: 6 weeks
   dependencies:
     - build:FA:R2016b
+  when: manual 
 
 # === ************* =======================  
 # === Documentation  =======================  
