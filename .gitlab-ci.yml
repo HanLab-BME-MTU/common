@@ -1,7 +1,5 @@
 # Gitlab CI Script for danuser/common
 # Andrew R. Jamieson - 2017
-
-
 stages:
   - unit
   - integration
@@ -9,39 +7,58 @@ stages:
   - test
   - deploy
   - doc
-
 variables:
-  CLEAN_REPO_PATH: "/home2/s170480/matlab/xUnit/git/"
-  CI_SCRIPT_PATH: "${CLEAN_REPO_PATH}/ci-scripts/"
+  CLEAN_REPO_PATH: "/work/bioinformatics/s170480/xUnit/git/${CI_RUNNER_ID}"
   CI_SCRIPT_BRANCH: "master"
   TEST_DEBUG_TARGET_FOLDER: "debug_test/"
 before_script:
   - pwd
   - date
   - uname -a
+  - CI_SCRIPT_PATH="${CLEAN_REPO_PATH}/ci-scripts/"
   - module load python
   - module unload matlab
   - module list
+  - mkdir -p "${CLEAN_REPO_PATH}"
+  - cd $CLEAN_REPO_PATH
+  - if [ ! -d "$CI_SCRIPT_PATH" ]; then (git clone git@git.biohpc.swmed.edu:danuser/ci-scripts.git); fi
   - cd $CI_SCRIPT_PATH
-  - git pull
+  - pwd
   - git checkout "${CI_SCRIPT_BRANCH}"
   - git pull
   - $CI_SCRIPT_PATH/setup_gitlabCI.sh
   - cd $CI_PROJECT_DIR
-  
- 
+  - pwd
+
 # === Unit Tests ======================= 
 # Newest and oldest first...
-unit:R2016b:
+
+unit:R2017a:
   stage: unit
   variables:
     MATLAB_VERSION: "2016b"
+    CI_SCRIPT_PATH: "${CLEAN_REPO_PATH}/ci-scripts/"
   script: 
+    # - CI_SCRIPT_PATH="${CLEAN_REPO_PATH}/ci-scripts/"
     - module unload matlab
     - module load matlab/$MATLAB_VERSION
     - echo "-Xmx1024m" > java.opts
     - $CI_SCRIPT_PATH/unit/runCITest_m.sh
-#  when: manual
+  when: manual
+
+unit:R2016b:
+  stage: unit
+  variables:
+    MATLAB_VERSION: "2016b"
+    CI_SCRIPT_PATH: "${CLEAN_REPO_PATH}/ci-scripts/"
+  script: 
+    # - CI_SCRIPT_PATH="${CLEAN_REPO_PATH}/ci-scripts/"
+    - echo $CI_SCRIPT_PATH
+    - module unload matlab
+    - module load matlab/$MATLAB_VERSION
+    - echo "-Xmx1024m" > java.opts
+    - $CI_SCRIPT_PATH/unit/runCITest_m.sh
+  # when: manual
 
 # ======== [optional - other version] ==
 unit:R2016a:
@@ -103,6 +120,7 @@ integration:GenPack:R2016b:
   stage: integration
   variables:
     MATLAB_VERSION: "2016b"
+    CI_SCRIPT_PATH: "${CLEAN_REPO_PATH}/ci-scripts/"
   script: 
     - module unload matlab
     - module load matlab/$MATLAB_VERSION
@@ -113,37 +131,38 @@ integration:GenPack:R2016b:
     paths:
       - $TEST_DEBUG_TARGET_FOLDER
     when: always
-    expire_in: 6 weeks
-#  when: manual
+    expire_in: 2 weeks
+  # when: manual
 
 # === Build Packages =======================  
 # Build the newest and oldest 
 
 ##=======## 3D Utrack
 
-build:utrack3D:R2016b:
-  stage: build
-  variables:
-    MATLAB_VERSION: "2016b"
-    PACKAGE_NAME:  "u-track3D"
-    PACKAGE_CLASS: "UTrackPackage3D"
-    BUILD_NAME: $PACKAGE_NAME
-    RELEASE: "2.2.1"
-    DOCUMENTATION_DIR: "${CLEAN_REPO_PATH}/documentation"
-    TARGET_FOLDER: "${PACKAGE_NAME}"
-  script:
-    - module unload matlab
-    - module load matlab/$MATLAB_VERSION
-    - module load texlive/2014
-    - echo "-Xmx1024m" > java.opts
-    - $CI_SCRIPT_PATH/build/u-track/runCIbuild_utrack_Package_m.sh
-  artifacts:
-    name: "${BUILD_NAME}-b${CI_BUILD_ID}"
-    paths:
-      - $TARGET_FOLDER
-    when: on_success
-    expire_in: 4 weeks
-  # when: manual   
+# build:utrack3D:R2016b:
+#   stage: build
+#   variables:
+#     MATLAB_VERSION: "2016b"
+#     PACKAGE_NAME:  "u-track3D"
+#     PACKAGE_CLASS: "UTrackPackage3D"
+#     BUILD_NAME: $PACKAGE_NAME
+#     RELEASE: "2.2.1"
+#     # DOCUMENTATION_DIR: "${CLEAN_REPO_PATH}/documentation"
+#     TARGET_FOLDER: "${PACKAGE_NAME}"
+#     CI_SCRIPT_PATH: "${CLEAN_REPO_PATH}/ci-scripts/"
+#   script:
+#     - module unload matlab
+#     - module load matlab/$MATLAB_VERSION
+#     - module load texlive/2014
+#     - echo "-Xmx1024m" > java.opts
+#     - $CI_SCRIPT_PATH/build/u-track/runCIbuild_utrack_Package_m.sh
+#   artifacts:
+#     name: "${BUILD_NAME}-b${CI_BUILD_ID}"
+#     paths:
+#       - $TARGET_FOLDER
+#     when: on_success
+#     expire_in: 2 weeks
+#   when: manual   
 
 #=======###
 
@@ -155,8 +174,9 @@ build:utrack:R2016b:
     PACKAGE_CLASS: "TrackingPackage"
     BUILD_NAME: $PACKAGE_NAME
     RELEASE: "2.2.0"
-    DOCUMENTATION_DIR: "${CLEAN_REPO_PATH}/documentation"
+    # DOCUMENTATION_DIR: "${CLEAN_REPO_PATH}/documentation"
     TARGET_FOLDER: "${PACKAGE_NAME}"
+    CI_SCRIPT_PATH: "${CLEAN_REPO_PATH}/ci-scripts/"
   script:
     - module unload matlab
     - module load matlab/$MATLAB_VERSION
@@ -168,7 +188,7 @@ build:utrack:R2016b:
     paths:
       - $TARGET_FOLDER
     when: on_success
-    expire_in: 4 weeks
+    expire_in: 2 weeks
 #  when: manual   
 
 build:utrack:R2014a:
@@ -179,8 +199,9 @@ build:utrack:R2014a:
     PACKAGE_CLASS: "TrackingPackage"
     BUILD_NAME: $PACKAGE_NAME
     RELEASE: "2.2.0"
-    DOCUMENTATION_DIR: "${CLEAN_REPO_PATH}/documentation"
+    # DOCUMENTATION_DIR: "${CLEAN_REPO_PATH}/documentation"
     TARGET_FOLDER: "target/${MATLAB_VERSION}/${PACKAGE_NAME}"
+    CI_SCRIPT_PATH: "${CLEAN_REPO_PATH}/ci-scripts/"
   script:
     - module unload matlab
     - module load matlab/$MATLAB_VERSION
@@ -192,7 +213,7 @@ build:utrack:R2014a:
     paths:
       - $TARGET_FOLDER
     when: on_success
-    expire_in: 4 weeks
+    expire_in: 2 weeks
   when: manual
 
 # ===========[CME]===================
@@ -205,8 +226,9 @@ build:CME:R2016b:
     PACKAGE_CLASS: "CMEAnalysis"
     BUILD_NAME: $PACKAGE_NAME
     RELEASE: "2.0.0alpha"
-    DOCUMENTATION_DIR: "${CLEAN_REPO_PATH}/documentation"
+    # DOCUMENTATION_DIR: "${CLEAN_REPO_PATH}/documentation"
     TARGET_FOLDER: "${PACKAGE_NAME}"
+    CI_SCRIPT_PATH: "${CLEAN_REPO_PATH}/ci-scripts/"
   script:
     - module unload matlab
     - module load matlab/$MATLAB_VERSION
@@ -218,7 +240,7 @@ build:CME:R2016b:
     paths:
       - $TARGET_FOLDER
     when: on_success
-    expire_in: 4 weeks
+    expire_in: 2 weeks
 #  when: manual
 
 
@@ -232,8 +254,9 @@ build:TFM:R2016b:
     PACKAGE_CLASS: "TFMPackage"
     BUILD_NAME: $PACKAGE_NAME
     RELEASE: "v1.1.2"
-    DOCUMENTATION_DIR: "${CLEAN_REPO_PATH}/documentation"
+    # DOCUMENTATION_DIR: "${CLEAN_REPO_PATH}/documentation"
     TARGET_FOLDER: "${PACKAGE_NAME}"
+    CI_SCRIPT_PATH: "${CLEAN_REPO_PATH}/ci-scripts/"
   script:
     - module unload matlab
     - module load matlab/$MATLAB_VERSION
@@ -245,7 +268,7 @@ build:TFM:R2016b:
     paths:
       - $TARGET_FOLDER
     when: on_success
-    expire_in: 4 weeks
+    expire_in: 2 weeks
 #  when: manual
 
 
@@ -259,8 +282,9 @@ build:Biosensors:R2016b:
     PACKAGE_CLASS: "BiosensorsPackage"
     BUILD_NAME: $PACKAGE_NAME
     RELEASE: "v1.1.2"
-    DOCUMENTATION_DIR: "${CLEAN_REPO_PATH}/documentation"
+    # DOCUMENTATION_DIR: "${CLEAN_REPO_PATH}/documentation"
     TARGET_FOLDER: "${PACKAGE_NAME}"
+    CI_SCRIPT_PATH: "${CLEAN_REPO_PATH}/ci-scripts/"
   script:
     - module unload matlab
     - module load matlab/$MATLAB_VERSION
@@ -272,7 +296,7 @@ build:Biosensors:R2016b:
     paths:
       - $TARGET_FOLDER
     when: on_success
-    expire_in: 4 weeks
+    expire_in: 2 weeks
 #  when: manual
 
 # ===========[QFSM]===================
@@ -285,8 +309,9 @@ build:QFSM:R2016b:
     PACKAGE_CLASS: "QFSMPackage"
     BUILD_NAME: $PACKAGE_NAME
     RELEASE: "v1.1.2"
-    DOCUMENTATION_DIR: "${CLEAN_REPO_PATH}/documentation"
+    # DOCUMENTATION_DIR: "${CLEAN_REPO_PATH}/documentation"
     TARGET_FOLDER: "${PACKAGE_NAME}"
+    CI_SCRIPT_PATH: "${CLEAN_REPO_PATH}/ci-scripts/"
   script:
     - module unload matlab
     - module load matlab/$MATLAB_VERSION
@@ -298,7 +323,7 @@ build:QFSM:R2016b:
     paths:
       - $TARGET_FOLDER
     when: on_success
-    expire_in: 4 weeks
+    expire_in: 2 weeks
 #  when: manual
 
 
@@ -310,8 +335,9 @@ build:FA:R2016b:
     PACKAGE_CLASS: "FocalAdhesionPackage"
     BUILD_NAME: $PACKAGE_NAME
     RELEASE: "v1.1.2"
-    DOCUMENTATION_DIR: "${CLEAN_REPO_PATH}/documentation"
+    # DOCUMENTATION_DIR: "${CLEAN_REPO_PATH}/documentation"
     TARGET_FOLDER: "${PACKAGE_NAME}"
+    CI_SCRIPT_PATH: "${CLEAN_REPO_PATH}/ci-scripts/"
   script:
     - module unload matlab
     - module load matlab/$MATLAB_VERSION
@@ -323,7 +349,8 @@ build:FA:R2016b:
     paths:
       - $TARGET_FOLDER
     when: on_success
-    expire_in: 4 weeks  
+    expire_in: 2 weeks  
+
 #  when: manual
 # === ************* =======================  
 # === Test Packages =======================  
@@ -336,7 +363,8 @@ test:utrack3D:R2016b:
   variables:
     MATLAB_TEST_VERSION: "2016b"
     MATLAB_BUILD_VERSION: "2016b"
-    BUILT_PACKAGE_PATH: "$./u-track3D/"
+    BUILT_PACKAGE_PATH: "$./u-track/"
+    CI_SCRIPT_PATH: "${CLEAN_REPO_PATH}/ci-scripts/"
   script:
     - module unload matlab
     - module load matlab/$MATLAB_TEST_VERSION
@@ -347,9 +375,9 @@ test:utrack3D:R2016b:
     paths:
       - $TEST_DEBUG_TARGET_FOLDER
     when: always
-    expire_in: 6 weeks
+    expire_in: 2 weeks
   dependencies:
-    - build:utrack3D:R2016b
+    - build:utrack:R2016b
   # when: manual
 
 test:utrack:R2016b:
@@ -358,6 +386,7 @@ test:utrack:R2016b:
     MATLAB_TEST_VERSION: "2016b"
     MATLAB_BUILD_VERSION: "2016b"
     BUILT_PACKAGE_PATH: "./u-track/"
+    CI_SCRIPT_PATH: "${CLEAN_REPO_PATH}/ci-scripts/"
   script:
     - module unload matlab
     - module load matlab/$MATLAB_TEST_VERSION
@@ -368,7 +397,7 @@ test:utrack:R2016b:
     paths:
       - $TEST_DEBUG_TARGET_FOLDER
     when: always
-    expire_in: 6 weeks
+    expire_in: 2 weeks
   dependencies:
     - build:utrack:R2016b
 #  when: manual
@@ -380,6 +409,7 @@ test:utrack:R2014a-B2016b:
     MATLAB_TEST_VERSION: "2014a"
     MATLAB_BUILD_VERSION: "2016b"
     BUILT_PACKAGE_PATH: "./target/${MATLAB_BUILD_VERSION}/u-track/"
+    CI_SCRIPT_PATH: "${CLEAN_REPO_PATH}/ci-scripts/"
   script:
     - module unload matlab
     - module load matlab/$MATLAB_TEST_VERSION
@@ -392,7 +422,7 @@ test:utrack:R2014a-B2016b:
     paths:
       - $TEST_DEBUG_TARGET_FOLDER
     when: always
-    expire_in: 6 weeks
+    expire_in: 2 weeks
   when: manual
 
 test:utrack:R2014a-B2014a:
@@ -401,6 +431,7 @@ test:utrack:R2014a-B2014a:
     MATLAB_TEST_VERSION: "2014a"
     MATLAB_BUILD_VERSION: "2014a"
     BUILT_PACKAGE_PATH: "./target/${MATLAB_BUILD_VERSION}/u-track/"
+    CI_SCRIPT_PATH: "${CLEAN_REPO_PATH}/ci-scripts/"
   script:
     - module unload matlab
     - module load matlab/$MATLAB_TEST_VERSION
@@ -413,10 +444,9 @@ test:utrack:R2014a-B2014a:
     paths:
       - $TEST_DEBUG_TARGET_FOLDER
     when: always
-    expire_in: 6 weeks
+    expire_in: 2 weeks
   when: manual
 
-  
 # Optional Runs with different Run versions
 # #################################
 test:utrack:R2016a:
@@ -425,6 +455,7 @@ test:utrack:R2016a:
     MATLAB_TEST_VERSION: "2016a"
     MATLAB_BUILD_VERSION: "2016b"
     BUILT_PACKAGE_PATH: "./target/${MATLAB_BUILD_VERSION}/u-track/"
+    CI_SCRIPT_PATH: "${CLEAN_REPO_PATH}/ci-scripts/"
   script:
     - module unload matlab
     - module load matlab/$MATLAB_TEST_VERSION
@@ -437,7 +468,7 @@ test:utrack:R2016a:
     paths:
       - $TEST_DEBUG_TARGET_FOLDER
     when: always
-    expire_in: 6 weeks
+    expire_in: 2 weeks
   when: manual
 
 test:utrack:R2015b:
@@ -446,6 +477,7 @@ test:utrack:R2015b:
     MATLAB_TEST_VERSION: "2015b"
     MATLAB_BUILD_VERSION: "2016b"
     BUILT_PACKAGE_PATH: "./target/${MATLAB_BUILD_VERSION}/u-track/"
+    CI_SCRIPT_PATH: "${CLEAN_REPO_PATH}/ci-scripts/"
   script:
     - module unload matlab
     - module load matlab/$MATLAB_TEST_VERSION
@@ -458,7 +490,7 @@ test:utrack:R2015b:
     paths:
       - $TEST_DEBUG_TARGET_FOLDER
     when: always
-    expire_in: 6 weeks
+    expire_in: 2 weeks
   when: manual
 
 test:utrack:R2015a:
@@ -467,6 +499,7 @@ test:utrack:R2015a:
     MATLAB_TEST_VERSION: "2015a"
     MATLAB_BUILD_VERSION: "2016b"
     BUILT_PACKAGE_PATH: "./target/${MATLAB_BUILD_VERSION}/u-track/"
+    CI_SCRIPT_PATH: "${CLEAN_REPO_PATH}/ci-scripts/"
   script:
     - module unload matlab
     - module load matlab/$MATLAB_TEST_VERSION
@@ -479,7 +512,7 @@ test:utrack:R2015a:
     paths:
       - $TEST_DEBUG_TARGET_FOLDER
     when: always
-    expire_in: 6 weeks
+    expire_in: 2 weeks
   when: manual
 
 test:utrack:R2014b:
@@ -488,6 +521,7 @@ test:utrack:R2014b:
     MATLAB_TEST_VERSION: "2014b"
     MATLAB_BUILD_VERSION: "2016b"
     BUILT_PACKAGE_PATH: "./target/${MATLAB_BUILD_VERSION}/u-track/"
+    CI_SCRIPT_PATH: "${CLEAN_REPO_PATH}/ci-scripts/"
   script:
     - module unload matlab
     - module load matlab/$MATLAB_TEST_VERSION
@@ -500,7 +534,7 @@ test:utrack:R2014b:
     paths:
       - $TEST_DEBUG_TARGET_FOLDER
     when: always
-    expire_in: 6 weeks
+    expire_in: 2 weeks
   when: manual
 
 test:utrack:R2014a:
@@ -509,6 +543,7 @@ test:utrack:R2014a:
     MATLAB_TEST_VERSION: "2014a"
     MATLAB_BUILD_VERSION: "2016b"
     BUILT_PACKAGE_PATH: "./target/${MATLAB_BUILD_VERSION}/u-track/"
+    CI_SCRIPT_PATH: "${CLEAN_REPO_PATH}/ci-scripts/"
   script:
     - module unload matlab
     - module load matlab/$MATLAB_TEST_VERSION
@@ -521,7 +556,7 @@ test:utrack:R2014a:
     paths:
       - $TEST_DEBUG_TARGET_FOLDER
     when: always
-    expire_in: 6 weeks
+    expire_in: 2 weeks
   when: manual
 
 # ===========[CME]===================
@@ -532,6 +567,7 @@ test:CME:R2016b:
     MATLAB_TEST_VERSION: "2016b"
     MATLAB_BUILD_VERSION: "2016b"
     BUILT_PACKAGE_PATH: "./CMEAnalysis/"
+    CI_SCRIPT_PATH: "${CLEAN_REPO_PATH}/ci-scripts/"
   script:
     - module unload matlab
     - module load matlab/$MATLAB_TEST_VERSION
@@ -542,7 +578,7 @@ test:CME:R2016b:
     paths:
       - $TEST_DEBUG_TARGET_FOLDER
     when: always
-    expire_in: 6 weeks
+    expire_in: 2 weeks
   dependencies:
     - build:CME:R2016b
 #  when: manual
@@ -556,6 +592,7 @@ test:TFM:R2016b:
     MATLAB_TEST_VERSION: "2016b"
     MATLAB_BUILD_VERSION: "2016b"
     BUILT_PACKAGE_PATH: "./TFMPackage/"
+    CI_SCRIPT_PATH: "${CLEAN_REPO_PATH}/ci-scripts/"
   script:
     - module unload matlab
     - module load matlab/$MATLAB_TEST_VERSION
@@ -566,7 +603,7 @@ test:TFM:R2016b:
     paths:
       - $TEST_DEBUG_TARGET_FOLDER
     when: always
-    expire_in: 6 weeks
+    expire_in: 2 weeks
   dependencies:
     - build:TFM:R2016b
 #  when: manual
@@ -579,6 +616,7 @@ test:Biosensors:R2016b:
     MATLAB_TEST_VERSION: "2016b"
     MATLAB_BUILD_VERSION: "2016b"
     BUILT_PACKAGE_PATH: "./BiosensorsPackage/"
+    CI_SCRIPT_PATH: "${CLEAN_REPO_PATH}/ci-scripts/"
   script:
     - module unload matlab
     - module load matlab/$MATLAB_TEST_VERSION
@@ -589,7 +627,7 @@ test:Biosensors:R2016b:
     paths:
       - $TEST_DEBUG_TARGET_FOLDER
     when: always
-    expire_in: 6 weeks
+    expire_in: 2 weeks
   dependencies:
     - build:Biosensors:R2016b
 #  when: manual
@@ -602,6 +640,7 @@ test:QFSM:R2016b:
     MATLAB_TEST_VERSION: "2016b"
     MATLAB_BUILD_VERSION: "2016b"
     BUILT_PACKAGE_PATH: "./QFSMPackage/"
+    CI_SCRIPT_PATH: "${CLEAN_REPO_PATH}/ci-scripts/"
   script:
     - module unload matlab
     - module load matlab/$MATLAB_TEST_VERSION
@@ -612,7 +651,7 @@ test:QFSM:R2016b:
     paths:
       - $TEST_DEBUG_TARGET_FOLDER
     when: always
-    expire_in: 6 weeks
+    expire_in: 2 weeks
   dependencies:
     - build:QFSM:R2016b
 #  when: manual
@@ -625,6 +664,7 @@ test:FA:R2016b:
     MATLAB_TEST_VERSION: "2016b"
     MATLAB_BUILD_VERSION: "2016b"
     BUILT_PACKAGE_PATH: "./FocalAdhesionPackage/"
+    CI_SCRIPT_PATH: "${CLEAN_REPO_PATH}/ci-scripts/"
   script:
     - module unload matlab
     - module load matlab/$MATLAB_TEST_VERSION
@@ -635,7 +675,7 @@ test:FA:R2016b:
     paths:
       - $TEST_DEBUG_TARGET_FOLDER
     when: always
-    expire_in: 6 weeks
+    expire_in: 2 weeks
   dependencies:
     - build:FA:R2016b
 #  when: manual 
@@ -654,6 +694,7 @@ doc:pdf_utrack:
     PACKAGE_CLASS: "TrackingPackage"
     BUILD_NAME: $PACKAGE_NAME
     RELEASE: "2.2.0-DEV"
+    CI_SCRIPT_PATH: "${CLEAN_REPO_PATH}/ci-scripts/"
   script: 
     - module load texlive/2014
     - echo "# Build package documentation pdfs"
