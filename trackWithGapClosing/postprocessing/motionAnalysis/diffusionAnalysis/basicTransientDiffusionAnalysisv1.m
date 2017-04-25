@@ -1,5 +1,5 @@
 function [transDiffAnalysisRes,errFlag] = basicTransientDiffusionAnalysisv1(tracks,...
-    probDim,alphaValues,alphaAsym,minDuration,plotRes,confRadMin,checkAsym,peakAlpha)
+    probDim,alphaValues,alphaAsym,minDuration,plotRes,confRadMin,peakAlpha)
 %BASICTRANSIENTDIFFUSIONANALYSISV1 detects potential diffusion segments of a track and performs MSS analysis on these segments
 %
 %SYNOPSIS [transDiffAnalysisRes,errFlag] = basicTransientDiffusionAnalysis(tracks,...
@@ -37,6 +37,10 @@ function [transDiffAnalysisRes,errFlag] = basicTransientDiffusionAnalysisv1(trac
 %                     positional standard deviation.
 %                     Optional. Default: 0.
 %
+%
+%       peakAlpha   : confidence level for choosing peaks when initially
+%       segmenting track. Default : 95
+%
 %OUTPUT transDiffAnalysisRes : And array (size = number of tracks) with the
 %                     field ".segmentClass", which contains the fields:
 %           .momentScalingSpectrum: (Number of classification
@@ -69,7 +73,7 @@ function [transDiffAnalysisRes,errFlag] = basicTransientDiffusionAnalysisv1(trac
 %Updated Tony Vega, July 2016
 
 %% Output
-
+checkAsym = 0; %Needs work so not imposed currently
 transDiffAnalysisRes = [];
 errFlag = 0;
 %% Input
@@ -108,12 +112,9 @@ if nargin < 7 || isempty(confRadMin)
     confRadMin = 0;
 end
 
-if nargin < 8 || isempty(checkAsym)
-    checkAsym = 0;
-end
 
-if nargin < 9 || isempty(peakAlpha)
-    peakAlpha = 0;
+if nargin < 8 || isempty(peakAlpha)
+    peakAlpha = 95;
 end
 
 if errFlag
