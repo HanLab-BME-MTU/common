@@ -53,10 +53,6 @@ userData = get(handles.figure1, 'UserData');
 if(isempty(userData)), userData = struct(); end;
 parameters = userData.parameters;
 
-% mkitti 2014/11/28 Why do we do this again?
-userData = get(handles.figure1, 'UserData');
-if(isempty(userData)), userData = struct(); end;
-
 % Get main figure handle and process id
 props = get(userData.handles_main.popupmenu_probDim, {'UserData','Value'});
 userData.probDim=props{1}(props{2});
@@ -64,7 +60,7 @@ userData.probDim=props{1}(props{2});
 % Parameter Setup
 set(handles.radiobutton_none,'Value',1);
 if ~isempty(parameters)
-    if ~isempty(parameters.initVelocity)% Initial Valocity Estimate
+    if isfield(parameters, 'initVelocity') && ~isempty(parameters.initVelocity)% Initial Valocity Estimate
         for i=1:userData.probDim  
             set(handles.(['edit_v_' num2str(i)]), 'String', parameters.initVelocity(i));
         end
@@ -72,7 +68,7 @@ if ~isempty(parameters)
         set(handles.radiobutton_initVelocity, 'Value', 1); 
     end
         
-    if ~isempty(parameters.convergePoint) % Reference Point for Initial Estimate
+    if isfield(parameters, 'convergePoint') && ~isempty(parameters.convergePoint) % Reference Point for Initial Estimate
         for i=1:userData.probDim  
             set(handles.(['edit_' num2str(i)]), 'String', parameters.convergePoint(i));
         end

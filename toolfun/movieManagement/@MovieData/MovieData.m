@@ -729,7 +729,16 @@ classdef  MovieData < MovieObject & matlab.mixin.Heterogeneous
         function obj = load(varargin)
             % Load or re-load a movie object
             
-            assert(nargin > 0);
+            if(nargin == 0)
+                %If called with no arguments prompt for a .mat file
+                [filename,pathname] = uigetfile('*.mat','Select .mat file containing a MovieData object');
+                if(filename)
+                    varargin{1} = [pathname filesep filename];
+                else
+                    obj = MovieData.empty;
+                    return;
+                end
+            end
 %             assert(MovieData.isOmeroSession(varargin{1}) || ...
 %                 exist(varargin{1}, 'file') == 2)
             

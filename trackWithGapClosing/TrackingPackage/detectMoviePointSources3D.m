@@ -15,31 +15,27 @@ function detectMoviePointSources3D(movieDataOrProcess,varargin)
 % OUTPUT   
 
 % Joy Xu / Sebastien Besson, July 2014
+% Andrew R. Jamieson, March 2017
 
 %% ----------- Input ----------- %%
 
-%Check input
 ip = inputParser;
 ip.CaseSensitive = false;
 ip.addRequired('movieDataOrProcess', @isProcessOrMovieData);
 ip.addOptional('paramsIn',[], @isstruct);
-ip.addParamValue('UseIntersection',false,@islogical);
+ip.addParameter('UseIntersection',false, @islogical);
+ip.addParamValue('ROI',[], @isnumeric);
 ip.parse(movieDataOrProcess,varargin{:});
 ip.KeepUnmatched = true;
-paramsIn=ip.Results.paramsIn;
+paramsIn = ip.Results.paramsIn;
+ROI = ip.Results.ROI;
 
 % Get MovieData object and Process
 [movieData, pointSourceDetProc3D] = getOwnerAndProcess(movieDataOrProcess,'PointSourceDetectionProcess3D',true);
-
-if ~movieData.is3D
-    error('detectMoviePointSources3D is specifically designed for 3D images. Please use detectMoviePointSources for 2D images.');
-end
+assert(movieData.is3D, 'detectMoviePointSources3D is specifically designed for 3D images. Please use detectMoviePointSources for 2D images.');
 
 %Parse input, store in parameter structure
-p = parseProcessParams(pointSourceDetProc3D,paramsIn);
-
-
-
+p = parseProcessParams(pointSourceDetProc3D, paramsIn);
 
 %% --------------- Initialization ---------------%%
 if feature('ShowFigureWindows')
@@ -85,36 +81,30 @@ if ~isempty(p.MaskProcessIndex) && ~isempty(p.MaskChannelIndex)
 %         maskIntProc.run;
 %         
 %         %Then use this mask process
-%         maskProc = maskIntProc;
-            
+%         maskProc = maskIntProc;    
     end 
-    
     % Get mask directory and names
     maskDir = maskProc.outFilePaths_(p.MaskChannelIndex);
-    
+else
+    maskProc = [];
 end
 
 %Check the input processes if any and get loader handles for each channel
-imDirs = cell(1,nChanDet);
-imLoader = cell(1,nChanDet);
+imDirs = cell(1, nChanDet);
+imLoader = cell(1, nChanDet);
 for j = 1:nChanDet
-    
-    if p.ProcessIndex(j) > 0
+    if p.InputImageProcessIndex(j) > 0
         %Check the specified input process
-        assert(movieData.processes_{p.ProcessIndex(j)}.checkChannelOutput(p.ChannelIndex(j)),['No valid output for input process specified for channel ' num2str(p.ChannelIndex(j))]);
-        imDirs{p.ChannelIndex(j)} = movieData.processes_{p.ProcessIndex(j)}.outFilePaths_{p.ChannelIndex(j)};
-        imLoader{p.ChannelIndex(j)} = @(f)(movieData.processes_{p.ProcessIndex(j)}.loadChannelOutput(p.ChannelIndex(j),f));                    
-        
+        assert(movieData.processes_{p.InputImageProcessIndex(j)}.checkChannelOutput(p.ChannelIndex(j)),['No valid output for input process specified for channel ' num2str(p.ChannelIndex(j))]);
+        imDirs{p.ChannelIndex(j)} = movieData.processes_{p.InputImageProcessIndex(j)}.outFilePaths_{p.ChannelIndex(j)};
+        imLoader{p.ChannelIndex(j)} = @(f)(movieData.processes_{p.InputImageProcessIndex(j)}.loadChannelOutput(p.ChannelIndex(j),f));                         
     else
         %If raw data specified
         imDirs{p.ChannelIndex(j)} = movieData.channels_(p.ChannelIndex(j)).channelPath_;
         imLoader{p.ChannelIndex(j)} = @(f)(movieData.channels_(p.ChannelIndex(j)).loadStack(f));
         
-    end
-    
+    end    
 end
-
-
 
 % Set up the input directories
 inFilePaths = cell(1,numel(movieData.channels_));
@@ -127,10 +117,11 @@ end
 pointSourceDetProc3D.setInFilePaths(inFilePaths);
     
 % Set up the output directories
-outFilePaths = cell(1,numel(movieData.channels_));
+outFilePaths = cell(2, numel(movieData.channels_));
 for i = p.ChannelIndex;    
     %Create string for current directory
     outFilePaths{1,i} = [p.OutputDirectory filesep 'channel_' num2str(i) '.mat'];
+    outFilePaths{2,i} = [p.OutputDirectory filesep 'channel_detectionLabRef' num2str(i) '.mat'];
 end
 mkClrDir(p.OutputDirectory)
 pointSourceDetProc3D.setOutFilePaths(outFilePaths);
@@ -138,21 +129,31 @@ pointSourceDetProc3D.setOutFilePaths(outFilePaths);
 %Get ROI mask if any.
 %roiMask = movieData.getROIMask;
 
+
+
+%% --------------- Add optional auio-estimation of PSF sigma ---------------%%% 
+
+
+
 %% --------------- Point source detection ---------------%%% 
 
 disp('Starting detecting diffraction-limited objects');
-
 logMsg = @(chan) ['Please wait, detecting diffraction-limited objects for channel ' num2str(chan)];
 timeMsg = @(t) ['\nEstimated time remaining: ' num2str(round(t)) 's'];
 tic;
 nChan = length(p.ChannelIndex);
 nTot = nChan*nFrames;
-nj = 0;
+
+
 for i = 1:numel(p.ChannelIndex)
-    
+
     iChan = p.ChannelIndex(i);
+    % Set up for parfor
+    processFrames = 1:numel(movieData.getChannel(iChan).getImageFileNames);
+    labels = cell(1,numel(processFrames));
+    movieInfo(numel(processFrames), 1) = struct('xCoord', [], 'yCoord',[],'zCoord', [], 'amp', [], 'int',[]);
+                     
     % Log display
-    if ishandle(wtBar), waitbar(nj/nTot,wtBar,sprintf(logMsg(iChan)));  end
     disp(logMsg(iChan))
     disp(imDirs{1,iChan});
     if ~isempty(p.MaskProcessIndex) && ~isempty(p.MaskChannelIndex)
@@ -161,69 +162,225 @@ for i = 1:numel(p.ChannelIndex)
     disp('Results will be saved under:')
     disp(outFilePaths{1,iChan});
     
+    
     %Set up parameter structure for detection on this channel
     detP = splitPerChannelParams(p, iChan);
     
-    for j = 1:nFrames
+    sigmasPSF = detP.filterSigma;
+    
+    parfor frameIdx = 1:nFrames
                 
+        timePoint = processFrames(frameIdx);
+        disp(['Processing time point ' num2str(timePoint,'%04.f')])
+        
         % loading the entire stack
-        vol = imLoader{p.ChannelIndex(i)}(j);
+        % Hunter's approach
+        detP_pf = detP;
+        vol = double(imLoader{iChan}(frameIdx));
         
-        %!!!!! fix the mask for 3d data!!!!!%
-        if ~isempty(p.MaskProcessIndex) && ~isempty(p.MaskChannelIndex)
-            currMask = maskProc.loadChannelOutput(p.MaskChannelIndex,j); %& roiMask(:,:,j); %istack is the stack index!!!! test for validity!!!!
-            detP.Mask =  currMask;
+        % Philippe's approach
+        % vol = double(movieData.getChannel(iChan).loadStack(timePoint)); #
+        volSize = size(vol);
+        lab = [];
+        
+        % find mask offset (WARNING works only for cubic mask)
+        if (~isempty(ROI))
+            [maskMinX,maskMinY,maskMinZ]=ind2sub(size(ROI), find(ROI,1));
+            [maskMaxX,maskMaxY,maskMaxZ]=ind2sub(size(ROI), find(ROI,1,'last'));
+        end
+        
+        if(~isempty(ROI))
+            tmp = nan(1+[maskMaxX,maskMaxY,maskMaxZ]-[maskMinX,maskMinY,maskMinZ]);
+            tmp(:) = vol(ROI>0);
+            vol = tmp;
+        end
+        
+%         %!!!!! fix the mask for 3d data!!!!!%
+        if ~isempty(maskProc)
+            currMask = maskProc.loadChannelOutput(p.MaskChannelIndex,frameIdx); %& roiMask(:,:,frameIdx); %istack is the stack index!!!! test for validity!!!!
+            detP_pf.Mask =  currMask;
         else
-            detP.Mask = true([movieData.imSize_(1), movieData.imSize_(2), movieData.zSize_]);%roiMask(:,:,j);
+            detP_pf.Mask = [];
+        end
+
+       
+        switch detP.algorithmType
+            case {'pointSourceLM',...
+                  'pointSource',...
+                  'pointSourceAutoSigma',...
+                  'pointSourceAutoSigmaFit',...
+                  'pSAutoSigmaMarkedWatershed',... 
+                  'pointSourceAutoSigmaLM',...     
+                  'pSAutoSigmaWatershed'}
+                
+                [pstruct, mask, imgLM, imgLoG] = pointSourceDetection3D(vol, sigmasPSF, detP_pf);
+                
+                switch detP.algorithmType
+                      case {'pointSource','pointSourceAutoSigma'}
+                       lab = double(mask); 
+                        movieInfo(frameIdx) = labelToMovieInfo(double(mask),vol);
+                      case {'pointSourceLM','pointSourceAutoSigmaLM'}
+                        lab = double(mask); 
+                        movieInfo(frameIdx) = pointCloudToMovieInfo(imgLM,vol);  
+                      case 'pSAutoSigmaMarkedWatershed'
+                        wat = markedWatershed(vol,sigmasPSF,0);
+                        wat(mask==0) = 0;       
+                        lab = double(wat); 
+                        movieInfo(frameIdx) = labelToMovieInfo(double(wat),vol);
+                      case 'pSAutoSigmaWatershed'
+                        wat = watershed(-vol.*mask);
+                        wat(mask==0) = 0;
+                        lab = double(wat); 
+                        movieInfo(frameIdx) = labelToMovieInfo(double(wat),vol);
+                      case {'pointSourceFit','pointSourceAutoSigmaFit'}
+                        movieInfo(frameIdx) = pstructToMovieInfo(pstruct);
+                        lab = double(mask); %.*imgLoG;
+                    otherwise
+                end
+            
+            case {'pointSourceAutoSigmaMixture'}
+                detPt = detP_pf;
+                detPt.FitMixtures = true;
+                [pstruct, mask, imgLM, imgLoG] = pointSourceDetection3D(vol,sigmasPSF,detPt);
+                movieInfo(frameIdx) = pstructToMovieInfo(pstruct);
+                lab = double(mask); % adjust label
+            
+            case {'pointSourceAutoSigmaFitSig'}
+                detPt = detP_pf;
+                detPt.Mode = 'xyzAcsr';
+                [pstruct,mask,imgLM,imgLoG] = pointSourceDetection3D(vol,sigmasPSF,detPt);
+                movieInfo(frameIdx) = pstructToMovieInfo(pstruct);
+                lab = double(mask); % adjust label
+
+            % ----------------------------------------------------------------------------------------
+            case 'watershedApplegate'
+                filterVol = filterGauss3D(vol,detP.highFreq)-filterGauss3D(vol,detP.lowFreq);
+                [movieInfo(frameIdx),lab] = detectComets3D(filterVol,detP.waterStep,detP.waterThresh,[1 1 1]);
+
+            case 'watershedApplegateAuto'
+                filterVol = filterGauss3D(vol,detP.highFreq)-filterGauss3D(vol,detP.lowFreq);
+                thresh = QDApplegateThesh(filterVol,detP.showAll);
+                [movieInfo(frameIdx),lab] = detectComets3D(filterVol,detP.waterStep,thresh,[1 1 1]);
+
+            % ----------------------------------------------------------------------------------------
+            case 'bandPassWatershed'
+                filterVol = filterGauss3D(vol,detP.highFreq) - filterGauss3D(vol,detP.lowFreq);
+                label = watershed(-filterVol); 
+                label(filterVol < detP.waterThresh) = 0;
+                lab = label;
+                movieInfo(frameIdx)=labelToMovieInfo(label,filterVol);
+
+            % ----------------------------------------------------------------------------------------
+            case 'watershedMatlab'
+                label = watershed(-vol); 
+                label(vol<p.waterThresh) = 0;
+                [dummy,nFeats] = bwlabeln(label);
+                lab = label;
+                movieInfo(frameIdx) = labelToMovieInfo(label,vol);
+                
+            case 'markedWatershed'
+                label = markedWatershed(vol,sigmasPSF,p.waterThresh);
+                movieInfo(frameIdx) = labelToMovieInfo(label, vol);
+              % ----------------------------------------------------------------------------------------                
+            
+            otherwise 
+                error('Supported detection algorithm method:');
+        end
+        
+
+        if(~isempty(ROI))
+            tmplab=zeros(volSize);
+            tmplab(ROI>0)=lab;
+            lab=tmplab; 
+            movieInfo(frameIdx).xCoord(:,1)=movieInfo(frameIdx).xCoord(:,1)+maskMinY-1;
+            movieInfo(frameIdx).yCoord(:,1)=movieInfo(frameIdx).yCoord(:,1)+maskMinX-1;
+            movieInfo(frameIdx).zCoord(:,1)=movieInfo(frameIdx).zCoord(:,1)+maskMinZ-1;
         end    
-        
-        % Call main detection function       
-        pstruct = pointSourceDetection3D(vol,p.filterSigma(:,iChan),detP);
-
-
-        % add xCoord, yCoord, amp fields for compatibilty  with tracker
-        if ~isempty(pstruct)
-            pstruct.xCoord = [pstruct.x' pstruct.x_pstd'];
-            pstruct.yCoord = [pstruct.y' pstruct.y_pstd'];
-            pstruct.zCoord = [pstruct.z' pstruct.z_pstd'];
-            pstruct.amp = [pstruct.A' pstruct.A_pstd'];        
-            pstruct.sigmaX = [pstruct.s' pstruct.s_pstd'];
-            pstruct.sigmaY = [pstruct.s' pstruct.s_pstd'];
-            pstruct.sigmaZ = [pstruct.s' pstruct.s_pstd'];
-            pstruct.bkg = [pstruct.c' pstruct.c_pstd'];
-        end
-        
-        if ~isempty(pstruct) && ~exist('allFields','var')
-            %Initialize the structure
-            allFields = fieldnames(pstruct);
-            allFields = vertcat(allFields', arrayfun(@(x)([]),1:numel(allFields),'Unif',false));            
-        end
-        if j == 1 && exist('allFields','var')
-            movieInfo(1:nFrames)= struct(allFields{:});                        
-        end
-        
-        if ~isempty(pstruct)
-            movieInfo(j) = pstruct; %#ok<AGROW>
-        end
-        
-        if ishandle(wtBar) && (nFrames <  20 || mod(j,5)==1 )
-            tj=toc;
-            nj = (i-1)*nFrames+ j;
-            waitbar(nj/nTot,wtBar,sprintf([logMsg(iChan) timeMsg(tj*nTot/nj-tj)]));
-        end
-    end
+        labels{frameIdx}=lab;
+    end %%%% end parfor (frame loop)
+    
     if ~exist('movieInfo','var')
         %in the case that no channels/frames had detected points
         movieInfo = [];
     end
-    save(outFilePaths{1,iChan}, 'movieInfo'); 
-    clear movieInfo;
-end
+
+    % 
+    detectionLabRef = movieInfo;
+    for fIdx=1:length(detectionLabRef)
+        detectionLabRef(fIdx).zCoord(:,1)=detectionLabRef(fIdx).zCoord(:,1)*movieData.pixelSizeZ_/movieData.pixelSize_;
+    end
+
+    save(outFilePaths{1,iChan}, 'movieInfo', 'labels');
+    save(outFilePaths{2,iChan}, 'detectionLabRef');
+    
+    clear movieInfo detectionLabRef;
+
+end %%% channel loop
 
 % Close waitbar
 if ishandle(wtBar), close(wtBar); end
 disp('Finished detecting diffraction-limited objects!')
-
 movieData.save;
 
+
+function movieInfo= labelToMovieInfo(label,vol)
+    [feats,nFeats] = bwlabeln(label);
+    featsProp = regionprops(feats,vol,'Area','WeightedCentroid','MeanIntensity','MaxIntensity','PixelValues');
+
+    movieInfo=struct('xCoord',[],'yCoord',[],'zCoord',[],'amp',[],'int',[]);
+    
+    % centroid coordinates with 0.5 uncertainties
+    tmp = vertcat(featsProp.WeightedCentroid)-1;
+    if ~isempty(featsProp)
+        xCoord = [tmp(:,1) 0.5*ones(nFeats,1)]; yCoord = [tmp(:,2) 0.5*ones(nFeats,1)]; zCoord = [tmp(:,3) 0.5*ones(nFeats,1)];
+        amp=[vertcat(featsProp.MaxIntensity) 0.5*ones(nFeats,1)];
+    
+        movieInfo.xCoord= xCoord;movieInfo.yCoord=yCoord;movieInfo.zCoord=zCoord;
+        movieInfo.amp=amp;
+        movieInfo.int=amp;
+    end
+
+    % u-track formating
+
+
+function movieInfo= pointCloudToMovieInfo(imgLM,vol)
+    lmIdx = find(imgLM~=0);
+    [lmy,lmx,lmz] = ind2sub(size(vol), lmIdx);
+    N=length(lmy);
+    % centroid coordinates with 0.5 uncertainties
+    xCoord = [lmx 0.5*ones(N,1)]; yCoord = [lmy 0.5*ones(N,1)]; zCoord = [lmz 0.5*ones(N,1)];
+    amp=[vol(lmIdx) 0.5*ones(N,1)];
+
+    % u-track formating
+    movieInfo=struct('xCoord',[],'yCoord',[],'zCoord',[],'amp',[],'int',[]);
+    movieInfo.xCoord= xCoord;movieInfo.yCoord=yCoord;movieInfo.zCoord=zCoord;
+    movieInfo.amp=amp;
+    movieInfo.int=amp;
+
+function mkdir(path)
+system(['mkdir -p ' path]);
+
+
+function movieInfo= pstructToMovieInfo(pstruct)
+    movieInfo.xCoord = [pstruct.x' pstruct.x_pstd'];
+    movieInfo.yCoord = [pstruct.y' pstruct.y_pstd'];
+    movieInfo.zCoord = [pstruct.z' pstruct.z_pstd'];
+    movieInfo.amp = [pstruct.A' pstruct.A_pstd'];
+    movieInfo.int= [pstruct.A' pstruct.A_pstd'];
+%     movieInfo.sigmaX = [pstruct.s' pstruct.s_pstd'];
+%     movieInfo.sigmaY = [pstruct.s' pstruct.s_pstd'];
+%     movieInfo.sigmaZ = [pstruct.s' pstruct.s_pstd'];
+%     movieInfo.bkg = [pstruct.c' pstruct.c_pstd'];
+
+function threshNoise= QDApplegateThesh(filterDiff,show)
+    % Perform maximum filter and mask out significant pixels
+    thFilterDiff = locmax3d(filterDiff,1);
+    threshold = thresholdOtsu(thFilterDiff)/3 + ...
+        thresholdRosin(thFilterDiff)*2/3;
+    std=nanstd(filterDiff(thFilterDiff<threshold));
+    threshNoise= 3*std;
+
+    if(show)
+        figure();hist(thFilterDiff,100),vline([threshNoise, threshold],['-b','-r']);
+    end 
 

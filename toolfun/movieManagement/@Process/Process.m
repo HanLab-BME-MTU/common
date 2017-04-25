@@ -4,7 +4,6 @@ classdef Process < hgsetget
     %
     
     properties (SetAccess = private, GetAccess = public)
-        name_           % Process name
         owner_          % Movie data object owning the process
         createTime_     % Time process was created
         startTime_      % Time process was last started
@@ -12,6 +11,8 @@ classdef Process < hgsetget
     end
     
     properties  (SetAccess = protected)
+        name_           % Process name
+        
         % Success/Uptodate flags
         procChanged_   % Whether process parameters have been changed
         success_       % If the process has been successfully run
@@ -25,6 +26,8 @@ classdef Process < hgsetget
         inFilePaths_    % Path to the process input
         outFilePaths_   % Path to the process output
         
+        is3Dcompatible_ % can process handle 3D movie data
+
     end
     properties
         notes_          % Process notes
@@ -64,6 +67,11 @@ classdef Process < hgsetget
         function parameters = getParameters(obj)
             % Get the process parameters
             parameters = obj.funParams_;
+        end
+
+        function is3Dcompatible = get3DCompatible(obj)
+            % Get the process parameters
+            is3Dcompatible = obj.is3Dcompatible_;
         end
         
         function setParameters(obj, para)

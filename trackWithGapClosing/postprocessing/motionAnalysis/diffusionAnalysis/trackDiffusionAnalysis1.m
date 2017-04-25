@@ -382,6 +382,7 @@ if ~isempty(indxConf)
             confRadius(iTrack,1) = sqrt( mean(eigenVal) * (probDim + 2) );
         end
         
+
     end
 end
 

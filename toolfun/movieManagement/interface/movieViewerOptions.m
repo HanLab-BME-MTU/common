@@ -109,7 +109,7 @@ uicontrol(imagePanel,'Style','text','Position',[20 hPosition-2 80 20],...
     'String','Colormap','HorizontalAlignment','left');
 uicontrol(imagePanel,'Style','popupmenu',...
     'Position',[130 hPosition 120 20],'Tag','popupmenu_colormap',...
-    'String',{'Gray','Jet','HSV'},'Value',1,...
+    'String',{'Gray','Jet','Parula','HSV'},'Value',1,...
     'HorizontalAlignment','left','Callback',@(h,event) setColormap(guidata(h)));
 
 % Colormap inversion
@@ -411,7 +411,7 @@ set(handles.popupmenu_colorbarLocation,'Enable',cbar,'Value',cbarLocation);
 
 % Set the colormap properties
 cmap=displayMethod.Colormap;
-colormaps = {'Gray','Jet','HSV'};
+colormaps = {'Gray','Jet','Parula','HSV'};
 iCmap = find(strcmpi(cmap,colormaps),1);
 
 if isempty(iCmap), 

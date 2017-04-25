@@ -59,7 +59,13 @@ set(handles.text_methods, 'String', ['Choose a ' lower(procName) ' method']);
 
 % Get current process constructer, set-up GUIs and mask refinement process
 % constructor
-userData.subProcClassNames = eval([userData.crtProcClassName '.getConcreteClasses()']);
+try 
+    userData.subProcClassNames = eval([userData.crtProcClassName '.getConcreteClasses(userData.MD)']);
+catch
+    warning('Attempted to pass MovieData object to retreive appropropriate concrete classes');
+    userData.subProcClassNames = eval([userData.crtProcClassName '.getConcreteClasses()']);
+end
+
 isGraphicalProcess = @(x) Process.isProcess(x) && Process.hasGUI(x);
 validClasses = cellfun(isGraphicalProcess, userData.subProcClassNames);
 userData.subProcClassNames = userData.subProcClassNames(validClasses);
@@ -91,6 +97,24 @@ handles.output = hObject;
 set(hObject, 'UserData', userData);
 guidata(hObject, handles);
 
+% % if only one selection available, just select it!
+% if numel(subProcNames) == 1
+%     set(handles.popupmenu_methods, 'Value', 1);
+%     abstractProcessGUI('pushbutton_set_Callback', handles.pushbutton_set,[], handles);
+% 
+%     % set select to 1
+%     % click button
+% %     
+% %     segProcID = 1;
+% %     subProcGUI = userData.subProcGUI{segProcID};
+% %     subProcGUI('mainFig',userData.mainFig,userData.procID,...
+% %         'procConstr',userData.subProcConstr{segProcID},...
+% %         'procClassName',userData.subProcClassNames{segProcID});
+% %     delete(handles.figure1);
+% end
+
+
+
 
 % --- Outputs from this function are returned to the command line.
 function varargout = abstractProcessGUI_OutputFcn(hObject, eventdata, handles)
@@ -100,7 +124,11 @@ function varargout = abstractProcessGUI_OutputFcn(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Get default command line output from handles structure
-varargout{1} = handles.output;
+% if ~isempty(handles)
+    varargout{1} = handles.output;
+% else
+%     varargout{1} = [];
+% end
 
 
 % --- Executes on button press in pushbutton_cancel.
@@ -129,7 +157,7 @@ function pushbutton_set_Callback(hObject, eventdata, handles)
 
 userData = get(handles.figure1, 'UserData');
 segProcID = get(handles.popupmenu_methods, 'Value');
-subProcGUI =userData.subProcGUI{segProcID};
+subProcGUI = userData.subProcGUI{segProcID};
 subProcGUI('mainFig',userData.mainFig,userData.procID,...
     'procConstr',userData.subProcConstr{segProcID},...
     'procClassName',userData.subProcClassNames{segProcID});

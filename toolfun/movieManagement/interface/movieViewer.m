@@ -147,7 +147,7 @@ if isa(userData.MO,'MovieData')
             end
             hPosition=hPosition+20;
         end
-        createProcText(imagePanel,imageProcId(iProc),iOutput,hPosition,imageProc{iProc}.getName);
+        createProcText(imagePanel,imageProcId(iProc),iOutput,hPosition,imageProc{iProc}.name_);
         hPosition=hPosition+20;
     end
     
@@ -202,7 +202,7 @@ if ~isempty(overlayProc)
                 'Callback',@(h,event) redrawOverlay(h,guidata(h))),find(validChan));
             hPosition=hPosition+20;
         end
-        createProcText(overlayPanel,overlayProcId(iProc),iOutput,hPosition,overlayProc{iProc}.getName);
+        createProcText(overlayPanel,overlayProcId(iProc),iOutput,hPosition,overlayProc{iProc}.name_);
         hPosition=hPosition+20;
     end
     
@@ -793,8 +793,18 @@ else
 end
 if ~isempty(h)
     figure(h);
-    userData.figures.(figName) = h;
-    set(handles.figure1,'UserData',userData);
+    try
+        userData.figures.(figName) = h;
+        set(handles.figure1,'UserData',userData);
+    catch err
+        switch(err.identifier)
+            case 'MATLAB:AddField:InvalidFieldName'
+                % figName may not be a proper field name
+                % Ignore error
+            otherwise
+                rethrow(err)
+        end
+    end
     return;
 end
 
@@ -880,7 +890,11 @@ else
     iOutput = str2double(tokens{1}{2});
     output = outputList(iOutput).var;
     iChan = str2double(tokens{1}{3});
-    userData.MO.processes_{procId}.draw(iChan,frameNr,'output',output,varargin{:});
+    if userData.MO.is3D
+        userData.MO.processes_{procId}.draw(iChan,frameNr, ZNr, 'output',output,varargin{:});
+    else
+        userData.MO.processes_{procId}.draw(iChan,frameNr, 'output',output,varargin{:});
+    end
     displayMethod = userData.MO.processes_{procId}.displayMethod_{iOutput,iChan};
 end
 
@@ -965,10 +979,10 @@ if get(hObject,'Value')
     end    
     if userData.MO.is3D() % && userData.MO.processes_{procId}.is3DP()
         ZNr = get(handles.slider_depth,'Value');
-    userData.MO.processes_{procId}.draw(inputArgs{:},'output',output,... % draw method of process object modificiation for 3D!!!
+        userData.MO.processes_{procId}.draw(inputArgs{:},'output',output,... % draw method of process object modificiation for 3D!!!
         options{:}, 'iZ',ZNr);
     else
-        userData.MO.processes_{procId}.draw(inputArgs{:},'output',output,... % draw method of process object modificiation for 3D!!!
+        userData.MO.processes_{procId}.draw(inputArgs{:},'output',output,...
         options{:});
     end
 else
