@@ -131,7 +131,7 @@ clear criteria
 %determine threshold based on alpha-value and dimensionality
 if alphaMSS(1) ~= abs(alphaMSS(1))  && probDim ==2
     p = mfilename('fullpath');
-    load(strcat(p(1:end-16),'newDiffTypeThreshold.mat'))
+    load(strcat(p(1:end-16),'newDiffTypeThresholdC.mat'))
     mssThreshImm = Mdl.mssThreshImm;
     mssThreshNeg = Mdl.mssThreshNeg;
     mssThreshNeg = [mssThreshNeg(1:min(500,numFramesMovie)); mssThreshNeg(500)*ones(max(0,numFramesMovie-500),1)];
@@ -367,8 +367,6 @@ for iTrack = indx4diff'
                 end
         end
         
-
-
         %save additional output information
         mssSlope(iTrack) = mssSlopeT;
         genDiffCoef(iTrack,:) = genDiffCoefT;
