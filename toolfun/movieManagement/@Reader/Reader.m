@@ -98,11 +98,11 @@ classdef  Reader < handle
          
             ip = inputParser;
             ip.addRequired('c', ...
-                @(c) isscalar(c) && ismember(c, 1 : obj.getSizeC()));
+                @(c) insequence_and_scalar(c, 1,   obj.getSizeC() ) );
             ip.addRequired('t', ... 
-                @(t) isscalar(t) && ismember(t, 1 : obj.getSizeT()));
+                @(t) insequence_and_scalar(t, 1, obj.getSizeT()));
             ip.addOptional('z', 1, ...
-                @(z) isscalar(z) && ismember(z, 1 : obj.getSizeZ()) || ...
+                @(z) insequence_and_scalar(z, 1,  obj.getSizeZ()) || ...
                     isempty(z));
             ip.parse(c, t, varargin{:});
             
@@ -141,12 +141,11 @@ classdef  Reader < handle
             % Input check
             ip = inputParser;
             ip.addRequired('c', ...
-                @(x) isscalar(x) && ismember(x, 1 : obj.getSizeC() ) );
+                @(x) insequence_and_scalar(x, 1, obj.getSizeC() ) );
             ip.addRequired('t', ...
-                @(x) isscalar(x) && ismember(x, 1 : obj.getSizeT() ) );
+                @(x) insequence_and_scalar(x, 1, obj.getSizeT() ) );
             ip.addOptional('z', [] , ...
-                @(x) all(ismember(x, 1 : obj.getSizeZ() ) ) || ...
-                    isempty(x));
+                @(x) all_insequence(x,1,        obj.getSizeZ() )  );
             ip.parse(c, t, varargin{:});
 
             z = ip.Results.z;
