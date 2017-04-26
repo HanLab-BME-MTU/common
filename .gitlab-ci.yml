@@ -64,9 +64,14 @@ unit:R2016b:
 # ======== [optional - other version] ==
 unit:R2016a:
   stage: unit
+  variables:
+    MATLAB_VERSION: "2016a"
+    CI_SCRIPT_PATH: "${CLEAN_REPO_PATH}/ci-scripts/"
   script: 
+    # - CI_SCRIPT_PATH="${CLEAN_REPO_PATH}/ci-scripts/"
+    - echo $CI_SCRIPT_PATH
     - module unload matlab
-    - module load matlab/2016a
+    - module load matlab/$MATLAB_VERSION
     - echo "-Xmx1024m" > java.opts
     - $CI_SCRIPT_PATH/unit/runCITest_m.sh
   allow_failure: true
@@ -74,9 +79,14 @@ unit:R2016a:
 
 unit:R2015b:
   stage: unit
+  variables:
+    MATLAB_VERSION: "2015b"
+    CI_SCRIPT_PATH: "${CLEAN_REPO_PATH}/ci-scripts/"
   script: 
+    # - CI_SCRIPT_PATH="${CLEAN_REPO_PATH}/ci-scripts/"
+    - echo $CI_SCRIPT_PATH
     - module unload matlab
-    - module load matlab/2015b
+    - module load matlab/$MATLAB_VERSION
     - echo "-Xmx1024m" > java.opts
     - $CI_SCRIPT_PATH/unit/runCITest_m.sh
   allow_failure: true
@@ -86,9 +96,14 @@ unit:R2015b:
 
 unit:R2015a:
   stage: unit
+  variables:
+    MATLAB_VERSION: "2015a"
+    CI_SCRIPT_PATH: "${CLEAN_REPO_PATH}/ci-scripts/"
   script: 
+    # - CI_SCRIPT_PATH="${CLEAN_REPO_PATH}/ci-scripts/"
+    - echo $CI_SCRIPT_PATH
     - module unload matlab
-    - module load matlab/2015a
+    - module load matlab/$MATLAB_VERSION
     - echo "-Xmx1024m" > java.opts
     - $CI_SCRIPT_PATH/unit/runCITest_m.sh
   allow_failure: true
@@ -98,9 +113,14 @@ unit:R2015a:
 
 unit:R2014b:
   stage: unit
+  variables:
+    MATLAB_VERSION: "2014b"
+    CI_SCRIPT_PATH: "${CLEAN_REPO_PATH}/ci-scripts/"
   script: 
+    # - CI_SCRIPT_PATH="${CLEAN_REPO_PATH}/ci-scripts/"
+    - echo $CI_SCRIPT_PATH
     - module unload matlab
-    - module load matlab/2014b
+    - module load matlab/$MATLAB_VERSION
     - echo "-Xmx1024m" > java.opts
     - $CI_SCRIPT_PATH/unit/runCITest_m.sh
   allow_failure: true
@@ -110,9 +130,14 @@ unit:R2014b:
 
 unit:R2014a:
   stage: unit
+  variables:
+    MATLAB_VERSION: "2014a"
+    CI_SCRIPT_PATH: "${CLEAN_REPO_PATH}/ci-scripts/"
   script: 
+    # - CI_SCRIPT_PATH="${CLEAN_REPO_PATH}/ci-scripts/"
+    - echo $CI_SCRIPT_PATH
     - module unload matlab
-    - module load matlab/2014a
+    - module load matlab/$MATLAB_VERSION
     - echo "-Xmx1024m" > java.opts
     - $CI_SCRIPT_PATH/unit/runCITest_m.sh
   allow_failure: true
