@@ -58,6 +58,7 @@ unit:R2016b:
     - module load matlab/$MATLAB_VERSION
     - echo "-Xmx1024m" > java.opts
     - $CI_SCRIPT_PATH/unit/runCITest_m.sh
+  allow_failure: true
   # when: manual
 
 # ======== [optional - other version] ==
@@ -68,6 +69,7 @@ unit:R2016a:
     - module load matlab/2016a
     - echo "-Xmx1024m" > java.opts
     - $CI_SCRIPT_PATH/unit/runCITest_m.sh
+  allow_failure: true
   # when: manual
 
 unit:R2015b:
@@ -77,6 +79,7 @@ unit:R2015b:
     - module load matlab/2015b
     - echo "-Xmx1024m" > java.opts
     - $CI_SCRIPT_PATH/unit/runCITest_m.sh
+  allow_failure: true
   # when: manual
   # only:
   #   - master
@@ -88,7 +91,8 @@ unit:R2015a:
     - module load matlab/2015a
     - echo "-Xmx1024m" > java.opts
     - $CI_SCRIPT_PATH/unit/runCITest_m.sh
-  when: manual
+  allow_failure: true
+  # when: manual
   # only:
   #   - master
 
@@ -99,7 +103,8 @@ unit:R2014b:
     - module load matlab/2014b
     - echo "-Xmx1024m" > java.opts
     - $CI_SCRIPT_PATH/unit/runCITest_m.sh
-  when: manual
+  allow_failure: true
+  # when: manual
   # only:
   #   - master
 
@@ -110,7 +115,9 @@ unit:R2014a:
     - module load matlab/2014a
     - echo "-Xmx1024m" > java.opts
     - $CI_SCRIPT_PATH/unit/runCITest_m.sh
-  when: manual
+  allow_failure: true
+  # when: manual
+
   # only:
   #   - master
 
@@ -150,6 +157,7 @@ integration:GenPack:R2016a:
       - $TEST_DEBUG_TARGET_FOLDER
     when: always
     expire_in: 2 weeks
+  allow_failure: true
   # when: manual
 
 integration:GenPack:R2015a:
@@ -168,7 +176,26 @@ integration:GenPack:R2015a:
       - $TEST_DEBUG_TARGET_FOLDER
     when: always
     expire_in: 2 weeks
+  allow_failure: true
 
+
+integration:GenPack:R2014a:
+  stage: integration
+  variables:
+    MATLAB_VERSION: "2014a"
+    CI_SCRIPT_PATH: "${CLEAN_REPO_PATH}/ci-scripts/"
+  script: 
+    - module unload matlab
+    - module load matlab/$MATLAB_VERSION
+    - echo "-Xmx1024m" > java.opts
+    - $CI_SCRIPT_PATH/integration/test_GenericPackage.sh
+  artifacts:
+    name: "MATLAB_dump_b${CI_BUILD_ID}_${MATLAB_VERSION}"
+    paths:
+      - $TEST_DEBUG_TARGET_FOLDER
+    when: always
+    expire_in: 2 weeks
+  allow_failure: true
 
 integration:Windowing:R2017a:
   stage: integration
