@@ -274,7 +274,7 @@ integration:Windowing:R2017a:
       - $TEST_DEBUG_TARGET_FOLDER
     when: always
     expire_in: 2 weeks
-  when: manual
+  # when: manual
 # === Build Packages =======================  
 # Build the newest and oldest 
 
