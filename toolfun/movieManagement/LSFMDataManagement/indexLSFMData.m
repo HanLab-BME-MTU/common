@@ -122,7 +122,10 @@ if(ischar(moviePaths))
            end
         end     
     end
-    
+    if(p.unzip)
+      [folder,file,~]=fileparts(channelFileOutputPattern);
+      channelFileOutputPattern=fullfile(folder,file);
+    end
 
     
     moviePaths=moviePathsRes;
