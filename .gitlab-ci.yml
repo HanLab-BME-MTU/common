@@ -75,7 +75,7 @@ unit:R2016a:
     - echo "-Xmx1024m" > java.opts
     - $CI_SCRIPT_PATH/unit/runCITest_m.sh
   allow_failure: true
-  # when: manual
+  when: manual
 
 unit:R2015b:
   stage: unit
@@ -107,7 +107,7 @@ unit:R2015a:
     - echo "-Xmx1024m" > java.opts
     - $CI_SCRIPT_PATH/unit/runCITest_m.sh
   allow_failure: true
-  # when: manual
+  when: manual
   # only:
   #   - master
 
@@ -141,7 +141,7 @@ unit:R2014a:
     - echo "-Xmx1024m" > java.opts
     - $CI_SCRIPT_PATH/unit/runCITest_m.sh
   allow_failure: true
-  # when: manual
+  when: manual
 
   # only:
   #   - master
@@ -164,7 +164,7 @@ integration:GenPack:R2017a:
       - $TEST_DEBUG_TARGET_FOLDER
     when: always
     expire_in: 2 weeks
-  # when: manual
+  when: manual
 
 integration:GenPack:R2016b:
   stage: integration
