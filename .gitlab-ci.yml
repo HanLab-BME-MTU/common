@@ -640,6 +640,7 @@ test:utrack:R2014a:
     expire_in: 2 weeks
   allow_failure: true
   when: manual
+
 # Optional Runs with different Run versions
 # #################################
 
@@ -666,6 +667,7 @@ test:utrack3D:R2017a:
     expire_in: 2 weeks
   dependencies:
     - build:utrack:R2017a
+  allow_failure: true
 
 test:utrack3D:R2016b:
   stage: test
