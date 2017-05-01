@@ -1,3 +1,5 @@
 *~
 *.asv
 .DS_Store
+*.err
+*.out
