@@ -164,7 +164,7 @@ integration:GenPack:R2017a:
       - $TEST_DEBUG_TARGET_FOLDER
     when: always
     expire_in: 2 weeks
-  when: manual
+  # when: manual
 
 integration:GenPack:R2016b:
   stage: integration
@@ -275,6 +275,26 @@ integration:Windowing:R2017a:
     when: always
     expire_in: 2 weeks
   when: manual
+
+integration:LSFM:R2017a:
+  stage: unit
+  variables:
+    MATLAB_TEST_VERSION: "2017a"
+    MATLAB_BUILD_VERSION: "2017a"
+    CI_SCRIPT_PATH: "${CLEAN_REPO_PATH}/ci-scripts/"
+  script:
+    - module unload matlab
+    - module load matlab/$MATLAB_TEST_VERSION
+    - echo "-Xmx1024m" > java.opts
+    - ${CI_SCRIPT_PATH}/test/LSFM/testIndexLSFMTestBasic.sh
+  artifacts:
+    name: "MATLAB_dump_b${CI_BUILD_ID}_${MATLAB_TEST_VERSION}_${MATLAB_BUILD_VERSION}"
+    paths:
+      - $TEST_DEBUG_TARGET_FOLDER
+    when: always
+    expire_in: 1 weeks
+  allow_failure: true
+  
 # === Build Packages =======================  
 # Build the newest and oldest 
 
