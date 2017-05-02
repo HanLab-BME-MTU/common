@@ -48,6 +48,7 @@ ip.addParameter('is3D',true, @islogical);
 ip.addParameter('lateralPixelSize',1, @isfloat);
 ip.addParameter('axialPixelSize',1, @isfloat);
 ip.addParameter('useBF',false, @islogical);
+ip.addParameter('MDName','movieData.mat', @ischar);
 ip.addParameter('timeInterval',1, @isfloat);
 ip.addParameter('newDataPath',[], @ischar);
 ip.addParameter('chStartIdx',1, @isnumeric);
@@ -189,7 +190,7 @@ for cellIdx=1:length(moviePaths)
             
             if(~isempty(channelList))
                 %%
-                MD=MovieData(channelList,[cPath filesep 'analysis'],'movieDataFileName_','movieData.mat','movieDataPath_',[cPath filesep 'analysis'], ...
+                MD=MovieData(channelList,[cPath filesep 'analysis'],'movieDataFileName_',p.MDName,'movieDataPath_',[cPath filesep 'analysis'], ...
                     'pixelSize_',p.lateralPixelSize,'pixelSizeZ_',p.axialPixelSize,'timeInterval_',p.timeInterval);
                 MD.sanityCheck();
                 MD.save();

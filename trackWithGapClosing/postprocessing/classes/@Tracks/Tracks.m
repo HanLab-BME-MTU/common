@@ -6,7 +6,7 @@ classdef (Abstract = true) Tracks < handle  & matlab.mixin.Copyable
 %
 % This class extends the struct that is the output of trackCloseGapsKalman.
 %
-% See also trackObj , plotTracks2D, 
+% See also trackObj , plotTracks2D,
 % common/trackWithGapClosing/postprocessing/misc
 % common/trackWithGapClosing/postprocessing/motionAnalysis
 % common/trackWithGapClosing/postprocessing/HuetImplementation
@@ -17,8 +17,8 @@ classdef (Abstract = true) Tracks < handle  & matlab.mixin.Copyable
 %                      structure
 %
 % .tracksCoordAmpCG3D: The positions and amplitudes of the tracked
-%                      features, after gap closing. 
-%                               
+%                      features, after gap closing.
+%
 %                      This 3D matrix has dimensions as follows:
 %                      numSegments x 8 x numFrames
 %                      * numSegments (rows) = number of track segments in compound
@@ -187,6 +187,10 @@ classdef (Abstract = true) Tracks < handle  & matlab.mixin.Copyable
         [ obj ] = normalizeSeqOfEvents( obj );
         [ obj ] = setFeatFromIdx(obj,movieInfo);
         [ obj ] = setMovieInfo(obj,movieInfo);
+        [ obj ] = addCoord(obj,tracks);
+        [ newTracks ] = getAddCoord(obj,tracks);
+        [ obj ] = multCoord(obj,scalar);
+        [ newTracks ] = getMultCoord(obj,scalar);
         [ movieInfo ] = getMovieInfo(obj);
         %mapFramesToTime map frames to timepoints for the collection of Tracks
         [ obj ] = mapFramesToTimepoints( obj, timepoints, frames );
