@@ -202,7 +202,7 @@ if ~isempty(overlayProc)
                 'Callback',@(h,event) redrawOverlay(h,guidata(h))),find(validChan));
             hPosition=hPosition+20;
         end
-        createProcText(overlayPanel,overlayProcId(iProc),iOutput,hPosition,overlayProc{iProc}.getName);
+        createProcText(overlayPanel,overlayProcId(iProc),iOutput,hPosition,overlayProc{iProc}.name_);
         hPosition=hPosition+20;
     end
     
@@ -890,7 +890,11 @@ else
     iOutput = str2double(tokens{1}{2});
     output = outputList(iOutput).var;
     iChan = str2double(tokens{1}{3});
-    userData.MO.processes_{procId}.draw(iChan,frameNr,'output',output,varargin{:});
+    if userData.MO.is3D
+        userData.MO.processes_{procId}.draw(iChan,frameNr, ZNr, 'output',output,varargin{:});
+    else
+        userData.MO.processes_{procId}.draw(iChan,frameNr, 'output',output,varargin{:});
+    end
     displayMethod = userData.MO.processes_{procId}.displayMethod_{iOutput,iChan};
 end
 
@@ -978,7 +982,7 @@ if get(hObject,'Value')
         userData.MO.processes_{procId}.draw(inputArgs{:},'output',output,... % draw method of process object modificiation for 3D!!!
         options{:}, 'iZ',ZNr);
     else
-        userData.MO.processes_{procId}.draw(inputArgs{:},'output',output,... % draw method of process object modificiation for 3D!!!
+        userData.MO.processes_{procId}.draw(inputArgs{:},'output',output,...
         options{:});
     end
 else

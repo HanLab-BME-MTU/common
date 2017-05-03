@@ -235,7 +235,7 @@ if newFigure
     if ~isempty(image) %if user supplied an image
         imshow(image,[]); %plot the image
     else %if user did not supply an image
-%         imshow(ones(maxYCoord,maxXCoord),[]); %plot an empty image
+        imshow(ones(maxYCoord,maxXCoord),[]); %plot an empty image
     end
 
     %set figure axes limits
@@ -262,8 +262,10 @@ tracksYP = tracksY(timeRange(1):timeRange(2),:);
 %Build new matrix which indicates when tracks change diffusion
 
 
-base = -2*ones(size(tracksX));
-asymBase = -2*ones(size(tracksX));
+base = NaN([size(tracksX,1) size(tracksX,2) 4]); %Create 3D matrix to store indices for all diffusion types
+asymBase = NaN([size(tracksX,1) size(tracksX,2) 4]);
+nanBase = NaN(size(tracksX));
+diffTypesF = [];
  if isempty(bayes)
         %get track segment types from diffusion analysis
         trackSegmentType = vertcat(diffAnalysisRes.segmentClass);
@@ -285,8 +287,13 @@ asymBase = -2*ones(size(tracksX));
             for k = 1:length(trackSegmentType)
 
                 for j = 1:size(trackSegmentType(k).momentScalingSpectrum,1)
-                base(trackSegmentType(k).momentScalingSpectrum(j,1):trackSegmentType(k).momentScalingSpectrum(j,2),k) = ...
+                    if ~isnan(trackSegmentType(k).momentScalingSpectrum(j,3))
+                base(trackSegmentType(k).momentScalingSpectrum(j,1):trackSegmentType(k).momentScalingSpectrum(j,2),k,trackSegmentType(k).momentScalingSpectrum(j,3)+1) = ...
                 trackSegmentType(k).momentScalingSpectrum(j,3);
+            diffTypesF = [diffTypesF ; trackSegmentType(k).momentScalingSpectrum(j,3)];
+                    else
+                nanBase(trackSegmentType(k).momentScalingSpectrum(j,1):trackSegmentType(k).momentScalingSpectrum(j,2),k) = -1;
+                    end
                 end
 
             end
@@ -312,11 +319,11 @@ asymBase = -2*ones(size(tracksX));
 numTimePlot = timeRange(2) - timeRange(1) + 1;
 
 
-asymBase(isnan(asymBase))=-1;
-base(isnan(base))=-1;
-base(base==-2)=NaN;
-asymBase(asymBase==-2)=NaN;
-diffTypes = unique(base(~isnan(base)));
+% asymBase(isnan(asymBase))=-1;
+% base(isnan(base))=-1;
+% base(base==-2)=NaN;
+% asymBase(asymBase==-2)=NaN;
+diffTypes = unique(diffTypesF);
 % diffTypes = unique(base);
 copyR = size(tracksXP,1);
 copyC = size(tracksXP,2);
@@ -329,7 +336,7 @@ for k = 1:length(diffTypes)
  	
     switch diffTypes(k)
         case -1
-            ind = find(base(:) ==-1);
+            ind = find(nanBase(:) ==-1);
             copyX = NaN(copyR,copyC);
             copyY = NaN(copyR,copyC);
             copyX(ind) = tracksXP(ind);
@@ -368,7 +375,7 @@ for k = 1:length(diffTypes)
                     end 
                 end
         case 0
-            ind = find(base(:) ==0);
+            ind = find(base(:,:,1) ==0);
             copyX = NaN(copyR,copyC);
             copyY = NaN(copyR,copyC);
             copyX(ind) = tracksXP(ind);
@@ -382,7 +389,7 @@ for k = 1:length(diffTypes)
             %to me
         case 1
  	
-            ind = find(base(:) ==1);
+            ind = find(base(:,:,2) ==1);
             copyX = NaN(copyR,copyC);
             copyY = NaN(copyR,copyC);
             copyX(ind) = tracksXP(ind);
@@ -409,7 +416,7 @@ for k = 1:length(diffTypes)
             end
         case 2
  	
-            ind = find(base(:) ==2);
+            ind = find(base(:,:,3) ==2);
             copyX = NaN(copyR,copyC);
             copyY = NaN(copyR,copyC);
             copyX(ind) = tracksXP(ind);
@@ -435,7 +442,7 @@ for k = 1:length(diffTypes)
                 end 
             end
         case 3
-            ind = find(base(:) ==3);
+            ind = find(base(:,:,4) ==3);
             copyX = NaN(copyR,copyC);
             copyY = NaN(copyR,copyC);
             copyX(ind) = tracksXP(ind);

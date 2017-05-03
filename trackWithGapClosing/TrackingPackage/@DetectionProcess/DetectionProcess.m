@@ -5,6 +5,7 @@ classdef DetectionProcess < ImageAnalysisProcess
     % Chuangang Ren, 11/2010
     % Sebastien Besson (last modified May 2012)
     % Mark Kittisopikul, Nov 2014, Added channelOutput cache
+    % Andrew R. Jamieson, mar 2017, adding 3D support.
     
     methods(Access = public)
         
@@ -75,27 +76,104 @@ classdef DetectionProcess < ImageAnalysisProcess
             output(1).defaultDisplayMethod=@(x) LineDisplay('Marker','o',...
                 'LineStyle','none','Color',colors(x,:));
         end  
-        
+
+        function drawImaris(obj,iceConn)
+            
+            dataSet = iceConn.mImarisApplication.GetDataSet;
+            
+            nChan = numel(obj.owner_.channels_);
+            
+            %Create data container
+            spotFolder = iceConn.mImarisApplication.GetFactory.CreateDataContainer;
+            spotFolder.SetName(obj.name_);
+            iceConn.mImarisApplication.GetSurpassScene.AddChild(spotFolder,-1);
+            for iChan = 1:nChan
+                
+                
+                if obj.checkChannelOutput(iChan)
+                    %TEMP - doesn't support timelapse yet!!
+                    pts = obj.loadChannelOutput(iChan);
+                    if ~isempty(pts)
+                        chanCol = iceConn.mapRgbaScalarToVector(dataSet.GetChannelColorRGBA(iChan-1));
+                        nPts = numel(pts.x);
+                        ptXYZ = [pts.y' pts.x' pts.z'];%Swap xy for imaris display
+                        ptXYZ(:,1:2) =ptXYZ(:,1:2) * obj.owner_.pixelSize_ / 1e3;
+                        ptXYZ(:,3) =ptXYZ(:,3) * obj.owner_.pixelSizeZ_ / 1e3;
+                        ptRad = pts.s(1,:)' * obj.owner_.pixelSize_ / 1e3;
+                        ptObj = iceConn.createAndSetSpots(ptXYZ,zeros(nPts,1),...
+                            ptRad,['Spots ' char(dataSet.GetChannelName(iChan-1))],chanCol,spotFolder);                    
+
+                        if ismethod(ptObj,'SetRadiiXYZ')
+                            %Make sure we have a version of imaris which supports anisotropic points                        
+                            ptRad = zeros(nPts,3);
+                            ptRad(:,1:2) = repmat(pts.s(1,:)' * obj.owner_.pixelSize_ / 1e3,[1 2]);
+                            ptRad(:,3) = pts.s(2,:) * obj.owner_.pixelSizeZ_ / 1e3;
+                            ptObj.SetRadiiXYZ(ptRad);                                            
+                        end
+                    end
+                end
+            end            
+        end    
+  
     end
     methods(Static)
+
         function name = getName()
             name = 'Detection';
         end
+
         function h = GUI()
             h = @abstractProcessGUI;
         end
-        function procClasses = getConcreteClasses()
+
+        function procClasses = getConcreteClasses(varargin)
+
             procClasses = ...
                 {@SubResolutionProcess;
-                @CometDetectionProcess;
-                @AnisoGaussianDetectionProcess;
-                @NucleiDetectionProcess;
-                @PointSourceDetectionProcess;
+                 @CometDetectionProcess;
+                 @AnisoGaussianDetectionProcess;
+                 @NucleiDetectionProcess;
+                 @PointSourceDetectionProcess;
+                 @PointSourceDetectionProcess3D;
                 };
+
+            % If input, check if 2D or 3D movie(s).
+            ip =inputParser;
+            ip.addOptional('MO', [], @(x) isa(x,'MovieData') || isa(x,'MovieList'));
+            ip.parse(varargin{:});
+            MO = ip.Results.MO;
+            
+            if ~isempty(MO)
+                if isa(MO,'MovieList')
+                    MD = MO.getMovie(1);
+                elseif length(MO) > 1
+                    MD = MO(1);
+                else
+                    MD = MO;
+                end                
+            end
+
+            if isempty(MD)
+               warning('MovieData properties not specified (2D vs. 3D)');
+               disp('Displaying both 2D and 3D Detection processes');
+            elseif MD.is3D
+                disp('Detected 3D movie');
+                disp('Displaying 3D Detection processes only');
+                procClasses(1:end-1) = [];
+            elseif ~MD.is3D
+                disp('Detected 2D movie');
+                disp('Displaying 2D Detection processes only');
+                procClasses(6) = [];
+            end
             procClasses = cellfun(@func2str, procClasses, 'Unif', 0);
         end
         
-        function y =formatOutput(x)
+        function y = formatOutput(x)
+            % Format output in xy coordinate system (default-backwards compatible)
+            y = DetectionProcess.formatOutput2D(x);
+        end
+
+        function y = formatOutput2D(x)
             % Format output in xy coordinate system
             if isempty(x.xCoord)
                 y = NaN(1,2);
@@ -103,5 +181,14 @@ classdef DetectionProcess < ImageAnalysisProcess
                 y = horzcat(x.xCoord(:,1),x.yCoord(:,1));
             end
         end
+
+        function y = formatOutput3D(x)
+            if isempty(x)
+                y = NaN(1,3);
+            else
+                y = x;
+            end
+        end
+
     end
 end

@@ -42,9 +42,9 @@ classdef CachedReader < ProxyReader
                 %
                 % but we have not merged that yet!
                 ip = inputParser;
-                ip.addRequired('c', @(x) isscalar(x) && ismember(x, 1 : obj.getSizeC));
-                ip.addRequired('t', @(x) isscalar(x) && ismember(x, 1 : obj.getSizeT));
-                ip.addOptional('z', 1, @(x) isscalar(x) && ismember(x, 1 : obj.getSizeZ));
+                ip.addRequired('c', @(x) insequence_and_scalar(x, 1 , obj.getSizeC));
+                ip.addRequired('t', @(x) insequence_and_scalar(x, 1 , obj.getSizeT));
+                ip.addOptional('z', 1, @(x) insequence_and_scalar(x, 1 , obj.getSizeZ));
                 ip.parse(c, t, varargin{:});
                 
                 %c = ip.Results.c;

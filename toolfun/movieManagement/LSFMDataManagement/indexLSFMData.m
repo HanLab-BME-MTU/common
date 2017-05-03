@@ -39,6 +39,7 @@ ip.addOptional('movieListRoot','', @ischar);
 ip.addParameter('movieListName','movieList.mat', @ischar);
 ip.addParameter('movieDataName','movieData.mat', @ischar);
 ip.addParameter('deskew',false, @islogical);
+ip.addParameter('unzip',false, @islogical);
 ip.addParameter('writeData',true, @islogical);
 ip.addParameter('copyFile',false, @islogical);
 ip.addParameter('translocateMovieData',false, @islogical);
@@ -47,6 +48,7 @@ ip.addParameter('is3D',true, @islogical);
 ip.addParameter('lateralPixelSize',1, @isfloat);
 ip.addParameter('axialPixelSize',1, @isfloat);
 ip.addParameter('useBF',false, @islogical);
+ip.addParameter('MDName','movieData.mat', @ischar);
 ip.addParameter('timeInterval',1, @isfloat);
 ip.addParameter('newDataPath',[], @ischar);
 ip.addParameter('chStartIdx',1, @isnumeric);
@@ -121,7 +123,10 @@ if(ischar(moviePaths))
            end
         end     
     end
-    
+    if(p.unzip)
+      [folder,file,~]=fileparts(channelFileOutputPattern);
+      channelFileOutputPattern=fullfile(folder,file);
+    end
 
     
     moviePaths=moviePathsRes;
@@ -155,17 +160,21 @@ for cellIdx=1:length(moviePaths)
                     break;
                 end
                 
-                if(~exist(outputDirCH,'dir')) mkdir(outputDirCH); end;
+                if(~exist(outputDirCH,'dir')) mkdirRobust(outputDirCH); end;
                 if( writeData && (~strcmp(channelOriginalFilePattern,channelFileOutputPattern)))
                     for fileIdx=1:length(filelistCH)
                         file=filelistCH(fileIdx).name;
                         if(p.deskew)
                             writeDeskewedFile([cPath filesep file],outputDirCH);
                         else
-                            if(p.copyFile)
-                                copyfile([cPath filesep file],outputDirCH);
+                            if(p.unzip)
+                                unzipTiff([cPath filesep file],outputDirCH)
                             else
-                                movefile([cPath filesep file],outputDirCH);
+                                if(p.copyFile)
+                                    copyfile([cPath filesep file],outputDirCH);
+                                else
+                                    movefile([cPath filesep file],outputDirCH);
+                                end
                             end
                         end
                         
@@ -176,12 +185,12 @@ for cellIdx=1:length(moviePaths)
             end
             
             
-            if(~exist([cPath filesep 'analysis'],'dir')) mkdir([cPath filesep 'analysis']); end
+            if(~exist([cPath filesep 'analysis'],'dir')) mkdirRobust([cPath filesep 'analysis']); end
             
             
             if(~isempty(channelList))
                 %%
-                MD=MovieData(channelList,[cPath filesep 'analysis'],'movieDataFileName_','movieData.mat','movieDataPath_',[cPath filesep 'analysis'], ...
+                MD=MovieData(channelList,[cPath filesep 'analysis'],'movieDataFileName_',p.MDName,'movieDataPath_',[cPath filesep 'analysis'], ...
                     'pixelSize_',p.lateralPixelSize,'pixelSizeZ_',p.axialPixelSize,'timeInterval_',p.timeInterval);
                 MD.sanityCheck();
                 MD.save();
@@ -214,7 +223,7 @@ MDs=[MDs{builtMovies}];
 
 ML=[];
 if(~isempty(MDs))
-    mkdir([movieListAnalysisDir filesep 'analysis']);
+    mkdirRobust([movieListAnalysisDir filesep 'analysis']);
     ML=MovieList(MDs,[movieListAnalysisDir filesep 'analysis'],'movieListFileName_',p.movieListName,'movieListPath_',[movieListAnalysisDir filesep 'analysis']);
     ML.save();
 end
@@ -239,12 +248,6 @@ function writeDeskewedFile(filePath,outputDir)
         end;
     end
 
-function mkdir(path)
-    if (~strcmp(computer('arch'), 'win64'))
-        system(['mkdir -p ' path]);
-    else
-        mkdir(path);
-    end
 
 
 %% SNIPPETS
@@ -252,7 +255,7 @@ function mkdir(path)
 %     if(~isempty(p.rootPath))
 %         outputDirFinal=strrep(outputDirFinal,p.rootPath,p.movieListOutputPath);
 %     end
-%     mkdir(outputDirFinal);
+%     mkdirRobust(outputDirFinal);
 %     filelistFinal=dir([cPath filesep 'Iter_ sample_scan_3p35ms_zp4um_final*.*']);
 %     for fileIdx=1:length(filelistFinal)
 %         file=filelistFinal(fileIdx).name;

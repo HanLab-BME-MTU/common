@@ -4,7 +4,6 @@ classdef Process < hgsetget
     %
     
     properties (SetAccess = private, GetAccess = public)
-        name_           % Process name
         owner_          % Movie data object owning the process
         createTime_     % Time process was created
         startTime_      % Time process was last started
@@ -12,6 +11,8 @@ classdef Process < hgsetget
     end
     
     properties  (SetAccess = protected)
+        name_           % Process name
+        
         % Success/Uptodate flags
         procChanged_   % Whether process parameters have been changed
         success_       % If the process has been successfully run
@@ -25,6 +26,8 @@ classdef Process < hgsetget
         inFilePaths_    % Path to the process input
         outFilePaths_   % Path to the process output
         
+        is3Dcompatible_ % can process handle 3D movie data
+
     end
     properties
         notes_          % Process notes
@@ -65,6 +68,11 @@ classdef Process < hgsetget
             % Get the process parameters
             parameters = obj.funParams_;
         end
+
+        function is3Dcompatible = get3DCompatible(obj)
+            % Get the process parameters
+            is3Dcompatible = obj.is3Dcompatible_;
+        end
         
         function setParameters(obj, para)
             % Set the process parameters
@@ -95,17 +103,17 @@ classdef Process < hgsetget
         
         function status = checkChanNum(obj,iChan)
             assert(~isempty(iChan) && isnumeric(iChan),'Please provide a valid channel input');
-            status = ismember(iChan, 1:numel(obj.getOwner().channels_));
+            status = insequence(iChan, 1,numel(obj.getOwner().channels_));
         end
         
         function status = checkFrameNum(obj,iFrame)
             assert(~isempty(iFrame) && isnumeric(iFrame),'Please provide a valid frame input');
-            status = ismember(iFrame, 1:obj.getOwner().nFrames_);
+            status = insequence(iFrame, 1, obj.getOwner().nFrames_);
         end
         
         function status = checkDepthNum(obj, iZ)
             assert(~isempty(iZ) && isnumeric(iZ),'Please provide a valid z input');
-            status = ismember(iZ, 1:obj.getOwner().zSize_);
+            status = insequence(iZ, 1,obj.getOwner().zSize_);
         end
         
         function sanityCheck(obj)
@@ -301,7 +309,7 @@ classdef Process < hgsetget
             ip.addParameter('useCache',false,@islogical);
             ip.KeepUnmatched = true;
             if obj.owner_.is3D()
-                ip.addOptional('iZ',[],@(x) ismember(x,1:obj.owner_.zSize_));
+                ip.addOptional('iZ',[],@(x) insequence(x,1,obj.owner_.zSize_));
             end
             ip.parse(obj,iChan,varargin{:});
             

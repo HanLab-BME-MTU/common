@@ -382,10 +382,7 @@ if ~isempty(indxConf)
             confRadius(iTrack,1) = sqrt( mean(eigenVal) * (probDim + 2) );
         end
         
-        %% New part calculate the track's center
-        principalComponents = [-0.3059 0.9518; 0.9518 0.3059];
-        traj = xyzCoord(:,1:2);
-        trajLength = length(traj);
+
     end
 end
 

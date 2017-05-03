@@ -199,7 +199,7 @@ classdef  MovieObject < hgsetget
         
         function proc = getProcess(obj, i)
             % Return process corresponding to the specified index
-            assert(isscalar(i) && ismember(i,1:numel(obj.processes_)), ['Process Index [' num2str(i) '] does Not exist!']);
+            assert(insequence_and_scalar(i,1,numel(obj.processes_)), ['Process Index [' num2str(i) '] does Not exist!']);
             proc = obj.processes_{i};
         end
         
@@ -210,7 +210,7 @@ classdef  MovieObject < hgsetget
             status = false;
             if isa(process, 'Process')
                 id = find(cellfun(@(x) isequal(x,process), obj.processes_), 1);
-            elseif isscalar(process) && ismember(process, 1:numel(obj.processes_))
+            elseif insequence_and_scalar(process, 1,numel(obj.processes_))
                 id = process;
             end
             
@@ -267,7 +267,7 @@ classdef  MovieObject < hgsetget
             % Input check
             ip=inputParser;
             ip.addRequired('pid', @(x) isa(x,'Process') || ...
-                isnumeric(x) && ismember(x, 1:numel(obj.processes_)));
+                isnumeric(x) && insequence(x, 1,numel(obj.processes_)));
             ip.addRequired('newprocess', @(x) isa(x,'Process'));
             ip.parse(pid, newprocess);
             
@@ -324,7 +324,7 @@ classdef  MovieObject < hgsetget
         
         function package = getPackage(obj, i)
             % Return the package corresponding to the specified index
-            assert(isscalar(i) && ismember(i,1:numel(obj.packages_)));
+            assert(insequence_and_scalar(i,1,numel(obj.packages_)));
             package = obj.packages_{i};
         end
         
@@ -335,7 +335,7 @@ classdef  MovieObject < hgsetget
             status = false;
             if isa(package, 'Package')
                 id = find(cellfun(@(x) isequal(x,package), obj.packages_), 1);
-            elseif isscalar(package) && ismember(package, 1:numel(obj.packages_))
+            elseif insequence_and_scalar(package, 1,numel(obj.packages_))
                 id = package;
             end
             

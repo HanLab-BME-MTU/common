@@ -1,4 +1,4 @@
-classdef ExternalProcess < NonSingularProcess
+classdef ExternalProcess < NonSingularProcess & NameableProcess
     % ExternalProcess A minimalist implementation of a Process that can run
     % an arbitrary function with the ExternalProcess handle as an argument
     %
@@ -64,7 +64,7 @@ classdef ExternalProcess < NonSingularProcess
             ip.addRequired('owner',@(x) isa(x,'MovieObject'));
             ip.addOptional('name',ExternalProcess.getName(),@ischar);
             ip.addOptional('fun',@(x) x,@(f) validateattributes(f,{'function_handle','char'},{}));
-            ip.addParameter('parameters',ExternalProcess.getDefaultParams(owner,varargin{:}));
+            ip.addParameter('parameters',ExternalProcess.getDefaultParams(owner,varargin{:}), @isstruct);
             ip.addParameter('drawableOutput',[]);
             ip.addParameter('loadChannelOutputFcn',[]);
             ip.addParameter('checkChannelOutputFcn',[]);

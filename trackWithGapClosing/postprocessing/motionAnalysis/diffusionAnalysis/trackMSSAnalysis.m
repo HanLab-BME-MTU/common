@@ -367,8 +367,6 @@ for iTrack = indx4diff'
                 end
         end
         
-
-
         %save additional output information
         mssSlope(iTrack) = mssSlopeT;
         genDiffCoef(iTrack,:) = genDiffCoefT;

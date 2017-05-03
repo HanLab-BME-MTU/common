@@ -25,15 +25,21 @@ classdef ImageOutputSelectionProcess < ImageProcessingProcess & NonSingularProce
             ip.addRequired('owner',@(x) isa(x,'MovieData'));
             ip.addOptional('funParams', ...
                 ImageOutputSelectionProcess.getDefaultParams(owner), ...
-                @isstruct);
+                @(x) isstruct(x) || isnumeric(x));
             ip.parse(owner,varargin{:});
+            
+            if(isnumeric(ip.Results.funParams))
+                funParams = ImageOutputSelectionProcess.getDefaultParams(owner,ip.Results.funParams);
+            else
+                funParams = ip.Results.funParams;
+            end
             
             obj = obj@ImageProcessingProcess(owner, ... 
                 'ImageOutputSelectionProcess', ... % name
                 @(varargin) true, ... % funName
-                ip.Results.funParams, ... % funParams
+                funParams, ... % funParams
                 owner.getChannelPaths, ... % inFilePaths_
-                ip.Results.funParams.outFilePaths ... % outFilePaths_
+                funParams.outFilePaths ... % outFilePaths_
                 );
         end
         function varargout = loadChannelOutput(obj,iChan,varargin)
@@ -85,7 +91,7 @@ classdef ImageOutputSelectionProcess < ImageProcessingProcess & NonSingularProce
         end
     end
     methods (Static)
-        function funParams = getDefaultParams(owner,varargin)
+        function funParams = getDefaultParams(owner,processIndex,varargin)
             isImageOutputSelectionProcess = ...
                 cellfun(@(p) isa(p,'ImageOutputSelectionProcess'), ...
                 owner.processes_);
@@ -95,7 +101,11 @@ classdef ImageOutputSelectionProcess < ImageProcessingProcess & NonSingularProce
             %          processIndex
             % outFilePaths - Usually the outFilePaths of the Process of
             %                interest
-            funParams.processIndex = find(~isImageOutputSelectionProcess,1,'last');
+            if(nargin < 2)
+                funParams.processIndex = find(~isImageOutputSelectionProcess,1,'last');
+            else
+                funParams.processIndex = processIndex;
+            end
             funParams.output = '';
             funParams.outFilePaths = {};
             if(~isempty(funParams.processIndex))
