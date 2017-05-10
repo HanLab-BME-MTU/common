@@ -1,6 +1,6 @@
 function obj=addCoord(obj,tracks)
    % tracks.addCoord(TracksToAdd)
-   % addition coordinate, lifetime must be the same. 
+   % addition coordinate, lifetime must be the same.
    % TODO: tracks lifetime must overlap entirely with obj
    % Philippe Roudot 2017
    if(length(tracks)~=length(obj))
@@ -15,6 +15,6 @@ function obj=addCoord(obj,tracks)
    obj.y=obj.y+tracks.y;
    obj.z=obj.z+tracks.z;
  else
-   arrayfun(@(o,t) o.add(t),obj,tracks )
+   arrayfun(@(o,t) o.add(t),obj,tracks );
  end
 end
