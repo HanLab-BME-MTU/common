@@ -423,7 +423,7 @@ for iFrame = 1 : numFrames-1
                 %extend auxiliary matrices if necessary
                 numRows = size(trackedFeatureIndx,1);
                 rowStart = rowEnd - numRows + 1;
-                if rowStart <= 1
+                while( rowStart <= 1)
                     trackedFeatureIndxAux = [zeros(numTracksWorstCase,numFrames); ...
                         trackedFeatureIndxAux];
                     nnDistFeaturesAux = [NaN(numTracksWorstCase,numFrames); ...
