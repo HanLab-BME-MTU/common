@@ -1,5 +1,5 @@
-function  newTracks=getMultCoord(obj,scalar)
+function  newTracks=getMultCoord(obj,scalarOrArray)
    % Philippe Roudot 2017
    newTracks=obj.copy();
-   newTracks.multCoord(scalar)
+   newTracks.multCoord(scalarOrArray);
 end

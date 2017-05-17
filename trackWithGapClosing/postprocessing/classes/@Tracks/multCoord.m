@@ -1,11 +1,11 @@
-function obj=multCoord(obj,scalar)
+function obj=multCoord(obj,scalarOrArray)
    % Philippe Roudot 2017
 
    if(length(obj)==1)
-     obj.x=obj.x*scalar;
-     obj.y=obj.y*scalar;
-     obj.z=obj.z*scalar;
+     obj.x=obj.x.*scalarOrArray;
+     obj.y=obj.y.*scalarOrArray;
+     obj.z=obj.z.*scalarOrArray;
    else
-     arrayfun(@(o,t) o.add(t),obj,tracks )
+     arrayfun(@(o,t) o.multCoord(t),obj,tracks );
    end
  end
