@@ -9,6 +9,7 @@ classdef TextDisplay < MovieDataDisplay
         Visible = 'on';
         Position = [];
         String = [];
+        FontSize = 12;
     end
     methods
         function obj=TextDisplay(varargin)
@@ -27,7 +28,7 @@ classdef TextDisplay < MovieDataDisplay
                 obj.Color = repmat(obj.Color,[numel(data.String) 1]);
             end
             
-            h = arrayfun(@(x)(text(data.Position(x,1),data.Position(x,2),data.String{x},'Color',obj.Color(x,:))),1:numel(data.String),...
+            h = arrayfun(@(x)(text(data.Position(x,1),data.Position(x,2),data.String{x},'Color',obj.Color(x,:), 'FontSize', obj.FontSize(x))),1:numel(data.String),...
                 'UniformOutput',false);            
             if iscell(h)
                 cellfun(@(x) set(x,'Tag',tag),h);
