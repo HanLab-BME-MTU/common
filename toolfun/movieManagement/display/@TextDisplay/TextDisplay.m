@@ -43,6 +43,7 @@ classdef TextDisplay < MovieDataDisplay
             %Being lazy, just redraw it. Ideally this would only update
             %those which had changed.
             tag = get(h(1),'Tag');
+            set(h,'Visible','off')
             delete(h);
             initDraw(obj,data,tag);            
             

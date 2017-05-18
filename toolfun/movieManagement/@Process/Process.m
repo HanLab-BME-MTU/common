@@ -306,7 +306,8 @@ classdef Process < hgsetget
             ip.addRequired('iChan',@isnumeric);
             ip.addOptional('iFrame',[],@isnumeric);
             ip.addParameter('output',outputList(1).var,@(x) any(cellfun(@(y) isequal(x,y),{outputList.var})));
-            ip.addParameter('useCache',false,@islogical);
+            ip.addParameter('useCache', false, @islogical);
+            ip.addParameter('movieOverlay', false, @islogical);
             ip.KeepUnmatched = true;
             if obj.owner_.is3D()
                 ip.addOptional('iZ',[],@(x) insequence(x,1,obj.owner_.zSize_));
@@ -345,7 +346,10 @@ classdef Process < hgsetget
             
             % Create graphic tag and delegate drawing to the display class
             tag = ['process' num2str(obj.getIndex()) '_channel' num2str(iChan) '_output' num2str(iOutput)];
-            h=obj.getDisplayMethod(iOutput, iChan).draw(data,tag,ip.Unmatched);
+            if ip.Results.movieOverlay % if not channel specific (to match what movieViewer expects)
+                tag = ['process' num2str(obj.getIndex()) '_output' num2str(iOutput)];
+            end
+            h = obj.getDisplayMethod(iOutput, iChan).draw(data,tag,ip.Unmatched);
         end
         
         function index = getIndex(obj)
