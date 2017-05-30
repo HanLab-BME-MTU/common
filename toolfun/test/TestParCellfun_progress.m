@@ -84,16 +84,16 @@ classdef TestParCellfun_progress < TestCase
             assert(~errorCaught);
             assertEqual(parout,NaN(size(self.A)));
         end
-        function testSpeed(self)
-            tic
-                parout = self.func(@self.slowFunction,self.A);
-            parTime = toc;
-            tic
-                out = self.nonparfunc(@self.slowFunction,self.A);
-            time = toc;
-            assert(parTime < time);
-            assertEqual(parout,out);
-        end
+        % function testSpeed(self)
+        %     tic
+        %         parout = self.func(@self.slowFunction,self.A);
+        %     parTime = toc;
+        %     tic
+        %         out = self.nonparfunc(@self.slowFunction,self.A);
+        %     time = toc;
+        %     assert(parTime < time);
+        %     assertEqual(parout,out);
+        % end
         function headingActual(self)
             self.func(@self.identity,self.A,'Heading','Hello world: ');
         end

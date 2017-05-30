@@ -41,6 +41,7 @@ classdef MotionAnalysisProcess < PostTrackingProcess
             ip =inputParser;
             ip.addRequired('iChan',@(x) isscalar(x) && obj.checkChanNum(x));
             ip.addOptional('iFrame',[],@(x) isempty(x) || isscalar(x) && obj.checkFrameNum(x));
+            ip.addParamValue('iZ',[], @(x)ismember(x,1:obj.owner_.zSize_));
             ip.addParamValue('useCache',false,@islogical);
             ip.addParamValue('output',outputList,@(x) all(ismember(x,outputList)));
             ip.parse(iChan,varargin{:})
@@ -122,7 +123,13 @@ classdef MotionAnalysisProcess < PostTrackingProcess
             % Set default parameters
             funParams.ChannelIndex = 1 : numel(owner.channels_);
             funParams.OutputDirectory = [outputDir  filesep 'MotionAnalysis'];
-            funParams.probDim = 2;
+
+            if owner.is3D
+                funParams.probDim = 3;
+            else
+                funParams.probDim = 2;
+            end
+            
             funParams.checkAsym = 0;
             funParams.alphaValues = [0.05 0.1];
             funParams.confRadMin=0;

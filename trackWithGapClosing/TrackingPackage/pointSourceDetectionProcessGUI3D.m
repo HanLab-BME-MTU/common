@@ -1,15 +1,15 @@
 function varargout = pointSourceDetectionProcessGUI3D(varargin)
 % anisoGaussianDetectionProcessGUI M-file for anisoGaussianDetectionProcessGUI.fig
-%      anisoGaussianDetectionProcessGUI, by itself, creates a new anisoGaussianDetectionProcessGUI or raises the existing
+%      anisoGaussianDetectionProcessGUI, by itself, creates a new pointSourceDetectionProcessGUI3D or raises the existing
 %      singleton*.
 %
-%      H = anisoGaussianDetectionProcessGUI returns the handle to a new anisoGaussianDetectionProcessGUI or the handle to
+%      H = anisoGaussianDetectionProcessGUI returns the handle to a new pointSourceDetectionProcessGUI3D or the handle to
 %      the existing singleton*.
 %
 %      anisoGaussianDetectionProcessGUI('CALLBACK',hObject,eventData,handles,...) calls the local
-%      function named CALLBACK in anisoGaussianDetectionProcessGUI.M with the given input arguments.
+%      function named CALLBACK in pointSourceDetectionProcessGUI3D.M with the given input arguments.
 %
-%      anisoGaussianDetectionProcessGUI('Property','Value',...) creates a new anisoGaussianDetectionProcessGUI or raises the
+%      anisoGaussianDetectionProcessGUI('Property','Value',...) creates a new pointSourceDetectionProcessGUI3D or raises the
 %      existing singleton*.  Starting from the left, property value pairs are
 %      applied to the GUI before anisoGaussianDetectionProcessGUI_OpeningFcn gets called.  An
 %      unrecognized property name or invalid value makes property application
@@ -22,7 +22,7 @@ function varargout = pointSourceDetectionProcessGUI3D(varargin)
 
 % Edit the above text to modify the response to help anisoGaussianDetectionProcessGUI
 
-% Last Modified by GUIDE v2.5 01-Oct-2013 19:23:29
+% Last Modified by GUIDE v2.5 24-Mar-2017 12:54:38
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -50,7 +50,7 @@ function pointSourceDetectionProcessGUI_OpeningFcn(hObject, eventdata, handles, 
 processGUI_OpeningFcn(hObject, eventdata, handles, varargin{:},'initChannel',1);
 
 % Set-up parameters
-userData=get(handles.figure1,'UserData');
+userData = get(handles.figure1,'UserData');
 funParams = userData.crtProc.funParams_;
 %Remove the output directory as we don't want to replicate it to other
 %movies if the "apply to all movies" box is checked. Ideally we would
@@ -62,41 +62,48 @@ end
 
 set(handles.popupmenu_CurrentChannel,'UserData',funParams);
 
+% Set Channel options
+selChan = handles.listbox_selectedChannels.String;
+availChan = handles.listbox_availableChannels.String;
+[C ia is] = intersect(availChan, selChan);
+% 
+chanStr = arrayfun(@(x)(['Channel ' num2str(x)]), 1:numel(availChan),'Unif',0);
+set(handles.popupmenu_CurrentChannel, 'String', chanStr);
+
 iChan = get(handles.popupmenu_CurrentChannel,'Value');
-if isempty(iChan)
-    iChan = 1;
-    set(handles.popupmenu_CurrentChannel,'Value',1);
+
+if isempty(iChan) || iChan ~= ia(1)
+    iChan = ia(1);
+    set(handles.popupmenu_CurrentChannel,'Value',iChan);
 end
 
-% %Specify parameters
-% userData.numParams = {'filterSigma', 'alpha','Mode','MaxMixtures','RedundancyRadius'};
-% %Set the intersection checkbox 
-% userData.checkParams ={'FitMixtures'};
-% 
+handles.text_warningChan.Visible = 'off';
 
-% for i =1 : numel(userData.numParams)
-%     paramName = userData.numParams{i};        
-%     if any(strcmp(paramName,funParams.PerChannelParams))
-%         parVal = funParams.(paramName)(iChan);
-%     else
-%         parVal = funParams.(paramName);
-%     end
-%     set(handles.(['edit_' paramName]), 'String',parVal);
-% end
-% 
-% 
-% 
-% set(handles.edit_UseIntersection,,'Value',funParams.UseIntersection)
-% 
-% for i =1 : numel(userData.checkParams)
-%     paramName = userData.checkParams{i};        
-%     if any(strcmp(paramName,funParams.PerChannelParams))
-%         parVal = funParams.(paramName)(iChan);
-%     else
-%         parVal = funParams.(paramName);
-%     end
-%     set(handles.(['edit_' paramName]), 'Value',parVal);
-% end
+
+%%%%%%%%
+
+ImProcP =  cellfun(@(x) isa(x,'ImageProcessingProcess'), userData.MD.processes_);
+ImProcPID = find(ImProcP);
+ImProcPNames = cellfun(@(x) x.getName(),userData.MD.processes_(ImProcP),'Unif',false);
+ImProcPString = vertcat('Raw Channel Input', ImProcPNames(:));
+
+imProcData = horzcat({[]},num2cell(ImProcPID));
+imProcValue = find(cellfun(@(x) isequal(x,funParams.ChannelIndex),imProcData));
+if isempty(imProcValue), imProcValue = 1; end
+
+set(handles.edit_InputImageProcessIndex,'String', ImProcPString,...
+    'UserData',imProcData,'Value',imProcValue);
+%%%%%%%%%%%%%%%
+
+
+% Set default channels callback function
+set(handles.checkbox_all,'Callback',@(hObject,eventdata)...
+    checkallChannels_Callback(hObject,eventdata,guidata(hObject)));
+set(handles.pushbutton_select,'Callback',@(hObject,eventdata)...
+    selectChannel_Callback(hObject,eventdata,guidata(hObject)));
+set(handles.pushbutton_delete,'Callback',@(hObject,eventdata)...
+    deleteChannel_Callback(hObject,eventdata,guidata(hObject)));
+
 
 % Set up available mask channels
 set(handles.listbox_availableMaskChannels,'String',userData.MD.getChannelPaths(), ...
@@ -123,6 +130,16 @@ segProcValue = find(cellfun(@(x) isequal(x,funParams.MaskProcessIndex),segProcDa
 if isempty(segProcValue), segProcValue = 1; end
 set(handles.popupmenu_SegProcessIndex,'String',segProcString,...
     'UserData',segProcData,'Value',segProcValue);
+
+
+
+if ~ismember(handles.listbox_availableChannels.String{iChan}, handles.listbox_selectedChannels.String)
+    handles.uipanel_1.BackgroundColor = [1 .08 .18];
+    handles.text_warningChan.Visible = 'off';
+else
+    handles.uipanel_1.BackgroundColor = [.94 .94 .94];
+    handles.text_warningChan.Visible = 'on';
+end
 
 % Update channels listboxes depending on the selected process
 popupmenu_SegProcessIndex_Callback(hObject, eventdata, handles)
@@ -577,28 +594,89 @@ function popupmenu_CurrentChannel_Callback(hObject, eventdata, handles)
 
 % Hints: contents = cellstr(get(hObject,'String')) returns popupmenu_CurrentChannel contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from popupmenu_CurrentChannel
-userData=get(handles.figure1,'UserData');
+userData = get(handles.figure1,'UserData');
 funParams = get(handles.popupmenu_CurrentChannel,'UserData');
 
-selChan = 1:numel(userData.MD.channels_);%For now just let them set parameters for all channels.
-%selChan = get(handles.listbox_selectedChannels,'UserData');
-chanStr = arrayfun(@(x)(['Channel ' num2str(x)]),selChan,'Unif',0);
-set(handles.popupmenu_CurrentChannel,'String',chanStr);
 iChan = get(handles.popupmenu_CurrentChannel,'Value');
-%set(handles.popupmenu_CurrentChannel,'UserData',iChan);
 
-
+if ~ismember(handles.listbox_availableChannels.String{iChan}, handles.listbox_selectedChannels.String)
+    handles.uipanel_1.BackgroundColor = [.64 .08 .18];
+    handles.text_warningChan.Visible = 'on';
+else
+    handles.uipanel_1.BackgroundColor = [.94 .94 .94];
+    handles.text_warningChan.Visible = 'off';
+end
 
 % Set-up parameters
 for i =1 : numel(funParams.PerChannelParams)
     paramName = funParams.PerChannelParams{i};
-    parVal = funParams.(paramName)(iChan);
-    if ~islogical(funParams.(paramName))
-        set(handles.(['edit_' paramName]), 'String',parVal);
+    if ~strcmp(paramName,'filterSigma')  && ~strcmp(paramName,'InputImageProcessIndex') && ~strcmp(paramName,'algorithmType')
+        parVal = funParams.(paramName)(iChan);
+        if ~islogical(funParams.(paramName))
+            set(handles.(['edit_' paramName]), 'String', parVal);
+        else
+            set(handles.(['edit_' paramName]), 'Value', parVal);
+        end
+    elseif strcmp(paramName,'InputImageProcessIndex')
+
+        selProc = 0:userData.procID-1;
+        iSelProcIn  = find(ismember(selProc, parVal));
+        if length(selProc) > 1
+            ProcStr = arrayfun(@(x)([userData.MD.processes_{x}.name]),selProc,'Unif',0);
+        else
+            ProcStr = ['Raw Channel Input'];% arrayfun(@(x)(['NA ']),selProc,'Unif',0);
+        end
+        set(handles.(['edit_' paramName]), 'String', ProcStr);
+        set(handles.(['edit_' paramName]), 'Value', iSelProcIn);
+    elseif strcmp(paramName,'algorithmType') 
+        set(handles.(['edit_' paramName]), 'String', PointSourceDetectionProcess3D.getValidAlgorithmTypes); 
+        parVal = funParams.(paramName)(iChan);
+        valSel  = find(ismember(PointSourceDetectionProcess3D.getValidAlgorithmTypes, parVal));
+        set(handles.(['edit_' paramName]), 'Value', valSel); 
     else
-        set(handles.(['edit_' paramName]), 'Value',parVal);
+        filterSigmaXY = funParams.filterSigma(1,iChan);
+        filterSigmaZ = funParams.filterSigma(2,iChan);
+        set(handles.('edit_filterSigmaZ'), 'String', filterSigmaZ);
+        set(handles.('edit_filterSigmaXY'), 'String', filterSigmaXY);
     end
 end
+
+selType = get(handles.edit_algorithmType, 'Value'); 
+algoType = PointSourceDetectionProcess3D.getValidAlgorithmTypes{selType};
+
+if any(ismember(algoType,{'watershedApplegateAuto', ...
+                      'watershedApplegate',...
+                      'bandPassWatershed',...
+                      'watershedMatlab',...
+                      'markedWatershed'}))
+    
+    children = get(handles.uipanel_pointSource,'Children');
+    set(children(strcmpi ( get (children,'Type'),'UIControl')),'enable','off')
+    
+    children = get(handles.uipanel_water,'Children');
+    set(children(strcmpi ( get (children,'Type'),'UIControl')),'enable','on')
+    
+elseif any(ismember(algoType,{'pointSourceLM',...
+                              'pointSource',...
+                              'pointSourceAutoSigma',...
+                              'pointSourceAutoSigmaFit',...
+                              'pSAutoSigmaMarkedWatershed',...
+                              'pointSourceAutoSigmaMixture',... 
+                              'pointSourceAutoSigmaLM',...     
+                              'pointSourceAutoSigmaFitSig',... 
+                              'pSAutoSigmaWatershed'}))
+
+    children = get(handles.uipanel_pointSource,'Children');
+    set(children(strcmpi ( get (children,'Type'),'UIControl')),'enable','on')
+    
+    children = get(handles.uipanel_water,'Children');
+    set(children(strcmpi ( get (children,'Type'),'UIControl')),'enable','off')
+                          
+end
+
+
+
+
 
 % --- Executes during object creation, after setting all properties.
 function popupmenu_CurrentChannel_CreateFcn(hObject, eventdata, handles)
@@ -623,23 +701,51 @@ function pushbutton_saveChannelParams_Callback(hObject, eventdata, handles)
 %Get settings for the current channel before switching to another
 iChan = get(handles.popupmenu_CurrentChannel,'Value');
 
-%userData=get(handles.figure1,'UserData');
+userData = get(handles.figure1,'UserData');
 funParams = get(handles.popupmenu_CurrentChannel,'UserData');
 
 for i =1 : numel(funParams.PerChannelParams)
     paramName = funParams.PerChannelParams{i};
-    if islogical(funParams.(paramName))
-        parVal = get(handles.(['edit_' paramName]), 'Value');
-        funParams.(paramName)(iChan) = parVal;
-    elseif iscell(funParams.(paramName))   
-        parVal = get(handles.(['edit_' paramName]), 'String');
-        funParams.(paramName)(iChan) = parVal;
-    else
-        parVal = get(handles.(['edit_' paramName]), 'String');
-        funParams.(paramName)(iChan) = str2double(parVal);
-    end
+    if ~strcmp(paramName,'filterSigma')  && ~strcmp(paramName,'InputImageProcessIndex') && ~strcmp(paramName,'algorithmType') 
+        if islogical(funParams.(paramName))
+            parVal = get(handles.(['edit_' paramName]), 'Value');
+            funParams.(paramName)(iChan) = parVal;
+        elseif iscell(funParams.(paramName))   
+            parVal = get(handles.(['edit_' paramName]), 'String');
+            funParams.(paramName)(iChan) = parVal;
+        else
+            parVal = get(handles.(['edit_' paramName]), 'String');
+            funParams.(paramName)(iChan) = str2double(parVal);
+        end
         
+    elseif strcmp(paramName,'algorithmType')      
+        selType = get(handles.(['edit_' paramName]), 'Value'); 
+        parVal = PointSourceDetectionProcess3D.getValidAlgorithmTypes{selType};
+        funParams.(paramName)(iChan) = {parVal};
+    
+    elseif strcmp(paramName,'InputImageProcessIndex')
+%         userData = get(handles.figure1,'UserData');
+        MD = userData.MD;
+        
+        selProc = 0:userData.procID-1;
+        iProcSel = get(handles.(['edit_' paramName]), 'Value'); 
+        parVal = selProc(iProcSel);
+        
+        if parVal ~= 0
+            assert(MD.processes_{parVal}.checkChannelOutput(iChan),...
+               ['No valid output for input process specified for channel ' num2str(iChan)]);
+        end
+        
+        funParams.(paramName)(iChan) = parVal;
+        
+    else
+        filterSigmaZ = get(handles.('edit_filterSigmaZ'), 'String');
+        filterSigmaXY = get(handles.('edit_filterSigmaXY'), 'String');
+        funParams.filterSigma(:,iChan) = [str2double(filterSigmaXY); str2double(filterSigmaZ)];
+    end
 end
+
+
 
 set(handles.popupmenu_CurrentChannel,'UserData',funParams);
 
@@ -697,3 +803,287 @@ function edit_WindowSize_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
+
+
+function edit_filterSigmaXY_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_filterSigmaXY (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_filterSigmaXY as text
+%        str2double(get(hObject,'String')) returns contents of edit_filterSigmaXY as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_filterSigmaXY_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_filterSigmaXY (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on button press in edit_RefineMaskLoG.
+function edit_RefineMaskLoG_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_RefineMaskLoG (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of edit_RefineMaskLoG
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_RefineMaskLoG_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_RefineMaskLoG (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+
+% --- Executes on button press in edit_RefineMaskValid.
+function edit_RefineMaskValid_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_RefineMaskValid (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of edit_RefineMaskValid
+
+
+
+function edit_InputImageProcessIndex_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_InputImageProcessIndex (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_InputImageProcessIndex as text
+%        str2double(get(hObject,'String')) returns contents of edit_InputImageProcessIndex as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_InputImageProcessIndex_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_InputImageProcessIndex (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on selection change in edit_algorithmType.
+function edit_algorithmType_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_algorithmType (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns edit_algorithmType contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from edit_algorithmType
+    selType = get(handles.edit_algorithmType, 'Value'); 
+    algoType = PointSourceDetectionProcess3D.getValidAlgorithmTypes{selType};
+    
+
+if any(ismember(algoType,{'watershedApplegateAuto', ...
+                      'watershedApplegate',...
+                      'bandPassWatershed',...
+                      'watershedMatlab',...
+                      'markedWatershed'}))
+    
+    children = get(handles.uipanel_pointSource,'Children');
+    set(children(strcmpi ( get (children,'Type'),'UIControl')),'enable','off');
+    children = get(handles.uipanel_water,'Children');
+    set(children(strcmpi ( get (children,'Type'),'UIControl')),'enable','on');
+    
+elseif any(ismember(algoType,{'pointSourceLM',...
+                              'pointSource',...
+                              'pointSourceAutoSigma',...
+                              'pointSourceAutoSigmaFit',...
+                              'pSAutoSigmaMarkedWatershed',...
+                              'pointSourceAutoSigmaMixture',... 
+                              'pointSourceAutoSigmaLM',...     
+                              'pointSourceAutoSigmaFitSig',... 
+                              'pSAutoSigmaWatershed'}))
+
+    children = get(handles.uipanel_pointSource,'Children');
+    set(children(strcmpi ( get (children,'Type'),'UIControl')),'enable','on');
+    children = get(handles.uipanel_water,'Children');
+    set(children(strcmpi ( get (children,'Type'),'UIControl')),'enable','off');
+                          
+end
+
+        
+
+    
+
+% --- Executes during object creation, after setting all properties.
+function edit_algorithmType_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_algorithmType (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function edit_waterThresh_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_waterThresh (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_waterThresh as text
+%        str2double(get(hObject,'String')) returns contents of edit_waterThresh as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_waterThresh_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_waterThresh (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function edit_waterStep_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_waterStep (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_waterStep as text
+%        str2double(get(hObject,'String')) returns contents of edit_waterStep as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_waterStep_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_waterStep (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function edit_lowFreq_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_lowFreq (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_lowFreq as text
+%        str2double(get(hObject,'String')) returns contents of edit_lowFreq as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_lowFreq_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_lowFreq (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function edit_highFreq_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_highFreq (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_highFreq as text
+%        str2double(get(hObject,'String')) returns contents of edit_highFreq as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_highFreq_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_highFreq (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+function checkallChannels_Callback(hObject, eventdata, handles)
+
+% Retrieve available channels properties
+availableProps = get(handles.listbox_availableChannels, {'String','UserData'});
+if isempty(availableProps{1}), return; end
+
+% Update selected channels
+if get(hObject,'Value')
+    set(handles.listbox_selectedChannels, 'String', availableProps{1},...
+        'UserData',availableProps{2});
+else
+    set(handles.listbox_selectedChannels, 'String', {}, 'UserData',[], 'Value',1);
+end
+% Set Channel options
+% selChan = handles.listbox_selectedChannels.String;
+% availChan = handles.listbox_availableChannels.String;
+% [C ia is] = intersect(availChan, selChan);
+% chanStr = arrayfun(@(x)(['Channel ' num2str(x)]), ia,'Unif',0);
+% set(handles.popupmenu_CurrentChannel, 'String', chanStr);
+popupmenu_CurrentChannel_Callback(hObject, eventdata, handles)
+
+
+function deleteChannel_Callback(hObject, eventdata, handles)
+% Generic callback to be exectuted when a selected channel is removed from
+% the graphical settings interface
+
+% Get selected properties and returin if empty
+selectedProps = get(handles.listbox_selectedChannels, {'String','UserData','Value'});
+if isempty(selectedProps{1}) || isempty(selectedProps{3}),return; end
+
+% Delete selected item
+selectedProps{1}(selectedProps{3}) = [ ];
+selectedProps{2}(selectedProps{3}) = [ ];
+set(handles.listbox_selectedChannels, 'String', selectedProps{1},'UserData',selectedProps{2},...
+    'Value',max(1,min(selectedProps{3},numel(selectedProps{1}))));
+% Set Channel options
+% selChan = handles.listbox_selectedChannels.String;
+% availChan = handles.listbox_availableChannels.String;
+% [C ia is] = intersect(availChan, selChan);
+% chanStr = arrayfun(@(x)(['Channel ' num2str(x)]), ia,'Unif',0);
+% set(handles.popupmenu_CurrentChannel, 'String', chanStr);
+popupmenu_CurrentChannel_Callback(hObject, eventdata, handles)
+
+function selectChannel_Callback(hObject, eventdata, handles)
+
+% Retrieve  channels properties
+availableProps = get(handles.listbox_availableChannels, {'String','UserData','Value'});
+selectedProps = get(handles.listbox_selectedChannels, {'String','UserData'});
+
+% Find new elements and set them to the selected listbox
+newID = availableProps{3}(~ismember(availableProps{1}(availableProps{3}),selectedProps{1}));
+selectedChannels = horzcat(selectedProps{1}',availableProps{1}(newID)');
+selectedData = horzcat(selectedProps{2}, availableProps{2}(newID));
+set(handles.listbox_selectedChannels, 'String', selectedChannels, 'UserData', selectedData);
+
+popupmenu_CurrentChannel_Callback(hObject, eventdata, handles)
+% % Set Channel options
+% selChan = handles.listbox_selectedChannels.String;
+% availChan = handles.listbox_availableChannels.String;
+% [C ia is] = intersect(availChan, selChan);
+% chanStr = arrayfun(@(x)(['Channel ' num2str(x)]), ia,'Unif',0);
+% set(handles.popupmenu_CurrentChannel, 'String', chanStr);

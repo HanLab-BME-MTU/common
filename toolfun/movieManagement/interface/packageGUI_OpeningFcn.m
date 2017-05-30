@@ -135,7 +135,7 @@ if any(cellfun(@isempty, packageIndx))
         packageConstr = str2func(userData.packageName);
     else
         % Launch interface to determine constructor
-        concretePackages = eval([userData.packageName '.getConcretePackages()']);
+        concretePackages = eval([userData.packageName '.getConcretePackages(ip.Results.MO)']);
         [selection, status] = listdlg('Name','',...
             'PromptString',{'Select the type of object';'you want to track:'},...
             'ListString', {concretePackages.name},'SelectionMode','single');

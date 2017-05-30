@@ -2,8 +2,7 @@ classdef UTrackPackage < TrackingPackage
     % A concrete process for UTrack Package
     
     methods (Access = public)
-        function obj = UTrackPackage (varargin)
-            
+        function obj = UTrackPackage(varargin)
             % Call the superclass constructor
             obj = obj@TrackingPackage(varargin{:});
         end
