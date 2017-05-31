@@ -31,14 +31,14 @@ elseif(nargin > 2)
     % Get deltaT for Z-stack in c,t
     deltaT = zeros(1,1,bfReader.getSizeZ());
     for z = 1:bfReader.getSizeZ()
-        deltaT(z) = getDeltaTatCTZ(bfReader,metadata,series,c,t,z);
+        deltaT(1,1,z) = getDeltaTatCTZ(bfReader,metadata,series,c,t,z);
     end
 elseif(nargin > 1)
     % Get deltaT for TxZ stack for channel c
     deltaT = zeros(1,bfReader.getSizeT(),bfReader.getSizeZ());
     for t = 1:bfReader.getSizeT()
         for z = 1:bfReader.getSizeZ()
-            deltaT(t,z) = getDeltaTatCTZ(bfReader,metadata,series,c,t,z);
+            deltaT(1,t,z) = getDeltaTatCTZ(bfReader,metadata,series,c,t,z);
         end
     end
 else
