@@ -169,6 +169,8 @@ classdef  TiffSeriesReader < Reader
                       
             I = obj.loadImage_(c , t , z);
         end
+        
+        imInfo = showMetadata(obj);
 
     end
     methods ( Access = protected )
