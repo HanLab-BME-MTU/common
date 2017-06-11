@@ -22,7 +22,7 @@ function varargout = movieDataGUI(varargin)
 
 % Edit the above text to modify the response to help movieDataGUI
 
-% Last Modified by GUIDE v2.5 20-Apr-2013 12:53:57
+% Last Modified by GUIDE v2.5 10-Jun-2017 18:25:16
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -429,3 +429,22 @@ function checkbox4_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 %set(handles.checkbox4, 'Value', 1);
 % Hint: get(hObject,'Value') returns toggle state of checkbox4
+
+
+% --- Executes on button press in pushbutton_view_metadata.
+function pushbutton_view_metadata_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton_view_metadata (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+userData=get(handles.figure1,'UserData');
+MD = userData.MD;
+try
+    MD.getReader().showMetadata();
+catch err
+    if(~isempty(MD) && isa(MD.getReader(),'BioformatsReader'))
+        rethrow(err);
+    else
+        msgbox('Cannot show metadata for a movie of this type',...
+            'Metadata Unavailable');
+    end
+end
