@@ -182,6 +182,12 @@ for cellIdx=1:length(moviePaths)
                 end
                 channelList=[channelList Channel(outputDirCH)];
                 chIdx=chIdx+1;
+                
+                                % If this channel does not exist, stop building channels.
+                if(isempty(strfind(channelOriginalFilePattern,'{ch}')))
+                    break;
+                end
+                
             end
             
             
@@ -192,12 +198,13 @@ for cellIdx=1:length(moviePaths)
                 %%
                 MD=MovieData(channelList,[cPath filesep 'analysis'],'movieDataFileName_',p.MDName,'movieDataPath_',[cPath filesep 'analysis'], ...
                     'pixelSize_',p.lateralPixelSize,'pixelSizeZ_',p.axialPixelSize,'timeInterval_',p.timeInterval);
-                MD.sanityCheck();
-                MD.save();
                 if(p.is3D)
                     tiffReader=TiffSeriesReader({channelList.channelPath_},'force3D',true);
                     MD.setReader(tiffReader);
                 end;
+                MD.sanityCheck();
+                MD.save();
+
             else
                 warning(['No files found for movie ' num2str(cellIdx)]);
                 MD=MovieData([],[cPath filesep 'analysis'],'movieDataFileName_',p.movieDataName,'movieDataPath_',[cPath filesep 'analysis']);

@@ -322,6 +322,12 @@ classdef  MovieObject < hgsetget
             obj.packages_ = horzcat(obj.packages_ , {newpackage});
         end
         
+        function setPackage(obj,i, newpackage)
+            % Add a package object to the package list
+            assert(isa(newpackage,'Package'));
+            obj.packages_{i} = newpackage;
+        end
+        
         function package = getPackage(obj, i)
             % Return the package corresponding to the specified index
             assert(insequence_and_scalar(i,1,numel(obj.packages_)));
