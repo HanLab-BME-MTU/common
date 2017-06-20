@@ -118,8 +118,10 @@ classdef PointSourceDetectionProcess3D < DetectionProcess
             ip.parse(owner, varargin{:})
             outputDir = ip.Results.outputDir;
             
+            nChan = numel(owner.channels_);
+            
             % Set default parameters
-            funParams.ChannelIndex = 1;
+            funParams.ChannelIndex = 1:nChan;
             funParams.InputImageProcessIndex = 0; % ?? (can we add some way to check what is availble.)
             funParams.MaskChannelIndex = []; %1:numel(owner.channels_);
             funParams.MaskProcessIndex = [];            
@@ -146,11 +148,13 @@ classdef PointSourceDetectionProcess3D < DetectionProcess
             
             % sigma estimation            
             nChan = numel(owner.channels_);
-            funParams.filterSigma = 1.2*ones(1,nChan); %Minimum numerically stable sigma is ~1.2 pixels.
+            funParams.filterSigma = 1.2*ones(1, nChan); %Minimum numerically stable sigma is ~1.2 pixels.
             hasPSFSigma = arrayfun(@(x) ~isempty(x.psfSigma_), owner.channels_);
+            
             funParams.filterSigma(hasPSFSigma) = [owner.channels_(hasPSFSigma).psfSigma_];            
             funParams.filterSigma(funParams.filterSigma<1.2) = 1.2; %Make sure default isn't set to too small.
             funParams.filterSigma = repmat(funParams.filterSigma,[2 1]); %TEMP - use z-PSF estimate as well!!
+            
             % For the GUI
             funParams.filterSigmaXY = funParams.filterSigma(1,1);
             funParams.filterSigmaZ = funParams.filterSigma(2,1);
