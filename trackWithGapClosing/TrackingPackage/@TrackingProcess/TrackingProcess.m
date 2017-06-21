@@ -150,9 +150,13 @@ classdef TrackingProcess < DataProcessingProcess & NonSingularProcess
             outputDir=ip.Results.outputDir;
             
             % Set default parameters
-            funParams.ChannelIndex =1:numel(owner.channels_);
             nChan = numel(owner.channels_);
-            funParams.DetProcessIndex = [];
+            funParams.ChannelIndex = 1:numel(owner.channels_);
+            
+            
+            % should detect for which channels a detection process output exists.
+            funParams.DetProcessIndex = []; % perhaps tag by process & channel
+
             funParams.OutputDirectory = [outputDir  filesep 'tracks'];
             % --------------- time range ----------------
             funParams.timeRange = []; % empty implies entier movie
