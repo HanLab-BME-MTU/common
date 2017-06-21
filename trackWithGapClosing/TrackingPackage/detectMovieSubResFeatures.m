@@ -58,6 +58,9 @@ for i = p.ChannelIndex;
     mkClrDir(currDir);
 end
 
+% Get ROI mask if any.
+roiMask = movieData.getROIMask;
+p.detectionParam.roiMask = roiMask;
 
 %% --------------- Sub-resolution object detection ---------------%%% 
 disp('Starting detecting diffraction-limited objects...')
