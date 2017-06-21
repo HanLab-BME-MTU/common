@@ -184,7 +184,7 @@ classdef TrackingProcess < DataProcessingProcess & NonSingularProcess
 
             %list of parameters which can be specified at a per-channel
             %level. If specified as scalar these will  be replicated
-            funParams.PerChannelParams = {'gapCloseParam','kalmanFunctions','costMatrices'};
+%             funParams.PerChannelParams = {'gapCloseParam','kalmanFunctions','costMatrices'};
             % funParams = prepPerChannelParams(funParams, nChan);
         end
         
