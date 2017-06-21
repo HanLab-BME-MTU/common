@@ -12,6 +12,7 @@ classdef Process < hgsetget
     
     properties  (SetAccess = protected)
         name_           % Process name
+        tag_            % User definable tag for orgnaizational convenience
         
         % Success/Uptodate flags
         procChanged_   % Whether process parameters have been changed
@@ -49,10 +50,15 @@ classdef Process < hgsetget
                 if nargin > 1
                     obj.name_ = name;
                 end
+
                 obj.createTime_ = clock;
                 obj.procChanged_ = false;
                 obj.success_ = false;
                 obj.updated_ = true;
+                
+                % set default tag label
+                numproc = numel(owner.getProcessIndex(class(obj), Inf, 0));
+                obj.tag_ = ['proc_' class(obj) '_' num2str(numproc+1)];
             end
         end
     end
@@ -266,7 +272,15 @@ classdef Process < hgsetget
              
 
         end
-        
+
+        function setProcessTag(obj, tag)
+            obj.tag_ = tag;
+        end
+
+        function tag = getProcessTag(obj)
+            tag = obj.tag_;
+        end
+
         function time = getProcessingTime(obj)
             %The process has been re-run, update the time.
             time=sec2struct(24*3600*(datenum(obj.finishTime_)-datenum(obj.startTime_)));
