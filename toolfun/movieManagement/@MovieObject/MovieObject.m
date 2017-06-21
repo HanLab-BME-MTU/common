@@ -197,12 +197,44 @@ classdef  MovieObject < hgsetget
             obj.processes_ = horzcat(obj.processes_, {newprocess});
         end
         
-        function proc = getProcess(obj, i)
-            % Return process corresponding to the specified index
-            assert(insequence_and_scalar(i,1,numel(obj.processes_)), ['Process Index [' num2str(i) '] does Not exist!']);
-            proc = obj.processes_{i};
+        function proc = getProcess(obj, index_or_tag)
+            if ischar(index_or_tag)
+                % Return process corresponding to the specified tag
+                qtag = index_or_tag;
+                procs = obj.processes_;
+                proc = [];
+                for p = procs
+                    if strcmp(p{:}.tag_, qtag)
+                        proc = p;
+                    end
+                end
+                assert(~isempty(proc), ['Process with tag ''' qtag ''' does Not exist!'])
+            elseif isnumeric(index_or_tag)
+                % Return process corresponding to the specified index
+                i = index_or_tag;
+                assert(insequence_and_scalar(i,1,numel(obj.processes_)), ['Process Index [' num2str(i) '] does Not exist!']);
+                proc = obj.processes_{i};
+            else
+                error('Incorrect variable type: must be numeric int for process index or char for process tag');
+            end
         end
         
+        function matchingProcs = findProcessTag(obj, queryStr)
+            % return all processes with tag containing the queryStr
+            if ischar(queryStr)
+                procs = obj.processes_;
+                matchingProcs = [];
+                for p = procs
+                    if strfind(p{:}.tag_, queryStr) > 0
+                        matchingProcs = [matchingProcs p];
+                    end
+                end
+                assert(~isempty(matchingProcs), ['No Process(es) with tag containing ''' queryStr ''' exist!'])
+            else
+                error('Incorrect variable type: must be numeric int for process index or char for process tag');
+            end
+        end
+
         function status = unlinkProcess(obj, process)
             % Unlink process from processes list
             
