@@ -66,6 +66,7 @@ function [movieInfo,exceptions,localMaxima,background,psfSigma] = ...
 %                           Omit field or assign as [] to use default.
 %           .maskLoc      : Name (including full path) of mask file
 %                           specifying ROI for detection.
+%           .roiMask      : binary mask specifying ROI for detection.
 %       saveResults   : 0 if no saving is requested.
 %                       If saving is requested, structure with fields:
 %           .dir          : Directory where results should be saved.
@@ -231,9 +232,18 @@ else
 end
 
 %get mask information if any
-if ~isfield(detectionParam,'maskLoc') || isempty(detectionParam.maskLoc)
+if isfield(detectionParam,'roiMask') && ~isempty(detectionParam.roiMask)
+    %get ROImask directly
+    maskFlag = 1;
+    maskImage = detectionParam.roiMask;
+    if ndims(maskImage) == 3
+        % For now assume rois remains constant for entire time series.
+        maskImage = maskImage(:,:,1);
+    end
+elseif ~isfield(detectionParam,'maskLoc') || isempty(detectionParam.maskLoc)
     maskFlag = 0;
-else
+else 
+    % load binary mark from path
     maskFlag = 1;
     maskImage = double(imread(detectionParam.maskLoc));
 end
