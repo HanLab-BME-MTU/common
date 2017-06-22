@@ -208,6 +208,23 @@ classdef  MovieObject < hgsetget
             tagList = flip(tagList);        
         end
         
+        function matchingProcs = findProcessTag(obj, queryStr)
+            % return all processes with tag containing the queryStr
+            if ischar(queryStr)
+                queryStr = lower(queryStr);
+                tagList = obj.getProcessTags;
+                matchingProcs = [];
+                for t = tagList
+                    if strfind(lower(t{:}), queryStr) > 0
+                        matchingProcs = [matchingProcs t];
+                    end
+                end
+                assert(~isempty(matchingProcs), ['No Process(es) with tag containing ''' queryStr ''' exist!'])
+            else
+                error('Incorrect tag query type: must be char string');
+            end
+        end
+        
         function proc = getProcess(obj, index_or_tag)
             if ischar(index_or_tag)
                 % Return process corresponding to the specified tag
@@ -219,22 +236,6 @@ classdef  MovieObject < hgsetget
                 proc = obj.processes_{i};
             else
                 error('Incorrect variable type: must be numeric int for process index or char for process tag');
-            end
-        end
-        
-        function matchingProcs = findProcessTag(obj, queryStr)
-            % return all processes with tag containing the queryStr
-            if ischar(queryStr)
-                tagList = obj.getProcessTags;
-                matchingProcs = [];
-                for t = tagList
-                    if strfind(t{:}, queryStr) > 0
-                        matchingProcs = [matchingProcs t];
-                    end
-                end
-                assert(~isempty(matchingProcs), ['No Process(es) with tag containing ''' queryStr ''' exist!'])
-            else
-                error('Incorrect tag query type: must be char string');
             end
         end
 
