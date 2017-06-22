@@ -196,19 +196,22 @@ classdef  MovieObject < hgsetget
             assert(isa(newprocess,'Process'));
             obj.processes_ = horzcat(obj.processes_, {newprocess});
         end
+
+        function tagList = getProcessTags(obj)
+            % Retreives all process tags
+            procs = obj.processes_;
+            tagList = [];
+            for p = procs
+                tagList = [{p{:}.tag_} tagList];
+            end
+            % order according to process index 
+            tagList = flip(tagList);        
+        end
         
         function proc = getProcess(obj, index_or_tag)
             if ischar(index_or_tag)
                 % Return process corresponding to the specified tag
-                qtag = index_or_tag;
-                procs = obj.processes_;
-                proc = [];
-                for p = procs
-                    if strcmp(p{:}.tag_, qtag)
-                        proc = p;
-                    end
-                end
-                assert(~isempty(proc), ['Process with tag ''' qtag ''' does Not exist!'])
+                proc = obj.findProcessTag(index_or_tag);
             elseif isnumeric(index_or_tag)
                 % Return process corresponding to the specified index
                 i = index_or_tag;
@@ -222,16 +225,16 @@ classdef  MovieObject < hgsetget
         function matchingProcs = findProcessTag(obj, queryStr)
             % return all processes with tag containing the queryStr
             if ischar(queryStr)
-                procs = obj.processes_;
+                tagList = obj.getProcessTags;
                 matchingProcs = [];
-                for p = procs
-                    if strfind(p{:}.tag_, queryStr) > 0
-                        matchingProcs = [matchingProcs p];
+                for t = tagList
+                    if strfind(t{:}, queryStr) > 0
+                        matchingProcs = [matchingProcs t];
                     end
                 end
                 assert(~isempty(matchingProcs), ['No Process(es) with tag containing ''' queryStr ''' exist!'])
             else
-                error('Incorrect variable type: must be numeric int for process index or char for process tag');
+                error('Incorrect tag query type: must be char string');
             end
         end
 
