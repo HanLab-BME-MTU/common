@@ -28,6 +28,24 @@ classdef TestProcess < TestLibrary
         function testGetProcessIndexByName(self)
             assertEqual(self.movie.getProcessIndex(class(self.process)), 1);
         end
+
+        function testGetProcessByTag(self)
+            assertEqual(self.movie.getProcess(class(self.process)), self.movie.getProcessTags);
+        end
+
+        function testGetProcessByTagPartialQuery(self)
+            assertEqual(self.movie.getProcess('MockProcess'), {'proc_MockProcess_1'});
+        end
+        
+        function testSetTag(self)
+            self.process.setProcessTag('tagTest');
+            assertEqual(self.movie.getProcessTags, {'tagTest'});
+        end
+        
+        function testGetProcessByTagMultiple(self)
+            self.setUpProcess();
+            assertEqual(self.movie.getProcess(class(self.process)), [{'proc_MockProcess_1'} {'proc_MockProcess_2'}]);
+        end
         
         function testGetProcessIndexMultiple(self)
             self.setUpProcess();
