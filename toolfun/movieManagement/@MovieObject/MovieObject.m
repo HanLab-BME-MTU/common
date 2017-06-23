@@ -631,7 +631,6 @@ ip.parse(list, type, varargin{:});
 nDesired = ip.Results.nDesired;
 askUser = ip.Results.askUser;
 
-
 iProc = find(cellfun(@(x) isa(x,type), list));
 nProc = numel(iProc);
 
@@ -641,7 +640,13 @@ if nProc <= nDesired, return; end
 % If more than nDesired processes
 if askUser
     isMultiple = nDesired > 1;
-    names = cellfun(@(x) ([x.getName() '-' x.tag_]), list(iProc), 'UniformOutput', false);
+    % check if tag_ propery exists for all processes
+    if all(cellfun(@(x) isprop(x, 'tag_'), list(iProc)))
+        % include tag, if it does
+        names = cellfun(@(x) ([x.getName() '-' x.tag_]), list(iProc), 'UniformOutput', false);
+    else
+        names = cellfun(@(x) (x.getName()), list(iProc), 'UniformOutput', false);
+    end
     iSelected = listdlg('ListString', names,...
         'SelectionMode', isMultiple, 'ListSize', [400,400],...
         'PromptString', ['Select the desired ' type ':']);
