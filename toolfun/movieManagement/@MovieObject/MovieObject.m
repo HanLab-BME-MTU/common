@@ -208,18 +208,34 @@ classdef  MovieObject < hgsetget
             tagList = flip(tagList);        
         end
         
-        function matchingProcs = findProcessTag(obj, queryStr)
+        function matchingProcs = findProcessTag(obj, queryStr, varargin)
             % return all processes with tag containing the queryStr
+            ip = inputParser;
+            ip.addRequired('queryStr', @ischar);
+            ip.addOptional('exactMatch', 0, @islogical);
+            ip.parse(queryStr, varargin{:});
+            exactMatch = ip.Results.exactMatch;
+            queryStr = ip.Results.queryStr;
+
             if ischar(queryStr)
-                queryStr = lower(queryStr);
                 tagList = obj.getProcessTags;
                 matchingProcs = [];
                 for t = tagList
-                    if strfind(lower(t{:}), queryStr) > 0
-                        matchingProcs = [matchingProcs t];
+                    if exactMatch
+                        if strcmp(t{:}, queryStr)
+                            matchingProcs = [matchingProcs t];
+                        end
+                    else
+                        if strfind(lower(t{:}), lower(queryStr)) > 0
+                            matchingProcs = [matchingProcs t];
+                        end
                     end
                 end
-                assert(~isempty(matchingProcs), ['No Process(es) with tag containing ''' queryStr ''' exist!'])
+                if exactMatch
+                    assert(~isempty(matchingProcs), ['No Process(es) with (exact) matching  tag ''' queryStr ''' exist! (try findProcessTag for more flexible string search)'])
+                else
+                    assert(~isempty(matchingProcs), ['No Process(es) with tag containing the string ''' queryStr ''' exist!'])
+                end
             else
                 error('Incorrect tag query type: must be char string');
             end
@@ -228,7 +244,10 @@ classdef  MovieObject < hgsetget
         function proc = getProcess(obj, index_or_tag)
             if ischar(index_or_tag)
                 % Return process corresponding to the specified tag
-                proc = obj.findProcessTag(index_or_tag);
+                % Default behavior is for an exact match
+                % for more flexible tag query- use findProcessTag
+                exactMatch = true;
+                proc = obj.findProcessTag(index_or_tag, exactMatch);
             elseif isnumeric(index_or_tag)
                 % Return process corresponding to the specified index
                 i = index_or_tag;
@@ -635,7 +654,6 @@ ip.parse(list, type, varargin{:});
 nDesired = ip.Results.nDesired;
 askUser = ip.Results.askUser;
 
-
 iProc = find(cellfun(@(x) isa(x,type), list));
 nProc = numel(iProc);
 
@@ -645,7 +663,13 @@ if nProc <= nDesired, return; end
 % If more than nDesired processes
 if askUser
     isMultiple = nDesired > 1;
-    names = cellfun(@(x) (x.getName()), list(iProc), 'UniformOutput', false);
+    % check if tag_ propery exists for all processes
+    if all(cellfun(@(x) isprop(x, 'tag_'), list(iProc)))
+        % include tag, if it does
+        names = cellfun(@(x) ([x.getName() '-' x.tag_]), list(iProc), 'UniformOutput', false);
+    else
+        names = cellfun(@(x) (x.getName()), list(iProc), 'UniformOutput', false);
+    end
     iSelected = listdlg('ListString', names,...
         'SelectionMode', isMultiple, 'ListSize', [400,400],...
         'PromptString', ['Select the desired ' type ':']);
