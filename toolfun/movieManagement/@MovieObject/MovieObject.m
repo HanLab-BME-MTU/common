@@ -641,7 +641,7 @@ if nProc <= nDesired, return; end
 % If more than nDesired processes
 if askUser
     isMultiple = nDesired > 1;
-    names = cellfun(@(x) (x.getName()), list(iProc), 'UniformOutput', false);
+    names = cellfun(@(x) ([x.getName() '-' x.tag_]), list(iProc), 'UniformOutput', false);
     iSelected = listdlg('ListString', names,...
         'SelectionMode', isMultiple, 'ListSize', [400,400],...
         'PromptString', ['Select the desired ' type ':']);
