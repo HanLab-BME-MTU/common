@@ -196,40 +196,44 @@ classdef  MovieObject < hgsetget
             assert(isa(newprocess,'Process'));
             obj.processes_ = horzcat(obj.processes_, {newprocess});
         end
-        
-        function proc = getProcess(obj, index_or_tag)
-            if ischar(index_or_tag)
-                % Return process corresponding to the specified tag
-                qtag = index_or_tag;
-                procs = obj.processes_;
-                proc = [];
-                for p = procs
-                    if strcmp(p{:}.tag_, qtag)
-                        proc = p;
-                    end
-                end
-                assert(~isempty(proc), ['Process with tag ''' qtag ''' does Not exist!'])
-            elseif isnumeric(index_or_tag)
-                % Return process corresponding to the specified index
-                i = index_or_tag;
-                assert(insequence_and_scalar(i,1,numel(obj.processes_)), ['Process Index [' num2str(i) '] does Not exist!']);
-                proc = obj.processes_{i};
-            else
-                error('Incorrect variable type: must be numeric int for process index or char for process tag');
+
+        function tagList = getProcessTags(obj)
+            % Retreives all process tags
+            procs = obj.processes_;
+            tagList = [];
+            for p = procs
+                tagList = [{p{:}.tag_} tagList];
             end
+            % order according to process index 
+            tagList = flip(tagList);        
         end
         
         function matchingProcs = findProcessTag(obj, queryStr)
             % return all processes with tag containing the queryStr
             if ischar(queryStr)
-                procs = obj.processes_;
+                queryStr = lower(queryStr);
+                tagList = obj.getProcessTags;
                 matchingProcs = [];
-                for p = procs
-                    if strfind(p{:}.tag_, queryStr) > 0
-                        matchingProcs = [matchingProcs p];
+                for t = tagList
+                    if strfind(lower(t{:}), queryStr) > 0
+                        matchingProcs = [matchingProcs t];
                     end
                 end
                 assert(~isempty(matchingProcs), ['No Process(es) with tag containing ''' queryStr ''' exist!'])
+            else
+                error('Incorrect tag query type: must be char string');
+            end
+        end
+        
+        function proc = getProcess(obj, index_or_tag)
+            if ischar(index_or_tag)
+                % Return process corresponding to the specified tag
+                proc = obj.findProcessTag(index_or_tag);
+            elseif isnumeric(index_or_tag)
+                % Return process corresponding to the specified index
+                i = index_or_tag;
+                assert(insequence_and_scalar(i,1,numel(obj.processes_)), ['Process Index [' num2str(i) '] does Not exist!']);
+                proc = obj.processes_{i};
             else
                 error('Incorrect variable type: must be numeric int for process index or char for process tag');
             end
