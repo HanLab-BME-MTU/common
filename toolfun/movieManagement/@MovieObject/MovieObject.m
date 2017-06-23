@@ -197,37 +197,49 @@ classdef  MovieObject < hgsetget
             obj.processes_ = horzcat(obj.processes_, {newprocess});
         end
 
-        function tagList = getProcessTags(obj)
-            % Retreives all process tags
+        function [tagList, procList] = getProcessTags(obj)
+            % Retreives all process tags, and proc associated
             procs = obj.processes_;
             tagList = [];
+            procList = [];
             for p = procs
-                tagList = [{p{:}.tag_} tagList];
+                if isprop(p{:}, 'tag_')
+                    tagList = [tagList {p{:}.tag_}];
+                    procList = [procList p];
+                end
             end
-            % order according to process index 
-            tagList = flip(tagList);        
         end
         
-        function matchingProcs = findProcessTag(obj, queryStr, varargin)
+        function [matchingProcs, matchingTags] = findProcessTag(obj, queryStr, varargin)
             % return all processes with tag containing the queryStr
             ip = inputParser;
             ip.addRequired('queryStr', @ischar);
-            ip.addOptional('exactMatch', 0, @islogical);
+            ip.addOptional('exactMatch', 0, @(x) x==0 || x==1 || islogical(x));
             ip.parse(queryStr, varargin{:});
             exactMatch = ip.Results.exactMatch;
             queryStr = ip.Results.queryStr;
 
             if ischar(queryStr)
-                tagList = obj.getProcessTags;
+                [tagList, procList] = obj.getProcessTags;
                 matchingProcs = [];
-                for t = tagList
-                    if exactMatch
-                        if strcmp(t{:}, queryStr)
-                            matchingProcs = [matchingProcs t];
+                matchingTags = [];
+                for i = 1:numel(tagList)
+                    if isempty(queryStr)
+                        if isempty(tagList{i})
+                            matchingProcs = [matchingProcs procList{i}];
+                            matchingTags = [matchingTags {procList{i}.tag_}];  
                         end
                     else
-                        if strfind(lower(t{:}), lower(queryStr)) > 0
-                            matchingProcs = [matchingProcs t];
+                        if exactMatch
+                            if strcmp(tagList{i}, queryStr)
+                                matchingProcs = [matchingProcs procList{i}];
+                                matchingTags = [matchingTags procList{i}.tag_];
+                            end
+                        else
+                            if strfind(lower(tagList{i}), lower(queryStr)) > 0
+                                matchingProcs = [matchingProcs {procList{i}}];
+                                matchingTags = [matchingTags {procList{i}.tag_}];
+                            end
                         end
                     end
                 end
@@ -236,18 +248,21 @@ classdef  MovieObject < hgsetget
                 else
                     assert(~isempty(matchingProcs), ['No Process(es) with tag containing the string ''' queryStr ''' exist!'])
                 end
+                if iscell(matchingProcs) && numel(matchingProcs) == 1
+                    matchingProcs = matchingProcs{1};
+                end
             else
                 error('Incorrect tag query type: must be char string');
             end
         end
         
         function proc = getProcess(obj, index_or_tag)
-            if ischar(index_or_tag)
+            if ischar(index_or_tag) && ~isempty(index_or_tag)
                 % Return process corresponding to the specified tag
                 % Default behavior is for an exact match
                 % for more flexible tag query- use findProcessTag
                 exactMatch = true;
-                proc = obj.findProcessTag(index_or_tag, exactMatch);
+                [proc tags] = obj.findProcessTag(index_or_tag, exactMatch);
             elseif isnumeric(index_or_tag)
                 % Return process corresponding to the specified index
                 i = index_or_tag;

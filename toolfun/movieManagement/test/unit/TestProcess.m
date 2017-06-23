@@ -30,11 +30,22 @@ classdef TestProcess < TestLibrary
         end
 
         function testGetProcessByTag(self)
-            assertEqual(self.movie.getProcess(class(self.process)), self.movie.getProcessTags);
+            tag = self.process.getProcessTag;
+            assertEqual(tag, self.movie.getProcess(1).tag_)
+            assertEqual(self.movie.getProcess(tag), self.movie.getProcess(1));
+            
+            self.setUpProcess();
+            assertFalse(strcmp(tag, self.movie.getProcess(2).tag_));
+            tags = self.movie.getProcessTags;
+            assertEqual(self.movie.getProcess(tags{2}), self.movie.getProcess(2));
         end
 
-        function testGetProcessByTagPartialQuery(self)
-            assertEqual(self.movie.getProcess('MockProcess'), {'proc_MockProcess_1'});
+        function testFindProcessByTag(self)
+            [procs, tags] = self.movie.findProcessTag('MockPr');
+            assertTrue(isa(procs, 'MockProcess'));
+            assertEqual(self.movie.processes_{1}, procs);
+            assertEqual(tags{:}, self.process.tag_);
+            assertExceptionThrown(@() self.movie.findProcessTag('MockPr', true),'');
         end
         
         function testSetTag(self)
@@ -44,7 +55,9 @@ classdef TestProcess < TestLibrary
         
         function testGetProcessByTagMultiple(self)
             self.setUpProcess();
-            assertEqual(self.movie.getProcess(class(self.process)), [{'proc_MockProcess_1'} {'proc_MockProcess_2'}]);
+            [procs, tags] = self.movie.findProcessTag(class(self.process));
+            assertEqual(tags, [{'proc_MockProcess_1'} {'proc_MockProcess_2'}]);
+            assertEqual([procs{:}], [self.movie.processes_{1} self.movie.processes_{2}]);
         end
         
         function testGetProcessIndexMultiple(self)
