@@ -961,10 +961,12 @@ if ~isempty(tokens)
     inputArgs={iChan,frameNr};
     graphicTag =['process' num2str(procId) '_channel'...
         num2str(iChan) '_output' num2str(iOutput)];
+    movieOverlay = false;
 else
     iChan = [];
     inputArgs={frameNr};
     graphicTag = ['process' num2str(procId) '_output' num2str(iOutput)];
+    movieOverlay = true;
 end
 % Get options figure handle
 optFig = findobj(0,'-regexp','Name','Movie options');
@@ -980,13 +982,22 @@ if get(hObject,'Value')
     if userData.MO.is3D() % && userData.MO.processes_{procId}.is3DP()
         ZNr = get(handles.slider_depth,'Value');
         userData.MO.processes_{procId}.draw(inputArgs{:},'output',output,... % draw method of process object modificiation for 3D!!!
-        options{:}, 'iZ',ZNr);
+        options{:},'movieOverlay', movieOverlay,'iZ', ZNr);
     else
         userData.MO.processes_{procId}.draw(inputArgs{:},'output',output,...
-        options{:});
+        options{:},'movieOverlay', movieOverlay);
     end
 else
-    h=findobj('Tag',graphicTag);
+    h = findobj('Tag',graphicTag);
+%     if isempty(h) % debugging when non-channel specific tags are
+%     mis-matched
+%         try 
+%            graphicTag = ['^process' num2str(procId) '_'];
+%            h = findobj(0,'-regexp','Tag', graphicTag);
+%            delete(h);
+%         catch
+%         end
+%     end
     if ~isempty(h), delete(h); end
 end
 

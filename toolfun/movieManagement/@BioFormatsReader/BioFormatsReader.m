@@ -119,6 +119,10 @@ classdef  BioFormatsReader < Reader
         function delete(obj)
             obj.formatReader.close()
         end
+        
+        xml = getXML(obj,castToChar);
+        metaWindow = showMetadata(obj);
+        deltaT = getDeltaT(obj, c, t, z);
     end
     methods ( Access = protected )
         function I = loadImage_(obj, c, t, z, varargin)

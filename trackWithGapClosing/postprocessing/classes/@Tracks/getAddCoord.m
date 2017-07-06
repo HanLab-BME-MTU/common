@@ -5,5 +5,5 @@ function  newTracks=getAddCoord(obj,tracks)
    %
    % Philippe Roudot 2017
    newTracks=obj.copy();
-   newTracks.addCoord(tracks)
+   newTracks.addCoord(tracks);
 end

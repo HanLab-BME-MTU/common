@@ -423,7 +423,7 @@ function pushinc_Callback(hSrc,eventdata_get_fgnd_bgnd_seeds_3d_points)
         current_mask = data_get_fgnd_bgnd_seeds_3d_points.m(:,:,data_get_fgnd_bgnd_seeds_3d_points.sliceno);
         current_im= data_get_fgnd_bgnd_seeds_3d_points.im(:,:,data_get_fgnd_bgnd_seeds_3d_points.sliceno);
         current_box = data_get_fgnd_bgnd_seeds_3d_points.boxall(data_get_fgnd_bgnd_seeds_3d_points.sliceno,:); 
-        data_get_fgnd_bgnd_seeds_3d_points.prevROI = current_mask;
+%         data_get_fgnd_bgnd_seeds_3d_points.prevROI = current_mask;
         
         %increase frame number
         data_get_fgnd_bgnd_seeds_3d_points.sliceno = data_get_fgnd_bgnd_seeds_3d_points.sliceno+1;
@@ -593,13 +593,13 @@ function pushGo_Callback(hSrc,eventdata_get_fgnd_bgnd_seeds_3d_points)
     
     if ~isempty(fH)
         currROI = fH.createMask;    
-%         data_get_fgnd_bgnd_seeds_3d_points.prevROI = currROI;
+        data_get_fgnd_bgnd_seeds_3d_points.prevROI = currROI;
         
         data_get_fgnd_bgnd_seeds_3d_points.prevm = data_get_fgnd_bgnd_seeds_3d_points.m;
 
         switch get( data_get_fgnd_bgnd_seeds_3d_points.ui.bgh_mode , 'SelectedObject' )
 
-                case data_get_fgnd_bgnd_seeds_3d_points.ui_rbh_fgnd
+               case data_get_fgnd_bgnd_seeds_3d_points.ui_rbh_fgnd
 
                     data_get_fgnd_bgnd_seeds_3d_points.m(:,:,data_get_fgnd_bgnd_seeds_3d_points.sliceno) = ...
                         data_get_fgnd_bgnd_seeds_3d_points.m(:,:,data_get_fgnd_bgnd_seeds_3d_points.sliceno) | currROI;
@@ -735,6 +735,10 @@ switch eventdata_get_fgnd_bgnd_seeds_3d_points.Key
     case '1'
         %Call the go button function
         pushUsePrev_Callback(hSrc,eventdata_get_fgnd_bgnd_seeds_3d_points)
+
+    case '2'
+        %Call the go button function
+        pushRestartFrame_Callback(hSrc,eventdata_get_fgnd_bgnd_seeds_3d_points)
 
     case 'space'
         %Call the go button function

@@ -272,6 +272,21 @@ classdef Channel < hgsetget & matlab.mixin.Copyable
 
         end
         
+        function deltaT = getDeltaT(obj,varargin)
+            % GETDELTAT Obtain the time since acquisition began
+            %
+            % Obtain deltaT for all images in channel 1
+            % deltaT = MD.channels_(1).getDeltaT 
+            %
+            % Obtain deltaT for a specific image
+            % deltaT = MD.channels_(1).getDeltaT(t);
+            % deltaT = MD.channels_(1).getDeltaT(t,z);
+            %
+            % See also BioformatsReader.getDeltaT
+            assert(obj.owner_.isBF(),'getDeltaT:BioformatsRequired','getDeltaT is only implemented when using Bioformats');
+            deltaT = obj.getReader().getDeltaT(obj.getChannelIndex(),varargin{:});
+        end
+        
         %% Bio-formats/OMERO functions
         function status = isOmero(obj)
             % Check if the Channel is linked to an OMERO object

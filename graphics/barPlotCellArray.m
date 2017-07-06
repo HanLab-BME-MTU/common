@@ -1,5 +1,5 @@
 function []=barPlotCellArray(cellArrayData,nameList,convertFactor)
-% function []=barPlotCellArray(FAarea) automatically converts cell array
+% function []=barPlotCellArray(cellArrayData,nameList,convertFactor) automatically converts cell array
 % format input to matrix input to use matlab function 'boxplot'
 % input: cellArrayData      cell array data
 %           nameList            cell array containing name of each
