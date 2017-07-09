@@ -1,8 +1,12 @@
-function [ vq ] = interpft1_derivatives( v, xq, derivs , freq)
-%interpft1_derivatives Summary of this function goes here
-%   Detailed explanation goes here
-
+function [ vq ] = interpft1_derivatives( v, xq, derivs , period, freq)
+%interpft1_derivatives Interpolate the derivatives of a Fourier series
 if(nargin < 4)
+    period = 2*pi;
+    periodFactor = 1;
+else
+    periodFactor = 2*pi/period;
+end
+if(nargin < 5)
     freq = false;
 end
 
@@ -14,8 +18,27 @@ end
         v_hat = v;
     end
     derivDim = ndims(v)+1;
-    freqMs = arrayfun(@(x) freqM.^x,derivs,'UniformOutput',false);
-    freqMs = cat(derivDim,freqMs{:});
+    derivs = shiftdim(derivs(:),-derivDim+1);
+%     tic;
+    freqMs = bsxfun(@power,freqM,derivs);
+%     toc;
+%     tic;
+%         derivs_diff = diff(derivs);
+%         freqMsz = ones(1,derivDim);
+%         freqMsz(1) = length(freqM);
+%         freqMsz(derivDim) = length(derivs);
+%         freqMs = zeros(freqMsz);
+%         colons = {':'};
+%         colons = colons(ones(1,derivDim-1));
+%         freqMs(colons{:},1) = freqM.^derivs(1);
+%         for d=2:length(derivs)
+%             freqMs(colons{:},d) = freqMs(colons{:},d-1).*freqM.^derivs_diff(d-1);
+%         end
+%     toc;
+%     tic;
+%     freqMs = arrayfun(@(x) freqM.^x,derivs,'UniformOutput',false);
+%     freqMs = cat(derivDim,freqMs{:});
+%     toc
     
     v_hat = bsxfun(@times,v_hat,freqMs);
     
@@ -23,7 +46,10 @@ end
     xqrep(derivDim) = length(derivs);
     xq = repmat(xq,xqrep);
     
-    vq = interpft1([0 2*pi],v_hat, xq, 'horner_freq');
+    vq = interpft1([0 period],v_hat, xq, 'horner_freq');
+    if(periodFactor ~= 1)
+        vq = bsxfun(@times,vq,shiftdim(periodFactor.^(derivs),-derivDim+2));
+    end
     
 
 end

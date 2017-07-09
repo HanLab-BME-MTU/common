@@ -65,7 +65,7 @@ derivs = [0 1 2] + deriv;
     %% Perform Newton iteration
 numIter = 0;
 % do while
-while(~numIter || any(abs(zero_vals(:)) > TOL) && any(new_guess_is_better(:)))
+while(~numIter || any(exceeds_tol) && any(new_guess_is_better(:)))
     disp('hi');
     guess_vals = interpft1([0 2*pi],v_hat,repmat(guess,xqrep),'horner_freq');
     new_guess = guess - 2*guess_vals(zeroth_d{:}).*guess_vals(first_d{:})./(2*guess_vals(first_d{:}).^2-guess_vals(zeroth_d{:}).*guess_vals(second_d{:}));
@@ -74,11 +74,15 @@ while(~numIter || any(abs(zero_vals(:)) > TOL) && any(new_guess_is_better(:)))
     new_guess_is_better = abs(new_guess_vals(zeroth_d{:})) < abs(guess_vals(zeroth_d{:}));
     guess(new_guess_is_better) = new_guess(new_guess_is_better);
     zero_vals = new_guess_vals(zeroth_d{:});
+    exceeds_tol = abs(zero_vals(:)) > TOL;
     numIter = numIter + 1;
     if(numIter > maxIter)
+        warning('halleyft:maxIter','halleyft: maximum iteration reached');
         break;
     end
 end
+
+guess(exceeds_tol) = NaN;
 
 refined = guess;
 

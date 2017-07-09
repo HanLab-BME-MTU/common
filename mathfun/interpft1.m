@@ -13,7 +13,7 @@ function [vq] = interpft1(varargin)
 %          See interp1 for methods, also available:
 %          horner - Use Horner's method from chebfun
 %          mmt - matrix multiplication method
-%          default: pchip
+%          default: horner
 % fineGridFactor - (optional) Number of grid points to expand to using interpft
 %                  default: Depends on method
 %                  6 for cubic, pchip, v5cubic
@@ -137,7 +137,7 @@ end
 
 function [x,v,xq,method,fineGridFactor,legacy] = parseinputs(varargin)
     % Optional arguments
-    method = 'pchip';
+    method = 'horner';
     fineGridFactor = [];
     x = [];
     legacy = false;
