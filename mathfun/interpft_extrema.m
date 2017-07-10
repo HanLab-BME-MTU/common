@@ -75,7 +75,7 @@ function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_
     if(nargin < 4 || isempty(TOL))
     	% Tolerance for log(abs(root)) to be near zero, in which case the root is real
         % Set negative so that tolerance adapts if no roots are found
-        TOL = -eps(class(x))*1e2;
+        TOL = -eps(class(x))*1e3;
     end
     if(nargin < 5 || isempty(dofft))
         dofft = true;
