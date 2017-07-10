@@ -73,8 +73,11 @@ while(~numIter || any(exceeds_tol) && any(new_guess_is_better(:)))
     new_guess_vals = interpft1([0 2*pi],v_hat,repmat(new_guess,xqrep),'horner_freq');
     new_guess_is_better = abs(new_guess_vals(zeroth_d{:})) < abs(guess_vals(zeroth_d{:}));
     guess(new_guess_is_better) = new_guess(new_guess_is_better);
-    zero_vals = new_guess_vals(zeroth_d{:});
-    exceeds_tol = abs(zero_vals(:)) > TOL;
+    % Establish new derivative value
+    new_guess_vals = new_guess_vals(zeroth_d{:});
+    guess_vals = guess_vals(zeroth_d{:});
+    zero_vals = min(abs(guess_vals),abs(new_guess_vals));
+    exceeds_tol = zero_vals(:) > TOL;
     numIter = numIter + 1;
     if(numIter > maxIter)
         warning('halleyft:maxIter','halleyft: maximum iteration reached');
