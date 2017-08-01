@@ -278,15 +278,17 @@ for i = 1 : nProc
     catch err
         processName=eval([processClassName '.getName']);
     end
-    
+
     checkboxString = [' Step ' num2str(i) ': ' processName];
     set(handles.(procTag{1}),'String',checkboxString)
 
-    if ~isempty(userData.crtPackage.processes_{i}.tag_)
+    if ~isempty(userData.crtPackage.processes_{i}) ...
+        && isprop(userData.crtPackage.processes_{i}, 'tag_') && ~isempty(userData.crtPackage.processes_{i}.tag_)
         processTagLabelString = ['[' userData.crtPackage.processes_{i}.tag_ ']'];
     else
-        processTagLabelString = '';
+        processTagLabelString = '{no tag}';
     end
+
     set(handles.(procTag{7}),'String',processTagLabelString)
     set(handles.(procTag{7}),'Visible','off')
     
