@@ -56,9 +56,9 @@ classdef Process < hgsetget
                 obj.success_ = false;
                 obj.updated_ = true;
                 
-                % set default tag label
-                numproc = numel(owner.getProcessIndex(class(obj), Inf, 0));
-                obj.tag_ = ['proc_' class(obj) '_' num2str(numproc+1)];
+                % % set default tag label
+                % numproc = numel(owner.getProcessIndex(class(obj), Inf, 0));
+                % obj.tag_ = [class(obj) '_' num2str(numproc+1)];
             end
         end
     end
@@ -278,7 +278,13 @@ classdef Process < hgsetget
         end
 
         function tag = getProcessTag(obj)
-            tag = obj.tag_;
+            if isprop(obj, 'tag_')
+                tag = obj.tag_;
+            else
+                numproc = numel(obj.owner_.getProcessIndex(class(obj), Inf, 0));
+                tag = ['proc_' class(obj) '_' num2str(numproc+1)];
+                obj.setProcessTag(tag);
+            end
         end
 
         function time = getProcessingTime(obj)

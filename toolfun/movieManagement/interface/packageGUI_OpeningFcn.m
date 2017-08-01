@@ -241,6 +241,7 @@ templateTag{3} = 'pushbutton_show';
 templateTag{4} = 'pushbutton_set';
 templateTag{5} = 'axes_prochelp';
 templateTag{6} = 'pushbutton_open';
+templateTag{7} = 'processTagLabel';
 
 set(handles.(templateTag{6}),'CData',userData.openIconData);
 
@@ -277,8 +278,17 @@ for i = 1 : nProc
     catch err
         processName=eval([processClassName '.getName']);
     end
+    
     checkboxString = [' Step ' num2str(i) ': ' processName];
     set(handles.(procTag{1}),'String',checkboxString)
+
+    if ~isempty(userData.crtPackage.processes_{i}.tag_)
+        processTagLabelString = ['[' userData.crtPackage.processes_{i}.tag_ ']'];
+    else
+        processTagLabelString = '';
+    end
+    set(handles.(procTag{7}),'String',processTagLabelString)
+    set(handles.(procTag{7}),'Visible','off')
     
     % Setup help button
     set(handles.figure1,'CurrentAxes',handles.(procTag{5}));
@@ -288,6 +298,7 @@ for i = 1 : nProc
     set(Img,'ButtonDownFcn',@icon_ButtonDownFcn,...
         'UserData', struct('class', processClassName))
 end
+handles.processTagLabels = findall(0,'-regexp','Tag', 'processTagLabel_');
 
 % Remove templates and remove from the handles structure
 cellfun(@(x) delete(handles.(x)), templateTag)
