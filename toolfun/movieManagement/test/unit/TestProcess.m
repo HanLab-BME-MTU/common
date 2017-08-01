@@ -56,7 +56,7 @@ classdef TestProcess < TestLibrary
         function testGetProcessByTagMultiple(self)
             self.setUpProcess();
             [procs, tags] = self.movie.findProcessTag(class(self.process));
-            assertEqual(tags, [{'proc_MockProcess_1'} {'proc_MockProcess_2'}]);
+            assertEqual(tags, [{'MockProcess_1'} {'MockProcess_2'}]);
             assertEqual([procs{:}], [self.movie.processes_{1} self.movie.processes_{2}]);
         end
         
