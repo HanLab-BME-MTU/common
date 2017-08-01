@@ -56,9 +56,9 @@ classdef Process < hgsetget
                 obj.success_ = false;
                 obj.updated_ = true;
                 
-                % % set default tag label
-                % numproc = numel(owner.getProcessIndex(class(obj), Inf, 0));
-                % obj.tag_ = [class(obj) '_' num2str(numproc+1)];
+                % set default tag label
+                numproc = numel(owner.getProcessIndex(class(obj), Inf, 0));
+                obj.tag_ = [class(obj) '_' num2str(numproc+1)];
             end
         end
     end
