@@ -12,7 +12,7 @@ classdef Process < hgsetget
     
     properties  (SetAccess = protected)
         name_           % Process name
-        tag_            % User definable tag for orgnaizational convenience
+        tag_            % User definable/queriable tag for orgnaizational convenience
         
         % Success/Uptodate flags
         procChanged_   % Whether process parameters have been changed
