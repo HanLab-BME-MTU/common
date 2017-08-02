@@ -1,15 +1,14 @@
-function printMIP(MD, Channel)
+function printMIP(MD, varargin)
 % Title says it all -- PR, augmented from Meghan D. 2015
 % Input Parameter arguments:
 %   Channel<numeric>: specifies which channel to MIP process
 %                     default (non provided) will combine all into montage image.
 %                                     
-        
-
+    
 ip = inputParser;
 ip.addRequired('MD',@(MD) isa(MD,'MovieData'));
 ip.addOptional('Channel', [], @(x) isnumeric(x) && ismember(x, 1:length(MD.channels_)))
-ip.parse(MD, Channel);
+ip.parse(MD, varargin{:});
 
 selectedChannel = ip.Results.Channel;
 %progressText(0,'Print MIP');
