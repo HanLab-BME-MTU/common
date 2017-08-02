@@ -1,10 +1,17 @@
-function printMIP(MD)
+function printMIP(MD, Channel)
 % Title says it all -- PR, augmented from Meghan D. 2015
+% Input Parameter arguments:
+%   Channel<numeric>: specifies which channel to MIP process
+%                     default (non provided) will combine all into montage image.
+%                                     
+        
 
 ip = inputParser;
 ip.addRequired('MD',@(MD) isa(MD,'MovieData'));
-ip.parse(MD);
+ip.addOptional('Channel', [], @(x) isnumeric(x) && ismember(x, 1:length(MD.channels_)))
+ip.parse(MD, Channel);
 
+selectedChannel = ip.Results.Channel;
 %progressText(0,'Print MIP');
 
 % turn a specific warning off
@@ -15,43 +22,59 @@ if(MD.zSize_==1)
     return;
 end
 
-savePath=[MD.outputDirectory_ filesep 'MIP'];
+if isempty(selectedChannel)
+    savePath=[MD.outputDirectory_ filesep 'MIP'];
+else
+    savePath=[MD.outputDirectory_ filesep 'MIP' filesep 'ch' num2str(selectedChannel)];
+end
+
 if ~isdir(savePath) || ~isdir([savePath filesep 'XY']) || ~isdir([savePath filesep 'ZY']) || ~isdir([savePath filesep 'ZX']) || ~isdir([savePath filesep 'Three'])
     system(['mkdir -p "' savePath '"']);
     system(['mkdir -p "' [savePath filesep 'XY'] '"' ]);
     system(['mkdir -p "' [savePath filesep 'ZY'] '"']);
     system(['mkdir -p "' [savePath filesep 'ZX'] '"']);
     system(['mkdir -p "' [savePath filesep 'Three'] '"']);
-% 
-%     mkdir(savePath)
-%     mkdir([savePath filesep 'XY'])
-%     mkdir([savePath filesep 'ZY'])
-%     mkdir([savePath filesep 'ZX'])
-%     mkdir([savePath filesep 'Three'])
 end
-nameCells=MD.getChannel(1).getImageFileNames;
-% fprintf('printing MIP:');
-% fprintf(['\n' repmat('.',1,MD.nFrames_) '\n\n']);
-ZXRatio=MD.pixelSizeZ_/MD.pixelSize_;
-minIntensityNorm=[];
-maxIntensityNorm=[];
-for chIdx=1:length(MD.channels_)
-    vol=MD.getChannel(chIdx).loadStack(1);
-    minIntensityNorm=[ minIntensityNorm min(vol(:))];
-    maxIntensityNorm=[ maxIntensityNorm max(vol(:))];
+
+ZXRatio = MD.pixelSizeZ_/MD.pixelSize_;
+minIntensityNorm = [];
+maxIntensityNorm = [];
+
+if isempty(selectedChannel)
+    for chIdx = 1:length(MD.channels_)
+        vol = MD.getChannel(chIdx).loadStack(1);
+        minIntensityNorm = [minIntensityNorm min(vol(:))];
+        maxIntensityNorm = [maxIntensityNorm max(vol(:))];
+    end
+else
+    vol = MD.getChannel(selectedChannel).loadStack(1);
+    minIntensityNorm = min(vol(:));
+    maxIntensityNorm = max(vol(:));
 end
 
 
-parfor frameIdx=1:MD.nFrames_
-%     progressText(frameIdx/MD.nFrames_,'Print MIP');
-    maxXY=[];maxZY=[];maxZX=[];three=[];
-    for chIdx=1:length(MD.channels_)
-        vol=MD.getChannel(chIdx).loadStack(frameIdx);  
-        [cmaxXY,cmaxZY,cmaxZX,cthree]=computeMIPs(vol,ZXRatio,minIntensityNorm(chIdx),maxIntensityNorm(chIdx));
-        maxXY=[ maxXY cmaxXY];
-        maxZY=[ maxZY cmaxZY];
-        maxZX=[ maxZX cmaxZX];
-        three=[ three cthree];        
+if isempty(selectedChannel)
+    nameCells = MD.getChannel(1).getImageFileNames;
+else
+    nameCells = MD.getChannel(selectedChannel).getImageFileNames;
+end
+
+parfor frameIdx = 1:MD.nFrames_
+
+    if isempty(selectedChannel)
+        maxXY=[]; maxZY=[]; maxZX=[]; three=[];
+        for chIdx = 1:length(MD.channels_)
+            vol = MD.getChannel(chIdx).loadStack(frameIdx);  
+            [cmaxXY, cmaxZY, cmaxZX, cthree] = computeMIPs(vol, ZXRatio, minIntensityNorm(chIdx), maxIntensityNorm(chIdx));
+            maxXY = [maxXY cmaxXY];
+            maxZY = [maxZY cmaxZY];
+            maxZX = [maxZX cmaxZX];
+            three = [three cthree];        
+        end
+    else
+        chIdx = selectedChannel;
+        vol = MD.getChannel(chIdx).loadStack(frameIdx);  
+        [maxXY, maxZY, maxZX, three] = computeMIPs(vol, ZXRatio, minIntensityNorm, maxIntensityNorm);
     end
     
     % save the maximum intensity projections
@@ -59,18 +82,17 @@ parfor frameIdx=1:MD.nFrames_
     imwrite(maxZY, [savePath filesep 'ZY' filesep 'ZY_'  nameCells{frameIdx}], 'Compression', 'none');
     imwrite(maxZX, [savePath filesep 'ZX' filesep 'ZX_'  nameCells{frameIdx}], 'Compression', 'none');
     imwrite(three, [savePath filesep 'Three' filesep nameCells{frameIdx}], 'Compression', 'none');
-%     fprintf('\b|\n');
+
 end
+
 threeVideo = VideoWriter([savePath filesep 'three.avi']);
 myVideo.FrameRate = 4;  % Default 30
 myVideo.Quality = 90;    % Default 75
 
-open(threeVideo)
-for frameIdx=1:MD.nFrames_
+open(threeVideo);
+for frameIdx = 1:MD.nFrames_
     % save the maximum intensity projections
-    three=imread([savePath filesep 'Three' filesep nameCells{frameIdx}]);
-    writeVideo(threeVideo,three)
-%     fprintf('\b|\n');
+    three = imread([savePath filesep 'Three' filesep nameCells{frameIdx}]);
+    writeVideo(threeVideo, three)
 end
-close(threeVideo)
-
+close(threeVideo);
