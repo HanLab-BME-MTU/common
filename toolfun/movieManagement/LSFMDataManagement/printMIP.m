@@ -1,5 +1,7 @@
 function printMIP(MD, varargin)
 % Title says it all -- PR, augmented from Meghan D. 2015
+% This is a convenience function not meant to be wrapped by a process.
+% See ComputeMIPProcess for a more completely framework compatible MovieData/process 
 % Input Parameter arguments:
 %   Channel<numeric>: specifies which channel to MIP process
 %                     default (non provided) will combine all into montage image.
@@ -22,9 +24,9 @@ if(MD.zSize_==1)
 end
 
 if isempty(selectedChannel)
-    savePath=[MD.outputDirectory_ filesep 'MIP'];
+    savePath = [MD.outputDirectory_ filesep 'MIP'];
 else
-    savePath=[MD.outputDirectory_ filesep 'MIP' filesep 'ch' num2str(selectedChannel)];
+    savePath = [MD.outputDirectory_ filesep 'MIP' filesep 'ch' num2str(selectedChannel)];
 end
 
 if ~isdir(savePath) || ~isdir([savePath filesep 'XY']) || ~isdir([savePath filesep 'ZY']) || ~isdir([savePath filesep 'ZX']) || ~isdir([savePath filesep 'Three'])
