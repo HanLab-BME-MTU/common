@@ -172,9 +172,17 @@ classdef ImageProcessingProcess < Process
             outIm=obj.loadChannelOutput(iChan,iFrame,varargin{:});
         end
 
-        function outStack = loadOutStack(obj,iChan,iFrame,varargin)
+        function outStack = loadOutStack(obj,iChan,iFrame,varargin)            
             if obj.owner_.is3D()
-                outStack = obj.loadChannelOutput(iChan,iFrame,':');
+                checkCompatible3DOutput = true;
+                if ~isempty(obj.is3Dcompatible_) && ~obj.is3Dcompatible_
+                    checkCompatible3DOutput = false;
+                end
+                if checkCompatible3DOutput
+                    outStack = obj.loadChannelOutput(iChan,iFrame,':');
+                else
+                    outStack = obj.loadOutImage(iChan,iFrame,varargin{:});
+                end
             else
                 outStack = obj.loadOutImage(iChan,iFrame,varargin{:});
             end
@@ -187,29 +195,38 @@ classdef ImageProcessingProcess < Process
             ip.addRequired('iChan', @obj.checkChanNum);
             ip.addRequired('iFrame', @obj.checkFrameNum);
             % Validator for optional is critical to avoid confusion with parameter
-            ip.addOptional('iZ', ':', @(x) x(1) == ':' || obj.checkDepthNum);
+            ip.addOptional('iZ', ':', @(x) x(1) == ':' || obj.checkDepthNum(x));
             ip.addParamValue('output',[],@ischar);            
             ip.parse(obj,iChan,iFrame,varargin{:})
             imNames = obj.getOutImageFileNames(iChan);
-            if obj.getOwner().is3D()
-                iZ = ip.Results.iZ;
-                if iZ(1) == ':'
-                    % Default if 3D is to load the whole stack
-                    outIm = tif3Dread([obj.outFilePaths_{1,iChan} filesep imNames{1}{iFrame}]);
-                else 
-                    % Load first image
-                    outIm =imread([obj.outFilePaths_{1,iChan} filesep imNames{1}{iFrame}], iZ(1));
-                    % If this is a RGB image, then make RGB the 4th dimension
-                    if ndims(outIm) > 2
-                        sz = size(outIm);
-                        outIm = reshape(outIm,[sz(1) sz(2) 1 sz(3:end)]);
+            
+            if obj.getOwner().is3D() 
+                checkCompatible3DOutput = true;
+                if ~isempty(obj.is3Dcompatible_) && ~obj.is3Dcompatible_
+                    checkCompatible3DOutput = false;
+                end
+                if checkCompatible3DOutput
+                    iZ = ip.Results.iZ;
+                    if iZ(1) == ':'
+                        % Default if 3D is to load the whole stack
+                        outIm = tif3Dread([obj.outFilePaths_{1,iChan} filesep imNames{1}{iFrame}]);
+                    else 
+                        % Load first image
+                        outIm =imread([obj.outFilePaths_{1,iChan} filesep imNames{1}{iFrame}], iZ(1));
+                        % If this is a RGB image, then make RGB the 4th dimension
+                        if ndims(outIm) > 2
+                            sz = size(outIm);
+                            outIm = reshape(outIm,[sz(1) sz(2) 1 sz(3:end)]);
+                        end
+                        % Initialize rest of stack, does nothing if length(iZ) == 1
+                        outIm(:,:,2:length(iZ),:) = 0;
+                        % Load rest of stack
+                        for iiZ = 2:length(iZ)
+                            outIm(:,:,iiZ) =imread([obj.outFilePaths_{1,iChan} filesep imNames{1}{iFrame}], iZ(iiZ));
+                        end
                     end
-                    % Initialize rest of stack, does nothing if length(iZ) == 1
-                    outIm(:,:,2:length(iZ),:) = 0;
-                    % Load rest of stack
-                    for iiZ = 2:length(iZ)
-                        outIm(:,:,iiZ) =imread([obj.outFilePaths_{1,iChan} filesep imNames{1}{iFrame}], iZ(iiZ));
-                    end
+                else
+                    outIm =imread([obj.outFilePaths_{1,iChan} filesep imNames{1}{iFrame}]);    
                 end
             else
                 outIm =imread([obj.outFilePaths_{1,iChan} filesep imNames{1}{iFrame}]);

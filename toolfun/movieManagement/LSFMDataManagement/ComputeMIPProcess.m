@@ -26,6 +26,7 @@ classdef  ComputeMIPProcess < ImageProcessingProcess
                 super_args{4} = funParams;
             end
             obj = obj@ImageProcessingProcess(super_args{:});
+            obj.is3Dcompatible_ = false; % outputs are 2D
         end
 
         function h = draw(obj, varargin)
@@ -36,8 +37,8 @@ classdef  ComputeMIPProcess < ImageProcessingProcess
             ip.addRequired('obj',@(x) isa(x,'Process'));
             ip.addRequired('iChan',@isnumeric);
             ip.addOptional('iFrame',[],@isnumeric);
-            % ip.addParameter('iZ',[], @(x) ismember(x,1:obj.owner_.zSize_));
-            ip.addParameter('output', outputList(3).var,@(x) all(ismember(x,{outputList.var})));
+            ip.addOptional('iZ',[], @(x) ismember(x,1:obj.owner_.zSize_));
+            ip.addParameter('output', [], @(x) all(ismember(x,{outputList.var})));
             ip.KeepUnmatched = true;
             ip.parse(obj, varargin{:});
 
@@ -65,13 +66,12 @@ classdef  ComputeMIPProcess < ImageProcessingProcess
 
             else
                 % Call superclass method
-                h = draw@ImageProcessingProcess(obj,varargin{1},varargin{2},...
-                        varargin{3:end});
+                h = draw@ImageProcessingProcess(obj,varargin{:});
             end
         end
         
         function output = getDrawableOutput(obj, varargin)
-            output = getDrawableOutput@ImageProcessingProcess(obj);
+            output = getDrawableOutput@ImageProcessingProcess;
             n = length(output)+1;
             output(n).name = 'Merged';
             output(n).var = 'merged';
@@ -95,7 +95,7 @@ classdef  ComputeMIPProcess < ImageProcessingProcess
             % Input check
             ip=inputParser;
             ip.addRequired('owner',@(x) isa(x,'MovieData'));
-            ip.addOptional('outputDir',owner.outputDirectory_,@ischar);
+            ip.addOptional('outputDir', owner.outputDirectory_, @ischar);
             ip.parse(owner, varargin{:})
             outputDir = ip.Results.outputDir;
             
