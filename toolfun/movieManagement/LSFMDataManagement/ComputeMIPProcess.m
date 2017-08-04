@@ -42,39 +42,79 @@ classdef  ComputeMIPProcess < ImageProcessingProcess
             ip.KeepUnmatched = true;
             ip.parse(obj, varargin{:});
 
-            if strcmp('merged',ip.Results.output)
-                if numel(obj.owner_.channels_) > 1, cdim=3; else cdim=1; end
-                    data = zeros([obj.owner_.imSize_ cdim]);
+            iOutput = find(cellfun(@(y) isequal(ip.Results.output,y),{outputList.var}));
+            if iOutput == 2
+                iOutput_XY = 1;
+            end
+            % Display all channels
+            switch ip.Results.output
+                case 'merged'
+                    if numel(obj.owner_.channels_) > 1, cdim=3; else cdim=1; end
+                        data = zeros([obj.owner_.imSize_ cdim]);
 
-                iOutput = find(cellfun(@(y) isequal(ip.Results.output,y),{outputList.var}));
+                    for iChan = 1:numel(obj.owner_.channels_)
+                        imData = obj.loadChannelOutput(iChan, ip.Results.iFrame, iOutput);
+                        data(:,:,iChan) = outputList(iOutput).formatData(imData);
+                    end                  
 
-                for iChan = 1:numel(obj.owner_.channels_)
-                    imData = obj.loadChannelOutput(iChan, ip.Results.iFrame);
-                    data(:,:,iChan) = outputList(iOutput).formatData(imData);
-                end                  
+                    try
+                        assert(~isempty(obj.displayMethod_{iOutput,1}));
+                    catch ME
+                        obj.displayMethod_{iOutput,1}=...
+                            outputList(iOutput).defaultDisplayMethod();
+                    end
 
-                try
-                    assert(~isempty(obj.displayMethod_{iOutput,1}));
-                catch ME
-                    obj.displayMethod_{iOutput,1}=...
-                        outputList(iOutput).defaultDisplayMethod();
-                end
+                    % Create graphic tag and delegate drawing to the display class
+                    tag = ['process' num2str(obj.getIndex()) '_MergedOutput'];
+                    h = obj.displayMethod_{iOutput}.draw(data, tag, ip.Unmatched);
 
-                % Create graphic tag and delegate drawing to the display class
-                tag = ['process' num2str(obj.getIndex()) '_MergedOutput'];
-                h = obj.displayMethod_{3}.draw(data, tag, ip.Unmatched);
+                case {'XY'}
+                    % Call superclass method
+                    % imData = obj.loadChannelOutput(iChan, ip.Results.iFrame, 'iOutput', iOutput_XY);
+                    % data(:,:,iChan) = outputList(iOutput).formatData(imData);
+                    h = draw@ImageProcessingProcess(obj, [varargin, 'iOutput', iOutput_XY]);
+                
+                case {'ZY', 'ZX'}
 
-            else
-                % Call superclass method
-                h = draw@ImageProcessingProcess(obj,varargin{:});
+                    % h = draw@ImageProcessingProcess(obj, [varargin, 'iOutput', iOutput]);
+                    h = draw@ImageProcessingProcess(obj, varargin{1}, varargin{2},...
+                            varargin{3:end}, 'iOutput', iOutput);
+                    %     h = draw@ImageProcessingProcess(obj, varargin{:}, 'iOutput', iOutput);
+                
+                % case 'ZX'
+                
+                %     h = draw@ImageProcessingProcess(obj, varargin{:}, 'iOutput', iOutput);
+                
+                otherwise
+                    error('Incorrect Output Var type');
             end
         end
         
         function output = getDrawableOutput(obj, varargin)
-            output = getDrawableOutput@ImageProcessingProcess;
+            
+            output(1).name = 'Merged';
+            output(1).var = 'merged';
+            output(1).formatData = @mat2gray;
+            output(1).defaultDisplayMethod = @ImageDisplay;
+            output(1).type = 'image';
+            
             n = length(output)+1;
-            output(n).name = 'Merged';
-            output(n).var = 'merged';
+            output(n).name = 'XY';
+            output(n).var = 'XY';
+            output(n).formatData = @mat2gray;
+            output(n).defaultDisplayMethod = @ImageDisplay;
+            output(n).type = 'image';
+            
+            n = length(output)+1;
+            output(n).name = 'ZY';
+            output(n).var = 'ZY';
+            output(n).formatData = @mat2gray;
+            output(n).defaultDisplayMethod = @ImageDisplay;
+            output(n).type = 'image';
+            
+            n = length(output)+1;
+            output(n).name = 'ZX';
+            output(n).var = 'ZX';
             output(n).formatData = @mat2gray;
             output(n).defaultDisplayMethod = @ImageDisplay;
             output(n).type = 'image';

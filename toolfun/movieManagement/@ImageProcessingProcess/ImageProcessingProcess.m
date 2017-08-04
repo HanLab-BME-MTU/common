@@ -122,11 +122,12 @@ classdef ImageProcessingProcess < Process
                 end
             end                        
         end
-        function fileNames = getOutImageFileNames(obj,iChan)
+        function fileNames = getOutImageFileNames(obj, iChan, iOutput)
             nChanTot = numel(obj.owner_.channels_);
             if nargin < 2 || isempty(iChan), iChan = 1:nChanTot; end
-            if obj.checkChannelOutput(iChan)
-                fileNames = cellfun(@(x)(imDir(x)),obj.outFilePaths_(1,iChan),'UniformOutput',false);
+            if nargin < 3 || isempty(iOutput), iOutput = 1; end
+            if obj.checkChannelOutput(iChan, iOutput)
+                fileNames = cellfun(@(x)(imDir(x)),obj.outFilePaths_(iOutput, iChan),'UniformOutput',false);
                 fileNames = cellfun(@(x)(arrayfun(@(x)(x.name),x,'UniformOutput',false)),fileNames,'UniformOutput',false);
                 nIm = cellfun(@(x)(length(x)),fileNames);
                 if ~all(nIm == obj.owner_.nFrames_)                    
@@ -141,7 +142,6 @@ classdef ImageProcessingProcess < Process
         function fileNames = getInImageFileNames(obj,iChan)
             nChanTot = numel(obj.owner_.channels_);
             if nargin < 2 || isempty(iChan), iChan = 1:nChanTot; end
-           
             if obj.checkChanNum(iChan)
                 fileNames = cellfun(@(x)(imDir(x)),obj.inFilePaths_(1,iChan),'UniformOutput',false);
                 fileNames = cellfun(@(x)(arrayfun(@(x)(x.name),x,'UniformOutput',false)),fileNames,'UniformOutput',false);
@@ -156,39 +156,40 @@ classdef ImageProcessingProcess < Process
             
         end
         
-        function status = checkChannelOutput(obj,iChan)
+        function status = checkChannelOutput(obj, iChan, iOutput)
             
            %Checks if the selected channels have valid output images          
            nChanTot = numel(obj.owner_.channels_);
            if nargin < 2 || isempty(iChan), iChan = 1:nChanTot; end
+           if nargin < 3 || isempty(iOutput), iOutput = 1; end
            assert(all(obj.checkChanNum(iChan)));
-           status =  arrayfun(@(x) exist(obj.outFilePaths_{1,x},'dir') && ...
-               ~isempty(imDir(obj.outFilePaths_{1,x})),iChan);
+           status =  arrayfun(@(x) exist(obj.outFilePaths_{iOutput, x},'dir') && ...
+               ~isempty(imDir(obj.outFilePaths_{iOutput, x})),iChan);
         end
         
         
         
-        function outIm = loadOutImage(obj,iChan,iFrame,varargin)
-            outIm=obj.loadChannelOutput(iChan,iFrame,varargin{:});
+        function outIm = loadOutImage(obj, iChan, iFrame, varargin)
+            outIm=obj.loadChannelOutput(iChan, iFrame, varargin{:});
         end
 
-        function outStack = loadOutStack(obj,iChan,iFrame,varargin)            
+        function outStack = loadOutStack(obj, iChan, iFrame, varargin)            
             if obj.owner_.is3D()
                 checkCompatible3DOutput = true;
                 if ~isempty(obj.is3Dcompatible_) && ~obj.is3Dcompatible_
                     checkCompatible3DOutput = false;
                 end
                 if checkCompatible3DOutput
-                    outStack = obj.loadChannelOutput(iChan,iFrame,':');
+                    outStack = obj.loadChannelOutput(iChan, iFrame, ':', varargin{:});
                 else
-                    outStack = obj.loadOutImage(iChan,iFrame,varargin{:});
+                    outStack = obj.loadOutImage(iChan, iFrame, varargin{:});
                 end
             else
-                outStack = obj.loadOutImage(iChan,iFrame,varargin{:});
+                outStack = obj.loadOutImage(iChan, iFrame, varargin{:});
             end
         end
         
-        function outIm = loadChannelOutput(obj,iChan,iFrame,varargin)
+        function outIm = loadChannelOutput(obj, iChan, iFrame, varargin)
              % Input check
             ip =inputParser;
             ip.addRequired('obj');
@@ -196,9 +197,12 @@ classdef ImageProcessingProcess < Process
             ip.addRequired('iFrame', @obj.checkFrameNum);
             % Validator for optional is critical to avoid confusion with parameter
             ip.addOptional('iZ', ':', @(x) x(1) == ':' || obj.checkDepthNum(x));
-            ip.addParamValue('output',[],@ischar);            
+            ip.addParameter('iOutput', 1, @isnumeric);            
             ip.parse(obj,iChan,iFrame,varargin{:})
-            imNames = obj.getOutImageFileNames(iChan);
+            
+            iOutput = ip.Results.iOutput;
+            imNames = obj.getOutImageFileNames(iChan, iOutput);
+            
             
             if obj.getOwner().is3D() 
                 checkCompatible3DOutput = true;
@@ -209,10 +213,10 @@ classdef ImageProcessingProcess < Process
                     iZ = ip.Results.iZ;
                     if iZ(1) == ':'
                         % Default if 3D is to load the whole stack
-                        outIm = tif3Dread([obj.outFilePaths_{1,iChan} filesep imNames{1}{iFrame}]);
+                        outIm = tif3Dread([obj.outFilePaths_{iOutput, iChan} filesep imNames{1}{iFrame}]);
                     else 
                         % Load first image
-                        outIm =imread([obj.outFilePaths_{1,iChan} filesep imNames{1}{iFrame}], iZ(1));
+                        outIm =imread([obj.outFilePaths_{iOutput, iChan} filesep imNames{1}{iFrame}], iZ(1));
                         % If this is a RGB image, then make RGB the 4th dimension
                         if ndims(outIm) > 2
                             sz = size(outIm);
@@ -222,14 +226,14 @@ classdef ImageProcessingProcess < Process
                         outIm(:,:,2:length(iZ),:) = 0;
                         % Load rest of stack
                         for iiZ = 2:length(iZ)
-                            outIm(:,:,iiZ) =imread([obj.outFilePaths_{1,iChan} filesep imNames{1}{iFrame}], iZ(iiZ));
+                            outIm(:,:,iiZ) =imread([obj.outFilePaths_{iOutput, iChan} filesep imNames{1}{iFrame}], iZ(iiZ));
                         end
                     end
                 else
-                    outIm =imread([obj.outFilePaths_{1,iChan} filesep imNames{1}{iFrame}]);    
+                    outIm =imread([obj.outFilePaths_{iOutput, iChan} filesep imNames{1}{iFrame}]);    
                 end
             else
-                outIm =imread([obj.outFilePaths_{1,iChan} filesep imNames{1}{iFrame}]);
+                outIm =imread([obj.outFilePaths_{iOutput, iChan} filesep imNames{1}{iFrame}]);
             end
         end
         
