@@ -73,7 +73,7 @@ classdef  ComputeMIPProcess < ImageProcessingProcess
                 
                 case {'XY','ZY','ZX'}
                     iChan = ip.Results.iChan;
-                    imData = obj.loadChannelOutput(iChan, ip.Results.iFrame, iOutput);
+                    imData = obj.loadChannelOutput(iChan, ip.Results.iFrame, 1, iOutput);
                     data = outputList(iOutput).formatData(imData);
 
                     try

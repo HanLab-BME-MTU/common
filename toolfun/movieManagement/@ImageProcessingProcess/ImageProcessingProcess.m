@@ -197,7 +197,7 @@ classdef ImageProcessingProcess < Process
             ip.addRequired('iFrame', @obj.checkFrameNum);
             % Validator for optional is critical to avoid confusion with parameter
             ip.addOptional('iZ', ':', @(x) x(1) == ':' || obj.checkDepthNum(x));
-            ip.addParameter('iOutput', 1, @isnumeric);            
+            ip.addOptional('iOutput', 1, @isnumeric);            
             ip.parse(obj,iChan,iFrame,varargin{:})
             
             iOutput = ip.Results.iOutput;
