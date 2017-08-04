@@ -43,9 +43,9 @@ classdef  ComputeMIPProcess < ImageProcessingProcess
             ip.parse(obj, varargin{:});
 
             iOutput = find(cellfun(@(y) isequal(ip.Results.output,y),{outputList.var}));
-            if iOutput == 2
-                iOutput_XY = 1;
-            end
+            % if iOutput == 2
+            %     iOutput_XY = 1;
+            % end
             % Display all channels
             switch ip.Results.output
                 case 'merged'
@@ -53,37 +53,40 @@ classdef  ComputeMIPProcess < ImageProcessingProcess
                         data = zeros([obj.owner_.imSize_ cdim]);
 
                     for iChan = 1:numel(obj.owner_.channels_)
-                        imData = obj.loadChannelOutput(iChan, ip.Results.iFrame, iOutput);
+                        imData = obj.loadChannelOutput(iChan, ip.Results.iFrame, 1);
                         data(:,:,iChan) = outputList(iOutput).formatData(imData);
                     end                  
 
                     try
                         assert(~isempty(obj.displayMethod_{iOutput,1}));
                     catch ME
-                        obj.displayMethod_{iOutput,1}=...
+                        obj.displayMethod_{iOutput, 1} = ...
                             outputList(iOutput).defaultDisplayMethod();
                     end
 
                     % Create graphic tag and delegate drawing to the display class
                     tag = ['process' num2str(obj.getIndex()) '_MergedOutput'];
-                    h = obj.displayMethod_{iOutput}.draw(data, tag, ip.Unmatched);
+                    h = obj.displayMethod_{iOutput, 1}.draw(data, tag, ip.Unmatched);
 
-                case {'XY'}
-                    % Call superclass method
-                    % imData = obj.loadChannelOutput(iChan, ip.Results.iFrame, 'iOutput', iOutput_XY);
-                    % data(:,:,iChan) = outputList(iOutput).formatData(imData);
-                    h = draw@ImageProcessingProcess(obj, [varargin, 'iOutput', iOutput_XY]);
+                % case {'XY','ZY','ZX'}
+                %     h = draw@ImageProcessingProcess(obj, ip.Results.iChan, ip.Results.iFrame, ip.Results.iZ, 'output', ip.Results.output);
                 
-                case {'ZY', 'ZX'}
+                case {'XY','ZY','ZX'}
+                    iChan = ip.Results.iChan;
+                    imData = obj.loadChannelOutput(iChan, ip.Results.iFrame, iOutput);
+                    data = outputList(iOutput).formatData(imData);
 
-                    % h = draw@ImageProcessingProcess(obj, [varargin, 'iOutput', iOutput]);
-                    h = draw@ImageProcessingProcess(obj, varargin{1}, varargin{2},...
-                            varargin{3:end}, 'iOutput', iOutput);
-                    %     h = draw@ImageProcessingProcess(obj, varargin{:}, 'iOutput', iOutput);
-                
-                % case 'ZX'
-                
-                %     h = draw@ImageProcessingProcess(obj, varargin{:}, 'iOutput', iOutput);
+                    try
+                        assert(~isempty(obj.displayMethod_{iOutput,iChan}));
+                    catch ME
+                        obj.displayMethod_{iOutput, iChan} = ...
+                            outputList(iOutput).defaultDisplayMethod();
+                    end
+
+                    % Create graphic tag and delegate drawing to the display class
+%                     tag = ['process' num2str(obj.getIndex()) '_' outputList(iOutput).var];
+                    tag = ['process' num2str(obj.getIndex()) '_channel' num2str(iChan) '_output' num2str(iOutput)];
+                    h = obj.displayMethod_{iOutput, iChan}.draw(data, tag, ip.Unmatched);
                 
                 otherwise
                     error('Incorrect Output Var type');
@@ -91,14 +94,8 @@ classdef  ComputeMIPProcess < ImageProcessingProcess
         end
         
         function output = getDrawableOutput(obj, varargin)
-            
-            output(1).name = 'Merged';
-            output(1).var = 'merged';
-            output(1).formatData = @mat2gray;
-            output(1).defaultDisplayMethod = @ImageDisplay;
-            output(1).type = 'image';
-            
-            n = length(output)+1;
+        
+            n = 1;
             output(n).name = 'XY';
             output(n).var = 'XY';
             output(n).formatData = @mat2gray;
@@ -115,6 +112,13 @@ classdef  ComputeMIPProcess < ImageProcessingProcess
             n = length(output)+1;
             output(n).name = 'ZX';
             output(n).var = 'ZX';
+            output(n).formatData = @mat2gray;
+            output(n).defaultDisplayMethod = @ImageDisplay;
+            output(n).type = 'image';
+
+            n = length(output)+1;
+            output(n).name = 'Merged';
+            output(n).var = 'merged';
             output(n).formatData = @mat2gray;
             output(n).defaultDisplayMethod = @ImageDisplay;
             output(n).type = 'image';
