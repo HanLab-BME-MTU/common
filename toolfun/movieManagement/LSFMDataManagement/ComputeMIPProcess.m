@@ -3,7 +3,7 @@ classdef  ComputeMIPProcess < ImageProcessingProcess
     % Andrew R. Jamieson Aug. 2017
     
     methods
-        function obj = ComputeMIPProcess(owner,varargin)
+        function obj = ComputeMIPProcess(owner, varargin)
             
             if nargin == 0
                 super_args = {};
@@ -130,10 +130,10 @@ classdef  ComputeMIPProcess < ImageProcessingProcess
             name = 'Maximum Intensity Projection';
         end
 
-        % function h = GUI()
-        %     % h = @ComputeMIPProcessGUI;
-        %     h = @abstractProcessGUI;
-        % end
+        function h = GUI()
+            % h = @ComputeMIPProcessGUI;
+            func = @cliGUI;
+        end
         
         function funParams = getDefaultParams(owner, varargin)
             % Input check
