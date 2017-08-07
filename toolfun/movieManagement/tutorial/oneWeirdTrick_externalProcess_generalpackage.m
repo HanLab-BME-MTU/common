@@ -38,10 +38,17 @@ MD.addProcess(extProc);
 % However, you can also give an arbitrary set of Processes
 MD.addPackage(GenericPackage(MD));
 
+
+% Alternatively, you can create the GenericPackage via a list of processes 
+% to specify a subset of interest
+MD.addPackage(GenericPackage({threshProc; extProc}))
+% or like this: MD.addPackage(GenericPackage({MD.processes_{1}; MD.processes_{2}}))
+
 % You may also want to configure the dependency matrix
 % openvar('MD.packages_{1}.dependencyMatrix_')
 % Assign a name
 MD.packages_{1}.name_ = 'Hello World';
+MD.packages_{2}.name_ = 'Hello World v2';
 
 
 %% Show GUI

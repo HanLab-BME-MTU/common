@@ -196,20 +196,21 @@ classdef ImageProcessingProcess < Process
             ip.addRequired('iChan', @obj.checkChanNum);
             ip.addRequired('iFrame', @obj.checkFrameNum);
             % Validator for optional is critical to avoid confusion with parameter
-            ip.addOptional('iZ', ':', @(x) x(1) == ':' || obj.checkDepthNum(x));
-            ip.addOptional('iOutput', 1, @isnumeric);            
+            if obj.owner_.is3D()
+                ip.addOptional('iZ', ':', @(x) x(1) == ':' || obj.checkDepthNum(x));
+            end
+            
+            ip.addParameter('iOutput', 1, @isnumeric);
+            ip.addParameter('output',[],@ischar);            
+            
+            % In case ImageProcessing produces 2D projections, for example
+            ip.addParameter('outputIs3D', true, @(x) islogical(x) || x == 1 || x == 0); 
             ip.parse(obj,iChan,iFrame,varargin{:})
             
             iOutput = ip.Results.iOutput;
             imNames = obj.getOutImageFileNames(iChan, iOutput);
             
-            
-            if obj.getOwner().is3D() 
-                checkCompatible3DOutput = true;
-                if ~isempty(obj.is3Dcompatible_) && ~obj.is3Dcompatible_
-                    checkCompatible3DOutput = false;
-                end
-                if checkCompatible3DOutput
+            if obj.getOwner().is3D() && ip.Results.outputIs3D 
                     iZ = ip.Results.iZ;
                     if iZ(1) == ':'
                         % Default if 3D is to load the whole stack
@@ -229,9 +230,6 @@ classdef ImageProcessingProcess < Process
                             outIm(:,:,iiZ) =imread([obj.outFilePaths_{iOutput, iChan} filesep imNames{1}{iFrame}], iZ(iiZ));
                         end
                     end
-                else
-                    outIm =imread([obj.outFilePaths_{iOutput, iChan} filesep imNames{1}{iFrame}]);    
-                end
             else
                 outIm =imread([obj.outFilePaths_{iOutput, iChan} filesep imNames{1}{iFrame}]);
             end

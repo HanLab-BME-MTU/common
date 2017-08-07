@@ -43,17 +43,16 @@ classdef  ComputeMIPProcess < ImageProcessingProcess
             ip.parse(obj, varargin{:});
 
             iOutput = find(cellfun(@(y) isequal(ip.Results.output,y),{outputList.var}));
-            % if iOutput == 2
-            %     iOutput_XY = 1;
-            % end
+
             % Display all channels
             switch ip.Results.output
                 case 'merged'
+                    % currently just for XY (i.e., ioutput == 1)
                     if numel(obj.owner_.channels_) > 1, cdim=3; else cdim=1; end
                         data = zeros([obj.owner_.imSize_ cdim]);
 
                     for iChan = 1:numel(obj.owner_.channels_)
-                        imData = obj.loadChannelOutput(iChan, ip.Results.iFrame, 1);
+                        imData = obj.loadChannelOutput(iChan, ip.Results.iFrame, 'iOutput', 1, 'outputIs3D', false); 
                         data(:,:,iChan) = outputList(iOutput).formatData(imData);
                     end                  
 
@@ -67,13 +66,10 @@ classdef  ComputeMIPProcess < ImageProcessingProcess
                     % Create graphic tag and delegate drawing to the display class
                     tag = ['process' num2str(obj.getIndex()) '_MergedOutput'];
                     h = obj.displayMethod_{iOutput, 1}.draw(data, tag, ip.Unmatched);
-
-                % case {'XY','ZY','ZX'}
-                %     h = draw@ImageProcessingProcess(obj, ip.Results.iChan, ip.Results.iFrame, ip.Results.iZ, 'output', ip.Results.output);
                 
                 case {'XY','ZY','ZX'}
                     iChan = ip.Results.iChan;
-                    imData = obj.loadChannelOutput(iChan, ip.Results.iFrame, 1, iOutput);
+                    imData = obj.loadChannelOutput(iChan, ip.Results.iFrame, 'iOutput', iOutput, 'outputIs3D', false);
                     data = outputList(iOutput).formatData(imData);
 
                     try
@@ -83,8 +79,6 @@ classdef  ComputeMIPProcess < ImageProcessingProcess
                             outputList(iOutput).defaultDisplayMethod();
                     end
 
-                    % Create graphic tag and delegate drawing to the display class
-%                     tag = ['process' num2str(obj.getIndex()) '_' outputList(iOutput).var];
                     tag = ['process' num2str(obj.getIndex()) '_channel' num2str(iChan) '_output' num2str(iOutput)];
                     h = obj.displayMethod_{iOutput, iChan}.draw(data, tag, ip.Unmatched);
                 
@@ -130,9 +124,8 @@ classdef  ComputeMIPProcess < ImageProcessingProcess
             name = 'Maximum Intensity Projection';
         end
 
-        function h = GUI()
-            % h = @ComputeMIPProcessGUI;
-            func = @cliGUI;
+        function h = GUI(varargin)
+            h = @cliGUI;
         end
         
         function funParams = getDefaultParams(owner, varargin)
