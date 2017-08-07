@@ -93,3 +93,4 @@ for frameIdx=1:MD.nFrames_
 %     fprintf('\b|\n');
 end
 close(video)
+
