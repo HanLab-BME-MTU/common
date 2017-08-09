@@ -109,8 +109,9 @@ while(~numIter || any(columnNotDone))
     new_guess = guess(:,columnNotDone) - 2*v.*vd./(2*vd.^2-v.*vdd);
     new_guess = wraparoundN(new_guess,0,2*pi);
     new_guess_vals = interpft1([0 2*pi],v_hat(:,columnNotDone,:),repmat(new_guess,xqrep),'horner_freq');
-    new_guess_is_better(:,columnNotDone) = abs(new_guess_vals(:,:,1)) < abs(guess_vals(:,:,1));
-    guess(new_guess_is_better) = new_guess(new_guess_is_better(:,columnNotDone));
+    new_guess_is_better_now = abs(new_guess_vals(:,:,1)) < abs(guess_vals(:,:,1));
+    new_guess_is_better(:,columnNotDone) = new_guess_is_better_now;
+    guess(new_guess_is_better) = new_guess(new_guess_is_better_now);
 %     columnNotDone(columnNotDone) = any(new_guess_is_better(:,columnNotDone),1);
 
     % Establish new derivative value
@@ -132,14 +133,15 @@ while(~numIter || any(columnNotDone))
         % If new guess is not better and the value still exceeds tolerance,
         % then set the guess to NaN
         temp = guess(:,columnNotDone);
-        temp( ~new_guess_is_better(:,columnNotDone) & exceeds_tol ) = NaN;
+        temp( ~new_guess_is_better_now & exceeds_tol ) = NaN;
         guess(:,columnNotDone) = temp;
 
         % New guess will only be considered further if derivative exceeds
         % tolerance
-        new_guess_is_better(:,columnNotDone) = new_guess_is_better(:,columnNotDone) & exceeds_tol;
+        new_guess_is_better_now = new_guess_is_better_now & exceeds_tol;
+        new_guess_is_better(:,columnNotDone) = new_guess_is_better_now;
         % Find columns that are not done in the set of not done columns
-        newNotDone = any(new_guess_is_better(:,columnNotDone),1);
+        newNotDone = any(new_guess_is_better_now,1);
         % Use new guess values in the next iteration
         guess_vals = new_guess_vals(:,newNotDone,:);
         columnNotDone(columnNotDone) = newNotDone;
