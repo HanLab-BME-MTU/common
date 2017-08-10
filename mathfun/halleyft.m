@@ -1,5 +1,5 @@
-function [ refined ] = halleyft( v, guess, freq, deriv, TOL, maxIter )
-%newtonft Does Newton iteration to refine roots of Fourier series
+function [ refined ] = halleyft( v, guess, freq, deriv, TOL, maxIter, avoidNaN )
+%newtonft Does Halley iteration to refine roots of Fourier series
 %
 % INPUT
 % v - known values of Fourier series at regular intervals or it's Fourier
@@ -15,7 +15,12 @@ function [ refined ] = halleyft( v, guess, freq, deriv, TOL, maxIter )
 % deriv - solve for zero of the derivative indicated
 %         (optional, default = 0);
 %
-% TOL - tolerance
+% TOL - tolerance for absolute distance from 0, default: 1e-12
+%
+% maxIter - maximum number of iterations, default: 10
+%
+% avoidNaN - For non-vector input, avoid processing NaN initial guesses.
+%            The matrix should be sorted for this to work.
 %
 % OUTPUT
 % refined - refined zero
@@ -33,18 +38,41 @@ if(nargin < 6)
     % If more than 10, probably should use interpft_extrema
     maxIter = 10;
 end
+if(nargin < 7)
+    avoidNaN = isvector(guess);
+end
 
 derivs = [0 1 2] + deriv;
 
     %% From interpft1_derivatives
+    if(~freq)
+        v_hat = fft(v(:,:));
+    else
+        v_hat = v(:,:);
+    end
+    
+    if(avoidNaN)
+        % NaN guesses slow down the algorithm
+        % Group columns by number of non-nan guesses and recurse
+        % Depends on the guess being sorted such that NaNs are all in the
+        % bottom iterations
+        guess_sz = size(guess);
+        guess = guess(:,:);
+        guess_count = size(guess,1)-sum(isnan(guess),1);
+        refined = guess;
+        for i=1:size(guess,1)
+            s = guess_count == i;
+            refined(1:i,s) = halleyft(v_hat(:,s), guess(1:i,s), true, deriv, TOL, maxIter, false);
+        end
+        refined = reshape(refined,guess_sz);
+        return;
+    end
+    
     K = floor(size(v,1)/2);
     freqM = ifftshift(-K:K).'*1i;
-    if(~freq)
-        v_hat = fft(v);
-    else
-        v_hat = v;
-    end
-    derivDim = ndims(v)+1;
+    
+%     derivDim = ndims(v)+1;
+    derivDim = 3;
     freqMs = arrayfun(@(x) freqM.^x,derivs,'UniformOutput',false);
     freqMs = cat(derivDim,freqMs{:});
     
@@ -53,40 +81,73 @@ derivs = [0 1 2] + deriv;
     xqrep = ones(1,derivDim);
     xqrep(derivDim) = length(derivs);
     
-    colons = {':'};
-    colons = colons(ones(derivDim,1));
-    zeroth_d = colons;
-    zeroth_d{derivDim} = 1;
-    first_d = colons;
-    first_d{derivDim} = 2;
-    second_d = colons;
-    second_d{derivDim} = 3;
 
-    %% Perform Newton iteration
-numIter = 0;
+    %% Perform iteration
+args = {};
+if(isa(guess,'gpuArray'))
+    args = { 'gpuArray'};
+end
+
+guess_sz = size(guess);
+guess = guess(:,:);
+
+% Indicates that a column still needs further iterations
+columnNotDone = true(1,size(guess,2),args{:});
+% Tracks whether a new guess moves the derivative closer to zero
+new_guess_is_better = true(size(guess),args{:});
+
+% Calculate initial value
+guess_vals = interpft1([0 2*pi],v_hat,repmat(guess,xqrep),'horner_freq');
 % do while
-while(~numIter || any(exceeds_tol) && any(new_guess_is_better(:)))
+% while(~numIter || any(exceeds_tol) && any(new_guess_is_better(:)))
+numIter = 0;
+while(~numIter || any(columnNotDone))
     disp('hi');
-    guess_vals = interpft1([0 2*pi],v_hat,repmat(guess,xqrep),'horner_freq');
-    new_guess = guess - 2*guess_vals(zeroth_d{:}).*guess_vals(first_d{:})./(2*guess_vals(first_d{:}).^2-guess_vals(zeroth_d{:}).*guess_vals(second_d{:}));
+    v = guess_vals(:,:,1);
+    vd = guess_vals(:,:,2);
+    vdd = guess_vals(:,:,3);
+    new_guess = guess(:,columnNotDone) - 2*v.*vd./(2*vd.^2-v.*vdd);
     new_guess = wraparoundN(new_guess,0,2*pi);
-    new_guess_vals = interpft1([0 2*pi],v_hat,repmat(new_guess,xqrep),'horner_freq');
-    new_guess_is_better = abs(new_guess_vals(zeroth_d{:})) < abs(guess_vals(zeroth_d{:}));
-    guess(new_guess_is_better) = new_guess(new_guess_is_better);
+    new_guess_vals = interpft1([0 2*pi],v_hat(:,columnNotDone,:),repmat(new_guess,xqrep),'horner_freq');
+    new_guess_is_better_now = abs(new_guess_vals(:,:,1)) < abs(guess_vals(:,:,1));
+    new_guess_is_better(:,columnNotDone) = new_guess_is_better_now;
+    guess(new_guess_is_better) = new_guess(new_guess_is_better_now);
+%     columnNotDone(columnNotDone) = any(new_guess_is_better(:,columnNotDone),1);
+
     % Establish new derivative value
-    new_guess_vals = new_guess_vals(zeroth_d{:});
-    guess_vals = guess_vals(zeroth_d{:});
-    zero_vals = min(abs(guess_vals),abs(new_guess_vals));
-    exceeds_tol = zero_vals(:) > TOL;
+    zero_vals = min(abs(guess_vals(:,:,1)),abs(new_guess_vals(:,:,1)));
+    exceeds_tol = zero_vals > TOL;
+       
     numIter = numIter + 1;
     if(numIter > maxIter)
+        % Maximum number of iterations exceeded
+        temp = guess(:,columnNotDone);
+        % Set values whose derivative exceed tolerance to NaN
+        temp( exceeds_tol ) = NaN;
+        guess(:,columnNotDone) = temp;
+        % Issue a warning, use warning('off','halleyft:maxIter') to
+        % deactivate
         warning('halleyft:maxIter','halleyft: maximum iteration reached');
         break;
+    else
+        % If new guess is not better and the value still exceeds tolerance,
+        % then set the guess to NaN
+        temp = guess(:,columnNotDone);
+        temp( ~new_guess_is_better_now & exceeds_tol ) = NaN;
+        guess(:,columnNotDone) = temp;
+
+        % New guess will only be considered further if derivative exceeds
+        % tolerance
+        new_guess_is_better_now = new_guess_is_better_now & exceeds_tol;
+        new_guess_is_better(:,columnNotDone) = new_guess_is_better_now;
+        % Find columns that are not done in the set of not done columns
+        newNotDone = any(new_guess_is_better_now,1);
+        % Use new guess values in the next iteration
+        guess_vals = new_guess_vals(:,newNotDone,:);
+        columnNotDone(columnNotDone) = newNotDone;
     end
 end
 
-guess(exceeds_tol) = NaN;
-
-refined = guess;
+refined = reshape(guess,guess_sz);
 
 end
