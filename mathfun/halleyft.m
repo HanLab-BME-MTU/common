@@ -1,4 +1,4 @@
-function [ refined ] = halleyft( v, guess, freq, deriv, TOL, maxIter )
+function [ refined ] = halleyft( v, guess, freq, deriv, TOL, maxIter, varargin )
 %newtonft Does Newton iteration to refine roots of Fourier series
 %
 % INPUT
@@ -22,16 +22,39 @@ function [ refined ] = halleyft( v, guess, freq, deriv, TOL, maxIter )
 
 if(nargin < 3)
     freq = false;
-end
-if(nargin < 4)
-    deriv = 0;
-end
-if(nargin < 5)
-    TOL = 1e-12;
-end
-if(nargin < 6)
-    % If more than 10, probably should use interpft_extrema
-    maxIter = 10;
+elseif(ischar(freq))
+    ip = inputParser;
+    ip.addParameter('freq',false);
+    ip.addParameter('deriv',0);
+    ip.addParameter('TOL',1e-12);
+    ip.addParameter('maxIter',10);
+    argsIn = {freq};
+    if(nargin > 3)
+        argsIn = [argsIn deriv];
+    end
+    if(nargin > 4)
+        argsIn = [argsIn TOL];
+    end
+    if(nargin > 5)
+        argsIn = [argsIn maxIter];
+    end
+    argsIn = [argsIn varargin];
+    ip.parse(argsIn{:});
+    freq = ip.Results.freq;
+    deriv = ip.Results.deriv;
+    TOL = ip.Results.TOL;
+    maxIter = ip.Results.maxIter;
+else
+    if(nargin < 4)
+        deriv = 0;
+    end
+    if(nargin < 5)
+        TOL = 1e-12;
+    end
+    if(nargin < 6)
+        % If more than 10, probably should use interpft_extrema
+        maxIter = 10;
+    end
 end
 
 derivs = [0 1 2] + deriv;
@@ -66,8 +89,8 @@ derivs = [0 1 2] + deriv;
 numIter = 0;
 % do while
 while(~numIter || any(exceeds_tol) && any(new_guess_is_better(:)))
-    disp('hi');
-    guess_vals = interpft1([0 2*pi],v_hat,repmat(guess,xqrep),'horner_freq');
+%     disp('hi');
+    guess_vals = real(interpft1([0 2*pi],v_hat,repmat(guess,xqrep),'horner_freq'));
     new_guess = guess - 2*guess_vals(zeroth_d{:}).*guess_vals(first_d{:})./(2*guess_vals(first_d{:}).^2-guess_vals(zeroth_d{:}).*guess_vals(second_d{:}));
     new_guess = wraparoundN(new_guess,0,2*pi);
     new_guess_vals = interpft1([0 2*pi],v_hat,repmat(new_guess,xqrep),'horner_freq');
@@ -80,7 +103,7 @@ while(~numIter || any(exceeds_tol) && any(new_guess_is_better(:)))
     exceeds_tol = zero_vals(:) > TOL;
     numIter = numIter + 1;
     if(numIter > maxIter)
-        warning('halleyft:maxIter','halleyft: maximum iteration reached');
+%         warning('halleyft:maxIter','halleyft: maximum iteration reached');
         break;
     end
 end
