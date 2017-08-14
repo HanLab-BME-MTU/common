@@ -27,19 +27,46 @@ function [ refined, refined_derivs ] = halleyft( v, guess, freq, deriv, TOL, max
 
 if(nargin < 3)
     freq = false;
-end
-if(nargin < 4)
-    deriv = 0;
-end
-if(nargin < 5)
-    TOL = 1e-12;
-end
-if(nargin < 6)
-    % If more than 10, probably should use interpft_extrema
-    maxIter = 10;
-end
-if(nargin < 7)
-    avoidNaN = isvector(guess);
+elseif(ischar(freq))
+    ip = inputParser;
+    ip.addParameter('freq',false);
+    ip.addParameter('deriv',0);
+    ip.addParameter('TOL',1e-12);
+    ip.addParameter('maxIter',10);
+    ip.addParameter('avoidNaN',isvector(guess));
+    argsIn = {freq};
+    if(nargin > 3)
+        argsIn = [argsIn deriv];
+    end
+    if(nargin > 4)
+        argsIn = [argsIn TOL];
+    end
+    if(nargin > 5)
+        argsIn = [argsIn maxIter];
+    end
+    if(nargin > 6)
+        argsIn = [argsIn avoidNaN];
+    end
+    argsIn = [argsIn varargin];
+    ip.parse(argsIn{:});
+    freq = ip.Results.freq;
+    deriv = ip.Results.deriv;
+    TOL = ip.Results.TOL;
+    maxIter = ip.Results.maxIter;
+else
+    if(nargin < 4)
+        deriv = 0;
+    end
+    if(nargin < 5)
+        TOL = 1e-12;
+    end
+    if(nargin < 6)
+        % If more than 10, probably should use interpft_extrema
+        maxIter = 10;
+    end
+    if(nargin < 7)
+        avoidNaN = isvector(guess);
+    end
 end
 
 derivs = [0 1 2] + deriv;
