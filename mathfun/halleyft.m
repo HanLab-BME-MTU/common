@@ -1,4 +1,4 @@
-function [ refined ] = halleyft( v, guess, freq, deriv, TOL, maxIter, avoidNaN )
+function [ refined, refined_derivs ] = halleyft( v, guess, freq, deriv, TOL, maxIter, avoidNaN )
 %newtonft Does Halley iteration to refine roots of Fourier series
 %
 % INPUT
@@ -60,9 +60,17 @@ derivs = [0 1 2] + deriv;
         guess = guess(:,:);
         guess_count = size(guess,1)-sum(isnan(guess),1);
         refined = guess;
-        for i=1:size(guess,1)
-            s = guess_count == i;
-            refined(1:i,s) = halleyft(v_hat(:,s), guess(1:i,s), true, deriv, TOL, maxIter, false);
+        if(nargout > 1)
+            refined_derivs = guess(:,:,[1 1 1]);
+            for i=1:size(guess,1)
+                s = guess_count == i;
+                [refined(1:i,s),refined_derivs(1:i,s,:)] = halleyft(v_hat(:,s), guess(1:i,s), true, deriv, TOL, maxIter, false);
+            end
+        else
+            for i=1:size(guess,1)
+                s = guess_count == i;
+                refined(1:i,s) = halleyft(v_hat(:,s), guess(1:i,s), true, deriv, TOL, maxIter, false);
+            end
         end
         refined = reshape(refined,guess_sz);
         return;
@@ -90,6 +98,9 @@ end
 
 guess_sz = size(guess);
 guess = guess(:,:);
+if(nargout > 1)
+    refined_derivs = NaN([size(guess) 3]);
+end
 
 % Indicates that a column still needs further iterations
 columnNotDone = true(1,size(guess,2),args{:});
@@ -112,6 +123,9 @@ while(~numIter || any(columnNotDone))
     new_guess_is_better_now = abs(new_guess_vals(:,:,1)) < abs(guess_vals(:,:,1));
     new_guess_is_better(:,columnNotDone) = new_guess_is_better_now;
     guess(new_guess_is_better) = new_guess(new_guess_is_better_now);
+    if(nargout > 1)
+        refined_derivs(new_guess_is_better(:,:,[1 1 1])) = new_guess_vals(new_guess_is_better_now(:,:,[1 1 1]));
+    end
 %     columnNotDone(columnNotDone) = any(new_guess_is_better(:,columnNotDone),1);
 
     % Establish new derivative value
@@ -125,6 +139,11 @@ while(~numIter || any(columnNotDone))
         % Set values whose derivative exceed tolerance to NaN
         temp( exceeds_tol ) = NaN;
         guess(:,columnNotDone) = temp;
+        if(nargout > 1)
+            temp = refined_derivs(:,columnNotDone,:);
+            temp( exceeds_tol(:,:,[1 1 1]) ) = NaN;
+            refined_derivs(:,columnNotDone,:) = temp;
+        end
         % Issue a warning, use warning('off','halleyft:maxIter') to
         % deactivate
         warning('halleyft:maxIter','halleyft: maximum iteration reached');
@@ -133,8 +152,14 @@ while(~numIter || any(columnNotDone))
         % If new guess is not better and the value still exceeds tolerance,
         % then set the guess to NaN
         temp = guess(:,columnNotDone);
-        temp( ~new_guess_is_better_now & exceeds_tol ) = NaN;
+        invalid = ~new_guess_is_better_now & exceeds_tol;
+        temp( invalid ) = NaN;
         guess(:,columnNotDone) = temp;
+        if(nargout > 1)
+            temp = refined_derivs(:,columnNotDone,:);
+            temp( invalid(:,:,[1 1 1]) ) = NaN;
+            refined_derivs(:,columnNotDone,:) = temp;
+        end
 
         % New guess will only be considered further if derivative exceeds
         % tolerance
@@ -149,5 +174,8 @@ while(~numIter || any(columnNotDone))
 end
 
 refined = reshape(guess,guess_sz);
+if(nargout > 1)
+    refined_derivs = reshape(refined_derivs,[guess_sz 3]);
+end
 
 end
