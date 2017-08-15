@@ -134,18 +134,20 @@ if alphaMSS(1) ~= abs(alphaMSS(1))  && probDim ==2
     load(strcat(p(1:end-16),'newDiffTypeThreshold.mat'))
     mssThreshImm = Mdl.mssThreshImm;
     mssThreshNeg = Mdl.mssThreshNeg;
+    mssThreshPos = Mdl.mssThreshPos;
     mssThreshNeg = [mssThreshNeg(1:min(500,numFramesMovie)); mssThreshNeg(500)*ones(max(0,numFramesMovie-500),1)];
     mssThreshImm = [mssThreshImm(1:min(500,numFramesMovie)); mssThreshImm(500)*ones(max(0,numFramesMovie-500),1)];
-    switch abs(alphaMSSDir)
-    case 0.2 %10th percentile and 90th percentile
-        [~,mssThreshPos] = threshMSS2D_p20(numFramesMovie);
-    case 0.1 %5th percentile and 95th percentile
-        [~,mssThreshPos] = threshMSS2D_p10(numFramesMovie);
-    case 0.05 %2.5th percentile and 97.5th percentile
-        [~,mssThreshPos] = threshMSS2D_p05(numFramesMovie);
-    case 0.01 %0.5th percentile and 99.5th percentile
-        [~,mssThreshPos] = threshMSS2D_p01(numFramesMovie);
-    end
+    mssThreshPos = [mssThreshPos(1:min(500,numFramesMovie)); mssThreshPos(500)*ones(max(0,numFramesMovie-500),1)];
+%     switch abs(alphaMSSDir)
+%     case 0.2 %10th percentile and 90th percentile
+%         [~,mssThreshPos] = threshMSS2D_p20(numFramesMovie);
+%     case 0.1 %5th percentile and 95th percentile
+%         [~,mssThreshPos] = threshMSS2D_p10(numFramesMovie);
+%     case 0.05 %2.5th percentile and 97.5th percentile
+%         [~,mssThreshPos] = threshMSS2D_p05(numFramesMovie);
+%     case 0.01 %0.5th percentile and 99.5th percentile
+%         [~,mssThreshPos] = threshMSS2D_p01(numFramesMovie);
+%     end
 
 elseif alphaMSS(1) ~= abs(alphaMSS(1))  && probDim ==1
     p = mfilename('fullpath');
