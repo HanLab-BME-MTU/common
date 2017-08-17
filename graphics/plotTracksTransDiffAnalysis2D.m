@@ -1,5 +1,5 @@
 function plotTracksTransDiffAnalysis2D(trackedFeatureInfo,diffAnalysisRes,timeRange,...
-    newFigure,image,showConf,asymCheck,bayes)
+    newFigure,image,showConf,asymCheck)
 %PLOTTRACKSTRANSDIFFANALYSIS plots tracks in 2D highlighting the different diffusion segments within each track
 %
 %SYNOPSIS plotTracksTransDiffAnalysis2D(trackedFeatureInfo,diffAnalysisRes,timeRange,...
@@ -53,11 +53,19 @@ function plotTracksTransDiffAnalysis2D(trackedFeatureInfo,diffAnalysisRes,timeRa
 %                           newFigure=1. It will be ignored if newFigure=0.
 %                           Optional. Default: no image.
 %       showConf          : 1 to show confinement radii, 0 otherwise.
-%                           Optional. Default: 0.
+%                           Optional. Default: 0. NOT CURRENTLY IMPLEMENTED
+%
+%       checkAsym         : 1 to plot taking into consideration asymmetry
+%                           of track, different colors are applied
 %
 %OUTPUT The plot.
 %       Color coding:
-%       linear according to asymmetry -> red
+%       linear & 1D immobile -> gray
+%       linear & 1D confined diffusion -> orange
+%       linear & 1D normal diffusion -> red
+%       linear & 1D super diffusion -> green
+%       linear & too short to analyze 1D diffusion -> yellow
+%       random/unclassified & 2D confined diffusion -> brown
 %       random/unclassified & 2D confined diffusion -> blue
 %       random/unclassified & 2D normal diffusion -> cyan
 %       random/unclassified & 2D super diffusion -> magenta
@@ -210,8 +218,8 @@ maxYCoord =  ceil(max(tracksY(:)));
 %get number of track segments to be plotted
 numTrackSegments = size(tracksX,2);
 
-%% confinement radius information
-
+% %% confinement radius information
+% 
 % %get track segment center, confinement radii and preferred direction of
 % %motion
 % trackSegmentCenter = catStruct(1,'diffAnalysisRes.confRadInfo.trackCenter');
@@ -258,73 +266,99 @@ hold on
 tracksXP = tracksX(timeRange(1):timeRange(2),:);
 tracksYP = tracksY(timeRange(1):timeRange(2),:);
 
-%% New plotting strategy
-%Build new matrix which indicates when tracks change diffusion
-
+% Extracting diffusion data
+% Build 3D matrix to store indices for all diffusion types. Rows correspond to
+% time frame, columns correspond to specific track and  z stack corresponds
+% to diffusion type.
+% Two matrices are built to store symmetric and asymmetric classification
 
 base = NaN([size(tracksX,1) size(tracksX,2) 4]); %Create 3D matrix to store indices for all diffusion types
 asymBase = NaN([size(tracksX,1) size(tracksX,2) 4]);
 nanBase = NaN(size(tracksX));
 diffTypesF = [];
- if isempty(bayes)
+
+%  if isempty(bayes) 
         %get track segment types from diffusion analysis
         trackSegmentType = vertcat(diffAnalysisRes.segmentClass);
-
+        
+        % For a given track, assign all time points a given
+        % diffusion type. The assignment of a given diffusion type
+        % corresponds to a specific z-stack. Thus the first level
+        % of the z-stack will be populated with time points of all
+        % tracks that are immobile, for example
         if asymCheck == 1
             for k = 1:length(trackSegmentType)
-
                 for j = 1:size(trackSegmentType(k).momentScalingSpectrum,1)
-                base(trackSegmentType(k).momentScalingSpectrum(j,1):trackSegmentType(k).momentScalingSpectrum(j,2),k) = ...
-                trackSegmentType(k).momentScalingSpectrum(j,3);
+                    if ~isnan(trackSegmentType(k).momentScalingSpectrum(j,3))
+                        base(trackSegmentType(k).momentScalingSpectrum(j,1):trackSegmentType(k).momentScalingSpectrum(j,2),k) = ...
+                        trackSegmentType(k).momentScalingSpectrum(j,3);
 
-                asymBase(trackSegmentType(k).momentScalingSpectrum1D(j,1):trackSegmentType(k).momentScalingSpectrum1D(j,2),k) = ...
-                trackSegmentType(k).momentScalingSpectrum1D(j,3);
+                        asymBase(trackSegmentType(k).momentScalingSpectrum1D(j,1):trackSegmentType(k).momentScalingSpectrum1D(j,2),k) = ...
+                        trackSegmentType(k).momentScalingSpectrum1D(j,3);
+                        diffTypesF = [diffTypesF ; trackSegmentType(k).momentScalingSpectrum(j,3)];
+                    else
+                        %If 2D is unclassified, check 1D classification
+                        if ~isnan(trackSegmentType(k).momentScalingSpectrum1D(j,3))
+                            asymBase(trackSegmentType(k).momentScalingSpectrum1D(j,1):trackSegmentType(k).momentScalingSpectrum1D(j,2),k) = ...
+                            trackSegmentType(k).momentScalingSpectrum1D(j,3);
+                        
+                            nanBase(trackSegmentType(k).momentScalingSpectrum(j,1):trackSegmentType(k).momentScalingSpectrum(j,2),k) = -1;
+                            diffTypesF = [diffTypesF ; -1];                        
+                        else
+                            %Otherwise, set postions in nanBase to -1 and store classification as -1;
+                            nanBase(trackSegmentType(k).momentScalingSpectrum(j,1):trackSegmentType(k).momentScalingSpectrum(j,2),k) = -1;
+                            diffTypesF = [diffTypesF ; -1];
+                        end
+                    end
 
                 end
 
             end
         else
-            for k = 1:length(trackSegmentType)
+            for k = 1:length(trackSegmentType) % For each track
 
-                for j = 1:size(trackSegmentType(k).momentScalingSpectrum,1)
+                for j = 1:size(trackSegmentType(k).momentScalingSpectrum,1) % For each segment
+                    %If this segment has a classification, continue with
+                    %process and store the type of classification
                     if ~isnan(trackSegmentType(k).momentScalingSpectrum(j,3))
-                base(trackSegmentType(k).momentScalingSpectrum(j,1):trackSegmentType(k).momentScalingSpectrum(j,2),k,trackSegmentType(k).momentScalingSpectrum(j,3)+1) = ...
-                trackSegmentType(k).momentScalingSpectrum(j,3);
-            diffTypesF = [diffTypesF ; trackSegmentType(k).momentScalingSpectrum(j,3)];
+                        base(trackSegmentType(k).momentScalingSpectrum(j,1):trackSegmentType(k).momentScalingSpectrum(j,2),k,trackSegmentType(k).momentScalingSpectrum(j,3)+1) = ...
+                        trackSegmentType(k).momentScalingSpectrum(j,3);
+                        diffTypesF = [diffTypesF ; trackSegmentType(k).momentScalingSpectrum(j,3)];
                     else
-                nanBase(trackSegmentType(k).momentScalingSpectrum(j,1):trackSegmentType(k).momentScalingSpectrum(j,2),k) = -1;
+                        %Otherwise, set postions in nanBase to -1 and store classification as -1;
+                        nanBase(trackSegmentType(k).momentScalingSpectrum(j,1):trackSegmentType(k).momentScalingSpectrum(j,2),k) = -1;
+                        diffTypesF = [diffTypesF ; -1];
                     end
                 end
 
             end
         end
- else
-   for m = 1:size(tracksXP,2)
-        results = diffAnalysisRes;
-        states = results.ML_states{1,m};
-        track = results.track{1,m};
-        steps = NaN(2,size(track,2));
-        steps(:,2:end) = results.steps{1,m};
-
-        track(1,~isnan(steps(1,:))) = states;
-        track(2,~isnan(steps(1,:))) = states;
-        index = find(isnan(steps(2,:)));
-        track(1,index)=track(2,index+1);
-        track(2,index)=track(2,index+1);
-        base(~isnan(tracksXP(:,m)),m) = track(1,:);
-    end  
-     
- end
+%  else
+%    for m = 1:size(tracksXP,2)
+%         results = diffAnalysisRes;
+%         states = results.ML_states{1,m};
+%         track = results.track{1,m};
+%         steps = NaN(2,size(track,2));
+%         steps(:,2:end) = results.steps{1,m};
+% 
+%         track(1,~isnan(steps(1,:))) = states;
+%         track(2,~isnan(steps(1,:))) = states;
+%         index = find(isnan(steps(2,:)));
+%         track(1,index)=track(2,index+1);
+%         track(2,index)=track(2,index+1);
+%         base(~isnan(tracksXP(:,m)),m) = track(1,:);
+%     end  
+%      
+%  end
 
 numTimePlot = timeRange(2) - timeRange(1) + 1;
 
 
-% asymBase(isnan(asymBase))=-1;
-% base(isnan(base))=-1;
-% base(base==-2)=NaN;
-% asymBase(asymBase==-2)=NaN;
+%Get all diffusion types present
 diffTypes = unique(diffTypesF);
-% diffTypes = unique(base);
+
+% Plot dashed line of entire track to allow gaps in track to be easily
+% visible
 copyR = size(tracksXP,1);
 copyC = size(tracksXP,2);
 removeGapParams.Delimeter = Inf;
@@ -332,11 +366,14 @@ removeGapParams.RemoveOtherGaps = true;
 removeGapParams.Color = 'k';
 removeGapParams.LineStyle = ':';
 lineWithGaps(tracksXP,tracksYP,removeGapParams);
+
+% Now go through all present diffusion types and plot one long line that 
+% includes positions from all tracks with gaps between them
 for k = 1:length(diffTypes)
  	
     switch diffTypes(k)
-        case -1
-            ind = find(nanBase(:) ==-1);
+        case -1 %Unclassified
+            ind = find(nanBase(timeRange(1):timeRange(2),:) ==-1);
             copyX = NaN(copyR,copyC);
             copyY = NaN(copyR,copyC);
             copyX(ind) = tracksXP(ind);
@@ -374,8 +411,8 @@ for k = 1:length(diffTypes)
                         lineWithGaps(copyX(i:i+1,validData),copyY(i:i+1,validData), 'Color',[0.6 0 1]);
                     end 
                 end
-        case 0
-            ind = find(base(:,:,1) ==0);
+        case 0 %Immobile
+            ind = find(base(timeRange(1):timeRange(2),:,1) ==0);
             copyX = NaN(copyR,copyC);
             copyY = NaN(copyR,copyC);
             copyX(ind) = tracksXP(ind);
@@ -385,11 +422,10 @@ for k = 1:length(diffTypes)
                 validData=~all(isnan(copyX(i:i+1,:)),1);
                 lineWithGaps(copyX(i:i+1,validData),copyY(i:i+1,validData), 'Color',[0.5 0.3 0]);
             end
-            %Currently not labeling immobile and linear, doesn't make sense
-            %to me
-        case 1
+
+        case 1 %Confined
  	
-            ind = find(base(:,:,2) ==1);
+            ind = find(base(timeRange(1):timeRange(2),:,2) ==1);
             copyX = NaN(copyR,copyC);
             copyY = NaN(copyR,copyC);
             copyX(ind) = tracksXP(ind);
@@ -398,8 +434,8 @@ for k = 1:length(diffTypes)
             for i=1:numTimePlot-1
                 validData=~all(isnan(copyX(i:i+1,:)),1);
                 lineWithGaps(copyX(i:i+1,validData),copyY(i:i+1,validData), 'Color',[0 0 1]);%Real
-% %                 lineWithGaps(copyX(i:i+1,validData),copyY(i:i+1,validData), 'Color','c');
             end
+            
             %Asym linear and confined
             indA = find(asymBase ==1);
             indAF  = intersect(indA,ind);
@@ -414,9 +450,10 @@ for k = 1:length(diffTypes)
                     lineWithGaps(copyX(i:i+1,validData),copyY(i:i+1,validData), 'Color',[1 0.7 0]);
                 end 
             end
-        case 2
+            
+        case 2 %Free
  	
-            ind = find(base(:,:,3) ==2);
+            ind = find(base(timeRange(1):timeRange(2),:,3) ==2);
             copyX = NaN(copyR,copyC);
             copyY = NaN(copyR,copyC);
             copyX(ind) = tracksXP(ind);
@@ -425,8 +462,8 @@ for k = 1:length(diffTypes)
             for i=1:numTimePlot-1
                 validData=~all(isnan(copyX(i:i+1,:)),1);
                 lineWithGaps(copyX(i:i+1,validData),copyY(i:i+1,validData), 'Color','c');%Real
-% %                 lineWithGaps(copyX(i:i+1,validData),copyY(i:i+1,validData), 'Color',[0 0 1]);
             end
+            
            %asym linear and free
             indA = find(asymBase ==1);
             indAF  = intersect(indA,ind);
@@ -441,8 +478,9 @@ for k = 1:length(diffTypes)
                     lineWithGaps(copyX(i:i+1,validData),copyY(i:i+1,validData), 'Color',[1 0 0]);
                 end 
             end
-        case 3
-            ind = find(base(:,:,4) ==3);
+            
+        case 3 %Directed
+            ind = find(base(timeRange(1):timeRange(2),:,4) ==3);
             copyX = NaN(copyR,copyC);
             copyY = NaN(copyR,copyC);
             copyX(ind) = tracksXP(ind);
@@ -452,6 +490,7 @@ for k = 1:length(diffTypes)
                 validData=~all(isnan(copyX(i:i+1,:)),1);
                 lineWithGaps(copyX(i:i+1,validData),copyY(i:i+1,validData), 'Color','m');
             end
+            
  	           %asym linear and super
             indA = find(asymBase ==1);
             indAF  = intersect(indA,ind);
@@ -469,91 +508,7 @@ for k = 1:length(diffTypes)
     end
  	
 end
-%{
-%plot track segments with their appropriate diffusion type colors
-for i = 1 : numTrackSegments
 
-    %missing intervals are indicated by a dotted black line
-    obsAvail = find(~isnan(tracksXP(:,i)));
-    plot(tracksXP(obsAvail,i),tracksYP(obsAvail,i),'k:');
-    
-    %get the classification of this track segment
-    segmentClassMSS  = trackSegmentType(i).momentScalingSpectrum(:,1:3);
-    segmentClassAsym = trackSegmentType(i).asymmetryAfterMSS;
-    segmentClass = [segmentClassMSS segmentClassAsym(:,3)];
-    segmentConfInfo = trackSegmentType(i).momentScalingSpectrum(:,end-2:end);
-    
-    %remove any parts of the track segment classification before the
-    %plotting time interval
-    while segmentClass(1,2) < timeRange(1)
-        segmentClass = segmentClass(2:end,:);
-    end
-    segmentClass(1,1) = max(segmentClass(1,1),timeRange(1));
-    
-    %remove any parts of the track segment classification after the
-    %plotting time interval
-    while segmentClass(end,1) > timeRange(2)
-        segmentClass = segmentClass(1:end-1,:);
-    end
-    segmentClass(end,2) = min(segmentClass(end,2),timeRange(2));
-    
-    %shift the track segment classification to make it start at 1
-    segmentClass(:,1:2) = segmentClass(:,1:2) - timeRange(1) + 1;
-    
-    %substract 1 from the starts of track segments after the first to
-    %prevent discontinuities in the plotting
-    segmentClass(2:end,1) = segmentClass(2:end,1) - 1;
-
-    %plot the different parts with their appropriate colors
-    for iPart = 1 : size(segmentClass,1)
-
-        switch segmentClass(iPart,3)
-
-            case -1 %linear based on asymmetry
-                plot(tracksXP(segmentClass(iPart,1):segmentClass(iPart,2),i),...
-                    tracksYP(segmentClass(iPart,1):segmentClass(iPart,2),i),'r');
-
-            case 1 %confined based on MSS
-                plot(tracksXP(segmentClass(iPart,1):segmentClass(iPart,2),i),...
-                    tracksYP(segmentClass(iPart,1):segmentClass(iPart,2),i),'b');
-                
-                %plot confinement radius if requested
-                if showConf
-                    theta = (0:pi/10:2*pi); %angle
-                    xy = [cos(theta') sin(theta')]; %x and y-coordinates
-                    circleVal = xy .* segmentConfInfo(iPart,1);
-                    plot(segmentConfInfo(iPart,2)+circleVal(:,1),...
-                        segmentConfInfo(iPart,3)+circleVal(:,2),'k');
-                end
-
-            case 2 %Brownian based on MSS
-                plot(tracksXP(segmentClass(iPart,1):segmentClass(iPart,2),i),...
-                    tracksYP(segmentClass(iPart,1):segmentClass(iPart,2),i),'c');
-
-            case 3 %directed based on MSS
-                plot(tracksXP(segmentClass(iPart,1):segmentClass(iPart,2),i),...
-                    tracksYP(segmentClass(iPart,1):segmentClass(iPart,2),i),'m');
-
-            otherwise
-                
-                switch segmentClass(iPart,4)
-                    
-                    case 0 %random based on asymmetry but too short for MSS analysis
-                        plot(tracksXP(segmentClass(iPart,1):segmentClass(iPart,2),i),...
-                            tracksYP(segmentClass(iPart,1):segmentClass(iPart,2),i),'Color',[0.6 0 1]);
-
-                    otherwise %too short fo any analysis
-                        plot(tracksXP(segmentClass(iPart,1):segmentClass(iPart,2),i),...
-                            tracksYP(segmentClass(iPart,1):segmentClass(iPart,2),i),'k');
-
-                end %(switch segmentClass(iPart,4))
-
-        end %(switch segmentClass(iPart,3))
-
-    end %(for iPart = 1 : size(segmentClass,1))
-
-end %(for i = 1 : numTrackSegments)
-%}
 %show merges and splits
 if mergeSplit
 

@@ -1,5 +1,5 @@
 function [transDiffAnalysisRes,errFlag] = basicTransientDiffusionAnalysisv1(tracks,...
-    probDim,alphaValues,alphaAsym,minDuration,plotRes,confRadMin,peakAlpha)
+    probDim,alphaValues,minDuration,plotRes,confRadMin,peakAlpha)
 %BASICTRANSIENTDIFFUSIONANALYSISV1 detects potential diffusion segments of a track and performs MSS analysis on these segments
 %
 %SYNOPSIS [transDiffAnalysisRes,errFlag] = basicTransientDiffusionAnalysis(tracks,...
@@ -18,10 +18,18 @@ function [transDiffAnalysisRes,errFlag] = basicTransientDiffusionAnalysisv1(trac
 %                     which case it will be used for both confined and
 %                     directed, or two values, where the first will be used
 %                     for confined and the second for directed.
-%                     Optional. Default: 0.05 for both.
+%                     Optional. 
+%
+%                     NEW DIFFUSION CLASSIFICATION: New method (see Remark
+%                     #2) uses best thresholds to separate
+%                     immobile,confined, free, and directed tracks in unbiased manner. 
+%                     To use, enter any arbitrary alpha value with preceding minus sign (ex. -0.05). Will 
+%                     not work for multiple inputs.
+%                     
+%                     Default: -0.05.
 %       minDuration : Minimum amount of rolling windows a track can have to
 %                     be segmented 
-%                     Optional. Default: 5.
+%                     Optional. Default: 5 (At least one classified segment + an asymmetric portion).
 %       plotRes     : 1 to plot results, 0 otherwise.
 %                     Optional. Default: 0.
 %                     Results can be plotted only if problem is 2D.
@@ -39,7 +47,7 @@ function [transDiffAnalysisRes,errFlag] = basicTransientDiffusionAnalysisv1(trac
 %
 %
 %       peakAlpha   : confidence level for choosing peaks when initially
-%       segmenting track. Default : 95
+%                     segmenting track. Default : 95
 %
 %OUTPUT transDiffAnalysisRes : And array (size = number of tracks) with the
 %                     field ".segmentClass", which contains the fields:
@@ -66,11 +74,18 @@ function [transDiffAnalysisRes,errFlag] = basicTransientDiffusionAnalysisv1(trac
 %
 %       errFlag         : 0 if executed normally, 1 otherwise.
 %
-%REMARKS While tracks do not have to be linear in order to be asymmetric,
+%REMARKS 
+%(1) While tracks do not have to be linear in order to be asymmetric,
 %the last analysis step assumes that tracks are linear.
 %
-%Khuloud Jaqaman, March 2008
-%Updated Tony Vega, July 2016
+%(2) New diffusion classification method: 
+% New method considers not only MSS value distributions resulting from simulations of
+% freely diffusing tracks, but also looks at directed,confined and immobile simulations.
+% Threshold values were then chosen that minimize the error rate for
+% adjacent distributions (ex. directed/free free/confined, confined/immobile).
+%
+% Adapted from rolling window approach, trackTransientDiffusionAnalysis1 Khuloud Jaqaman 2008
+%Tony Vega, July 2016
 
 %% Output
 checkAsym = 0; %Needs work so not imposed currently
@@ -90,30 +105,27 @@ if nargin < 2 || isempty(probDim)
 end
 
 if nargin < 3 || isempty(alphaValues)
-    alphaValues = 0.05;
+    alphaValues = -0.05;
 end
 
-if nargin < 4 || isempty(alphaAsym)
-    alphaValues = 0.05;
-end
 
-if nargin < 5 || isempty(minDuration)
+if nargin < 4|| isempty(minDuration)
     minDuration = 5;
 end
 
-if nargin < 6 || isempty(plotRes)
+if nargin < 5 || isempty(plotRes)
     plotRes = 0;
 elseif plotRes == 1 && probDim ~= 2
     disp('--basicTransientDiffusionAnalysisv1: Cannot plot tracks if problem is not 2D!');
     plotRes = 0;
 end
 
-if nargin < 7 || isempty(confRadMin)
+if nargin < 6 || isempty(confRadMin)
     confRadMin = 0;
 end
 
 
-if nargin < 8 || isempty(peakAlpha)
+if nargin < 7 || isempty(peakAlpha)
     peakAlpha = 95;
 end
 
@@ -121,15 +133,16 @@ if errFlag
     disp('--trackTransientDiffusionAnalysis1: Please fix input variables');
     return
 end
+% Load information for probability of misclassification for all adjacent
+%diffusion distributions, see paper.
     p = mfilename('fullpath');
     load(strcat(p(1:end-33),'positionConfidenceCI.mat'))
     load(strcat(p(1:end-33),'positionConfidenceFC.mat'))
-
+    load(strcat(p(1:end-33),'positionConfidenceDF.mat'))
 %define window sizes
 windowAsym = 5;
 windowMSS =11;
 windowMSSMin = 20;
-halfWindowAsym = (windowAsym - 1) / 2;
 halfWindowMSS = (windowMSS - 1) / 2;
 
 %specify MSS analysis moment orders
@@ -186,24 +199,24 @@ end
 
 indxNot4analysis = setdiff((1:numTrackSegments)',indx4analysis);
 
-%% Rolling window classification
-
-%reserve memory %This will only have certain traits, probably none of these
+%reserve memory
 trackSegmentClassRes = repmat(struct('asymmetry',NaN(1,3),...
     'momentScalingSpectrum',NaN(1,20+probDim),...
     'momentScalingSpectrum1D',NaN(1,20+probDim),...
     'asymmetryAfterMSS',NaN(1,3)),...
     numTrackSegments,1);
 
-%go over all analyzable track segments
+%% Step 1a. Initial track segmentation
+% Rolling window of maximum pairwise displacement (MPD)to divide track segment into parts with potentially different diffusion behavior
+
+%Reserve memory
 gaussDeriv = cell(numTrackSegments,1);
-fullDist = [];
+
+%go over all analyzable track segments
 for iTrack = indx4analysis'
 
     %get track segment start, end and life times
     trackSELCurrent = trackSEL(iTrack,:);
-
-    %% Maximum displacement analysis to divide track segment into parts with potentially different diffusion behavior
 
     %find the length of each part
     trackPartLength = trackSELCurrent(1,3);
@@ -217,11 +230,11 @@ for iTrack = indx4analysis'
     %if number of rolling windows is larger than the minimum
     %required duration of a classification, proceed with rolling
     %window analysis
-    if numRollWindows > minDuration(1)
+    if numRollWindows > minDuration
 
         %initialize max displacement vector
         maxDisplacement = NaN(numRollWindows,1); 
-        %go over all windows
+        %go over all windows and calculate MPD
         for iWindow = 1 : numRollWindows
 
             %get window start and end points
@@ -239,36 +252,47 @@ for iTrack = indx4analysis'
 
         end %(for iWindow = 1 : numRollWindows)
         
-        %% Derivative of Maximum Displacement
+        %Smooth MPD vector with Gaussian
         h =1;
         y = maxDisplacement;
-        [out] = filterGauss1D(y, 2, 'symmetric'); 
+        [out] = filterGauss1D(y, 2, 'symmetric');
+        %Calculate derivative
         der = diff(out)/h;
-%                 der = gradient(out);
+        %Get absolute value and normalize curve to put different mobility 
+        %switches (e.g. immobile to confined vs. immobile to free) on the 
+        %same scale to facilitate their detection. 
         absDer = abs(der);
         normFactor = ((maxDisplacement(2:end)+maxDisplacement(1:end-1))./2);
+        %If part of normFactor is zero, set to NaN to avoid error. This
+        %should be okay since we are only interested in regions of changes
+        %in MPD i.e opposite of where normFactor would be zero
         normFactor(normFactor==0) = NaN;
         normDer = absDer./normFactor;
+        % Store
         gaussDeriv{iTrack} = normDer;
 
     else
+        %If track doesn't last for minimum duration, set value to empty
         gaussDeriv{iTrack} = [];
     end
 end
 
-
+%% Step 1b and Step 2: Segmenation Phase 2 and segment classification
+% Once again go through tracks long enough for classification
 for iTrack = indx4analysis'
-    %% Separate tracks that change and those that don't
+    % Separate tracks that change and those that don't
     trackFull = gaussDeriv{iTrack};
     if ~isempty(trackFull)
-        
+        % If track has MPD vector, take maxima above threshold as initial
+        % guesses for segments
         level = prctile(trackFull,peakAlpha);
 
-        %% Asymmetry detection first
-        %1. Check track to see if any sections have asymmetry
+        %% Asymmetry detection
+        %Check track to see if any sections have asymmetry
         %this classification scheme is taken from Huet et al (BJ 2006)
         %it classifies tracks as asymmetric or not, based on the scatter of
         %positions along them
+        % Notice: Currently not implemented! 
         
         if checkAsym       
             %Divide track into segments using asym minimum
@@ -278,6 +302,7 @@ for iTrack = indx4analysis'
             difference = segPointsA(n+1)-segPointsA(n);
             trackSELCurrent = trackSEL(iTrack,:);
             partClassAsym = NaN(length(n),3);
+            
             %go over all of these segments and determine if they are
             %asymmetric
             for k = 1:length(segPointsA)-1 
@@ -307,103 +332,97 @@ for iTrack = indx4analysis'
         %find indices of all tracks classified as asymmetric
         indxAsym = find(partClassAsym(:,3) == 1);
         else
-            %Other values which are not defined, given value of NaN or
-            %similar
+        % Otherwise, do not check for asymmetry and simply choose initial
+        % segments and try to extend any short segments
                 indxAsym = 0;
+                %Determine initial segments and try to extend short
+                %segments
                 [segPointsA,peakThresh] = findCloseSegments(trackFull,level,halfWindowMSS,5,windowMSSMin);
+                %
                 [segPointsA,peakThresh] = findDiffSegments(segPointsA,windowMSSMin,peakThresh);% halfWindowMSS,windowMSSMin
         end
         
-                        %% New filtering section
-                        % Does not work when a section has all NaNs
+        % If there are multiple segments, check adjacents segments to see
+        % if they should be merged or kept separate. Specifically, compare
+        % all pairwise distances of segments using kolmogorov-smirnov test 
                        
-                if size(segPointsA,1)>=2%<1%
-                    pointsTmp = segPointsA;
-                    list = [];
-                    sel = trackSEL(iTrack,1);
-                    for seg = 1:size(segPointsA,1)-2
-                            %Code to compare these segments
-                            b1 = (pointsTmp(seg))+sel-1;
-                            b2 =(pointsTmp(seg+1))+sel-1;
-                            e1 = (pointsTmp(seg+1)-1)+sel-1;
-                            e2 =(pointsTmp(seg+2)-1)+sel-1;
-
-                            test1 = tracks(iTrack,8*(b1-1)+1:8*e1);
-                            xTest1 = test1(1:8:end);
-                            yTest1 = test1(2:8:end);
-                            X1 =[xTest1',yTest1'];
-                            D1n = X1(2:end,:)-X1(1:end-1,:);
-                            magVector1 = sqrt(((D1n(:,2)).^2)+((D1n(:,1)).^2));
-                            D1 = pdist(X1,'euclidean');
-
-                            test2 = tracks(iTrack,8*(b2-1)+1:8*e2);
-                            xTest2 = test2(1:8:end);
-                            yTest2 = test2(2:8:end);
-                            X2 =[xTest2',yTest2'];
-                            D2n = X2(2:end,:)-X2(1:end-1,:);
-                            magVector2 = sqrt(((D2n(:,2)).^2)+((D2n(:,1)).^2));
-                            D2 = pdist(X2,'euclidean');
-                            deg1 = atand(X1(:,2)./X1(:,1));
-                            deg2 = atand(X2(:,2)./X2(:,1));
-                            %Try to normalize things
-                            bins = linspace(0,max(max(D2),max(D1)),20);
-%                             [newD1,~] = histcounts(D1,bins);
-%                             [newD2,~] = histcounts(D2,bins);
-%                             normD1 = newD1/sum(newD1);
-%                             normD2 = newD2/sum(newD2);
-                            D1S = datasample(D1, 500);
-                            D2S = datasample(D2, 500);
-                            try
-                                [~,p] = kstest2(D1,D2);
-                            catch
-%                                 warning('Segment Filter: Not enough data in one segment')
-                                p = 0;
-                            end
-                            if p > 0.05
-                                list = [list;seg+1];
-                            end
+        if size(segPointsA,1)>=2
+            pointsTmp = segPointsA;
+            list = [];
+            sel = trackSEL(iTrack,1);
+            for seg = 1:size(segPointsA,1)-2
+                % Get beginning and end of segments
+                    b1 = (pointsTmp(seg))+sel-1;
+                    b2 =(pointsTmp(seg+1))+sel-1;
+                    e1 = (pointsTmp(seg+1)-1)+sel-1;
+                    e2 =(pointsTmp(seg+2)-1)+sel-1;
+                % Get pairwise distribution of first segment
+                    test1 = tracks(iTrack,8*(b1-1)+1:8*e1);
+                    xTest1 = test1(1:8:end);
+                    yTest1 = test1(2:8:end);
+                    X1 =[xTest1',yTest1'];
+                    D1 = pdist(X1,'euclidean');
+                % Get pairwise distribution of second segment
+                    test2 = tracks(iTrack,8*(b2-1)+1:8*e2);
+                    xTest2 = test2(1:8:end);
+                    yTest2 = test2(2:8:end);
+                    X2 =[xTest2',yTest2'];
+                    D2 = pdist(X2,'euclidean');
+                % KS test
+                    try
+                        [~,p] = kstest2(D1,D2);
+                    catch
+                        %If segments are not long enough for test to work,
+                        %set to don't merge
+                        p = 0;
                     end
-                    if ~isempty(list)
-                        segPointsA(list) = [];
-                        peakThresh(list-1) = [];
-                                if checkAsym
-                                    %go over all of these segments and determine if they are
-                                    %asymmetric
-                                    n = 1:length(segPointsA)-1;
-                                    difference = segPointsA(n+1)-segPointsA(n);
-                                    for k = 1:length(segPointsA)-1 
-                                    startPoint = trackSELCurrent(1) +segPointsA(k)-1;
-                                    endPoint  = startPoint+ difference(k)-1;
-
-                                        %get the particle positions along the track
-                                        coordX = (tracks(iTrack,8*(startPoint-1)+1:8:8*endPoint))';
-                                        coordY = (tracks(iTrack,8*(startPoint-1)+2:8:8*endPoint))';
-                                        %coordZ = (tracks(iTrack,8*(startPoint-1)+3:8:8*endPoint))';%Not implemented yet
-                                        coordXY = [coordX coordY];
-
-                                        %determine whether the track is sufficiently asymmetric
-                                        [~,asymFlag] = asymDeterm2D3D(coordXY(:,1:probDim),alphaAsym);
-
-                                        %classify track as ...
-                                        %1 = linear, if the asymmetry parameter is larger than the threshold
-                                        %0 = not linear, if the asymmetry parameter is smaller than the
-                                        %threshold
-                                        %otherwise, keep track classification as undetermined
-                                        partClassAsym(k,1) = startPoint;
-                                        partClassAsym(k,2) = endPoint;
-                                        partClassAsym(k,3) = asymFlag;
-                                    end
-
-
-                                %find indices of all tracks classified as asymmetric
-                                indxAsym = find(partClassAsym(:,3) == 1);
-                                end
+                 % If KS test does not find significance, mark for merging
+                    if p > 0.05
+                        list = [list;seg+1];
                     end
+            end
+            % If there are segments to be merged
+            if ~isempty(list)
+                %Remove separation between segments
+                segPointsA(list) = [];
+                peakThresh(list-1) = [];
+                        if checkAsym
+                            %go over all of these segments and determine if they are
+                            %asymmetric
+                            n = 1:length(segPointsA)-1;
+                            difference = segPointsA(n+1)-segPointsA(n);
+                            for k = 1:length(segPointsA)-1 
+                            startPoint = trackSELCurrent(1) +segPointsA(k)-1;
+                            endPoint  = startPoint+ difference(k)-1;
 
-                end
+                                %get the particle positions along the track
+                                coordX = (tracks(iTrack,8*(startPoint-1)+1:8:8*endPoint))';
+                                coordY = (tracks(iTrack,8*(startPoint-1)+2:8:8*endPoint))';
+                                %coordZ = (tracks(iTrack,8*(startPoint-1)+3:8:8*endPoint))';%Not implemented yet
+                                coordXY = [coordX coordY];
+
+                                %determine whether the track is sufficiently asymmetric
+                                [~,asymFlag] = asymDeterm2D3D(coordXY(:,1:probDim),alphaAsym);
+
+                                %classify track as ...
+                                %1 = linear, if the asymmetry parameter is larger than the threshold
+                                %0 = not linear, if the asymmetry parameter is smaller than the
+                                %threshold
+                                %otherwise, keep track classification as undetermined
+                                partClassAsym(k,1) = startPoint;
+                                partClassAsym(k,2) = endPoint;
+                                partClassAsym(k,3) = asymFlag;
+                            end
+
+
+                        %find indices of all tracks classified as asymmetric
+                        indxAsym = find(partClassAsym(:,3) == 1);
+                        end
+            end
+
+        end
                 %}
-                %% End of new filtering
-        %% Back to normal
+        %% Step 2. Initial Segment Classification
         %Initialize all variables that will be saved later
         n = 1:length(segPointsA)-1;
         difference = segPointsA(n+1)-segPointsA(n);
@@ -424,25 +443,27 @@ for iTrack = indx4analysis'
         confRadius1D = NaN(length(n),2);
         prefDir = NaN(length(n),2);
         trackCenter = NaN(length(n),2);
-        %% Diffusion Analysis
+        
         %Now go through segments and get diffusion classification.
         trackSELCurrent = trackSEL(iTrack,:);
         
         for k = 1:length(segPointsA)-1 
-        startPoint = trackSELCurrent(1) +segPointsA(k)-1;
-        if k == length(segPointsA)-1
-           endPoint  = startPoint+ difference(k)-1;  
-        else
-           endPoint  = startPoint+ difference(k);
-        end
+            startPoint = trackSELCurrent(1) +segPointsA(k)-1;
+            % If looking at last segment, correct to include last frame
+            if k == length(segPointsA)-1
+               endPoint  = startPoint+ difference(k)-1;  
+            else
+               endPoint  = startPoint+ difference(k);
+            end
+            
             if ismember(k,indxAsym)    
 
-                        %get the positions in this track and their standard deviations
+                    % If segment is asymmetric, run different analysis to
+                    % get 1D classification
+                    [pointClass,mssSlopeT,genDiffCoefT,scalingPowerT,normDiffCoefT,trackCenter(k,:),confRadius1D(k,:),prefDir(k,:)] = asymmetricDiffusion(startPoint,endPoint,0.05,probDim,tracks,iTrack);
 
-                    [pointClass,mssSlopeT,genDiffCoefT,scalingPowerT,normDiffCoefT,trackCenter(k,:),confRadius1D(k,:),prefDir(k,:)] = asymmetricDiffusion(startPoint,endPoint,alphaAsym,probDim,tracks,iTrack);
-
-                    %since not all track segments are linear, put analysis results in their
-                    %proper place among all track segment
+                    %since not all track segments may be linear, put analysis results in their
+                    %proper place among all track segments
                     partClassMSS1D(k,1)= startPoint;
                     partClassMSS1D(k,2)= endPoint;              
                     partClassMSS1D(k,3) = partClassAsym(k,3);
@@ -455,99 +476,106 @@ for iTrack = indx4analysis'
                     normDiffCoef1D(k) = normDiffCoefT;
 
             else
+                % Run MSS Analysis
+                    [pointClassMSS(k),mssSlope(k),genDiffCoef(k,:),scalingPower(k,:),normDiffCoef(k)] = trackMSSAnalysis(...
+                        tracks(iTrack,8*(startPoint-1)+1:8*endPoint),...
+                        probDim,momentOrders,alphaValues(1));
 
-                
-                        [pointClassMSS(k),mssSlope(k),genDiffCoef(k,:),scalingPower(k,:),normDiffCoef(k)] = trackMSSAnalysis(...
-                            tracks(iTrack,8*(startPoint-1)+1:8*endPoint),...
-                            probDim,momentOrders,alphaValues(1));
-
-
-                        if pointClassMSS(k) == 1
+                % If segment is classified as confined or immobile, get
+                % additional information
+                    if pointClassMSS(k) == 1
+                        %If confined, calculate confinement radius
                         [confRadTmp(k),centerTmp(k,:)] = estimConfRad(tracks(iTrack,8*(startPoint-1)+1:8*endPoint),probDim,confRadMin);
 
-                        elseif pointClassMSS(k) == 0
-                          [confRadTmp(k)] = estimLocPre(tracks(iTrack,8*(startPoint-1)+1:8*endPoint),probDim);
-                            centerTmp(k,:) = NaN(1,probDim);
-                        else
-                            confRadTmp(k) = NaN;
-                            centerTmp(k,:) = NaN(1,probDim);    
-                        end 
-                        partClassMSS1D(k,1)= startPoint;
-                        partClassMSS1D(k,2)= endPoint;
-                        partClassMSS(k,1)= startPoint;
-                        partClassMSS(k,2)= endPoint;
-                        partClassMSS(k,3)= pointClassMSS(k);
+                    elseif pointClassMSS(k) == 0
+                        %If immobile, calculate localization precision
+                        [confRadTmp(k)] = estimLocPre(tracks(iTrack,8*(startPoint-1)+1:8*endPoint),probDim);
+                         centerTmp(k,:) = NaN(1,probDim);
+                    else
+                        confRadTmp(k) = NaN;
+                        centerTmp(k,:) = NaN(1,probDim);    
+                    end 
+                    % Store segment begining, end, and classification
+                    partClassMSS1D(k,1)= startPoint;
+                    partClassMSS1D(k,2)= endPoint;
+                    partClassMSS(k,1)= startPoint;
+                    partClassMSS(k,2)= endPoint;
+                    partClassMSS(k,3)= pointClassMSS(k);
             end
                     
         end
-         %% Try to merge unclassified segments
+        %% Step 3. Final Segmentation and classification
+        % Try to merge unclassified segments
              %Check if there are symmetric unclassified segments
                     partClassTmp = partClassMSS;
                     mssSlopeTmp = mssSlope;
                     unclassCheck  = isnan(partClassMSS(:,3)).*isnan(partClassMSS1D(:,3));
-                    
+                    peakThreshTmp = peakThresh;
+                    %If there's more than one segment and there are
+                    %unclassified segments
                     if sum(unclassCheck)>0 && size(partClassMSS,1)>1
                         rnd = find(unclassCheck);
                         check = find(unclassCheck);
+                        
                         for un = 1:length(rnd)
-                            [partClassMSS,partClassMSS1D,mssSlope] = mergeUnclassSegments(unclassCheck,check(1),partClassMSS,partClassMSS1D,trackFull,halfWindowMSS,mssSlopeTmp);
-
-
+                            %Attempt to merge unclassified segments with
+                            %adjacent segments
+                            [partClassMSS,partClassMSS1D,mssSlope,peakThresh] = mergeUnclassSegments(unclassCheck,check(1),partClassMSS,partClassMSS1D,mssSlopeTmp,peakThresh);
+                            
                             %if parts have been merged, redo diffusion analysis on
                             %these parts. Otherwise continue
                             if size(partClassMSS,1) < size(partClassTmp,1)
-        %                         [partClassMSS,mssSlope,normDiffCoef,confRadTmp,centerTmp,genDiffCoef,scalingPower,...
-        %                         partClassMSS1D,mssSlope1D,normDiffCoef1D,confRadius1D,trackCenter,genDiffCoef1D,scalingPower1D,prefDir] = reclassifySegments(partClassMSS,probDim, tracks, iTrack,momentOrders,alphaValues,alphaAsym,confRadMin,checkAsym);
-
+        
                             [partClassMSST,mssSlopeT,normDiffCoefT,confRadTmpT,centerTmpT,genDiffCoefT,scalingPowerT,...
-                                partClassMSS1DT,mssSlope1DT,normDiffCoef1DT,confRadius1DT,trackCenterT,genDiffCoef1DT,scalingPower1DT,prefDirT] = reclassifySegments(partClassMSS,probDim, tracks, iTrack,momentOrders,alphaValues,alphaAsym,confRadMin,checkAsym);
-                            %    
-                                %% New section to avoid possibly erroneous
-                                %classification: If new classification results in
-                                %more mobile class, revert to old class
+                                partClassMSS1DT,mssSlope1DT,normDiffCoef1DT,confRadius1DT,trackCenterT,genDiffCoef1DT,scalingPower1DT,prefDirT] = reclassifySegments(partClassMSS,probDim, tracks, iTrack,momentOrders,alphaValues,0.05,confRadMin,checkAsym);
+                                
+                                % If reclassification results in more
+                                % mobile segment, check if probability of
+                                % misclassification has improved
+                                % this section should mostly be from other
+                                % version of code
                                 changeSeg = find((partClassMSST(:,3)-partClassMSS(:,3)) > 0);
                                 if changeSeg
-%                                     if size(partClassMSST,1) == length(changeSeg) 
                                         if partClassMSS(changeSeg,3) == 1 && partClassMSST(changeSeg,3) ==2 %If confined track became free
                                             oldConfidenceList = positionConfidenceFC{1,min(length(partClassTmp(ismember(mssSlopeTmp,mssSlope),1):partClassTmp(ismember(mssSlopeTmp,mssSlope),2)),500)};
                                             newConfidenceList = positionConfidenceFC{1,min(length(partClassMSS(changeSeg,1):partClassMSS(changeSeg,2)),500)};
-                                            oldConfidence = oldConfidenceList(round(oldConfidenceList(:,1),4)==round(mssSlope(changeSeg),4),3);
-                                            newConfidence = newConfidenceList(round(newConfidenceList(:,1),4)==round(mssSlopeT(changeSeg),4),2);
-                                            
+                                            oldConfidence = oldConfidenceList(round(oldConfidenceList(:,1)*1E4)./1E4==round(mssSlope(changeSeg)*1E4)./1E4,3);
+                                            newConfidence = newConfidenceList(round(newConfidenceList(:,1)*1E4)./1E4==round(mssSlopeT(changeSeg)*1E4)./1E4,2);
+
                                         elseif partClassMSS(changeSeg,3) == 0 && partClassMSST(changeSeg,3) ==1 %If immobile track became confined
                                             oldConfidenceList = positionConfidenceCI{1,min(length(partClassTmp(ismember(mssSlopeTmp,mssSlope),1):partClassTmp(ismember(mssSlopeTmp,mssSlope),2)),500)};
                                             newConfidenceList = positionConfidenceCI{1,min(length(partClassMSS(changeSeg,1):partClassMSS(changeSeg,2)),500)};
-                                            oldConfidence = oldConfidenceList(round(oldConfidenceList(:,1),4)==round(mssSlope(changeSeg),4),3);
-                                            newConfidence = newConfidenceList(round(newConfidenceList(:,1),4)==round(mssSlopeT(changeSeg),4),2);
-                                        elseif partClassMSS(changeSeg,3) == 2 && partClassMSST(changeSeg,3) ==0 %If immobile track became free
+                                            oldConfidence = oldConfidenceList(round(oldConfidenceList(:,1)*1E4)./1E4==round(mssSlope(changeSeg)*1E4)./1E4,3);
+                                            newConfidence = newConfidenceList(round(newConfidenceList(:,1)*1E4)./1E4==round(mssSlopeT(changeSeg)*1E4)./1E4,2);
+
+                                        elseif partClassMSS(changeSeg,3) == 0 && partClassMSST(changeSeg,3) ==2 %If immobile track became free
                                             oldConfidenceList = positionConfidenceCI{1,min(length(partClassTmp(ismember(mssSlopeTmp,mssSlope),1):partClassTmp(ismember(mssSlopeTmp,mssSlope),2)),500)};
                                             newConfidenceList = positionConfidenceFC{1,min(length(partClassMSS(changeSeg,1):partClassMSS(changeSeg,2)),500)};
-                                            oldConfidence = oldConfidenceList(round(oldConfidenceList(:,1),4)==round(mssSlope(changeSeg),4),3);
-                                            newConfidence = newConfidenceList(round(newConfidenceList(:,1),4)==round(mssSlopeT(changeSeg),4),2);
-                                         %Testing use on switches to lower mobility
-                                        elseif partClassMSS(changeSeg,3) == 2 && partClassMSST(changeSeg,3) ==1 %If free track became confined
-                                            oldConfidenceList = positionConfidenceFC{1,min(length(partClassTmp(ismember(mssSlopeTmp,mssSlope),1):partClassTmp(ismember(mssSlopeTmp,mssSlope),2)),500)};
-                                            newConfidenceList = positionConfidenceFC{1,min(length(partClassMSS(changeSeg,1):partClassMSS(changeSeg,2)),500)};
-                                            oldConfidence = oldConfidenceList(round(oldConfidenceList(:,1),4)==round(mssSlope(changeSeg),4),2);
-                                            newConfidence = newConfidenceList(round(newConfidenceList(:,1),4)==round(mssSlopeT(changeSeg),4),3);
-                                        elseif partClassMSS(changeSeg,3) == 1 && partClassMSST(changeSeg,3) ==0 %If confined track became immobile
+                                            oldConfidence = oldConfidenceList(round(oldConfidenceList(:,1)*1E4)./1E4==round(mssSlope(changeSeg)*1E4)./1E4,3);
+                                            newConfidence = newConfidenceList(round(newConfidenceList(:,1)*1E4)./1E4==round(mssSlopeT(changeSeg)*1E4)./1E4,2);
+
+                                        elseif partClassMSS(changeSeg,3) == 0 && partClassMSST(changeSeg,3) ==3 %If immobile track became directed
                                             oldConfidenceList = positionConfidenceCI{1,min(length(partClassTmp(ismember(mssSlopeTmp,mssSlope),1):partClassTmp(ismember(mssSlopeTmp,mssSlope),2)),500)};
-                                            newConfidenceList = positionConfidenceCI{1,min(length(partClassMSS(changeSeg,1):partClassMSS(changeSeg,2)),500)};
-                                            oldConfidence = oldConfidenceList(round(oldConfidenceList(:,1),4)==round(mssSlope(changeSeg),4),2);
-                                            newConfidence = newConfidenceList(round(newConfidenceList(:,1),4)==round(mssSlopeT(changeSeg),4),3);
-                                        elseif partClassMSS(changeSeg,3) == 2 && partClassMSST(changeSeg,3) ==0 %If free track became immobile
+                                            newConfidenceList = positionConfidenceDF{1,min(length(partClassMSS(changeSeg,1):partClassMSS(changeSeg,2)),500)};
+                                            oldConfidence = oldConfidenceList(round(oldConfidenceList(:,1)*1E4)./1E4==round(mssSlope(changeSeg)*1E4)./1E4,3);
+                                            newConfidence = newConfidenceList(round(newConfidenceList(:,1)*1E4)./1E4==round(mssSlopeT(changeSeg)*1E4)./1E4,2); 
+
+                                        elseif partClassMSS(changeSeg,3) == 1 && partClassMSST(changeSeg,3) ==3 %If confined track became directed
                                             oldConfidenceList = positionConfidenceFC{1,min(length(partClassTmp(ismember(mssSlopeTmp,mssSlope),1):partClassTmp(ismember(mssSlopeTmp,mssSlope),2)),500)};
-                                            newConfidenceList = positionConfidenceCI{1,min(length(partClassMSS(changeSeg,1):partClassMSS(changeSeg,2)),500)};
-                                            oldConfidence = oldConfidenceList(round(oldConfidenceList(:,1),4)==round(mssSlope(changeSeg),4),2);
-                                            newConfidence = newConfidenceList(round(newConfidenceList(:,1),4)==round(mssSlopeT(changeSeg),4),3);   
-                                        else % We currently don't have confidence for super, so this is just not accepted
-                                            newConfidence = 1;
-                                            oldConfidence = 0;
+                                            newConfidenceList = positionConfidenceDF{1,min(length(partClassMSS(changeSeg,1):partClassMSS(changeSeg,2)),500)};
+                                            oldConfidence = oldConfidenceList(round(oldConfidenceList(:,1)*1E4)./1E4==round(mssSlope(changeSeg)*1E4)./1E4,3);
+                                            newConfidence = newConfidenceList(round(newConfidenceList(:,1)*1E4)./1E4==round(mssSlopeT(changeSeg)*1E4)./1E4,2);
+
+                                        elseif partClassMSS(changeSeg,3) == 2 && partClassMSST(changeSeg,3) ==3 %If free track became directed
+                                            oldConfidenceList = positionConfidenceDF{1,min(length(partClassTmp(ismember(mssSlopeTmp,mssSlope),1):partClassTmp(ismember(mssSlopeTmp,mssSlope),2)),500)};
+                                            newConfidenceList = positionConfidenceDF{1,min(length(partClassMSS(changeSeg,1):partClassMSS(changeSeg,2)),500)};
+                                            oldConfidence = oldConfidenceList(round(oldConfidenceList(:,1)*1E4)./1E4==round(mssSlope(changeSeg)*1E4)./1E4,3);
+                                            newConfidence = newConfidenceList(round(newConfidenceList(:,1)*1E4)./1E4==round(mssSlopeT(changeSeg)*1E4)./1E4,2);
                                         end
                                         if newConfidence < oldConfidence %If merge improved confidence, accept.
                                             unclassCheck  = isnan(partClassMSS(:,3)).*isnan(partClassMSS1D(:,3));
                                             check = find(unclassCheck);
-                                            %Accept and make all T's into actual value
+                                            %Accept and make all T's (temp values) into actual value
                                             partClassMSS = partClassMSST;
                                             partClassTmp = partClassMSS;
                                             mssSlope = mssSlopeT;
@@ -566,31 +594,17 @@ for iTrack = indx4analysis'
                                             scalingPower1D = scalingPower1DT;
                                             prefDir = prefDirT;
                                             clear oldConfidence newConfidence
-                                        else %If not, get previous classification and redo classification, CHECK if this is necessary...
+                                        else %If not, get previous classification and redo classification
                                           partClassMSS = partClassTmp;
+                                          peakThresh = peakThreshTmp;
                                         [partClassMSS,mssSlope,normDiffCoef,confRadTmp,centerTmp,genDiffCoef,scalingPower,...
-                                    partClassMSS1D,mssSlope1D,normDiffCoef1D,confRadius1D,trackCenter,genDiffCoef1D,scalingPower1D,prefDir] = reclassifySegments(partClassMSS,probDim, tracks, iTrack,momentOrders,alphaValues,alphaAsym,confRadMin,checkAsym);
+                                    partClassMSS1D,mssSlope1D,normDiffCoef1D,confRadius1D,trackCenter,genDiffCoef1D,scalingPower1D,prefDir] = reclassifySegments(partClassMSS,probDim, tracks, iTrack,momentOrders,alphaValues,0.05,confRadMin,checkAsym);
                                             clear oldConfidence newConfidence
-                                        end
-% %                                     else
-%                                         %Get segments that will stay new (i.e did not result in positive value) 
-%                                         keep = partClassMSS(~ismember(1:size(partClassMSS,1),changeSeg),:);%partClassMSS(find(~(partClassMSST(:,3)-partClassMSS(:,3)) > 0),:);
-%                                         %Get segments that will revert (i.e resulted in postive value)
-%                                         partClassR = partClassTmp;
-%                                         for remove = 1:size(keep,1)
-%                                             birth = find(partClassR(:,1)==keep(remove,1));
-%                                             death =  find(partClassR(:,2)==keep(remove,2));
-%                                             partClassR(birth:death,:) = [];
-%                                         end
-%                                         %Stich everything together and re-run,
-%                                         %technically we have all the information, but
-%                                         %this is easiest eay to stich data together
-%                                         partClassMSS = sortrows([keep;partClassR]);
-%                                         [partClassMSS,mssSlope,normDiffCoef,confRadTmp,centerTmp,genDiffCoef,scalingPower,...
-%                                     partClassMSS1D,mssSlope1D,normDiffCoef1D,confRadius1D,trackCenter,genDiffCoef1D,scalingPower1D,prefDir] = reclassifySegments(partClassMSS,probDim, tracks, iTrack,momentOrders,alphaValues,alphaAsym,confRadMin,checkAsym);
-% %                                     end        
+                                        end      
 
                                 else
+                                    %If mobility did not increase, automatically accept
+                                    %merge
                                     unclassCheck  = isnan(partClassMSS(:,3)).*isnan(partClassMSS1D(:,3));
                                     check = find(unclassCheck);
                                     %Accept and make all T's into actual value
@@ -617,19 +631,21 @@ for iTrack = indx4analysis'
                         end
                     end
         
-         %% Reclassify if segments next to each other are the same
-            %merge subparts that now have the same classification
+            %Try to merge adjacent segments that have the same classification
             checkSeg = partClassMSS(1:end-1,3)-partClassMSS(2:end,3);
             indicateRev = 0;
+            % If identical adjacent segments exist and merging has not already
+            % been attempted twice, attempt to merge
             while ~isempty(find(checkSeg==0)) && indicateRev < 2
+                %Store previous classification, and MSS slope for later
+                %comparison
                             mssSlopeTmp = mssSlope;
                             clear mssSlope
-%                             mssSlope(find(checkSeg==0):find(checkSeg==0)+1) = mssSlope(max(find(checkSeg==0):find(checkSeg==0)+1));
-%                             mssSlope = unique(mssSlope); %Could be disastorous 
                             partClassTmp = partClassMSS;
                             lifeTimeMSS = (partClassTmp(:,2)-partClassTmp(:,1))+1;
                             pointClassMSSAsymT = partClassMSS1D(:,3);
                             pointClassMSS = partClassMSS(:,3);
+                    %Find adjacent segments that have the same 1D or 2D classification        
                     for iSubpart = 1 : length(pointClassMSS)-1
                         iSubpartPlus1 = iSubpart + 1;
                         while ( (iSubpartPlus1 <= length(pointClassMSS)) && ...
@@ -646,104 +662,107 @@ for iTrack = indx4analysis'
                             iSubpartPlus1 = iSubpartPlus1 + 1;
                         end
                     end
+                    %If segments will be merged, get weighted MSS slope of
+                    %segments being merged. This will be used later to test
+                    %if the merge should be accepted. MSS slope is weighted
+                    %by segment length
                     [~,uniqueParts] = unique(partClassMSS(:,1));
                     for ms = 1:length(uniqueParts)
                         mssSlope(ms) = sum(lifeTimeMSS(partClassMSS(:,2) == partClassMSS(uniqueParts(ms),2)).*mssSlopeTmp(partClassMSS(:,2) == partClassMSS(uniqueParts(ms),2)))./sum(lifeTimeMSS(partClassMSS(:,2) == partClassMSS(uniqueParts(ms),2)));
                     end
                     partClassMSS = partClassMSS(uniqueParts,:);
-%                     mssSlope = mssSlope(uniqueParts);
                     partClassMSS1D = partClassMSS1D(uniqueParts,:);
                     
                     %if parts have been merged, redo diffusion analysis on
                     %these parts. Otherwise continue
                     if size(partClassMSS,1) < size(partClassTmp,1)
                         [partClassMSST,mssSlopeT,normDiffCoefT,confRadTmpT,centerTmpT,genDiffCoefT,scalingPowerT,...
-                        partClassMSS1DT,mssSlope1DT,normDiffCoef1DT,confRadius1DT,trackCenterT,genDiffCoef1DT,scalingPower1DT,prefDirT] = reclassifySegments(partClassMSS,probDim, tracks, iTrack,momentOrders,alphaValues,alphaAsym,confRadMin,checkAsym);
-                    %    
-                        %New section to avoid possibly erroneous
-                        %classification: If new classification results in
-                        %more mobile class, revert to old class
+                        partClassMSS1DT,mssSlope1DT,normDiffCoef1DT,confRadius1DT,trackCenterT,genDiffCoef1DT,scalingPower1DT,prefDirT] = reclassifySegments(partClassMSS,probDim, tracks, iTrack,momentOrders,alphaValues,0.05,confRadMin,checkAsym);
+                    
+                        %If new classification results in
+                        %more mobile class, compare new probability of
+                        %misclassification using new MSS slope and weighted
+                        %MSS slope of segments being merged
                         changeSegF = find((partClassMSST(:,3)-partClassMSS(:,3)) > 0);
                         badChange = [];
                         badC=1;
                         if changeSegF
                             for cs= 1:length(changeSegF)
-                                    changeSeg = changeSegF(cs);
-                                    if partClassMSS(changeSeg,3) == 1 && partClassMSST(changeSeg,3) ==2 %If confined track became free
-%                                         oldConfidenceList = positionConfidenceFC{1,min(length(partClassTmp(ismember(mssSlopeTmp,mssSlope),1):partClassTmp(ismember(mssSlopeTmp,mssSlope),2)),500)};
-                                        newConfidenceList = positionConfidenceFC{1,min(length(partClassMSS(changeSeg,1):partClassMSS(changeSeg,2)),500)};
-                                        oldConfidenceList = newConfidenceList;
-                                        oldConfidence = oldConfidenceList(round(oldConfidenceList(:,1),4)==round(mssSlope(changeSeg),4),3);
-                                        newConfidence = newConfidenceList(round(newConfidenceList(:,1),4)==round(mssSlopeT(changeSeg),4),2);
+                                changeSeg = changeSegF(cs);
+                                if partClassMSS(changeSeg,3) == 1 && partClassMSST(changeSeg,3) ==2 %If confined track became free
+                                    newConfidenceList = positionConfidenceFC{1,min(length(partClassMSS(changeSeg,1):partClassMSS(changeSeg,2)),500)};
+                                    oldConfidenceList = newConfidenceList;
+                                    oldConfidence = oldConfidenceList(round(oldConfidenceList(:,1)*1E4)./1E4==round(mssSlope(changeSeg)*1E4)./1E4,3);
+                                    newConfidence = newConfidenceList(round(newConfidenceList(:,1)*1E4)./1E4==round(mssSlopeT(changeSeg)*1E4)./1E4,2);
 
-                                    elseif partClassMSS(changeSeg,3) == 0 && partClassMSST(changeSeg,3) ==1 %If immobile track became confined
-%                                          oldConfidenceList = positionConfidenceCI{1,min(length(partClassTmp(ismember(mssSlopeTmp,mssSlope),1):partClassTmp(ismember(mssSlopeTmp,mssSlope),2)),500)};
-                                        newConfidenceList = positionConfidenceCI{1,min(length(partClassMSS(changeSeg,1):partClassMSS(changeSeg,2)),500)};
-                                        oldConfidenceList = newConfidenceList;
-                                        oldConfidence = oldConfidenceList(round(oldConfidenceList(:,1),4)==round(mssSlope(changeSeg),4),3);
-                                        newConfidence = newConfidenceList(round(newConfidenceList(:,1),4)==round(mssSlopeT(changeSeg),4),2); 
-                                    elseif partClassMSS(changeSeg,3) == 2 && partClassMSST(changeSeg,3) ==0 %If immobile track became free
-%                                             oldConfidenceList = positionConfidenceCI{1,min(length(partClassTmp(ismember(mssSlopeTmp,mssSlope),1):partClassTmp(ismember(mssSlopeTmp,mssSlope),2)),500)};
-                                            newConfidenceList = positionConfidenceFC{1,min(length(partClassMSS(changeSeg,1):partClassMSS(changeSeg,2)),500)};
-                                            oldConfidenceList = newConfidenceList;
-                                            oldConfidence = oldConfidenceList(round(oldConfidenceList(:,1),4)==round(mssSlope(changeSeg),4),3);
-                                            newConfidence = newConfidenceList(round(newConfidenceList(:,1),4)==round(mssSlopeT(changeSeg),4),2);
-                                     %Testing use on switches to lower mobility
-                                    elseif partClassMSS(changeSeg,3) == 2 && partClassMSST(changeSeg,3) ==1 %If free track became confined
-%                                         oldConfidenceList = positionConfidenceFC{1,min(length(partClassTmp(ismember(mssSlopeTmp,mssSlope),1):partClassTmp(ismember(mssSlopeTmp,mssSlope),2)),500)};
+                                elseif partClassMSS(changeSeg,3) == 0 && partClassMSST(changeSeg,3) ==1 %If immobile track became confined
+                                    newConfidenceList = positionConfidenceCI{1,min(length(partClassMSS(changeSeg,1):partClassMSS(changeSeg,2)),500)};
+                                    oldConfidenceList = newConfidenceList;
+                                    oldConfidence = oldConfidenceList(round(oldConfidenceList(:,1)*1E4)./1E4==round(mssSlope(changeSeg)*1E4)./1E4,3);
+                                    newConfidence = newConfidenceList(round(newConfidenceList(:,1)*1E4)./1E4==round(mssSlopeT(changeSeg)*1E4)./1E4,2); 
+
+                                elseif partClassMSS(changeSeg,3) == 0 && partClassMSST(changeSeg,3) ==2 %If immobile track became free
+                                        oldConfidenceList = positionConfidenceCI{1,min(length(partClassMSS(changeSeg,1):partClassMSS(changeSeg,2)),500)};
                                         newConfidenceList = positionConfidenceFC{1,min(length(partClassMSS(changeSeg,1):partClassMSS(changeSeg,2)),500)};
-                                        oldConfidenceList = newConfidenceList;
-                                        oldConfidence = oldConfidenceList(round(oldConfidenceList(:,1),4)==round(mssSlope(changeSeg),4),2);
-                                        newConfidence = newConfidenceList(round(newConfidenceList(:,1),4)==round(mssSlopeT(changeSeg),4),3);
-                                    elseif partClassMSS(changeSeg,3) == 1 && partClassMSST(changeSeg,3) ==0 %If confined track became immobile
-%                                         oldConfidenceList = positionConfidenceCI{1,min(length(partClassTmp(ismember(mssSlopeTmp,mssSlope),1):partClassTmp(ismember(mssSlopeTmp,mssSlope),2)),500)};
-                                        newConfidenceList = positionConfidenceCI{1,min(length(partClassMSS(changeSeg,1):partClassMSS(changeSeg,2)),500)};
-                                        oldConfidenceList = newConfidenceList;
-                                        oldConfidence = oldConfidenceList(round(oldConfidenceList(:,1),4)==round(mssSlope(changeSeg),4),2);
-                                        newConfidence = newConfidenceList(round(newConfidenceList(:,1),4)==round(mssSlopeT(changeSeg),4),3);
-                                    elseif partClassMSS(changeSeg,3) == 2 && partClassMSST(changeSeg,3) ==0 %If free track became immobile
-%                                         oldConfidenceList = positionConfidenceFC{1,min(length(partClassTmp(ismember(mssSlopeTmp,mssSlope),1):partClassTmp(ismember(mssSlopeTmp,mssSlope),2)),500)};
-                                        newConfidenceList = positionConfidenceCI{1,min(length(partClassMSS(changeSeg,1):partClassMSS(changeSeg,2)),500)};
-                                        oldConfidenceList = newConfidenceList;
-                                        oldConfidence = oldConfidenceList(round(oldConfidenceList(:,1),4)==round(mssSlope(changeSeg),4),2);
-                                        newConfidence = newConfidenceList(round(newConfidenceList(:,1),4)==round(mssSlopeT(changeSeg),4),3);    
-                                    else % We currently don't have confidence for super, so this is just not accepted
-                                        newConfidence = 1;
-                                        oldConfidence = 0;
-                                    end
-                                    if newConfidence > oldConfidence
-                                        badChange(badC)=changeSegF(cs);
-                                        badC = badC +1;
-                                    end
+                                        oldConfidence = oldConfidenceList(round(oldConfidenceList(:,1)*1E4)./1E4==round(mssSlope(changeSeg)*1E4)./1E4,3);
+                                        newConfidence = newConfidenceList(round(newConfidenceList(:,1)*1E4)./1E4==round(mssSlopeT(changeSeg)*1E4)./1E4,2);
+
+                                elseif partClassMSS(changeSeg,3) == 0 && partClassMSST(changeSeg,3) ==3 %If immobile track became directed
+                                    oldConfidenceList = positionConfidenceCI{1,min(length(partClassMSS(changeSeg,1):partClassMSS(changeSeg,2)),500)};
+                                    newConfidenceList = positionConfidenceDF{1,min(length(partClassMSS(changeSeg,1):partClassMSS(changeSeg,2)),500)};
+                                    oldConfidence = oldConfidenceList(round(oldConfidenceList(:,1)*1E4)./1E4==round(mssSlope(changeSeg)*1E4)./1E4,3);
+                                    newConfidence = newConfidenceList(round(newConfidenceList(:,1)*1E4)./1E4==round(mssSlopeT(changeSeg)*1E4)./1E4,2);
+
+                                elseif partClassMSS(changeSeg,3) == 1 && partClassMSST(changeSeg,3) ==3 %If confined track became directed
+                                    oldConfidenceList = positionConfidenceFC{1,min(length(partClassMSS(changeSeg,1):partClassMSS(changeSeg,2)),500)};
+                                    newConfidenceList = positionConfidenceDF{1,min(length(partClassMSS(changeSeg,1):partClassMSS(changeSeg,2)),500)};
+                                    oldConfidence = oldConfidenceList(round(oldConfidenceList(:,1)*1E4)./1E4==round(mssSlope(changeSeg)*1E4)./1E4,3);
+                                    newConfidence = newConfidenceList(round(newConfidenceList(:,1)*1E4)./1E4==round(mssSlopeT(changeSeg)*1E4)./1E4,2);
+
+                                elseif partClassMSS(changeSeg,3) == 2 && partClassMSST(changeSeg,3) ==3 %If free track became directed
+                                    newConfidenceList = positionConfidenceDF{1,min(length(partClassMSS(changeSeg,1):partClassMSS(changeSeg,2)),500)};
+                                    oldConfidenceList = newConfidenceList;
+                                    oldConfidence = oldConfidenceList(round(oldConfidenceList(:,1)*1E4)./1E4==round(mssSlope(changeSeg)*1E4)./1E4,3);
+                                    newConfidence = newConfidenceList(round(newConfidenceList(:,1)*1E4)./1E4==round(mssSlopeT(changeSeg)*1E4)./1E4,2);    
+                                end
+                                %Check if probability of misclassification
+                                %increased, mark to be reverted after all
+                                %merges have been tested
+                                if newConfidence > oldConfidence
+                                    badChange(badC)=changeSegF(cs);
+                                    badC = badC +1;
+                                end
                             end
                             %If there was a bad change, revert it back but
                             %keep good changes
                             if ~isempty(badChange)
+                                %If the amo
                                 if size(partClassMSST,1) == length(changeSegF)
                                       partClassMSS = partClassTmp;
                                     [partClassMSS,mssSlope,normDiffCoef,confRadTmp,centerTmp,genDiffCoef,scalingPower,...
-                                partClassMSS1D,mssSlope1D,normDiffCoef1D,confRadius1D,trackCenter,genDiffCoef1D,scalingPower1D,prefDir] = reclassifySegments(partClassMSS,probDim, tracks, iTrack,momentOrders,alphaValues,alphaAsym,confRadMin,checkAsym);
+                                partClassMSS1D,mssSlope1D,normDiffCoef1D,confRadius1D,trackCenter,genDiffCoef1D,scalingPower1D,prefDir] = reclassifySegments(partClassMSS,probDim, tracks, iTrack,momentOrders,alphaValues,0.05,confRadMin,checkAsym);
                                 clear oldConfidence newConfidence
                                 else
-                                    %Get segments that will stay new (i.e did not result in positive value)
+                                    %Get segments that will stay new (i.e did not result worse prob. of misclassification)
                                     keep = partClassMSS(~ismember(1:size(partClassMSS,1),badChange),:);
-                                    %Get segments that will revert (i.e resulted in postive value)
+                                    
+                                    %Get segments that will revert (i.e resulted in worse prob. of misclassification)
                                     segments = [uniqueParts(2:end);length(partClassTmp)+1]-uniqueParts;
                                     for segS = 1:size(partClassMSS,1)
                                         storage.Segments(segS) = {uniqueParts(segS):uniqueParts(segS)+(segments(segS)-1)};
                                     end
                                     revertSeg = cell2mat(storage.Segments(badChange));
+                                    
                                     %Stich everything together and re-run,
                                     %technically we have all the information, but
                                     %this is easiest eay to stich data together
                                     partClassMSS = sortrows([keep;partClassTmp(revertSeg,:)]);
                                         [partClassMSS,mssSlope,normDiffCoef,confRadTmp,centerTmp,genDiffCoef,scalingPower,...
-                                partClassMSS1D,mssSlope1D,normDiffCoef1D,confRadius1D,trackCenter,genDiffCoef1D,scalingPower1D,prefDir] = reclassifySegments(partClassMSS,probDim, tracks, iTrack,momentOrders,alphaValues,alphaAsym,confRadMin,checkAsym);
+                                partClassMSS1D,mssSlope1D,normDiffCoef1D,confRadius1D,trackCenter,genDiffCoef1D,scalingPower1D,prefDir] = reclassifySegments(partClassMSS,probDim, tracks, iTrack,momentOrders,alphaValues,0.05,confRadMin,checkAsym);
                                 clear oldConfidence newConfidence
                                 end
                             else
-                            %------------------------------------------------------------
-%                             if newConfidence < oldConfidence %If merge improved confidence, accept.
+                                %If merge improved confidence, accept.
 
                                 %Accept and make all T's into actual value
                                 partClassMSS = partClassMSST;
@@ -763,34 +782,9 @@ for iTrack = indx4analysis'
                                 scalingPower1D = scalingPower1DT;
                                 prefDir = prefDirT;
                                 clear oldConfidence newConfidence
-%                             else %If not, get previous classification and redo classification, CHECK if this is necessary...
-%                               partClassMSS = partClassTmp;
-%                             [partClassMSS,mssSlope,normDiffCoef,confRadTmp,centerTmp,genDiffCoef,scalingPower,...
-%                         partClassMSS1D,mssSlope1D,normDiffCoef1D,confRadius1D,trackCenter,genDiffCoef1D,scalingPower1D,prefDir] = reclassifySegments(partClassMSS,probDim, tracks, iTrack,momentOrders,alphaValues,alphaAsym,confRadMin,checkAsym);
-%                                 clear oldConfidence newConfidence
+
                             end                            
-                            %-------------------------------------------------
-%                             if size(partClassMSST,1) == length(changeSeg)
-%                                   partClassMSS = partClassTmp;
-%                                 [partClassMSS,mssSlope,normDiffCoef,confRadTmp,centerTmp,genDiffCoef,scalingPower,...
-%                             partClassMSS1D,mssSlope1D,normDiffCoef1D,confRadius1D,trackCenter,genDiffCoef1D,scalingPower1D,prefDir] = reclassifySegments(partClassMSS,probDim, tracks, iTrack,momentOrders,alphaValues,alphaAsym,confRadMin,checkAsym);
-%                            
-%                             else
-%                                 %Get segments that will stay new (i.e did not result in positive value)
-%                                 keep = partClassMSS(~ismember(1:size(partClassMSS,1),changeSeg),:);%partClassMSS(find(~(partClassMSST(:,3)-partClassMSS(:,3)) > 0),:);
-%                                 %Get segments that will revert (i.e resulted in postive value)
-%                                 segments = [uniqueParts(2:end);length(partClassTmp)+1]-uniqueParts;
-%                                 for segS = 1:size(partClassMSS,1)
-%                                     storage.Segments(segS) = {uniqueParts(segS):uniqueParts(segS)+(segments(segS)-1)};
-%                                 end
-%                                 revertSeg = cell2mat(storage.Segments(changeSeg));
-%                                 %Stich everything together and re-run,
-%                                 %technically we have all the information, but
-%                                 %this is easiest eay to stich data together
-%                                 partClassMSS = sortrows([keep;partClassTmp(revertSeg,:)]);
-%                                 [partClassMSS,mssSlope,normDiffCoef,confRadTmp,centerTmp,genDiffCoef,scalingPower,...
-%                             partClassMSS1D,mssSlope1D,normDiffCoef1D,confRadius1D,trackCenter,genDiffCoef1D,scalingPower1D,prefDir] = reclassifySegments(partClassMSS,probDim, tracks, iTrack,momentOrders,alphaValues,alphaAsym,confRadMin,checkAsym);
-%                             end        
+       
                             indicateRev = indicateRev+1;
                         else
                             %Accept and make all T's into actual value
@@ -822,7 +816,7 @@ for iTrack = indx4analysis'
 
                   
     else
-        %analyze whole track 
+        %% Analyze whole track 
         trackSELCurrent = trackSEL(iTrack,:);
         
         %Fill in empty 1D data
@@ -851,11 +845,11 @@ for iTrack = indx4analysis'
             coordXY = [coordX coordY];
 
             %determine whether the track is sufficiently asymmetric
-            [~,asymFlag] = asymDeterm2D3D(coordXY(:,1:probDim),alphaAsym);
+            [~,asymFlag] = asymDeterm2D3D(coordXY(:,1:probDim),0.05);
 
             if asymFlag ==1
 
-                [pointClass,mssSlope1D,genDiffCoef1D,scalingPower1D,normDiffCoef1D,trackCenter,confRadius1D,prefDir] = asymmetricDiffusion(trackSELCurrent(:,1),trackSELCurrent(:,2),alphaAsym,probDim,tracks,iTrack);
+                [pointClass,mssSlope1D,genDiffCoef1D,scalingPower1D,normDiffCoef1D,trackCenter,confRadius1D,prefDir] = asymmetricDiffusion(trackSELCurrent(:,1),trackSELCurrent(:,2),0.05,probDim,tracks,iTrack);
 
                 partClassMSS1D = [trackSELCurrent(:,1:2) asymFlag];
                 partClassMSS = [trackSELCurrent(:,1:2) pointClass];
@@ -898,9 +892,6 @@ for iTrack = indx4analysis'
                     
         end
 
-    end
-    if size(partClassMSS,1) > 1 && sum(partClassMSS(:,3)) == 0 
-        partClassMSS = partClassMSS;
     end
     
     %% Store results
@@ -952,7 +943,7 @@ end %(for iTrack = 1 : numInputTracks)
 
 %plot results if requested
 if plotRes
-    plotTracksTransDiffAnalysis2D(tracksInput,transDiffAnalysisRes,[],1,[],[],checkAsym,[]);
+    plotTracksTransDiffAnalysis2D(tracksInput,transDiffAnalysisRes,[],1,[],[],checkAsym);
 end
 
 
@@ -962,9 +953,9 @@ end
 %% Subfunctions
 function [partClassMSS,mssSlope,normDiffCoef,confRadTmp,centerTmp,genDiffCoef,scalingPower,...
 partClassMSS1D,mssSlope1D,normDiffCoef1D,confRadius1D,trackCenter,genDiffCoef1D,scalingPower1D,prefDir] = reclassifySegments(partClassMSS,probDim, tracks, iTrack,momentOrders,alphaValues,alphaAsym,confRadMin,checkAsym)                 
-    numSeg = size(partClassMSS,1);%This is here bc things have been analyzed, make earlier?
+% Description: Same analysis at Step 2 in main code (lines: 424-503), just created subfunction to save space since used frequently    
+    numSeg = size(partClassMSS,1);
     pointClassMSS = NaN(numSeg,1);
-%                             partClassAsym = NaN(numSeg,1);%point to this?
     mssSlope = pointClassMSS;
     normDiffCoef = pointClassMSS;
     confRadTmp = pointClassMSS;
@@ -981,10 +972,10 @@ partClassMSS1D,mssSlope1D,normDiffCoef1D,confRadius1D,trackCenter,genDiffCoef1D,
     prefDir = NaN(numSeg,2);
     trackCenter = NaN(numSeg,2);
     asymFlag = 0;
+    
     for k = 1:numSeg 
     startPoint = partClassMSS(k,1);
     endPoint  = partClassMSS(k,2);
-%     alphaAsym = 0.05;%alphaValues(2);
                 if checkAsym
                 %get the particle positions along the track
                 coordX = (tracks(iTrack,8*(startPoint-1)+1:8:8*endPoint))';
@@ -1043,12 +1034,10 @@ partClassMSS1D,mssSlope1D,normDiffCoef1D,confRadius1D,trackCenter,genDiffCoef1D,
 
 end
 
-function  [partClassMSS,partClassMSS1D,mssSlope] = mergeUnclassSegments(unclassCheck,check,partClassMSS,partClassMSS1D,trackFull,halfWindowMSS,mssSlopeTmp)%unclassCheck
-    %cycle through segments
-%     check = find(unclassCheck);
-%         [~,check] =sort(difference(difference < windowMSSMin)); 
-%         while ~isempty(check) && size(partClassMSS,1)>1
-mssSlope =mssSlopeTmp;
+function  [partClassMSS,partClassMSS1D,mssSlope,peakThresh] = mergeUnclassSegments(unclassCheck,check,partClassMSS,partClassMSS1D,mssSlopeTmp,peakThresh)
+% Description: Goes through all unclassified segments and attempts to merge
+% with adjacent segments
+        mssSlope =mssSlopeTmp;
         if size(partClassMSS,1)>1
         %If short segment is first, connect to succeeding
             if check(1) == 1 
@@ -1060,10 +1049,7 @@ mssSlope =mssSlopeTmp;
                 partClassMSS1D(2,:) =[];
                 mssSlope(1) = mssSlope(2);
                 mssSlope(2) = [];
-                unclassCheck  = isnan(partClassMSS(:,3)).*isnan(partClassMSS1D(:,3));
-% %                 check = find(unclassCheck);
-% %                 continue
-%             end
+                peakThresh(1) = [];
              %If segment is last, connect to preceding
             elseif check(1) == length(unclassCheck) %changed from end
                 partClassMSS(end-1,2) = partClassMSS(end,2);
@@ -1072,11 +1058,8 @@ mssSlope =mssSlopeTmp;
                 partClassMSS1D(end,:) =[];
                 mssSlope(end) = mssSlope(end-1);
                 mssSlope(end-1) = [];
-                unclassCheck  = isnan(partClassMSS(:,3)).*isnan(partClassMSS1D(:,3));
-% %                 check = find(unclassCheck);
-% %                 continue
-%             end
-
+                peakThresh(end) = [];
+                
             %If segment is somewhere in middle
             elseif ~isempty(check)
                 %If preceeding and succeeding segments are the same
@@ -1091,6 +1074,8 @@ mssSlope =mssSlopeTmp;
                     mssSlope(check(1)-1) = max(mssSlope(check(1):check(1)+1));
                     mssSlope(check(1)+1) =[];
                     mssSlope(check(1)) =[];
+                    peakThresh(check(1))=[];
+                    peakThresh(check(1)-1)=[];                    
                 elseif partClassMSS1D(check(1)+1,3) == partClassMSS1D(check(1)-1,3) && isnan(partClassMSS(check(1)+1,3)) == isnan(partClassMSS(check(1)-1,3))
                     partClassMSS(check(1)-1,2) = partClassMSS(check(1)+1,2);
                     partClassMSS1D(check(1)-1,2) = partClassMSS1D(check(1)+1,2);
@@ -1098,187 +1083,185 @@ mssSlope =mssSlopeTmp;
                     partClassMSS1D(check(1)+1,:) =[];
                     partClassMSS(check(1),:) =[];
                     partClassMSS1D(check(1),:) =[];  
-                    %Need to fix mss Slope here
+                    peakThresh(check(1))=[];
+                    peakThresh(check(1)-1)=[];                    
                  %Otherwise score the segments and merge to weaker score
                 else
-                    if trackFull(partClassMSS(check(1)+1,1)-(partClassMSS(1,1)+halfWindowMSS)) > trackFull(partClassMSS(check(1),1)-(partClassMSS(1,1)+halfWindowMSS))
+                    if peakThresh(check(1)) > peakThresh(check(1)-1)
+                        %if higher peak is in front, delete peak behind
                         partClassMSS(check(1)-1,2) = partClassMSS(check(1),2);
                         partClassMSS1D(check(1)-1,2) = partClassMSS1D(check(1),2);
                         partClassMSS(check(1),:) =[];
                         partClassMSS1D(check(1),:) =[];
                         mssSlope(check(1))=[];
+                        peakThresh(check(1)-1)=[];
                     else
                         partClassMSS(check(1)+1,1) = partClassMSS(check(1),1);
                         partClassMSS1D(check(1)+1,1) = partClassMSS1D(check(1),1);
                         partClassMSS(check(1),:) =[];
                         partClassMSS1D(check(1),:) =[];
                         mssSlope(check(1))=[];
-                        
+                        peakThresh(check(1))=[];
                     end
                 end
                        
-                unclassCheck  = isnan(partClassMSS(:,3)).*isnan(partClassMSS1D(:,3));
-                check = find(unclassCheck);
             end
         end
 end
 function [pointClass, mssSlopeT,genDiffCoefT,scalingPowerT,normDiffCoefT,trackCenter,confRadius1D,prefDir] = asymmetricDiffusion(startPoint,endPoint,alphaAsym,probDim,tracks, iTrack)
-                    trackCoordX = tracks(iTrack,8*(startPoint-1)+1:8:8*endPoint)';
-                    deltaCoordX = tracks(iTrack,8*(startPoint-1)+5:8:8*endPoint)';
-                    trackCoordY = tracks(iTrack,8*(startPoint-1)+2:8:8*endPoint)';
-                    deltaCoordY = tracks(iTrack,8*(startPoint-1)+6:8:8*endPoint)';
-                    trackCoordZ = tracks(iTrack,8*(startPoint-1)+3:8:8*endPoint)';
-                    deltaCoordZ = tracks(iTrack,8*(startPoint-1)+7:8:8*endPoint)';
-                    trackCoord = [trackCoordX trackCoordY trackCoordZ];
-                    deltaCoord = [deltaCoordX deltaCoordY deltaCoordZ];
-                    trackCoord = trackCoord(:,1:probDim);
-                    deltaCoord = deltaCoord(:,1:probDim);
+% Description: Classifies segment based on 1d diffusion
+    trackCoordX = tracks(iTrack,8*(startPoint-1)+1:8:8*endPoint)';
+    deltaCoordX = tracks(iTrack,8*(startPoint-1)+5:8:8*endPoint)';
+    trackCoordY = tracks(iTrack,8*(startPoint-1)+2:8:8*endPoint)';
+    deltaCoordY = tracks(iTrack,8*(startPoint-1)+6:8:8*endPoint)';
+    trackCoordZ = tracks(iTrack,8*(startPoint-1)+3:8:8*endPoint)';
+    deltaCoordZ = tracks(iTrack,8*(startPoint-1)+7:8:8*endPoint)';
+    trackCoord = [trackCoordX trackCoordY trackCoordZ];
+    deltaCoord = [deltaCoordX deltaCoordY deltaCoordZ];
+    trackCoord = trackCoord(:,1:probDim);
+    deltaCoord = deltaCoord(:,1:probDim);
 
-                    %project onto direction of motion
-                    [posAlongDir,deltaPosAlongDir] = projectCoordOntoDir(trackCoord,...
-                        deltaCoord,[],[]);
+    %project onto direction of motion
+    [posAlongDir,deltaPosAlongDir] = projectCoordOntoDir(trackCoord,...
+        deltaCoord,[],[]);
 
-                    %construct matrix of linear tracks with projected positions
-                    trackCoord2 = [posAlongDir zeros(length(posAlongDir),3) deltaPosAlongDir zeros(length(posAlongDir),3)]';
-                    trackCoord2 = trackCoord2(:)';
-            %         iAsym = iAsym + 1;
-            %         tracksAsym(iAsym,:) = trackCoord2;
-                    momentOrders = 0 : 6;
-                    [pointClass,mssSlopeT,genDiffCoefT,scalingPowerT,normDiffCoefT] = ...
-                    trackMSSAnalysis(trackCoord2,1,momentOrders,alphaAsym);
-                %% Confinement of asym 
-                    xyCoord = [trackCoordX trackCoordY];
+    %construct matrix of linear tracks with projected positions
+    trackCoord2 = [posAlongDir zeros(length(posAlongDir),3) deltaPosAlongDir zeros(length(posAlongDir),3)]';
+    trackCoord2 = trackCoord2(:)';
+    momentOrders = 0 : 6;
+    [pointClass,mssSlopeT,genDiffCoefT,scalingPowerT,normDiffCoefT] = ...
+    trackMSSAnalysis(trackCoord2,1,momentOrders,alphaAsym);
 
-                    %find the eignevalues of the variance-covariance matrix of this track's
-                    %positions
-                    [eigenVec,eigenVal] = eig(nancov(xyCoord(:,1:probDim)));
-                    eigenVal = diag(eigenVal);
+%% Confinement of asym 
+    xyCoord = [trackCoordX trackCoordY];
 
-                    %calculate the confinement radius along the preferred direction of
-                    %motion
-                    confRadius1D(1,2) = sqrt( max(eigenVal) * (3) );
+    %find the eignevalues of the variance-covariance matrix of this track's
+    %positions
+    [eigenVec,eigenVal] = eig(nancov(xyCoord(:,1:probDim)));
+    eigenVal = diag(eigenVal);
 
-                    %calculate the confinement radius perpendicular to the preferred
-                    %direction of motion
-                    confRadius1D(1,1) = sqrt( mean(eigenVal(eigenVal~=max(eigenVal))) * (probDim + 1) );
+    %calculate the confinement radius along the preferred direction of
+    %motion
+    confRadius1D(1,2) = sqrt( max(eigenVal) * (3) );
 
-                    %calculate the track's center
-                    trackCenter = nanmean(xyCoord(:,1:probDim));
+    %calculate the confinement radius perpendicular to the preferred
+    %direction of motion
+    confRadius1D(1,1) = sqrt( mean(eigenVal(eigenVal~=max(eigenVal))) * (probDim + 1) );
 
-                    %store the preferred direction of motion
-                    prefDir = eigenVec(:,eigenVal==max(eigenVal))';
+    %calculate the track's center
+    trackCenter = nanmean(xyCoord(:,1:probDim));
+
+    %store the preferred direction of motion
+    prefDir = eigenVec(:,eigenVal==max(eigenVal))';
 end
 
 function [confRadTmp,centerTmp] = estimConfRad(tracks,probDim,confRadMin)
 
-%get subpart's coordinates
-xCoord = tracks(1:8:end)';
-yCoord = tracks(2:8:end)';
-zCoord = tracks(3:8:end)';
-xyzCoord = [xCoord yCoord zCoord];
+    %get subpart's coordinates
+    xCoord = tracks(1:8:end)';
+    yCoord = tracks(2:8:end)';
+    zCoord = tracks(3:8:end)';
+    xyzCoord = [xCoord yCoord zCoord];
 
-%find the eigenvalues and eigenvectors of the variance-covariance
-%matrix of this track's positions
-eigenVal = eig(nancov(xyzCoord(:,1:probDim)));
+    %find the eigenvalues and eigenvectors of the variance-covariance
+    %matrix of this track's positions
+    eigenVal = eig(nancov(xyzCoord(:,1:probDim)));
 
-%calculate the track's confinement radius
-if confRadMin
-    confRadTmp = sqrt( min(eigenVal) * (probDim + 2) );
-else
-    confRadTmp = sqrt( mean(eigenVal) * (probDim + 2) );
+    %calculate the track's confinement radius
+    if confRadMin
+        confRadTmp = sqrt( min(eigenVal) * (probDim + 2) );
+    else
+        confRadTmp = sqrt( mean(eigenVal) * (probDim + 2) );
+    end
+
+    %calculate the track's center
+    centerTmp = nanmean(xyzCoord(:,1:probDim));
 end
 
-%calculate the track's center
-centerTmp = nanmean(xyzCoord(:,1:probDim));
-end
 function [locPreTmp] = estimLocPre(tracks,probDim)
 
-%get subpart's coordinates
-xCoord = tracks(1:8:end)';
-yCoord = tracks(2:8:end)';
-zCoord = tracks(3:8:end)';
-xyzCoord = [xCoord yCoord zCoord];
+    %get subpart's coordinates
+    xCoord = tracks(1:8:end)';
+    yCoord = tracks(2:8:end)';
+    zCoord = tracks(3:8:end)';
+    xyzCoord = [xCoord yCoord zCoord];
 
-%find the eigenvalues and eigenvectors of the variance-covariance
-%matrix of this track's positions
-eigenVal = eig(nancov(xyzCoord(:,1:probDim)));
+    %find the eigenvalues and eigenvectors of the variance-covariance
+    %matrix of this track's positions
+    eigenVal = eig(nancov(xyzCoord(:,1:probDim)));
 
-%calculate the track's confinement radius
-    locPreTmp = sqrt( mean(eigenVal) );
+    %calculate the track's confinement radius
+        locPreTmp = sqrt( mean(eigenVal) );
 
 end
 
-function [segPoints,peakThresh] = findCloseSegments(trackFull,level,halfWindowMSS,windowMSSMin,windowMSSMin2)
-        [peaks,locs] = findpeaks(trackFull);
-      
-        %Get segments and verify that each is a minimum length, if not then
-        %join with adjacent segment with smallest peak. May need to repeat
-        %after checking that segments are long enough. Make sure entire
-        %track is retained
-        offLim = [16:19];
+function [segPoints,peakThresh] = findCloseSegments(trackFull,level,halfWindowMSS,absMin,windowMSSMin)
+%Description: Function finds initial diffusion segments in track and attempts to
+%Input:
+% trackFull - normalized MPD derivative
+% 
+% level - percentile threshold for peaks found in trackFull
+%
+% halfWindowMSS - half the size of the rolling window used
+%
+% absMin - shortest a segment is allowed to be (can still be classified as asymmetric)
+%
+% windowMSSMin - size of the rolling window used
+%
+%Output
+%
+% segPoints - locations of the points that separate segments in a track
+%
+% peakThresh- peaks that were above the percentile threshold in trackFull
+%
+%extend any short segments (15< length <20) 
+        %Find all peaks in normalized MPD derivative
+        [peaks,locs] = findpeaks(trackFull);      
+        offLim = [16:19]; %
+        %Find peaks that are above threshold
         peakThresh = peaks(peaks >= level);
+        % Make initial segments based on these peaks
         segPoints = [1;locs(peaks >= level);length(trackFull)];
         segPoints(2:end)=segPoints(2:end)+1+halfWindowMSS; %half of windowMin, 1 for deriv offset
         segPoints(end)=segPoints(end)+1+halfWindowMSS; %half of windowMin, 1 for edn correction
         n = 1:length(segPoints)-1;
-        difference = segPoints(n+1)-segPoints(n);
-        checkT = find(difference < windowMSSMin2);
+        
+        %Check that these segments are long enough
+        difference = (segPoints(n+1)-segPoints(n))+1;
+        checkT = find(difference < windowMSSMin);
         checkM = find(difference >= 16);
         indMin = ismember(checkT,checkM);
         check = checkT(indMin);
+        %If there are segments that are too short, extend into adjacent
+        %segments. Segments must be within 16:19 frames long and can't 
+        %shorten adjacent segments to these lengths 
     if ~isempty(check) 
         for m = 1:length(check) 
         %If short segment is first, connect to succeeding
             if check(m) ==1 && difference(check(m)) >= 16
                 comp1 = difference(check(m));
-                if difference(2) -(windowMSSMin2-comp1) >= windowMSSMin && ~ismember(difference(2) -(windowMSSMin2-comp1),offLim)
-                    difference(1) = comp1 + (windowMSSMin2-comp1);
-                    difference(2) = difference(2) -(windowMSSMin2-comp1);
-% %                     checkT = find(difference < windowMSSMin2);
-% %                     checkM = find(difference >= 16);
-% %                     indMin = ismember(checkT,checkM);
-% %                     check = checkT(indMin);
+                %Verify that extenstion won't result in either 1) adjacent
+                %segment being less than absMin (if already < 20) or 2)
+                %adjacent segment length falling into 16:19 length (if
+                %>=20)
+                if difference(2) -(windowMSSMin-comp1) >= absMin && ~ismember(difference(2) -(windowMSSMin-comp1),offLim)
+                    difference(1) = comp1 + (windowMSSMin-comp1);
+                    difference(2) = difference(2) -(windowMSSMin-comp1);
+
                     % Keep peak but move segPoint
-                    segPoints(2,:) = segPoints(2,:) + (windowMSSMin2-comp1);
+                    segPoints(2,:) = segPoints(2,:) + (windowMSSMin-comp1);
                     continue
-% %                 else
-% %                     segPoints(2,:) =[];
-% %                     peakThresh(1) =[];
-% % 
-% %                     n = 1:length(segPoints)-1;
-% %                     difference = segPoints(n+1)-segPoints(n);
-% %                     checkT = find(difference < windowMSSMin);
-% %                     ind = difference(difference < windowMSSMin);
-% %                     indMin = difference(difference >= windowMSSMin);
-% %                     check = checkT(ind  == min(ind));
-% %                     continue
                 end
-                
-            
-            
+    
              %If segment is last, connect to preceding
             elseif check(m) == length(difference) && difference(check(m)) >= 16
                 comp1 = difference(check(m));
-                if difference(check(m)-1) -(windowMSSMin2-comp1) >= windowMSSMin && ~ismember(difference(check(m)-1) -(windowMSSMin2-comp1),offLim)
-                    difference(check(m)) = comp1 + (windowMSSMin2-comp1);
-                    difference(check(m)-1) = difference(check(m)-1) -(windowMSSMin2-comp1);
-% %                     checkT = find(difference < windowMSSMin2);
-% %                     checkM = find(difference >= 16);
-% %                     indMin = ismember(checkT,checkM);
-% %                     check = checkT(indMin);
+                if difference(check(m)-1) -(windowMSSMin-comp1) >= absMin && ~ismember(difference(check(m)-1) -(windowMSSMin-comp1),offLim)
+                    difference(check(m)) = comp1 + (windowMSSMin-comp1);
+                    difference(check(m)-1) = difference(check(m)-1) -(windowMSSMin-comp1);
                     % Keep peak but move segPoint
-                    segPoints(end-1,:) = segPoints(end-1,:) - (windowMSSMin2-comp1);
+                    segPoints(end-1,:) = segPoints(end-1,:) - (windowMSSMin-comp1);
                     continue
-% %                 else
-% %                     segPoints(end-1,:) = [];
-% %                     peakThresh(end) = [];
-% %                     n = 1:length(segPoints)-1;
-% %                     difference = segPoints(n+1)-segPoints(n);
-% %                     checkT = find(difference < windowMSSMin);
-% %                     ind = difference(difference < windowMSSMin);
-% %                     indMin = difference(difference >= windowMSSMin);
-% %                     check = checkT(ind  == min(ind));
-% %                     continue
                 end
                 
             
@@ -1290,53 +1273,26 @@ function [segPoints,peakThresh] = findCloseSegments(trackFull,level,halfWindowMS
                     %if higher peak is in front, delete peak behind, same
                     %as if it were last segment
                     comp1 = difference(check(m));
-                    if difference(check(m)-1) -(windowMSSMin2-comp1) >= windowMSSMin && ~ismember(difference(check(m)-1) -(windowMSSMin2-comp1),offLim)
-                        difference(check(m)) = comp1 + (windowMSSMin2-comp1);
-                        difference(check(m)-1) = difference(check(m)-1) -(windowMSSMin2-comp1);
-% %                         checkT = find(difference < windowMSSMin2);
-% %                         checkM = find(difference >= 16);
-% %                         indMin = ismember(checkT,checkM);
+                    if difference(check(m)-1) -(windowMSSMin-comp1) >= absMin && ~ismember(difference(check(m)-1) -(windowMSSMin-comp1),offLim)
+                        difference(check(m)) = comp1 + (windowMSSMin-comp1);
+                        difference(check(m)-1) = difference(check(m)-1) -(windowMSSMin-comp1);
                         
                         % Keep peak but move segPoint
-                        segPoints(check(m),:) = segPoints(check(m),:) - (windowMSSMin2-comp1);
-% %                         check = checkT(indMin);
+                        segPoints(check(m),:) = segPoints(check(m),:) - (windowMSSMin-comp1);
                         continue
-% %                     else
-% %                         segPoints(end-1,:) = [];
-% %                         peakThresh(end) = [];
-% %                         n = 1:length(segPoints)-1;
-% %                         difference = segPoints(n+1)-segPoints(n);
-% %                         checkT = find(difference < windowMSSMin);
-% %                         ind = difference(difference < windowMSSMin);
-% %                         indMin = difference(difference >= windowMSSMin);
-% %                         check = checkT(ind  == min(ind));
-% %                         continue
                     end
                 else
                     %if higher peak is behind, delete peak in front, same
                     %as if it were first segment
                         comp1 = difference(check(m));
-                        if difference(check(m)+1) -(windowMSSMin2-comp1) >= windowMSSMin && ~ismember(difference(check(m)+1) -(windowMSSMin2-comp1),offLim)
-                            difference(check(m)) = comp1 + (windowMSSMin2-comp1);
-                            difference(check(m)+1) = difference(check(m)+1) -(windowMSSMin2-comp1);
-% %                             checkT = find(difference < windowMSSMin2);
-% %                             checkM = find(difference >= 16);
-% %                             indMin = ismember(checkT,checkM);
+                        if difference(check(m)+1) -(windowMSSMin-comp1) >= absMin && ~ismember(difference(check(m)+1) -(windowMSSMin-comp1),offLim)
+                            difference(check(m)) = comp1 + (windowMSSMin-comp1);
+                            difference(check(m)+1) = difference(check(m)+1) -(windowMSSMin-comp1);
+
                             % Keep peak but move segPoint
-                            segPoints(check(m)+1,:) = segPoints(check(m)+1,:) + (windowMSSMin2-comp1);
-% %                             check = checkT(indMin);
+                            segPoints(check(m)+1,:) = segPoints(check(m)+1,:) + (windowMSSMin-comp1);
                             continue
-% %                         else
-% %                             segPoints(2,:) =[];
-% %                             peakThresh(1) =[];
-% % 
-% %                             n = 1:length(segPoints)-1;
-% %                             difference = segPoints(n+1)-segPoints(n);
-% %                             checkT = find(difference < windowMSSMin);
-% %                             ind = difference(difference < windowMSSMin);
-% %                             indMin = difference(difference >= windowMSSMin);
-% %                             check = checkT(ind  == min(ind));
-% %                             continue
+
                         end
                 end
                        
@@ -1345,287 +1301,115 @@ function [segPoints,peakThresh] = findCloseSegments(trackFull,level,halfWindowMS
     end
 end
 
-function [segPoints,peakThresh] = findDiffSegments(segPoints,windowMSSMin, peakThresh) %trackFull,level,halfWindowMSS
-%         [peaks,locs] = findpeaks(trackFull);%If this slow, try find(trackFull(n) > I(n+1) & trackFull(n) > I(n-1));
-% %         idxSwitch = find(peaks >= level); %change to level prctile(trackFull,90)/ level
-%         
-%         %Get segments and verify that each is a minimum length, if not then
-%         %join with adjacent segment with smallest peak. May need to repeat
-%         %after checking that segments are long enough. Make sure entire
-%         %track is retained 
-%         peakThresh = peaks(peaks >= level);
-%         segPoints = [1;locs(peaks >= level);length(trackFull)];
-%         segPoints(2:end)=segPoints(2:end)+1+halfWindowMSS; %half of windowMin, 1 for deriv offset
-%         segPoints(end)=segPoints(end)+1+halfWindowMSS; %half of windowMin, 1 for edn correction
-        n = 1:length(segPoints)-1;
-        difference = segPoints(n+1)-segPoints(n);
-        checkT = find(difference < windowMSSMin);
-        indMin = difference(difference >= windowMSSMin); %Is at least one segment analyzable?
-        ind = difference(difference < windowMSSMin); %Temporarily
-%         allowing short segments, uncomment to revert
-        check = checkT(ind  == min(ind));
-%         [~,check] =sort(difference(difference < windowMSSMin)); 
-        while ~isempty(check) && isempty(indMin)
-        %If short segment is first, connect to succeeding
-            if check(1) == 1 && difference(check(1)) <16 %And less then a minimum length
+function [segPoints,peakThresh] = findDiffSegments(segPoints,windowMSSMin, peakThresh)
+% Description: Check to see if at least one segment is classfiable. If not,
+% attempt to extend a segment
+    n = 1:length(segPoints)-1;
+    difference = (segPoints(n+1)-segPoints(n))+1;
+    checkT = find(difference < windowMSSMin); %Are there segments below the the classifiable length, windowMSSMin
+    indMin = difference(difference >= windowMSSMin); %Is at least one segment classifiable?
+    ind = difference(difference < windowMSSMin); %Where are the segments below the the classifiable length, windowMSSMin
+    %Select shortest segment found 
+    check = checkT(ind  == min(ind));
+
+    %While there are short segments and there is not one that is
+    %classifiable, attempt to merge segments until at least one is
+    %classifiable
+    while ~isempty(check) && isempty(indMin)
+    %If short segment is first, connect to succeeding
+        if check(1) == 1 && difference(check(1)) <16 %And less then a minimum length
+            segPoints(2,:) =[];
+            peakThresh(1) =[];
+
+            n = 1:length(segPoints)-1;
+            difference = segPoints(n+1)-segPoints(n);
+            checkT = find(difference < windowMSSMin);
+            ind = difference(difference < windowMSSMin);
+            indMin = difference(difference >= windowMSSMin);
+            check = checkT(ind  == min(ind));
+            continue
+        elseif check(1) ==1 && difference(check(1)) >= 16
+            comp1 = difference(check(1));
+            if difference(2) -(windowMSSMin-comp1) >= windowMSSMin
+                difference(1) = comp1 + (windowMSSMin-comp1);
+                difference(2) = difference(2) -(windowMSSMin-comp1);
+                checkT = find(difference < windowMSSMin);
+                ind = difference(difference < windowMSSMin);
+                indMin = difference(difference >= windowMSSMin);
+                check = checkT(ind  == min(ind));
+                % Keep peak but move segPoint
+                segPoints(2,:) = segPoints(2,:) + (windowMSSMin-comp1);
+                continue
+            else
                 segPoints(2,:) =[];
                 peakThresh(1) =[];
-                
+
                 n = 1:length(segPoints)-1;
                 difference = segPoints(n+1)-segPoints(n);
-% %                 difference(1) = difference(1) +1; %offset correction, verify
                 checkT = find(difference < windowMSSMin);
                 ind = difference(difference < windowMSSMin);
                 indMin = difference(difference >= windowMSSMin);
                 check = checkT(ind  == min(ind));
-%                 [~,check] =sort(difference(difference < windowMSSMin));
                 continue
-            elseif check(1) ==1 && difference(check(1)) >= 16
-                comp1 = difference(check(1));
-                if difference(2) -(windowMSSMin-comp1) >= windowMSSMin
-                    difference(1) = comp1 + (windowMSSMin-comp1);
-                    difference(2) = difference(2) -(windowMSSMin-comp1);
-                    checkT = find(difference < windowMSSMin);
-                    ind = difference(difference < windowMSSMin);
-                    indMin = difference(difference >= windowMSSMin);
-                    check = checkT(ind  == min(ind));
-                    % Keep peak but move segPoint
-                    segPoints(2,:) = segPoints(2,:) + (windowMSSMin-comp1);
-                    continue
-                else
-                    segPoints(2,:) =[];
-                    peakThresh(1) =[];
-
-                    n = 1:length(segPoints)-1;
-                    difference = segPoints(n+1)-segPoints(n);
-            % %                 difference(1) = difference(1) +1; %offset correction, verify
-                    checkT = find(difference < windowMSSMin);
-                    ind = difference(difference < windowMSSMin);
-                    indMin = difference(difference >= windowMSSMin);
-                    check = checkT(ind  == min(ind));
-                    continue
-                end
-                
             end
-             %If segment is last, connect to preceding
-            if check(1) == length(difference)  && difference(check(1)) <16
+
+        end
+         %If segment is last, connect to preceding
+        if check(1) == length(difference)  && difference(check(1)) <16
+            segPoints(end-1,:) = [];
+            peakThresh(end) = [];
+
+            n = 1:length(segPoints)-1;
+            difference = segPoints(n+1)-segPoints(n);
+            checkT = find(difference < windowMSSMin);
+            ind = difference(difference < windowMSSMin);
+            indMin = difference(difference >= windowMSSMin);
+            check = checkT(ind  == min(ind));
+            continue
+        elseif check(1) == length(difference) && difference(check(1)) >= 16
+            comp1 = difference(check(1));
+            if difference(check(1)-1) -(windowMSSMin-comp1) >= windowMSSMin
+                difference(check(1)) = comp1 + (windowMSSMin-comp1);
+                difference(check(1)-1) = difference(check(1)-1) -(windowMSSMin-comp1);
+                checkT = find(difference < windowMSSMin);
+                ind = difference(difference < windowMSSMin);
+                indMin = difference(difference >= windowMSSMin);
+                check = checkT(ind  == min(ind));
+                % Keep peak but move segPoint
+                segPoints(end-1,:) = segPoints(end-1,:) - (windowMSSMin-comp1);
+                continue
+            else
                 segPoints(end-1,:) = [];
                 peakThresh(end) = [];
-                                                
                 n = 1:length(segPoints)-1;
                 difference = segPoints(n+1)-segPoints(n);
-% %                 difference(1) = difference(1) +1; %offset correction, verify
                 checkT = find(difference < windowMSSMin);
                 ind = difference(difference < windowMSSMin);
                 indMin = difference(difference >= windowMSSMin);
                 check = checkT(ind  == min(ind));
-%                 [~,check] =sort(difference(difference < windowMSSMin));
                 continue
-            elseif check(1) == length(difference) && difference(check(1)) >= 16
-                comp1 = difference(check(1));
-                if difference(check(1)-1) -(windowMSSMin-comp1) >= windowMSSMin
-                    difference(check(1)) = comp1 + (windowMSSMin-comp1);
-                    difference(check(1)-1) = difference(check(1)-1) -(windowMSSMin-comp1);
-                    checkT = find(difference < windowMSSMin);
-                    ind = difference(difference < windowMSSMin);
-                    indMin = difference(difference >= windowMSSMin);
-                    check = checkT(ind  == min(ind));
-                    % Keep peak but move segPoint
-                    segPoints(end-1,:) = segPoints(end-1,:) - (windowMSSMin-comp1);
-                    continue
-                else
-                    segPoints(end-1,:) = [];
-                    peakThresh(end) = [];
-                    n = 1:length(segPoints)-1;
-                    difference = segPoints(n+1)-segPoints(n);
-                    checkT = find(difference < windowMSSMin);
-                    ind = difference(difference < windowMSSMin);
-                    indMin = difference(difference >= windowMSSMin);
-                    check = checkT(ind  == min(ind));
-                    continue
-                end
-                
             end
 
-            %If segment is somewhere in middle, connect to segment with lowest
-            %peak
-            if ~isempty(check)
-                if peakThresh(check(1)) > peakThresh(check(1)-1)
-                    segPoints(check(1),:) =[]; %if higher peak is in front, delete peak behind
-                    peakThresh(check(1)-1)=[];
-                else
-                    segPoints(check(1)+1,:) =[];
-                    peakThresh(check(1)) =[];
-                end
-                       
-                n = 1:length(segPoints)-1;
-                difference = segPoints(n+1)-segPoints(n);
-                checkT = find(difference < windowMSSMin);
-                ind = difference(difference < windowMSSMin);
-                indMin = difference(difference >= windowMSSMin);
-                check = checkT(ind  == min(ind));
-%                 [~,check] =sort(difference(difference < windowMSSMin));
-            end
         end
+
+        %If segment is somewhere in middle, connect to segment with lowest
+        %peak
+        if ~isempty(check)
+            if peakThresh(check(1)) > peakThresh(check(1)-1)
+                segPoints(check(1),:) =[]; %if higher peak is in front, delete peak behind
+                peakThresh(check(1)-1)=[];
+            else
+                segPoints(check(1)+1,:) =[];
+                peakThresh(check(1)) =[];
+            end
+
+            n = 1:length(segPoints)-1;
+            difference = segPoints(n+1)-segPoints(n);
+            checkT = find(difference < windowMSSMin);
+            ind = difference(difference < windowMSSMin);
+            indMin = difference(difference >= windowMSSMin);
+            check = checkT(ind  == min(ind));
+        end
+    end
 end
-                    %{
-                    %% Lower threshold Diffusion Analysis
-                    %If any track has been classified as confined or
-                    %immobile, check again with lower threshold
-                    recheck = ismember(partClassMSS(:,3),[1,0]);
-                    if sum(recheck) == 0
-%                         continue
-                    else
-                        
-                        tmpPartClassMSS = partClassMSS(recheck,:);
-                        for m = 1:size(tmpPartClassMSS,1)
-                          testPoints = segPoints2(segPoints2 >= tmpPartClassMSS(m,1) & segPoints2 <= tmpPartClassMSS(m,2)+1);
-                          n = 1:length(testPoints)-1;
-                          difference = testPoints(n+1)-testPoints(n);
-                          pointClassMSS = NaN(length(n),1);
-                          mssSlopeTmp = pointClassMSS;
-                          normDiffCoefTmp = pointClassMSS;
-                          confRadLow = pointClassMSS;
-                          centerLow = NaN(length(n),probDim);
-                          genDiffCoefTmp = NaN(length(n),length(momentOrders));
-                          scalingPowerTmp = NaN(length(n),length(momentOrders));
-                          partClassMSSTmp = NaN(length(n),3);
-                          trackSELCurrent = trackSEL(iTrack,:);
-                                  
-                            for k = 1:length(testPoints)-1 
-                            startPoint = trackSELCurrent(1) +testPoints(k)-1;
-                            endPoint  = startPoint+ difference(k)-1;
-
-                                        [pointClassMSS(k),mssSlopeTmp(k),genDiffCoefTmp(k,:),scalingPowerTmp(k,:),normDiffCoefTmp(k)] = trackMSSAnalysis(...
-                                            tracks(iTrack,8*(startPoint-1)+1:8*endPoint),...
-                                            probDim,momentOrders,alphaValues);
-
-                                        if pointClassMSS(k) <= 1
-                                            [confRadLow(k),centerLow(k,:)] = estimConfRad(tracks(iTrack,8*(startPoint-1)+1:8*endPoint),probDim,confRadMin);
-                                            xCoord = (tracks(iTrack,8*(startPoint-1)+1:8:8*endPoint))';
-                                            yCoord = (tracks(iTrack,8*(startPoint-1)+2:8:8*endPoint))';
-                                            center  = centerLow(k,:);
-% %                                             [pointClassMSS(k)]  = immobileDetection(xCoord,yCoord,center);
-                                        else
-                                            confRadLow(k) = NaN;
-                                            centerLow(k,:) = NaN(1,probDim);
-                                        end 
-
-                                        partClassMSSTmp(k,1)= startPoint;
-                                        partClassMSSTmp(k,2)= endPoint;
-                                        partClassMSSTmp(k,3)= pointClassMSS(k);
-                                        %Rest of MSS information or not... jsut fill in track
-
-                            end
-                            % Connect like segments again
-                            %partClassTmp = partClassMSSTmp;
-                                for iSubpart = 1 : length(pointClassMSS)-1
-                                    iSubpartPlus1 = iSubpart + 1;
-                                    
-                                    while ( (iSubpartPlus1 <= length(pointClassMSS)) && ...
-                                    ( (pointClassMSS(iSubpart) == pointClassMSS(iSubpartPlus1)) || ...
-                                    (isnan(pointClassMSS(iSubpart)) && isnan(pointClassMSS(iSubpartPlus1))) ) )
-                                    partClassMSSTmp(iSubpart,2) = partClassMSSTmp(iSubpartPlus1,2);
-                                    partClassMSSTmp(iSubpartPlus1,1) = partClassMSSTmp(iSubpart,1);
-                                    iSubpartPlus1 = iSubpartPlus1 + 1;
-                                    end
-                                end
-                                
-                            [~,uniqueParts] = unique(partClassMSSTmp(:,1));
-                            partClassMSSTmp = partClassMSSTmp(uniqueParts,:);
-                            
-                            %create no switch option, nothing changed
-                            
-                            if sum(ismember(partClassMSSTmp(:,3),2))>0
-                                partClassMSSTest =partClassMSS;
-%                                 continue
-                            elseif ismember(partClassMSSTmp,partClassMSS,'rows')
-                                partClassMSSTest =partClassMSS;
-%                                 continue
-                            else
-                                if m ==1
-                                    oldClass =partClassMSS(~recheck,:);
-%                                     mssSlope0=mssSlope(~recheck,:);
-%                                     genDiffCoef0=genDiffCoef(~recheck,:);
-%                                     scalingPower0 =scalingPower(~recheck,:);
-%                                     normDiffCoef0=normDiffCoef(~recheck,:);
-%                                     confRadTmp0=confRadTmp(~recheck,:);
-%                                     centerTmp0=centerTmp(~recheck,:);
-                                else
-                                        oldClass = partClassMSS;
-
-%                                     mssSlope0=mssSlope;
-%                                     genDiffCoef0=genDiffCoef;
-%                                     scalingPower0 =scalingPower;
-%                                     normDiffCoef0=normDiffCoef;
-%                                     confRadTmp0=confRadTmp;
-%                                     centerTmp0=centerTmp;
-                                end
-%                                 clear partClassMSS
-                                partClassMSSTest = [oldClass;partClassMSSTmp];
-%                                 mssSlope=[mssSlope0;mssSlopeTmp];
-%                                 genDiffCoef=[genDiffCoef0;genDiffCoefTmp];
-%                                 scalingPower =[scalingPower0;scalingPowerTmp];
-%                                 normDiffCoef=[normDiffCoef0;normDiffCoefTmp];
-%                                 confRadTmp=[confRadTmp0;confRadLow];
-%                                 centerTmp=[centerTmp0;centerLow];
-                               %Sort out the rest of the variables being
-                               %saved
-                               %Eventually accomodate for many segments to
-                               %be re-analyzed
-                            end
-                            
-                        end
-                       partClassMSS = partClassMSSTest; 
-                    end
                     
-                     %% II Reclassify again if segments next to each other are the same
-                     %merge subparts that now have the same classification
-                            partClassTmp = partClassMSS;
-                            pointClassMSS = partClassMSS(:,3); 
-                    for iSubpart = 1 : length(pointClassMSS)-1
-                        iSubpartPlus1 = iSubpart + 1;
-                        while ( (iSubpartPlus1 <= length(pointClassMSS)) && ...
-                                ( (pointClassMSS(iSubpart) == pointClassMSS(iSubpartPlus1)) || ...
-                                (isnan(pointClassMSS(iSubpart)) && isnan(pointClassMSS(iSubpartPlus1))) ) )
-                            partClassMSS(iSubpart,2) = partClassMSS(iSubpartPlus1,2);
-                            partClassMSS(iSubpartPlus1,1) = partClassMSS(iSubpart,1);
-                            iSubpartPlus1 = iSubpartPlus1 + 1;
-                        end
-                    end
-                    [~,uniqueParts] = unique(partClassMSS(:,1));
-                    partClassMSS = partClassMSS(uniqueParts,:);
-                    %Final Diffusion characteristics
-
-                        numSeg = size(partClassMSS,1);
-                        pointClassMSS = NaN(numSeg,1);
-                        mssSlope = pointClassMSS;
-                        normDiffCoef = pointClassMSS;
-                        confRadTmp = pointClassMSS;
-                        centerTmp = NaN(numSeg,probDim);
-                        genDiffCoef = NaN(numSeg,length(momentOrders));
-                        scalingPower = NaN(numSeg,length(momentOrders));
-                        
-                        
-                        for k = 1:numSeg 
-                        startPoint = partClassMSS(k,1);
-                        endPoint  = partClassMSS(k,2);
-
-                                    [pointClassMSS(k),mssSlope(k),genDiffCoef(k,:),scalingPower(k,:),normDiffCoef(k)] = trackMSSAnalysis(...
-                                        tracks(iTrack,8*(startPoint-1)+1:8*endPoint),...
-                                        probDim,momentOrders,alphaValues);
-
-                                    if pointClassMSS(k) <= 1
-                                        [confRadTmp(k),centerTmp(k,:)] = estimConfRad(tracks(iTrack,8*(startPoint-1)+1:8*endPoint),probDim,confRadMin);
-                                        xCoord = (tracks(iTrack,8*(startPoint-1)+1:8:8*endPoint))';
-                                        yCoord = (tracks(iTrack,8*(startPoint-1)+2:8:8*endPoint))';
-                                        center  = centerTmp(k,:);
-% %                                         [pointClassMSS(k)]  = immobileDetection(xCoord,yCoord,center);
-                                    else
-                                        confRadTmp(k) = NaN;
-                                        centerTmp(k,:) = NaN(1,probDim);
-                                    end 
-                            partClassMSS(k,3) = pointClassMSS(k);
-                        end
-                    
-%}
