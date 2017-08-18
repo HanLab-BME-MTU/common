@@ -65,7 +65,7 @@ else
         maxIter = 10;
     end
     if(nargin < 7)
-        avoidNaN = isvector(guess);
+        avoidNaN = ~isvector(guess);
     end
 end
 
