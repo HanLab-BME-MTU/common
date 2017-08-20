@@ -141,10 +141,10 @@ guess_vals = interpft1([0 2*pi],v_hat,repmat(guess,xqrep),'horner_freq');
 numIter = 0;
 while(~numIter || any(columnNotDone))
     disp('hi');
-    v = guess_vals(:,:,1);
+    vv = guess_vals(:,:,1);
     vd = guess_vals(:,:,2);
     vdd = guess_vals(:,:,3);
-    new_guess = guess(:,columnNotDone) - 2*v.*vd./(2*vd.^2-v.*vdd);
+    new_guess = guess(:,columnNotDone) - 2*vv.*vd./(2*vd.^2-vv.*vdd);
     new_guess = wraparoundN(new_guess,0,2*pi);
     new_guess_vals = interpft1([0 2*pi],v_hat(:,columnNotDone,:),repmat(new_guess,xqrep),'horner_freq');
     new_guess_is_better_now = abs(new_guess_vals(:,:,1)) < abs(guess_vals(:,:,1));
