@@ -15,18 +15,14 @@ function [trackClass,mssSlope,genDiffCoef,scalingPower,normDiffCoef] ...
 %       probDim     : Problem dimensionality. Optional. Default: 2.
 %       momentOrders: Orders of moments to be calculated.
 %                     Optional. Default: 0 through 6.
-%       alphaMSS    : Alpha-value for classification. Can take the values
-%                     0.2, 0.1, 0.05 and 0.01. One can enter one value,
-%                     which will be used for all motion types, or 2 values,
-%                     which will be used for confined and directed, respectively.
-%                     Optional. Default: 0.1 for all.
-
-%                     NEW DIFFUSION CLASSIFICATION: New method (see Remark
-%                     #5) uses best thresholds to separate
-%                     immobile,confined, and free tracks in unbiased manner. 
-%                     To use, enter only the desired alpha value for directed 
-%                     motion with a preceding minus sign (ex. -0.05). Will 
-%                     not work for multiple inputs.
+%       alphaMSS    : Alpha-value for classification. Can take the
+%                     following values:
+%                     OLD SCHEME: 0.2, 0.1, 0.05 or 0.01. In this scheme,
+%                     the alpha-value is the false positive rate from a
+%                     free diffusion-centric perspective.
+%                     NEW SCHEME (RECOMMENDED): -0.2, -0.1, -0.05 or -0.01.
+%                     See Remark #5 below for explanation and more details.
+%                     Optional. Default: 0.1.
 %
 %OUTPUT trackClass  : # tracks x 1 vector of track classification.
 %                     Values mean the following ...
@@ -68,21 +64,27 @@ function [trackClass,mssSlope,genDiffCoef,scalingPower,normDiffCoef] ...
 %derived from a sample of 2000 simulations.
 %
 %(4) MSS slope threshold for immobile:
-%Currently taken as the threshold for confined divided by 4. Validated
-%visually on 2D data only. This seems to work better than deriving a
-%threshold from simulating positional jitter. Investigate further.
+%Relevant only for OLD SCHEME (free-diffusion centric error rate (Remark 3 above).
+%Taken as the threshold for confined divided by 4. Validated
+%visually on 2D data only. 
 %
-%(5) New diffusion classification method: 
-% New method considers not only MSS value distributions resulting from simulations of
-% freely diffusing tracks, but also looks at confined and immobile simulations.
-% Threshold values were then chosen that minimize the error rate for
-% adjacent distributions (ex. free/confined, confined/immobile). Not
-% implemented for free/direct.
+%(5) NEW CLASSIFICATION SCHEME (Tony Vega): 
+% New scheme considers not only MSS value distributions resulting from
+% simulations of freely diffusing tracks, but also looks at confined,
+% immobile and directed simulations. Threshold values are chosen to
+% minimize the error rate for adjacent distributions (i.e.
+% confined/immobile, free/confined and directed/free). Thus the error rate
+% for free is no longer fixed as in the old scheme, but depends on track
+% length.
+% Fully implemented for 2D data. 
+% For 1D data, new scheme is currently used to distinguish between
+% immobile, confined and free, but not yet implemented for directed. 
+% Not implemented at all for 3D data yet. In the works.
 %
 %Khuloud Jaqaman, March 2008
-%                 Feb 2015: Expanded to include immobile.
+%                 Feb 2015 : Expanded to include immobile.
 % Tony Vega,      July 2016: New option to use thresholds based on
-% distributions of all diffusion types
+%                            distributions of all diffusion types
 
 %% input
 
@@ -101,20 +103,8 @@ end
 numOrders = length(momentOrders);
 
 if nargin < 4 || isempty(alphaMSS)
-    [alphaMSSConf,alphaMSSDir,alphaMSSImm] = deal(0.1);
-elseif length(alphaMSS) == 1
-        [alphaMSSConf,alphaMSSDir,alphaMSSImm] = deal(alphaMSS);
-elseif length(alphaMSS) == 2 % TEMP BY TONY, until further changes
-    alphaMSSConf = alphaMSS(1);
-    alphaMSSDir = alphaMSS(2);
-elseif length(alphaMSS) == 3
-    alphaMSSConf = alphaMSS(1);
-    alphaMSSDir = alphaMSS(2);
-    alphaMSSImm = alphaMSS(3);
+    alphaMSS = 0.1;
 end
-
-%make alpha-value for immobile always 0.001
-alphaMSSImm = 0.001;
 
 %get number of tracks and frames
 [numTracks,numFramesMovie] = size(tracks);
@@ -129,57 +119,26 @@ clear criteria
 %% alpha-value for classification
 
 %determine threshold based on alpha-value and dimensionality
-if alphaMSS(1) ~= abs(alphaMSS(1))  && probDim ==2
-    p = mfilename('fullpath');
-    load(strcat(p(1:end-16),'newDiffTypeThreshold.mat'))
-    mssThreshImm = Mdl.mssThreshImm;
-    mssThreshNeg = Mdl.mssThreshNeg;
-    mssThreshPos = Mdl.mssThreshPos;
-    mssThreshNeg = [mssThreshNeg(1:min(500,numFramesMovie)); mssThreshNeg(500)*ones(max(0,numFramesMovie-500),1)];
-    mssThreshImm = [mssThreshImm(1:min(500,numFramesMovie)); mssThreshImm(500)*ones(max(0,numFramesMovie-500),1)];
-    mssThreshPos = [mssThreshPos(1:min(500,numFramesMovie)); mssThreshPos(500)*ones(max(0,numFramesMovie-500),1)];
-%     switch abs(alphaMSSDir)
-%     case 0.2 %10th percentile and 90th percentile
-%         [~,mssThreshPos] = threshMSS2D_p20(numFramesMovie);
-%     case 0.1 %5th percentile and 95th percentile
-%         [~,mssThreshPos] = threshMSS2D_p10(numFramesMovie);
-%     case 0.05 %2.5th percentile and 97.5th percentile
-%         [~,mssThreshPos] = threshMSS2D_p05(numFramesMovie);
-%     case 0.01 %0.5th percentile and 99.5th percentile
-%         [~,mssThreshPos] = threshMSS2D_p01(numFramesMovie);
-%     end
-
-elseif alphaMSS(1) ~= abs(alphaMSS(1))  && probDim ==1
-    p = mfilename('fullpath');
-    load(strcat(p(1:end-16),'newDiffTypeThreshold1D.mat'))
-    mssThreshImm = Mdl1D.mssThreshImm;
-    mssThreshNeg = Mdl1D.mssThreshNeg;
-    mssThreshNeg = [mssThreshNeg(1:min(500,numFramesMovie)); mssThreshNeg(500)*ones(max(0,numFramesMovie-500),1)];
-    mssThreshImm = [mssThreshImm(1:min(500,numFramesMovie)); mssThreshImm(500)*ones(max(0,numFramesMovie-500),1)];    
-    switch abs(alphaMSSDir)
-    case 0.2 %10th percentile and 90th percentile
-        [~,mssThreshPos] = threshMSS1D_p20(numFramesMovie);
-    case 0.1 %5th percentile and 95th percentile
-        [~,mssThreshPos] = threshMSS1D_p10(numFramesMovie);
-    case 0.05 %2.5th percentile and 97.5th percentile
-        [~,mssThreshPos] = threshMSS1D_p05(numFramesMovie);
-    case 0.01 %0.5th percentile and 99.5th percentile
-        [~,mssThreshPos] = threshMSS1D_p01(numFramesMovie);
-    end
-else
+if alphaMSS < 0 %NEW SCHEME
     switch probDim
+        case 2
+            p = mfilename('fullpath');
+            load(strcat(p(1:end-16),'newDiffTypeThreshold.mat'))
+            mssThreshImm = Mdl.mssThreshImm;
+            mssThreshNeg = Mdl.mssThreshNeg;
+            mssThreshPos = Mdl.mssThreshPos;
+            mssThreshImm = [mssThreshImm(1:min(500,numFramesMovie)); mssThreshImm(500)*ones(max(0,numFramesMovie-500),1)];
+            mssThreshNeg = [mssThreshNeg(1:min(500,numFramesMovie)); mssThreshNeg(500)*ones(max(0,numFramesMovie-500),1)];
+            mssThreshPos = [mssThreshPos(1:min(500,numFramesMovie)); mssThreshPos(500)*ones(max(0,numFramesMovie-500),1)];
+
         case 1
-            switch alphaMSSConf
-                case 0.2 %10th percentile and 90th percentile
-                    mssThreshNeg = threshMSS1D_p20(numFramesMovie);
-                case 0.1 %5th percentile and 95th percentile
-                    mssThreshNeg = threshMSS1D_p10(numFramesMovie);
-                case 0.05 %2.5th percentile and 97.5th percentile
-                    mssThreshNeg = threshMSS1D_p05(numFramesMovie);
-                case 0.01 %0.5th percentile and 99.5th percentile
-                    mssThreshNeg = threshMSS1D_p01(numFramesMovie);
-            end
-            switch alphaMSSDir
+            p = mfilename('fullpath');
+            load(strcat(p(1:end-16),'newDiffTypeThreshold1D.mat'))
+            mssThreshImm = Mdl1D.mssThreshImm;
+            mssThreshNeg = Mdl1D.mssThreshNeg;
+            mssThreshImm = [mssThreshImm(1:min(500,numFramesMovie)); mssThreshImm(500)*ones(max(0,numFramesMovie-500),1)];
+            mssThreshNeg = [mssThreshNeg(1:min(500,numFramesMovie)); mssThreshNeg(500)*ones(max(0,numFramesMovie-500),1)];
+            switch abs(alphaMSS)
                 case 0.2 %10th percentile and 90th percentile
                     [~,mssThreshPos] = threshMSS1D_p20(numFramesMovie);
                 case 0.1 %5th percentile and 95th percentile
@@ -189,73 +148,48 @@ else
                 case 0.01 %0.5th percentile and 99.5th percentile
                     [~,mssThreshPos] = threshMSS1D_p01(numFramesMovie);
             end
-            mssThreshImm = -Inf(numFramesMovie,1);
-        case 2
-            switch alphaMSSConf
-                case 0.2 %10th percentile and 90th percentile
-                    mssThreshNeg = threshMSS2D_p20(numFramesMovie);
-                case 0.1 %5th percentile and 95th percentile
-                    mssThreshNeg = threshMSS2D_p10(numFramesMovie);
-                case 0.05 %2.5th percentile and 97.5th percentile
-                    mssThreshNeg = threshMSS2D_p05(numFramesMovie);
-                case 0.01 %0.5th percentile and 99.5th percentile
-                    mssThreshNeg = threshMSS2D_p01(numFramesMovie);
-            end
-            switch alphaMSSDir
-                case 0.2 %10th percentile and 90th percentile
-                    [~,mssThreshPos] = threshMSS2D_p20(numFramesMovie);
-                case 0.1 %5th percentile and 95th percentile
-                    [~,mssThreshPos] = threshMSS2D_p10(numFramesMovie);
-                case 0.05 %2.5th percentile and 97.5th percentile
-                    [~,mssThreshPos] = threshMSS2D_p05(numFramesMovie);
-                case 0.01 %0.5th percentile and 99.5th percentile
-                    [~,mssThreshPos] = threshMSS2D_p01(numFramesMovie);
-            end
-            switch alphaMSSImm
-                %             case 0.2 %80th percentile
-                %                 mssThreshImm = threshMSSImm2D_p20(numFramesMovie);
-                %             case 0.1 %90th percentile
-                %                 mssThreshImm = threshMSSImm2D_p10(numFramesMovie);
-                %             case 0.05 %95th percentile
-                %                 mssThreshImm = threshMSSImm2D_p05(numFramesMovie);
-                case 0.01 %99th percentile
-                    mssThreshImm = threshMSSImm2D_p01(numFramesMovie);
-                case 0.001 %99.9th percentile
-                    mssThreshImm = threshMSSImm2D_p001(numFramesMovie);
-                case 0.0001 %99.99th percentile
-                    mssThreshImm = threshMSSImm2D_p0001(numFramesMovie);
-                case 0 %100th percentile, or max
-                    mssThreshImm = threshMSSImm2D_p0(numFramesMovie);
-            end
-                        mssThreshImm = mssThreshNeg / 4;
-
         case 3
-            switch alphaMSSConf
-                case 0.2 %10th percentile and 90th percentile
-                    mssThreshNeg = threshMSS3D_p20(numFramesMovie);
-                case 0.1 %5th percentile and 95th percentile
-                    mssThreshNeg = threshMSS3D_p10(numFramesMovie);
-                case 0.05 %2.5th percentile and 97.5th percentile
-                    mssThreshNeg = threshMSS3D_p05(numFramesMovie);
-                case 0.01 %0.5th percentile and 99.5th percentile
-                    mssThreshNeg = threshMSS3D_p01(numFramesMovie);
-            end
-            switch alphaMSSDir
-                case 0.2 %10th percentile and 90th percentile
-                    [~,mssThreshPos] = threshMSS3D_p20(numFramesMovie);
-                case 0.1 %5th percentile and 95th percentile
-                    [~,mssThreshPos] = threshMSS3D_p10(numFramesMovie);
-                case 0.05 %2.5th percentile and 97.5th percentile
-                    [~,mssThreshPos] = threshMSS3D_p05(numFramesMovie);
-                case 0.01 %0.5th percentile and 99.5th percentile
-                    [~,mssThreshPos] = threshMSS3D_p01(numFramesMovie);
-            end
-%             mssThreshImm = -Inf(numFramesMovie,1);
-            mssThreshImm = mssThreshNeg / 4;
+            ('--trackMSSAnalysis: Optimal thresholds not implemented yet for 3D data.');
+            return
     end
+else %OLD SCHEME
+    switch probDim
+        case 1
+            switch alphaMSS
+                case 0.2 %10th percentile and 90th percentile
+                    [mssThreshNeg,mssThreshPos] = threshMSS1D_p20(numFramesMovie);
+                case 0.1 %5th percentile and 95th percentile
+                    [mssThreshNeg,mssThreshPos] = threshMSS1D_p10(numFramesMovie);
+                case 0.05 %2.5th percentile and 97.5th percentile
+                    [mssThreshNeg,mssThreshPos] = threshMSS1D_p05(numFramesMovie);
+                case 0.01 %0.5th percentile and 99.5th percentile
+                    [mssThreshNeg,mssThreshPos] = threshMSS1D_p01(numFramesMovie);
+            end
+        case 2
+            switch alphaMSS
+                case 0.2 %10th percentile and 90th percentile
+                    [mssThreshNeg,mssThreshPos] = threshMSS2D_p20(numFramesMovie);
+                case 0.1 %5th percentile and 95th percentile
+                    [mssThreshNeg,mssThreshPos] = threshMSS2D_p10(numFramesMovie);
+                case 0.05 %2.5th percentile and 97.5th percentile
+                    [mssThreshNeg,mssThreshPos] = threshMSS2D_p05(numFramesMovie);
+                case 0.01 %0.5th percentile and 99.5th percentile
+                    [mssThreshNeg,mssThreshPos] = threshMSS2D_p01(numFramesMovie);
+            end
+        case 3
+            switch alphaMSS
+                case 0.2 %10th percentile and 90th percentile
+                    [mssThreshNeg,mssThreshPos] = threshMSS3D_p20(numFramesMovie);
+                case 0.1 %5th percentile and 95th percentile
+                    [mssThreshNeg,mssThreshPos] = threshMSS3D_p10(numFramesMovie);
+                case 0.05 %2.5th percentile and 97.5th percentile
+                    [mssThreshNeg,mssThreshPos] = threshMSS3D_p05(numFramesMovie);
+                case 0.01 %0.5th percentile and 99.5th percentile
+                    [mssThreshNeg,mssThreshPos] = threshMSS3D_p01(numFramesMovie);
+            end
+    end
+    mssThreshImm = mssThreshNeg / 4;
 end
-
-
 
 %% memory for trajectory classification
 
