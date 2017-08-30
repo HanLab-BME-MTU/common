@@ -107,7 +107,7 @@ classdef TracksDisplay < MovieDataDisplay
             yLast = yData(iLast);
             
             % Fill gaps
-            for gapLength = 1 : max(gapLengths)
+            for gapLength = uGapLengths(:)'
                 s = gapLengths == gapLength;
                 px = [cc.PixelIdxList{s}];
                 
