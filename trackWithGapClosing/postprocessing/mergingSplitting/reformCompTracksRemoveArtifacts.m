@@ -38,7 +38,7 @@ tracksReform(1).oldTracksInfo=[];
 
 %% gropup segments
 
-for iTrack =1: length(compTracks)
+for iTrack =1: length(compTracks);
     
     %initiate the flag for segments that were already checked
     
@@ -101,10 +101,7 @@ for iTrack =1: length(compTracks)
                 
                 compTrackSeg=[compTrackSeg,segmentNumber];
                 
-                %save the segments that where already checked
-                
-                segCheck=[segCheck;segmentNumber];
-                
+                               
                 % remove these rows from seqOfEventsArtifacts, I need to do
                 % that, otherwise I have an infinite while loop
                 
@@ -125,16 +122,13 @@ for iTrack =1: length(compTracks)
                     %get the first seg
                     
                     iSeg = segmentNumber(1);
-                    
-                    %need a flag for iSeg, otherwise it enters in a infinit
-                    %loop
-                    iSegChecked=[iSegChecked;iSeg];
+                                       
                     
                     % this analysis need to be done only for the segments
                     % that are not segIndex
                     
                     if iSeg~=segIndex
-                        if iSeg~=iSegChecked
+                         if iSeg~=segCheck
                             % determine in which rows this segment appears
                             rowsSegment= seqOfEventsNew(:,3)==iSeg|seqOfEventsNew(:,4)==iSeg;
                             
@@ -153,21 +147,26 @@ for iTrack =1: length(compTracks)
                                 
                                 % save this segments to group this segments in the compTrack
                                 compTrackSeg=[compTrackSeg;segmentNumber];
-                                %save the segments that where already studied from the
-                                %list of segments
-                                segCheck=[segCheck;segmentNumber];
-                                
+                                                               
                             end
-                        end
+                         end
                     end
+                    
+                    %save the segments that where already studied from the
+                                %list of segments
+                                segCheck=[segCheck;setdiff(iSeg,segCheck )];
+                    
                     % some segments can interact multiple times with the same segment. so
                     % update compTracks
                     compTrackSegCell{segIndex}=unique(compTrackSeg);
+                    
                     %remove this segment from the list
                     segmentNumber=segmentNumber(2:end);
+                                       
                     
                 end
             end
+           
         end
         
         
