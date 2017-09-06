@@ -4,4 +4,3 @@ function path=sprintfPath(XYProjTemplate,fIdx)
 [folder,file,ext]=fileparts(XYProjTemplate);
 filename=sprintf(file,fIdx);
 path=fullfile(folder,[filename ext]);
- 

@@ -109,6 +109,7 @@ classdef TrackingProcess < DataProcessingProcess & NonSingularProcess
                 'Color',colors(x,:), 'useDragtail', false);                        
 
             if obj.funParams_.probDim == 3
+
                 output(1).formatData=@TrackingProcess.formatTracks3D;
                 output(3).formatData=@TrackingProcess.formatTracks3D;
 
@@ -116,9 +117,9 @@ classdef TrackingProcess < DataProcessingProcess & NonSingularProcess
                 output(4).var='plottracks3d';
                 output(4).formatData=[];
                 output(4).type='graph';
-                output(4).defaultDisplayMethod=@(x)plotTracks3DFigDisplay('plotFunc', @plotTracks3D);
-                % output(4).defaultDisplayMethod=@(x)FigDisplay('plotFunc', @plotTracks3D,...
-                %                                               'plotFunParams', {[], []});
+                % output(4).defaultDisplayMethod=@(x)plotTracks3DFigDisplay('plotFunc', @plotTracks3D);
+                output(4).defaultDisplayMethod=@(x)FigDisplay('plotFunc', @plotTracks3D,...
+                                                              'plotFunParams', {[], []});
 
 
             elseif obj.funParams_.probDim == 2
@@ -149,8 +150,13 @@ classdef TrackingProcess < DataProcessingProcess & NonSingularProcess
             outputDir=ip.Results.outputDir;
             
             % Set default parameters
-            funParams.ChannelIndex =1:numel(owner.channels_);
-            funParams.DetProcessIndex = [];
+            nChan = numel(owner.channels_);
+            funParams.ChannelIndex = 1:numel(owner.channels_);
+            
+            
+            % should detect for which channels a detection process output exists.
+            funParams.DetProcessIndex = []; % perhaps tag by process & channel
+
             funParams.OutputDirectory = [outputDir  filesep 'tracks'];
             % --------------- time range ----------------
             funParams.timeRange = []; % empty implies entier movie
@@ -178,6 +184,12 @@ classdef TrackingProcess < DataProcessingProcess & NonSingularProcess
             
             funParams.costMatrices(1) = TrackingProcess.getDefaultLinkingCostMatrices(owner, funParams.gapCloseParam.timeWindow,1);
             funParams.costMatrices(2) = TrackingProcess.getDefaultGapClosingCostMatrices(owner, funParams.gapCloseParam.timeWindow,1);
+
+
+            %list of parameters which can be specified at a per-channel
+            %level. If specified as scalar these will  be replicated
+%             funParams.PerChannelParams = {'gapCloseParam','kalmanFunctions','costMatrices'};
+            % funParams = prepPerChannelParams(funParams, nChan);
         end
         
         function kalmanFunctions = getKalmanFunctions(index)

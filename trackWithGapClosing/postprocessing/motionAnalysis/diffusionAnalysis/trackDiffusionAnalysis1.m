@@ -18,24 +18,20 @@ function [diffAnalysisRes,errFlag] = trackDiffusionAnalysis1(tracks,...
 %       checkAsym   : 1 to check for asymmetric tracks and to analyze their
 %                     diffusion after dimensionality reduction, 0
 %                     otherwise. Optional. Default: 0.
-%       alphaValues : Row vector with 2 entries. First entry is the
-%                     alpha-value for MSS analysis (can take the values
-%                     0.2, 0.1, 0.05 and 0.01; see help of trackMSSAnalysis
-%                     for most up-to-date values allowed). Second entry is
-%                     the alpha-value for asymmetry determination (can take
-%                     the values 0.2, 0.1, 0.05 and 0.01; see help of
-%                     asymDeterm2D3D for most up-to-date values allowed).
-%                     Optional. Default: [0.05 0.1]. If only one value is
+%       alphaValues : Row vector with 2 entries. 
+%                     *** First entry is the alpha-value for MSS analysis.
+%                     Can take the values 0.2, 0.1, 0.05 or 0.01; or the
+%                     negative of these values for NEW CLASSIFICATION SCHEME.
+%                     See trackMSSAnalysis for most up-to-date values
+%                     allowed and explanation of NEW CLASSIFICATION SCHEME.
+%                     *** Second entry is the alpha-value for asymmetry
+%                     determination. Can take the values 0.2, 0.1, 0.05 or
+%                     0.01. See help of asymDeterm2D3D for most up-to-date
+%                     values allowed.
+%                     *** Optional. Default: [0.05 0.1]. If only one value is
 %                     entered, it is taken as the alpha-value for MSS
 %                     analysis, while the alpha-value for asymmetry
 %                     analysis is given the default value.
-%
-%                     NEW DIFFUSION CLASSIFICATION: New method (see Remark
-%                     #2) uses best thresholds to separate
-%                     immobile,confined, and free tracks in unbiased manner. 
-%                     To use, enter for the first entry the desired alpha value for directed 
-%                     motion with a preceding minus sign (ex. -0.05).
-%                     Second entry for asymmetry is unaffected.
 %
 %       plotRes     : 1 to plot results, 0 otherwise. Optional. Default: 0.
 %                     Results can be plotted only if problem is 2D.
@@ -93,14 +89,7 @@ function [diffAnalysisRes,errFlag] = trackDiffusionAnalysis1(tracks,...
 %REMARKS 
 %(1)While tracks do not have to be linear in order to be asymmetric,
 %the last analysis step assumes that tracks are linear.
-%
-%(2) New diffusion classification method: 
-% New method considers not only MSS value distributions resulting from simulations of
-% freely diffusing tracks, but also looks at confined and immobile simulations.
-% Threshold values were then chosen that minimize the error rate for
-% adjacent distributions (ex. free/confined, confined/immobile). Not
-% implemented for free/direct.
-%
+
 %Khuloud Jaqaman, March 2008
 
 %% Output
@@ -215,19 +204,7 @@ numTrackSegments = size(tracks,1);
 momentOrders = 0 : 6;
 [trackClassMSS,mssSlope,genDiffCoef,scalingPower,normDiffCoef] = ...
     trackMSSAnalysis(tracks,probDim,momentOrders,alphaValues(1));
-% for iTrack = 1:length(trackClassMSS)
-%                     if trackClassMSS(iTrack) > 1
-%                     %% Testing variance as indicator
-%                         coordXYZ(:,1) = (tracks(iTrack,1:8:end))';
-%                         coordXYZ(:,2) = (tracks(iTrack,2:8:end))';
-%                         distances = pdist(coordXYZ,'euclidean');
-%                         variance(iTrack) = var(distances);
-%                         if variance(iTrack) < 4
-%                             trackClassMSS(iTrack) =1;
-%                         end
-%                         clear coordXYZ
-%                     end
-% end
+
 %% track classification based on asymmetry
 
 %this classification scheme is taken from Huet et al (BJ 2006)
@@ -279,7 +256,6 @@ if checkAsym
     indxAsym = find(trackClassAsym(:,1) == 1);
     
 end
-
 
 %% moment scaling spectrum analysis on reduced-dimensionality data
 
