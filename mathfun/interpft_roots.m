@@ -1,4 +1,4 @@
-function [r,r_value, magnitude] = interpft_roots(x,dim,sorted,TOL,dofft)
+function [r,exp_r] = interpft_roots(x,dim,sorted,TOL,dofft)
 % interpft_roots finds the roots of the function when interpolated by fourier transform
 % This is the equivalent of doing sinc interpolation.
 %
@@ -14,16 +14,10 @@ function [r,r_value, magnitude] = interpft_roots(x,dim,sorted,TOL,dofft)
 % dofft - logical. If true, transforms dim with fft. Default: true
 %
 % OUTPUT
-% maxima - angle between 0 and 2*pi indicating location of local maxima
-% minima - angle between 0 and 2*pi indicating location of local minima
-% maxima_value - value of interpolated function at maxima
-% minima_value - value of interpolated function at minima
-% other - angle between 0 and 2*pi where second derivative is zero
-% other_value - value of interpolated function at other
-%
-% If no output is requested, then the maxima and minima will be plotted.
-% Maxima are indicated by a red vertical line and red circle.
-% Minima are indicated by a green vertical line and a green circle
+% r - the (complex) roots, real component equivalent to -angle(exp_r)
+%                          imag component equivalent to log(abs(exp_r))
+%                          See documentation for log of a complex value
+% exp_r - exp(-1i*r)
 %
 % 1D Example
 %
@@ -49,9 +43,9 @@ function [r,r_value, magnitude] = interpft_roots(x,dim,sorted,TOL,dofft)
 % as a trigonometric polynomial and the roots are solved by evaluating the eigenvalues
 % of a companion matrix via the builtin function roots.
 %
-% See also interpft, roots
+% See also interpft_extrema, interpft, roots
 %
-% Author: Mark Kittisopikul, May 2016
+% Author: Mark Kittisopikul, September 2017
     
 %     original_size = size(x);
     if(nargin > 1 && ~isempty(dim))
@@ -160,7 +154,7 @@ function [r,r_value, magnitude] = interpft_roots(x,dim,sorted,TOL,dofft)
     r = [r{:}];
     r = reshape(r,output_size);
     % magnitude
-    magnitude = abs(log(abs(r)));
+%     magnitude = abs(log(abs(r)));
     % keep only the real answers
 %     real_map = (magnitude <= abs(TOL));
     % If tolerance is negative and no roots are found, then use the
@@ -179,8 +173,9 @@ function [r,r_value, magnitude] = interpft_roots(x,dim,sorted,TOL,dofft)
     % angle will return angle between -pi and pi
     
 %     r = -angle(r(real_map));
-    r_value = r;
-    r = -angle(r);
+    exp_r = r;
+%     r = -angle(r);
+    r = 1i*log(r);
     
     % Map angles to between 0 and 2 pi, moving negative values up
     % a period
@@ -191,5 +186,26 @@ function [r,r_value, magnitude] = interpft_roots(x,dim,sorted,TOL,dofft)
     
 %     extrema = NaN(output_size);
 %     extrema(real_map) = r;
+
+    if(nargout == 0)
+        samp = 360;
+        pad_size = floor((samp - size(x_h{1},1))/2);
+        v_h = padarray(x_h{1},[1 0],'pre');
+        v_h = padarray(v_h,[pad_size 0]);
+%         v_h(end+1,:) = v_h(end,:)/2;
+%         v_h(end,:) = v_h(end-1,:);
+        v_h = ifftshift(v_h);
+        
+        v = ifft(v_h);
+        figure;
+        plot(((1:samp)-1)/samp*2*pi,v);
+        real_r = r(abs(imag(r)) < 1e-12);
+        hold on;
+        grid on;
+        plot([real_r real_r].',repmat(ylim,length(real_r),1).');
+        near_real_r = r(abs(imag(r)) >= 1e-12 & abs(imag(r)) < 1);
+        plot3([near_real_r near_real_r].',repmat(ylim,length(near_real_r),1).',imag([near_real_r near_real_r]).','--');
+%         keyboard;
+    end
 
 end
