@@ -50,8 +50,8 @@ classdef MultiScaleAutoSegProcess < SegmentationProcess
             
             % Set default parameters
             funParams.ChannelIndex = 1:numel(owner.channels_);
-            funParams.OutputDirectory = [outputDir  filesep 'MSSMasks'];
-            funParams.ProcessIndex = [];%Default is to use raw images
+            funParams.OutputDirectory = [outputDir  filesep 'MSA_Seg_Masks'];
+            funParams.ProcessIndex = []; %Default is to use raw images
             funParams.tightness = -1; 
             funParams.type = 'middle';
         end
