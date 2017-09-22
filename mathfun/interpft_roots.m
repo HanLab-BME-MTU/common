@@ -1,4 +1,4 @@
-function [r,exp_r] = interpft_roots(x,dim,sorted,TOL,dofft)
+function [r,exp_r] = interpft_roots(x,dim,sorted,dofft)
 % interpft_roots finds the roots of the function when interpolated by fourier transform
 % This is the equivalent of doing sinc interpolation.
 %
@@ -7,10 +7,6 @@ function [r,exp_r] = interpft_roots(x,dim,sorted,TOL,dofft)
 %     Values are considered to be sampled at (0:length(x)-1)*2*pi/length(x)
 % dim - dimension along which to find maxima
 % sorted - logical value about whether to sort the maxima by value
-% TOL - tolerance to determine if log(abs(root)) is zero to determine if
-%       the root of the derivative is real.
-%       If tolerance is negative, then use 10*abs(log(abs(root))) as the
-%       tolerance only if no roots are found with tolerance at -TOL.
 % dofft - logical. If true, transforms dim with fft. Default: true
 %
 % OUTPUT
@@ -66,12 +62,7 @@ function [r,exp_r] = interpft_roots(x,dim,sorted,TOL,dofft)
     if(nargin < 3 || isempty(sorted))
         sorted = false;
     end
-    if(nargin < 4 || isempty(TOL))
-    	% Tolerance for log(abs(root)) to be near zero, in which case the root is real
-        % Set negative so that tolerance adapts if no roots are found
-        TOL = -eps(class(x))*1e3;
-    end
-    if(nargin < 5 || isempty(dofft))
+    if(nargin < 4 || isempty(dofft))
         dofft = true;
     end
 
@@ -86,7 +77,10 @@ function [r,exp_r] = interpft_roots(x,dim,sorted,TOL,dofft)
     
     if(s(1) == 1)
         r = shiftdim(zeros(s),unshift);
-        r_v = shiftdim(s,unshift);
+        if(nargout > 1)
+            exp_r = shiftdim(ones(s),unshift);
+        end
+%         r_v = shiftdim(s,unshift);
 %         maxima = shiftdim(zeros(s),unshift);
 %         minima = maxima;
 %         other = maxima;
@@ -114,7 +108,7 @@ function [r,exp_r] = interpft_roots(x,dim,sorted,TOL,dofft)
         output_size(1) = output_size(1) + 1;
     end
     % Wave number, unnormalized by number of points
-    freq = [0:nyquist-1 -nyquist+1:1:-1]';
+%     freq = [0:nyquist-1 -nyquist+1:1:-1]';
 
     % calculate derivatives, unscaled by 2*pi since we are only concerned with the signs of the derivatives
 %     dx_h = bsxfun(@times,x_h,freq * 1i);
@@ -182,6 +176,17 @@ function [r,exp_r] = interpft_roots(x,dim,sorted,TOL,dofft)
     neg_roots = r < 0;
     r(neg_roots) = r(neg_roots) + 2*pi;
     
+    if(ischar(sorted))
+        r = sort(r,'ComparisonMethod',sorted);
+    elseif(sorted)
+        r = sort(r,'ComparisonMethod','real');
+    end
+    
+    r = shiftdim(r,unshift);
+    if(nargout > 1)
+        exp_r = shiftdim(exp_r,unshift);
+    end
+    
 %     roots = r;
     
 %     extrema = NaN(output_size);
@@ -196,15 +201,18 @@ function [r,exp_r] = interpft_roots(x,dim,sorted,TOL,dofft)
 %         v_h(end,:) = v_h(end-1,:);
         v_h = ifftshift(v_h);
         
-        v = ifft(v_h);
+        v = -ifft(v_h)/scale_factor*samp;
         figure;
         plot(((1:samp)-1)/samp*2*pi,v);
-        real_r = r(abs(imag(r)) < 1e-12);
+        real_r = real(r(abs(imag(r)) < 1e-12));
         hold on;
         grid on;
-        plot([real_r real_r].',repmat(ylim,length(real_r),1).');
+        plot(real_r,zeros(size(real_r)),'kx');
+%         plot([real_r real_r].',repmat(ylim,length(real_r),1).');
         near_real_r = r(abs(imag(r)) >= 1e-12 & abs(imag(r)) < 1);
-        plot3([near_real_r near_real_r].',repmat(ylim,length(near_real_r),1).',imag([near_real_r near_real_r]).','--');
+        near_real_r_v = interpft1([0 2*pi],x,real(near_real_r));
+        plot3(real([near_real_r near_real_r]).',repmat(ylim,length(near_real_r),1).',imag([near_real_r near_real_r]).','--');
+        plot3(real([near_real_r near_real_r]),[near_real_r_v near_real_r_v],imag([near_real_r near_real_r]),'o');
 %         keyboard;
     end
 
