@@ -12,8 +12,8 @@ function refinedMask = multiscaleSeg_im(im, varargin)
 
 ip = inputParser;
 ip.addRequired('im');
-ip.addParameter('type', 'middle', @(x) strcmp('middle',x) || strcmp('tight', x) || strcmp('minmax', x));
-ip.addParameter('tightness', -1);
+ip.addParameter('type', 'middle', @(x) ismember(x, {'middle','tight','minmax'}));
+ip.addParameter('tightness', -1, @(x) isnumeric(x) && (x==-1 || x >= 0 || x<=1));
 ip.addParameter('numModels', -1);
 ip.parse(im, varargin{:});
 p = ip.Results;

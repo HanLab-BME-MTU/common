@@ -22,7 +22,7 @@ function varargout = msaSegmentationProcessGUI(varargin)
 
 % Edit the above text to modify the response to help msaSegmentationProcessGUI
 
-% Last Modified by GUIDE v2.5 21-Sep-2017 16:22:13
+% Last Modified by GUIDE v2.5 22-Sep-2017 15:39:28
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -55,9 +55,23 @@ userData = get(handles.figure1, 'UserData');
 if isempty(userData), userData = struct(); end
 funParams = userData.crtProc.funParams_;
 
-set(handles.listbox_Scales,'String',funParams.Scales);
-value = find(funParams.FilterOrder==[1 3 5]);
-set(handles.popupmenu_FilterOrder,'Value',value);
+
+% set GUI with Parameters
+% MSA type
+handles.type_menu.String = {'middle','tight','minmax'};
+handles.type_menu.Value = find(ismember(funParams.type, handles.type_menu.String));
+
+if funParams.tightness == -1
+    handles.tightness_checkbox.Value = 0;
+    handles.tightness_panel.Visible = 'off';
+    handles.tightness_slider.Value = .5;
+elseif funParams.tightness <=1 && funParams.tightness >= 0
+    handles.tightness_checkbox.Value = 1;
+    handles.tightness_panel.Visible = 'on';
+    handles.tightness_slider.Value = funParams.tightness;
+end
+handles.tightness_display.String = num2str(handles.tightness_slider.Value);
+handles.stat_diagnostics_checkbox.Value = funParams.diagnostics;
 
 % Update user data and GUI data
 handles.output = hObject;
@@ -108,9 +122,14 @@ end
 % Retrieve GUI-defined parameters
 channelIndex = get(handles.listbox_selectedChannels, 'Userdata');
 funParams.ChannelIndex = channelIndex;
-funParams.Scales=str2num(get(handles.listbox_Scales,'String'));
-props = get(handles.popupmenu_FilterOrder,{'String','Value'});
-funParams.FilterOrder = str2double(props{1}{props{2}});
+funParams.type = handles.type_menu.String(handles.type_menu.Value);
+if handles.tightness_checkbox.Value == 1
+    funParams.tightness = handles.tightness_slider.Value;
+else
+    funParams.tightness = -1;
+end
+funParams.diagnostics = logical(handles.stat_diagnostics_checkbox.Value);
+
 
 % Set parameters and update main window
 processGUI_ApplyFcn(hObject, eventdata, handles,funParams);
@@ -154,25 +173,74 @@ if strcmp(eventdata.Key, 'return')
 end
 
 
-% --- Executes on button press in pushbutton_addScale.
-function pushbutton_addScale_Callback(hObject, eventdata, handles)
+% --- Executes on button press in stat_diagnostics_checkbox.
+function stat_diagnostics_checkbox_Callback(hObject, eventdata, handles)
+% hObject    handle to stat_diagnostics_checkbox (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
 
-value = str2double(get(handles.edit_Scale,'String'));
-if isnan(value) || value<0
-    errordlg('Please enter a valid scale for filtering');
-    return;
-else
-    scales = str2num(get(handles.listbox_Scales,'String')); %#ok<ST2NM>
-    if ismember(value,scales), return; end
-    scales = sort([scales; value]);
-    set(handles.listbox_Scales,'String',scales);
+% Hint: get(hObject,'Value') returns toggle state of stat_diagnostics_checkbox
+
+
+% --- Executes on selection change in type_menu.
+function type_menu_Callback(hObject, eventdata, handles)
+% hObject    handle to type_menu (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns type_menu contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from type_menu
+
+
+% --- Executes during object creation, after setting all properties.
+function type_menu_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to type_menu (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
 end
 
-% --- Executes on button press in pushbutton_removeScale.
-function pushbutton_removeScale_Callback(hObject, eventdata, handles)
 
-props = get(handles.listbox_Scales,{'String','Value'});
-if isempty(props{1}), return; end
+% --- Executes on slider movement.
+function tightness_slider_Callback(hObject, eventdata, handles)
+% hObject    handle to tightness_slider (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
 
-props{1}(props{2})=[];
-set(handles.listbox_Scales,'String',props{1},'Value',max(1,props{2}-1));
+% Hints: get(hObject,'Value') returns position of slider
+%        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
+handles.tightness_display.String = num2str(handles.tightness_slider.Value);
+
+
+% --- Executes during object creation, after setting all properties.
+function tightness_slider_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to tightness_slider (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: slider controls usually have a light gray background.
+if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor',[.9 .9 .9]);
+end
+handles.tightness_slider.Value = .5;
+
+% --- Executes on button press in tightness_checkbox.
+function tightness_checkbox_Callback(hObject, eventdata, handles)
+% hObject    handle to tightness_checkbox (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of tightness_checkbox
+if handles.tightness_checkbox.Value == 0
+    handles.tightness_panel.Visible = 'off';
+    handles.tightness_display.String = num2str(-1);
+else
+    handles.tightness_panel.Visible = 'on';
+    handles.tightness_display.String = num2str(handles.tightness_slider.Value);
+end
+
+    

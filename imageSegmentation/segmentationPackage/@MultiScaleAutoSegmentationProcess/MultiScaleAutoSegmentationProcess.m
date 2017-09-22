@@ -34,7 +34,7 @@ classdef MultiScaleAutoSegmentationProcess < SegmentationProcess
     end
     methods (Static)
         function name = getName()
-            name = 'Multi-scale Automatic (MSA) Segmentation';
+            name = 'MSA Segmentation';
         end
         function h = GUI()
             h= @msaSegmentationProcessGUI;
@@ -52,9 +52,15 @@ classdef MultiScaleAutoSegmentationProcess < SegmentationProcess
             funParams.ChannelIndex = 1:numel(owner.channels_);
             funParams.OutputDirectory = [outputDir  filesep 'MultiScaleAutoSeg_Masks'];
             funParams.ProcessIndex = []; %Default is to use raw images
-            funParams.tightness = -1; 
+            funParams.tightness = .5; 
             funParams.type = 'middle';
             funParams.diagnostics = false;
+
+            %% extra parameters?
+            % sigmas = [0 0.66 1 1.66 2.5 4];  % unit: pixel (common scales for xxx by xxx size confocal images)
+            % p.MinimumSize = 100;        
+            % p.ObjectNumber = 1;
+            % p.FillHoles = 1;
         end
     end
 end
