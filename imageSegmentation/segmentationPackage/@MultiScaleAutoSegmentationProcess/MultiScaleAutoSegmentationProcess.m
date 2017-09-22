@@ -1,10 +1,10 @@
-classdef MultiScaleAutoSegProcess < SegmentationProcess
+classdef MultiScaleAutoSegmentationProcess < SegmentationProcess
     %A concrete process for segmenting using multi-scale steerable filters
     
     % Sebastien Besson, Sep 2011 (last modified Nov 2011)
     
     methods
-        function obj = MultiScaleAutoSegProcess(owner,varargin)
+        function obj = MultiScaleAutoSegmentationProcess(owner,varargin)
             
             if nargin == 0
                 super_args = {};
@@ -20,10 +20,10 @@ classdef MultiScaleAutoSegProcess < SegmentationProcess
                 
                 % Define arguments for superclass constructor
                 super_args{1} = owner;
-                super_args{2} = MultiScaleAutoSegProcess.getName;
+                super_args{2} = MultiScaleAutoSegmentationProcess.getName;
                 super_args{3} = @multiScaleAutoSeg;
                 if isempty(funParams)
-                    funParams=MultiScaleAutoSegProcess.getDefaultParams(owner,outputDir);
+                    funParams=MultiScaleAutoSegmentationProcess.getDefaultParams(owner,outputDir);
                 end
                 super_args{4} = funParams;
             end
@@ -43,17 +43,18 @@ classdef MultiScaleAutoSegProcess < SegmentationProcess
         function funParams = getDefaultParams(owner,varargin)
             % Input check
             ip=inputParser;
-            ip.addRequired('owner',@(x) isa(x,'MovieData'));
-            ip.addOptional('outputDir',owner.outputDirectory_,@ischar);
+            ip.addRequired('owner', @(x) isa(x,'MovieData'));
+            ip.addOptional('outputDir', owner.outputDirectory_, @ischar);
             ip.parse(owner, varargin{:})
-            outputDir=ip.Results.outputDir;
+            outputDir = ip.Results.outputDir;
             
             % Set default parameters
             funParams.ChannelIndex = 1:numel(owner.channels_);
-            funParams.OutputDirectory = [outputDir  filesep 'MSA_Seg_Masks'];
+            funParams.OutputDirectory = [outputDir  filesep 'MultiScaleAutoSeg_Masks'];
             funParams.ProcessIndex = []; %Default is to use raw images
             funParams.tightness = -1; 
             funParams.type = 'middle';
+            funParams.diagnostics = false;
         end
     end
 end

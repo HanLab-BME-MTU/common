@@ -1,4 +1,4 @@
-function multiScaleAutoSeg(MD, iChan, varargin)
+function multiScaleAutoSeg(movieDataOrProcess, iChan, varargin)
 % MSA_Seg (multi-scale automatic segmentation) 
 % Segment a single cell image by combining segmentation
 % results obtained at multiple smoothing scales. Since it requires only one
@@ -10,93 +10,110 @@ function multiScaleAutoSeg(MD, iChan, varargin)
 % Updated Andrew R. Jamieson Sept. 2017
 
 
+%% ------------------ Input ---------------- %%
 ip = inputParser;
-ip.addParameter('type', 'middle', @(x) strcmp('middle',x) || strcmp('tight', x) || strcmp('minmax', x));
-ip.addParameter('tightness', -1);
-ip.addParameter('imagesOut', 0);
-% ip.addParameter('parpoolNum', 1);
-
-ip.parse(varargin{:});
+ip.addRequired('movieDataOrProcess', @isProcessOrMovieData);
+ip.addOptional('paramsIn',[], @isstruct);
+ip.parse(movieDataOrProcess, varargin{:});
 p = ip.Results;
+paramsIn = p.paramsIn; % extra?
 
-tic
+[movieData, thisProc] = getOwnerAndProcess(movieDataOrProcess,'MultiScaleAutoSegmentationProcess', true);
+MD = movieData;
+p = parseProcessParams(thisProc, paramsIn); % in case more parameters passed in.
 
-%% -------- Parameters ---------- %%
-dName = ['MSASeg_refined_masks_channel_', num2str(iChan)];
-% String for naming the mask directories for each channel
-
-outDir = fullfile(MD.outputDirectory_, 'MultiScaleAutoSeg', dName);
-if ~isdir(outDir); mkdir(outDir); end
-    
-pString = ['MSA_', 'refined_'];      %Prefix for saving masks to file
-
-imFileNamesF = MD.getImageFileNames(iChan);
-imFileNames = imFileNamesF{1};
-
-
-%% Load images
-I = cell(MD.nFrames_, 1);
-imgStack = [];
-for fr=1:MD.nFrames_
-    I{fr} = MD.channels_(iChan).loadImage(fr);
-    imgStack = cat(3, imgStack, I{fr});
-end
-
-%%% Segmentation Diagnostics
-imageStats(imgStack, MD);
-
-%% Multi Scale Segmentation
-refinedMask = cell(MD.nFrames_, 1);
+% MSA Seg Parameters
 currType = p.type;
 currTightness = p.tightness;
 
-parfor fr = 1:MD.nFrames_
-    disp('=====');
-    disp(['Frame: ', num2str(fr)]);    
-    im = I{fr};
-    refinedMask{fr} = multiscaleSeg_im(im, 'type', currType, 'tightness', currTightness);
-
-    %Write the refined mask to file
-    imwrite(refinedMask{fr}, fullfile(outDir, [pString, imFileNames{fr}]));
+% Sanity Checks
+nChan = numel(movieData.channels_);
+if max(p.ChannelIndex) > nChan || min(p.ChannelIndex)<1 || ~isequal(round(p.ChannelIndex), p.ChannelIndex)
+    error('Invalid channel numbers specified! Check ChannelIndex input!!')
 end
 
-%% imagesOut
-if p.imagesOut == 1
-    
-    if p.tightness >= 0
-        prefname = ['tightness_', num2str(p.tightness)];
-    else 
-        prefname = p.type;
+% Input paths
+% Set up the input directories (input images)
+inFilePaths = cell(1, numel(movieData.channels_));
+for i = p.ChannelIndex
+    if isempty(p.ProcessIndex)
+        inFilePaths{1,i} = movieData.getChannelPaths{i};
+    else
+        inFilePaths{1,i} = movieData.processes_{p.ProcessIndex}.outFilePaths_{1,i}; 
     end
-       
-    dName2 = ['MSASeg_maskedImages_', prefname,  '_channel_', num2str(iChan)];
-    imOutDir = fullfile(MD.outputDirectory_, 'MultiScaleAutoSeg', dName2);
-    if ~isdir(imOutDir); mkdir(imOutDir); end
+end
+thisProc.setInFilePaths(inFilePaths);
 
+% Output paths
+dName = 'masks_for_channel_';%String for naming the mask directories for each channel
+outFilePaths = cell(1,numel(movieData.channels_));
+mkClrDir(p.OutputDirectory);
+for iChan = p.ChannelIndex;
+    % Create string for current directory
+    currDir = [p.OutputDirectory filesep dName num2str(iChan)];
+    outFilePaths{1,iChan} = currDir;
+    thisProc.setOutMaskPath(iChan, currDir);
+    mkClrDir(outFilePaths{1,iChan});
+end
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+if p.diagnostics
+    %%% Segmentation Diagnostics
+    %% Load images
+    I = cell(MD.nFrames_, 1);
     imgStack = [];
-    for fr = 1:MD.nFrames_
+    for fr=1:MD.nFrames_
+        I{fr} = MD.channels_(iChan).loadImage(fr);
         imgStack = cat(3, imgStack, I{fr});
-    end    
-    allint = imgStack(:);
-    intmin = quantile(allint, 0.002);
-    intmax = quantile(allint, 0.998);
+    end
+    imageStats(imgStack, MD);
+end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-    ftmp = figure;
-    for fr = 1:MD.nFrames_
-        figure(ftmp);
-        imshow(I{fr}, [intmin, intmax]);
-        hold on;
-        bdd = bwboundaries(refinedMask{fr});
-        bdd1 = bdd{1};
-        plot(bdd1(:,2), bdd1(:,1), 'r');
-        hold off;
-        
-        h = getframe(gcf);
-        imwrite(h.cdata, fullfile(imOutDir, imFileNames{fr}), 'tif')
+
+% prep for parfor linearization 
+pRunSet = {}; cell(MD.nFrames_ * length(p.ChannelIndex));
+outDir = {}; 
+
+i = 1;
+for chIdx = p.ChannelIndex
+    imFileNamesF = MD.getImageFileNames(chIdx);
+    imFileNames = imFileNamesF{1};
+    outDir{chIdx} = thisProc.outFilePaths_{1, chIdx};
+    for frameIdx = 1:MD.nFrames_
+        pRunSet{i}.chIdx = chIdx; %struct('chIdx', chIdx)
+        pRunSet{i}.frameIdx = frameIdx; %struct('chIdx', chIdx)
+        imFileNames_pRunSet{chIdx, frameIdx} = imFileNames{frameIdx}; 
+        i = i + 1;
     end
 end
 
-%%
+
+
+tic
+pString = ['MSA_', 'refined_'];      %Prefix for saving masks to file
+
+parfor pfi = 1:length(pRunSet)
+
+    chIdx = pRunSet{pfi}.chIdx;
+    frameIdx = pRunSet{pfi}.frameIdx;
+
+    %% -------- Parameters ---------- %%
+
+    %% Multi Scale Segmentation
+    disp('=====');
+    disp(['Channel ' , num2str(chIdx), ' Frame: ', num2str(frameIdx)]);    
+    im = MD.channels_(chIdx).loadImage(frameIdx);
+    refinedMask = multiscaleSeg_im(im, 'type', currType, 'tightness', currTightness);
+    imwrite(refinedMask, fullfile(outFilePaths{chIdx}, [pString, imFileNames_pRunSet{chIdx, frameIdx}]));
+
+end
+
+
+
 toc
 disp('Multi-Scale Automatic Segmentation is done!')
 
