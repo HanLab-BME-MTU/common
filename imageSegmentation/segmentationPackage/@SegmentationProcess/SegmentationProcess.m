@@ -37,6 +37,7 @@ classdef SegmentationProcess < MaskProcess
         function procClasses = getConcreteClasses()
             procClasses = ...
                 {@ThresholdProcess;
+                 @MultiScaleAutoSegmentationProcess
                  @MSSSegmentationProcess;
                  @ThresholdProcess3D;
                  @ExternalSegmentationProcess;
