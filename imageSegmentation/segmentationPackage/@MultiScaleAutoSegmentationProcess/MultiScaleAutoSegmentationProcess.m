@@ -1,7 +1,7 @@
 classdef MultiScaleAutoSegmentationProcess < SegmentationProcess
     %A concrete process for segmenting using multi-scale steerable filters
     
-    % Sebastien Besson, Sep 2011 (last modified Nov 2011)
+    % Andrew R. Jamieson - Sep 2017
     
     methods
         function obj = MultiScaleAutoSegmentationProcess(owner,varargin)
