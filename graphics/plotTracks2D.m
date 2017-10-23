@@ -7,12 +7,12 @@ function plotTracks2D(trackedFeatureInfo, varargin)
 %    indicateSE,newFigure,image,flipXY,ask4sel,offset)
 %
 %INPUT  trackedFeatureInfo: -- EITHER --
-%                           Output of trackWithGapClosing:
-%                           Matrix indicating the positions and amplitudes
+%                           Output of trackWithGapClosi   Matrix indicating the positions and amplitudes
 %                           of the tracked features to be plotted. Number
 %                           of rows = number of tracks, while number of
 %                           columns = 8*number of time points. Each row
-%                           consists of
+%        ng:
+%                                           consists of
 %                           [x1 y1 z1 a1 dx1 dy1 dz1 da1 x2 y2 z2 a2 dx2 dy2 dz2 da2 ...]
 %                           in image coordinate system (coordinates in
 %                           pixels). NaN is used to indicate time points

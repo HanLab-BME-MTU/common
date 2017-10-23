@@ -22,7 +22,7 @@ function varargout = packageGUI(varargin)
 
 % Edit the above text to modify the response to help packageGUI
 
-% Last Modified by GUIDE v2.5 07-Oct-2016 17:16:06
+% Last Modified by GUIDE v2.5 01-Aug-2017 17:17:12
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -524,3 +524,19 @@ h = msgbox( {...
     '                          If you exit uTrack, the jobs will keep running.' ...
     }, ...
     'uTrack Parallel Help','help');
+
+
+% --- Executes on button press in checkbox_tagName.
+function checkbox_tagName_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox_tagName (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of checkbox_tagName
+% handles.processTagLabels = findall(0,'-regexp','Tag', 'processTagLabel');
+% handles.processTagLabels;
+if handles.checkbox_tagName.Value == 0;
+    set(handles.processTagLabels, 'Visible', 'off')
+else
+    set(handles.processTagLabels, 'Visible', 'on')
+end

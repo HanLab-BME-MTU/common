@@ -91,7 +91,7 @@ if(nargout > 1)
     wrappedValues = bsxfun(@mod,wrappedValues,upper);
     multiplier = bsxfun(@rdivide,shiftedValues-wrappedValues,upper);
 else
-    wrappedValues = bsxfun(@mod,wrappedValues,upper);
+    wrappedValues = bsxfun(@mod,real(wrappedValues),upper);
 end
 
 wrappedValues = bsxfun(@plus,wrappedValues,lower);

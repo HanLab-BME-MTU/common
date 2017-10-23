@@ -34,12 +34,26 @@ size_A = size(A);
 ndims_A = ndims(A);
 
 % See if the mode was specified
+extraParamStart = nMatrices;
 if(nMatrices > 1 ...
         && ischar(varargin{end}) ... 
         )
 %         && any(strcmp(varargin{end},{'ascend','descend'})) )...
-    mode = varargin{end};
-    nMatrices = nMatrices - 1;
+    for nMatrices=nMatrices-1:-1:1
+        if(~ischar(varargin{nMatrices}))
+            nMatrices = nMatrices+1;
+            break;
+        end
+        switch(varargin{nMatrices})
+            case 'ascend'
+                break;
+            case 'descend'
+                break;
+        end
+    end
+    mode = varargin{nMatrices};
+    extraParamStart = nMatrices+1;
+%     nMatrices = nMatrices - 1;
 else
     mode = defaultMode;
 end
@@ -60,7 +74,7 @@ else
 end
 
 % Use the builtin sort
-[A_sorted,ind ] = sort(A,dim,mode);
+[A_sorted,ind ] = sort(A,dim,mode,varargin{extraParamStart:end});
 
 
 % Convert dimension specific indices to linear indices.

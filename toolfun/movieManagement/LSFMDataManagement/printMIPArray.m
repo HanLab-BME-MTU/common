@@ -115,3 +115,7 @@ for frameIdx=1:max(frameNb)
 end
 close(video)
 
+function mkdir(path)
+system(['mkdir ' path]);
+
+

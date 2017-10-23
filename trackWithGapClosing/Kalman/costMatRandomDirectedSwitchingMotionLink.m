@@ -251,8 +251,13 @@ if useLocalDensity
     %make ratios larger than maxStdMult equal to maxStdMult
     ratioDist2Std(ratioDist2Std > maxStdMult) = maxStdMult;
     
-    %expand search radius multiplication factor if possible
-    stdMultInd = max([stdMultInd ratioDist2Std],[],2);
+    %get expanded search radius multiplication factor from nearest neighbor
+    %calculation
+    stdMultExpand = max([stdMultInd ratioDist2Std],[],2);
+    
+    %expand search radius multiplcation factor if possible, but only for
+    %particles not in first appearance
+    stdMultInd(notFirstAppearance) = stdMultExpand(notFirstAppearance);
     
 end
 

@@ -24,7 +24,7 @@ classdef PointSourceDetectionProcess3D < DetectionProcess
         function varargout = loadChannelOutput(obj,iChan,varargin)
             
             % Input check
-            outputList = {'movieInfo', 'detect3D', 'detectionsLabRef'};
+            outputList = {'movieInfo', 'detect3D','detect3Dall', 'detectionsLabRef'};
             ip = inputParser;
             ip.addRequired('iChan',@(x) ismember(x,1:numel(obj.owner_.channels_)));
             ip.addOptional('iFrame',1:obj.owner_.nFrames_,...
@@ -64,7 +64,29 @@ classdef PointSourceDetectionProcess3D < DetectionProcess
                             dataOut = [];
                         end
                         varargout{iout} = dataOut;
-                
+
+                    case 'detect3Dall'
+                        s = cached.load(obj.outFilePaths_{1, iChan}, '-useCache', ip.Results.useCache, 'movieInfo');
+
+                        if numel(ip.Results.iFrame)>1
+                            v1 = s.movieInfo;
+                        else
+                            v1 = s.movieInfo(iFrame);
+                        end
+                        if ~isempty(v1.xCoord) && ~isempty(iZ)
+                            % Only show Detections in Z. 
+%                             zThick = 1;
+                            tt = table(v1.xCoord(:,1), v1.yCoord(:,1), v1.zCoord(:,1), 'VariableNames', {'xCoord','yCoord','zCoord'});
+                            valid_states = (tt.zCoord>=1 & tt.zCoord<=obj.owner_.zSize_);
+                            dataOut = tt{:, :};
+
+                            if isempty(dataOut) || numel(dataOut) <1 || ~any(valid_states)
+                                dataOut = [];
+                            end
+                        else
+                            dataOut = [];
+                        end
+                        varargout{iout} = dataOut;                
                     case 'movieInfo'
                         varargout{iout} = obj.loadChannelOutput@DetectionProcess(iChan, varargin{:});
                     case 'detectionsLabRef'
@@ -77,9 +99,14 @@ classdef PointSourceDetectionProcess3D < DetectionProcess
         
         function output = getDrawableOutput(obj)
             output = getDrawableOutput@DetectionProcess(obj);
-            output(1).name='Detected Objects';
+            output(1).name='Detected Objects by zSlice';
             output(1).var = 'detect3D';
             output(1).formatData=@DetectionProcess.formatOutput3D;
+            
+            output(2) = getDrawableOutput@DetectionProcess(obj);
+            output(2).name='Detected Objects';
+            output(2).var = 'detect3Dall';
+            output(2).formatData=@DetectionProcess.formatOutput3D;
         end
         
 
@@ -118,8 +145,10 @@ classdef PointSourceDetectionProcess3D < DetectionProcess
             ip.parse(owner, varargin{:})
             outputDir = ip.Results.outputDir;
             
+            nChan = numel(owner.channels_);
+            
             % Set default parameters
-            funParams.ChannelIndex = 1;
+            funParams.ChannelIndex = 1:nChan;
             funParams.InputImageProcessIndex = 0; % ?? (can we add some way to check what is availble.)
             funParams.MaskChannelIndex = []; %1:numel(owner.channels_);
             funParams.MaskProcessIndex = [];            
@@ -146,11 +175,13 @@ classdef PointSourceDetectionProcess3D < DetectionProcess
             
             % sigma estimation            
             nChan = numel(owner.channels_);
-            funParams.filterSigma = 1.2*ones(1,nChan); %Minimum numerically stable sigma is ~1.2 pixels.
+            funParams.filterSigma = 1.2*ones(1, nChan); %Minimum numerically stable sigma is ~1.2 pixels.
             hasPSFSigma = arrayfun(@(x) ~isempty(x.psfSigma_), owner.channels_);
+            
             funParams.filterSigma(hasPSFSigma) = [owner.channels_(hasPSFSigma).psfSigma_];            
             funParams.filterSigma(funParams.filterSigma<1.2) = 1.2; %Make sure default isn't set to too small.
             funParams.filterSigma = repmat(funParams.filterSigma,[2 1]); %TEMP - use z-PSF estimate as well!!
+            
             % For the GUI
             funParams.filterSigmaXY = funParams.filterSigma(1,1);
             funParams.filterSigmaZ = funParams.filterSigma(2,1);
