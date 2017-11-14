@@ -1,6 +1,6 @@
 function [modeParam,numMode,modeParamControl,numModeControl] = ...
     getDiffModes(tracksFinal,minLength,alpha,showPlot,maxNumMode,...
-    binStrategy,plotName,subSampSize,doControl)
+    binStrategy,plotName,subSampSize,doControl,mask)
 %GETDIFFMODES determines number of diffusion modes and their parameters from distribution of frame-to-frame displacements
 %
 %SYNOPSIS [modeParam,numMode,modeParamControl,numModeControl] = ...
@@ -37,6 +37,8 @@ function [modeParam,numMode,modeParamControl,numModeControl] = ...
 %       doControl   : 1 in order to do mono-exponential control, 0
 %                     otherwise. 
 %                     Optional. Default: 1.
+%       mask        : Cell mask to retain only tracks inside mask.
+%                     Optional. Default: [], i.e. no mask.
 %                     
 %OUTPUT modeParam   : Matrix with number of rows equal to number of modes
 %                     and 4 columns:
@@ -105,6 +107,24 @@ end
 
 if nargin < 9 || isempty(doControl)
     doControl = 1;
+end
+
+if nargin < 10 || isempty(mask)
+    mask = [];
+end
+
+%keep only tracks in mask if supplied
+if ~isempty(mask) && any(mask(:)==0)
+    numTracks = length(tracksFinal);
+    keepTrack = true(numTracks,1);
+    for iTrack = 1 : numTracks
+        xCoord = tracksFinal(iTrack).tracksCoordAmpCG(:,1:8:end);
+        yCoord = tracksFinal(iTrack).tracksCoordAmpCG(:,2:8:end);
+        meanPosX = round(nanmean(xCoord(:)));
+        meanPosY = round(nanmean(yCoord(:)));
+        keepTrack(iTrack) = mask(meanPosY,meanPosX);
+    end
+    tracksFinal = tracksFinal(keepTrack);
 end
 
 %% Square displacement distribution
