@@ -1002,12 +1002,12 @@ else
 end
 
 % Get display method and update option status
-if isempty(iChan),
+if isempty(iChan)
     displayMethod = userData.MO.processes_{procId}.displayMethod_{iOutput};
 else
     displayMethod = userData.MO.processes_{procId}.displayMethod_{iOutput,iChan}; %% 3D depth specific process???
 end
-if ~isempty(optFig),
+if ~isempty(optFig)
     userData.setOverlayOptions(displayMethod)
 end
 
