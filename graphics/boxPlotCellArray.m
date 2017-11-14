@@ -20,6 +20,10 @@ matrixData = NaN(lengthLongest,numConditions);
 for k=1:numConditions
     matrixData(1:length(cellArrayData{k}),k) = cellArrayData{k};
 end
+if all(isnan(matrixData(:)))
+    disp('All data are NaNs. Returning...')
+    return
+end
 if nargin<6
     forceShowP=false;
 end
