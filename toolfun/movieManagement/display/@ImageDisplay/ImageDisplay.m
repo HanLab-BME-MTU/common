@@ -10,6 +10,7 @@ classdef ImageDisplay < MovieDataDisplay
         lfont = {'FontName', 'Helvetica', 'FontSize', 22};
         ScaleFactor = 1;
         NaNColor = [0 0 0];
+        invertColormap = false;
     end
     methods
         function obj=ImageDisplay(varargin)
@@ -55,9 +56,15 @@ classdef ImageDisplay < MovieDataDisplay
                 c=[obj.NaNColor; c];
                 colormap(hAxes, c);
             else
-                colormap(hAxes,obj.Colormap);
+                colormap(hAxes, obj.Colormap);
             end
             
+            if obj.invertColormap
+                cmap = colormap(hAxes);
+                cmapI = flipud(cmap);
+                colormap(hAxes, cmapI);
+            end
+
             % Set the colorbar
             hCbar = findobj(get(hAxes,'Parent'),'Tag','Colorbar');
             axesPosition = [0 0 1 1];
@@ -105,6 +112,8 @@ classdef ImageDisplay < MovieDataDisplay
             params(8).validator=@isscalar;
             params(9).name='NaNColor';
             params(9).validator=@isvector;
+            params(10).name='invertColormap';
+            params(10).validator=@islogical;
         end
         
         function locations = getColorBarLocations()

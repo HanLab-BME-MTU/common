@@ -107,7 +107,7 @@ end
 mkClrDir(p.OutputDirectory)
 pointSourceDetProc.setOutFilePaths(outFilePaths);
 
-%Get ROI mask if any.
+% Get ROI mask if any.
 roiMask = movieData.getROIMask;
 
 %% --------------- Point source detection ---------------%%%

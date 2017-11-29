@@ -32,7 +32,7 @@ ip = inputParser;
 isClass = @(x) exist(x,'class')==8;
 ip.addOptional('packageList',{},@(x) ischar(x) || iscell(x));
 ip.addOptional('outDir','',@ischar);
-ip.addParamValue('exclude', ['extern' filesep], @(x) ischar(x) || iscell(x));
+ip.addParameter('exclude', {[]}, @(x) (ischar(x) || iscell(x)));
 ip.parse(varargin{:});
 
 if isempty(ip.Results.packageList)
@@ -77,7 +77,8 @@ legacyFunctions = getLegacyCode(packageList);
     vertcat(packageList, legacyFunctions), ip.Results.exclude);
 disp('The package uses the following toolboxes:')
 disp(toolboxesUsed)
-disp({toolboxesUsed.Name;toolboxesUsed.Version}')
+% toolboxesUsed is the just the list of names, see getFunDependencies
+% disp({toolboxesUsed.Name;toolboxesUsed.Version}')
 %% Additional files can be found under four types of format:
 %   * GUIs may have associated *.fig
 %   * Processes and GUIs may have associated *.pdf
@@ -111,25 +112,40 @@ packageFuns(mexFunsIndx) = [];
 
 % Remove additional compilation files
 if ~isempty(packageMexFuns)
-    compFunsExt = {'.c';'.cpp';'.h';'.nb';'.m'};
+    compFunsExt = {'.c';'.cpp';'.h';'.nb'}; % leave .m as help/documentation/backup if available
     for i=1:numel(compFunsExt)
         indx = ~cellfun(@isempty,regexp(packageMexFuns,[compFunsExt{i} '$'],'once'));
         packageMexFuns(indx)=[];
     end
 end
 
+
+% Check for .m files associated with mex files
+% and remove these from packageFuns to avoid duplication.
+if ~isempty(packageMexFuns)
+    [mf1, mf2, mf3] = cellfun(@(x)fileparts(x), packageMexFuns, 'Unif', false);
+    [f1, f2, f3] = cellfun(@(x)fileparts(x), packageFuns, 'Unif', false); 
+    [Int, if2, iPack] = intersect(f2, mf2);
+    packageFuns(if2) = [];
+end
+
+
 % Get the main path to the icons folder
 iconsPath = fullfile(fileparts(which('packageGUI.m')),'icons');
 icons = dir([iconsPath filesep '*.png']);
 packageIcons = arrayfun(@(x) [iconsPath filesep x.name],icons,'Unif',false);
 
+
 % Concatenate all matlab files but the documentation
 packageFiles=vertcat(packageFuns,packageFigs);
 
-% 
 
 % Handle namespace packages and class folders separately
-pattern = sprintf('(.*%s[\\+@].*)%s.*', filesep, filesep);
+filesep_token = filesep;
+if(filesep_token == '\')
+    filesep_token = '\\';
+end
+pattern = sprintf('(.*%s[\\+@].*)%s.*', filesep_token, filesep_token);
 hasNs = ~cellfun(@isempty, regexp(packageFiles, pattern));
 if any(hasNs)
     nsFiles = packageFiles(hasNs);
@@ -139,6 +155,22 @@ if any(hasNs)
 else
     nsDirs = {};
 end
+
+
+% Also Handle functions from extern differently.
+fromExtern = ~cellfun(@isempty, cellfun(@(x)strfind(x, [filesep 'extern' filesep]), packageFiles, 'Uniform', 0));
+if any(fromExtern)
+    
+    packExtern = packageFiles(fromExtern);
+    exBF = cellfun(@isempty, cellfun(@(x) strfind(x, [filesep 'bioformats' filesep]), packageFiles(fromExtern),'Uniform', 0));
+    packExternXBF = packExtern(exBF);
+    packageFiles(fromExtern) = [];
+       
+else
+    packExternXBF = [];
+end
+
+
 
 %% Export package files
 % Create package output directory if non-existing
@@ -177,12 +209,12 @@ for i = 1 : nIcons
     copyfile(packageIcons{i}, [iconsDir filesep packageIcons{i}(iLFS+1:end)]);
 end
 
-% Create icons output directory if non-existing
+% Create documentation output directory if non-existing
 disp('Creating documenation directory...')
 docDir=[outDir filesep 'doc'];
 if ~isdir(docDir), mkdir(docDir); end
 
-% Copy icons
+% Copy documentation
 nDocFiles = numel(packageDocs);
 disp(['Copying all '  num2str(nDocFiles) ' files ...'])
 for i = 1 : nDocFiles
@@ -190,22 +222,39 @@ for i = 1 : nDocFiles
     copyfile(packageDocs{i}, [docDir filesep packageDocs{i}(iLFS+1:end)]);
 end
 
-% Create mex output directory if non-existing
-disp('Creating MEX-files directory...')
-mexDir=[outDir filesep 'mex'];
-if ~isdir(mexDir), mkdir(mexDir); end
-
-% Copy mex-files
-nMexFiles = numel(packageMexFuns);
-disp(['Copying all '  num2str(nMexFiles) ' MEX files ...'])
-for i = 1 : nMexFiles
-    iLFS = max(regexp(packageMexFuns{i},filesep));
-    copyfile(packageMexFuns{i},[mexDir filesep packageMexFuns{i}(iLFS+1:end)]);
+if ~isempty(packageMexFuns)
+    % Create mex output directory if non-existing
+    disp('Creating MEX-files directory...')
+    mexDir=[outDir filesep 'mex'];
+    if ~isdir(mexDir), mkdir(mexDir); end
+    
+    % Copy mex-files
+    nMexFiles = numel(packageMexFuns);
+    disp(['Copying all '  num2str(nMexFiles) ' MEX files ...'])
+    for i = 1 : nMexFiles
+        iLFS = max(regexp(packageMexFuns{i},filesep));
+        copyfile(packageMexFuns{i},[mexDir filesep packageMexFuns{i}(iLFS+1:end)]);
+    end
 end
 
 %% External libraries
+disp('Creating external directory...')
+externDir=[outDir filesep 'extern'];
+if ~isdir(externDir), mkdir(externDir); end
+if ~isempty(packExternXBF)
+    % Copy function files
+    nFiles = numel(packExternXBF);
+    disp(['Copying all (extern) '  num2str(nFiles) ' files ...'])
+    for j = 1:nFiles
+        iLFS = max(regexp(packExternXBF{j},filesep));
+        copyfile(packExternXBF{j},[outDir filesep 'extern' filesep  packExternXBF{j}(iLFS+1:end)]);
+    end    
+else
+    
+end
 
-% Bio-Formats
+
+% % Bio-Formats (Jar File)
 disp('Creating Bio-Formats directory...')
 bfSourceDir=fileparts(which('bfGetReader.m'));
 bfTargetDir=[outDir filesep 'bioformats'];

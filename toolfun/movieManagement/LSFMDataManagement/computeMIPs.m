@@ -1,7 +1,13 @@
-function [maxXY,maxZY,maxZX,three]=computeMIPs(vol,ZXRatio,minInt,maxInt)
+function [maxXY,maxZY,maxZX,three]=computeMIPs(vol,ZXRatio,minInt,maxInt,varargin)
+ip = inputParser;
+ip.addParameter('stripeSize',8,@isnumeric);
+ip.addParameter('tracks',[],@(t) isa(t,'Tracks'));
+ip.addParameter('frameIdx',[],@isnumeric);
+ip.parse(varargin{:});
+p=ip.Results;
 
 % set other parameters
-stripeSize = 8; % the width of the stripes in the image that combines all three maximum intensity projections
+stripeSize = p.stripeSize; % the width of the stripes in the image that combines all three maximum intensity projections
 stripeColor = 0; %the stripe color, a number between 0 (black) and 1 (white).  (If you're not using all of the bit depth then white might be much lower than 1, and black might be higher than 0.)
 
 ScaledZ=ceil(size(vol,3)*ZXRatio);

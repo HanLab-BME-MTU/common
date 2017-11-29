@@ -32,11 +32,43 @@ classdef PostTrackingProcess < DataProcessingProcess
         function h = GUI()
             h = @abstractProcessGUI;
         end
-        function procClasses = getConcreteClasses()
+        function procClasses = getConcreteClasses(varargin)
             procClasses = ...
                 {'MotionAnalysisProcess';
-                'CometPostTrackingProcess';                
-                'TrackGroupingProcess'};
+                 'CometPostTrackingProcess';                
+                 'TrackGroupingProcess';
+                 'CometPostTrackingProcess3D'};
+
+            % If input, check if 2D or 3D movie(s).
+            ip =inputParser;
+            ip.addOptional('MO', [], @(x) isa(x,'MovieData') || isa(x,'MovieList'));
+            ip.parse(varargin{:});
+            MO = ip.Results.MO;
+            
+            if ~isempty(MO)
+                if isa(MO,'MovieList')
+                    MD = MO.getMovie(1);
+                elseif length(MO) > 1
+                    MD = MO(1);
+                else
+                    MD = MO;
+                end                
+            end
+
+            if isempty(MD)
+               warning('MovieData properties not specified (2D vs. 3D)');
+               disp('Displaying both 2D and 3D Detection processes');
+            elseif MD.is3D
+                disp('Detected 3D movie');
+                disp('Displaying 3D Detection processes only');
+                procClasses(2:end) = [];
+            elseif ~MD.is3D
+                disp('Detected 2D movie');
+                disp('Displaying 2D Detection processes only');
+                procClasses(end) = [];
+            end
+            
+        
         end
     end
 end

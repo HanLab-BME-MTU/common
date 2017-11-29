@@ -196,13 +196,83 @@ classdef  MovieObject < hgsetget
             assert(isa(newprocess,'Process'));
             obj.processes_ = horzcat(obj.processes_, {newprocess});
         end
-        
-        function proc = getProcess(obj, i)
-            % Return process corresponding to the specified index
-            assert(isscalar(i) && ismember(i,1:numel(obj.processes_)));
-            proc = obj.processes_{i};
+
+        function [tagList, procList] = getProcessTags(obj)
+            % Retreives all process tags, and proc associated
+            procs = obj.processes_;
+            tagList = [];
+            procList = [];
+            for p = procs
+                if isprop(p{:}, 'tag_')
+                    tagList = [tagList {p{:}.tag_}];
+                    procList = [procList p];
+                end
+            end
         end
         
+        function [matchingProcs, matchingTags] = findProcessTag(obj, queryStr, varargin)
+            % return all processes with tag containing the queryStr
+            ip = inputParser;
+            ip.addRequired('queryStr', @ischar);
+            ip.addOptional('exactMatch', 0, @(x) x==0 || x==1 || islogical(x));
+            ip.parse(queryStr, varargin{:});
+            exactMatch = ip.Results.exactMatch;
+            queryStr = ip.Results.queryStr;
+
+            if ischar(queryStr)
+                [tagList, procList] = obj.getProcessTags;
+                matchingProcs = [];
+                matchingTags = [];
+                for i = 1:numel(tagList)
+                    if isempty(queryStr)
+                        if isempty(tagList{i})
+                            matchingProcs = [matchingProcs procList{i}];
+                            matchingTags = [matchingTags {procList{i}.tag_}];  
+                        end
+                    else
+                        if exactMatch
+                            if strcmp(tagList{i}, queryStr)
+                                matchingProcs = [matchingProcs procList{i}];
+                                matchingTags = [matchingTags procList{i}.tag_];
+                            end
+                        else
+                            if strfind(lower(tagList{i}), lower(queryStr)) > 0
+                                matchingProcs = [matchingProcs {procList{i}}];
+                                matchingTags = [matchingTags {procList{i}.tag_}];
+                            end
+                        end
+                    end
+                end
+                if exactMatch
+                    assert(~isempty(matchingProcs), ['No Process(es) with (exact) matching  tag ''' queryStr ''' exist! (try findProcessTag for more flexible string search)'])
+                else
+                    assert(~isempty(matchingProcs), ['No Process(es) with tag containing the string ''' queryStr ''' exist!'])
+                end
+                if iscell(matchingProcs) && numel(matchingProcs) == 1
+                    matchingProcs = matchingProcs{1};
+                end
+            else
+                error('Incorrect tag query type: must be char string');
+            end
+        end
+        
+        function proc = getProcess(obj, index_or_tag)
+            if ischar(index_or_tag) && ~isempty(index_or_tag)
+                % Return process corresponding to the specified tag
+                % Default behavior is for an exact match
+                % for more flexible tag query- use findProcessTag
+                exactMatch = true;
+                [proc tags] = obj.findProcessTag(index_or_tag, exactMatch);
+            elseif isnumeric(index_or_tag)
+                % Return process corresponding to the specified index
+                i = index_or_tag;
+                assert(insequence_and_scalar(i,1,numel(obj.processes_)), ['Process Index [' num2str(i) '] does Not exist!']);
+                proc = obj.processes_{i};
+            else
+                error('Incorrect variable type: must be numeric int for process index or char for process tag');
+            end
+        end
+
         function status = unlinkProcess(obj, process)
             % Unlink process from processes list
             
@@ -210,7 +280,7 @@ classdef  MovieObject < hgsetget
             status = false;
             if isa(process, 'Process')
                 id = find(cellfun(@(x) isequal(x,process), obj.processes_), 1);
-            elseif isscalar(process) && ismember(process, 1:numel(obj.processes_))
+            elseif insequence_and_scalar(process, 1,numel(obj.processes_))
                 id = process;
             end
             
@@ -267,7 +337,7 @@ classdef  MovieObject < hgsetget
             % Input check
             ip=inputParser;
             ip.addRequired('pid', @(x) isa(x,'Process') || ...
-                isnumeric(x) && ismember(x, 1:numel(obj.processes_)));
+                isnumeric(x) && insequence(x, 1,numel(obj.processes_)));
             ip.addRequired('newprocess', @(x) isa(x,'Process'));
             ip.parse(pid, newprocess);
             
@@ -322,9 +392,15 @@ classdef  MovieObject < hgsetget
             obj.packages_ = horzcat(obj.packages_ , {newpackage});
         end
         
+        function setPackage(obj,i, newpackage)
+            % Add a package object to the package list
+            assert(isa(newpackage,'Package'));
+            obj.packages_{i} = newpackage;
+        end
+        
         function package = getPackage(obj, i)
             % Return the package corresponding to the specified index
-            assert(isscalar(i) && ismember(i,1:numel(obj.packages_)));
+            assert(insequence_and_scalar(i,1,numel(obj.packages_)));
             package = obj.packages_{i};
         end
         
@@ -335,7 +411,7 @@ classdef  MovieObject < hgsetget
             status = false;
             if isa(package, 'Package')
                 id = find(cellfun(@(x) isequal(x,package), obj.packages_), 1);
-            elseif isscalar(package) && ismember(package, 1:numel(obj.packages_))
+            elseif insequence_and_scalar(package, 1,numel(obj.packages_))
                 id = package;
             end
             
@@ -593,7 +669,6 @@ ip.parse(list, type, varargin{:});
 nDesired = ip.Results.nDesired;
 askUser = ip.Results.askUser;
 
-
 iProc = find(cellfun(@(x) isa(x,type), list));
 nProc = numel(iProc);
 
@@ -603,7 +678,13 @@ if nProc <= nDesired, return; end
 % If more than nDesired processes
 if askUser
     isMultiple = nDesired > 1;
-    names = cellfun(@(x) (x.getName()), list(iProc), 'UniformOutput', false);
+    % check if tag_ propery exists for all processes
+    if all(cellfun(@(x) isprop(x, 'tag_'), list(iProc)))
+        % include tag, if it does
+        names = cellfun(@(x) ([x.getName() '-' x.tag_]), list(iProc), 'UniformOutput', false);
+    else
+        names = cellfun(@(x) (x.getName()), list(iProc), 'UniformOutput', false);
+    end
     iSelected = listdlg('ListString', names,...
         'SelectionMode', isMultiple, 'ListSize', [400,400],...
         'PromptString', ['Select the desired ' type ':']);

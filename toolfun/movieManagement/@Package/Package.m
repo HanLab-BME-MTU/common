@@ -2,17 +2,18 @@ classdef Package < hgsetget
     % Defines the abstract class Package from which every user-defined packages
     % will inherit. This class cannot be instantiated.
 
-    properties(SetAccess = protected)
-        createTime_ % The time when object is created.
-        owner_ % The MovieData object this package belongs to
-        processes_ % Cell array containing all processes who will be used in this package 
+    properties (SetAccess = protected)
+        createTime_     % The time when object is created.
+        owner_          % The MovieData object this package belongs to
+        processes_      % Cell array containing all processes who will be used in this package 
+        is3Dcompatible_ % can process handle 3D movie data
     end
 
     properties
-        notes_ % The notes users put down
-        outputDirectory_ %The parent directory where results will be stored.
-                         %Individual processes will save their results to
-                         %sub-directories of this directory.
+        notes_           % The notes users put down
+        outputDirectory_ % The parent directory where results will be stored.
+                         % Individual processes will save their results to
+                         % sub-directories of this directory.
     end
 
     methods (Access = protected)
@@ -217,7 +218,7 @@ classdef Package < hgsetget
         
         function process = getProcess(obj, i)
             % Retrieve a process by index
-            assert(isscalar(i) && ismember(i, 1:numel(obj.processes_)));
+            assert(insequence_and_scalar(i, 1,numel(obj.processes_)));
             process = obj.processes_{i};
         end
         
@@ -271,6 +272,20 @@ classdef Package < hgsetget
         
         function relocate(obj,oldRootDir,newRootDir)
             obj.outputDirectory_ = relocatePath(obj.outputDirectory_,oldRootDir,newRootDir);
+        end
+        
+        function procSeq = getProcessSequence(obj, procIDs)
+            % Returns a sequence of process IDs such that each process is
+            % preceeded by it's parent
+            procSeq = [];
+            if(~isempty(procIDs))
+                parentIDs = arrayfun(@(procID) obj.getParent(procID),procIDs,'UniformOutput',false);
+                % Sorted unique so that the parentIDs are in descending order
+                parentIDs = unique([parentIDs{:}]);
+                % Stable unique so that parents come before dependents
+                % Determine parents recursively
+                procSeq = unique([obj.getProcessSequence(parentIDs) procIDs],'stable');
+            end
         end
         
     end

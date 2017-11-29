@@ -22,7 +22,7 @@ function varargout = costMatRandomDirectedSwitchingMotionCloseGapsGUI(varargin)
 
 % Edit the above text to modify the response to help costMatRandomDirectedSwitchingMotionCloseGapsGUI
 
-% Last Modified by GUIDE v2.5 12-Dec-2011 15:51:50
+% Last Modified by GUIDE v2.5 19-Dec-2016 15:36:25
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -95,9 +95,45 @@ if get(userData.handles_main.checkbox_merging,'Value') || ...
         set(handles.edit_max, 'String', num2str(parameters.ampRatioLimit(2)))
     end
     set(handles.edit_resLimit, 'String', num2str(parameters.resLimit))
+    if ~isfield(parameters, 'gapExcludeMS')
+        parameters.gapExcludeMS = 0;
+    end
+    set(handles.checkbox10_gapExcludeMS, 'Value', parameters.gapExcludeMS);
 else
     set(mergeSplitComponents,'Enable','off');
+    
 end
+
+% Birth and Death Strategy
+if ~isfield(parameters, 'strategyBD')
+    parameters.strategyBD = 0;
+end
+
+set(handles.edit_manual_percentile,'String','');
+
+switch parameters.strategyBD
+    case -1
+        set(handles.edit_manual_percentile,'String','');
+        set(handles.edit_manual_percentile,'Enable','off');
+        set(handles.Derived_BDButton,'Value', 1.0);
+        set(handles.perctile_Button, 'Value', 0.0);
+        set(handles.perctAutomatic, 'Value', 0.0);
+    
+    case 0
+        set(handles.edit_manual_percentile,'String','');
+        set(handles.edit_manual_percentile,'Enable','off');
+        set(handles.Derived_BDButton,'Value', 0.0);
+        set(handles.perctile_Button, 'Value', 0.0);
+        set(handles.perctAutomatic, 'Value', 1.0);
+    
+    otherwise
+        set(handles.edit_manual_percentile,'Enable','on');
+        set(handles.edit_manual_percentile, 'String', num2str(parameters.strategyBD));
+        set(handles.Derived_BDButton,'Value', 0.0);
+        set(handles.perctile_Button, 'Value', 1.0);
+        set(handles.perctAutomatic, 'Value', 0.0);
+end
+    
 
 % Update handles structure
 handles.output = hObject;
@@ -176,7 +212,7 @@ end
 % brownScaling
 if ~isPosScalar(brownScaling_1)
     errordlg('Please provide a valid value to parameter "Scaling Power in Fast Expansion Phase".','Error','modal')
-    return
+    returnparameters.gapExcludeMS = get(handles.checkbox10_gapExcludeMS, 'Value');
 end
 
 % brownScaling
@@ -255,10 +291,40 @@ if get(userData.handles_main.checkbox_merging,'Value') || ...
             return
         end
     end
+    
+    parameters.gapExcludeMS = get(handles.checkbox10_gapExcludeMS, 'Value');
     parameters.ampRatioLimit = ampRatioLimit;
     parameters.resLimit = resLimit;
 end
 
+
+% Birth and Death Strategy
+%%% ADD error checking
+BDstateSelection = get(get(handles.uibutton_BDstrat, 'SelectedObject'),'Tag');
+%  handles.uibutton_BDstrat.SelectedObject.String % After 2014b
+switch BDstateSelection
+    case 'Derived_BDButton'
+        parameters.strategyBD = -1;
+    case 'perctAutomatic'
+        parameters.strategyBD = 0;
+    case 'perctile_Button'
+        prctBD = get(handles.edit_manual_percentile, 'String');
+        if isempty(prctBD)
+            errordlg('Please provide a valid value to parameter "Percentile of the gap closing and merging and splitting cost distribution to use for calculating the birth and death".','Error','modal');
+            return
+        else
+            prctBD = str2double(prctBD);
+            if ~isPosScalar(prctBD) || (prctBD >= 100) || (prctBD < 0)
+                errordlg('Please provide a valid value to parameter "Percentile of the gap closing and merging and splitting cost distribution to use for calculating the birth and death".','Error','modal');
+                return
+            else
+                parameters.strategyBD = prctBD;
+            end
+        end
+
+    otherwise
+        error('bad tag....');
+end
 
 
 % Linear motion parameters
@@ -342,3 +408,23 @@ if get(hObject, 'Value')
 else
     set(get(handles.uipanel_ampRatioLimit,'Children'),'Enable','off');  
 end
+
+
+% --- Executes on button press in checkbox10_gapExcludeMS.
+function checkbox10_gapExcludeMS_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox10_gapExcludeMS (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+disp('gapExcludeMS check toggled');
+% Hint: get(hObject,'Value') returns toggle state of checkbox10_gapExcludeMS
+
+
+% --- Executes on button press in perctile_Button.
+function perctile_Button_Callback(hObject, eventdata, handles)
+% hObject    handle to perctile_Button (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+set(handles.edit_manual_percentile, 'Enable', 'on');
+% set(handles.edit_manual_percentile, 'String', num2str(parameters.strategyBD));
+
+% Hint: get(hObject,'Value') returns toggle state of perctile_Button

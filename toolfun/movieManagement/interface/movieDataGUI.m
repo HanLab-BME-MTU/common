@@ -22,7 +22,7 @@ function varargout = movieDataGUI(varargin)
 
 % Edit the above text to modify the response to help movieDataGUI
 
-% Last Modified by GUIDE v2.5 20-Apr-2013 12:53:57
+% Last Modified by GUIDE v2.5 20-Jun-2017 22:08:34
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -119,7 +119,7 @@ if ~isempty(userData.MD),
     set(handles.edit_notes, 'String', userData.MD.notes_)
     
     % GUI setting - parameters
-    propNames={'pixelSize_','timeInterval_','numAperture_','camBitdepth_'};
+    propNames={'pixelSize_','pixelSizeZ_','timeInterval_','numAperture_','camBitdepth_'};
     validProps = ~cellfun(@(x) isempty(userData.MD.(x)),propNames);
     
     propNames=propNames(validProps);
@@ -180,7 +180,7 @@ if isempty(outputDir) || ~exist(outputDir, 'dir')
 end
 
 % Concatenate numerical parameters as movie options
-propNames={'pixelSize_','timeInterval_','numAperture_','camBitdepth_'};
+propNames={'pixelSize_','pixelSizeZ_','timeInterval_','numAperture_','camBitdepth_'};
 propStrings = cell(numel(propNames), 1);
 for i = 1 : numel(propNames)
     propStrings{i} =get(handles.(['edit_' propNames{i}(1:end-1)]), 'String');
@@ -429,3 +429,45 @@ function checkbox4_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 %set(handles.checkbox4, 'Value', 1);
 % Hint: get(hObject,'Value') returns toggle state of checkbox4
+
+
+% --- Executes on button press in pushbutton_view_metadata.
+function pushbutton_view_metadata_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton_view_metadata (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+userData=get(handles.figure1,'UserData');
+MD = userData.MD;
+try
+    MD.getReader().showMetadata();
+catch err
+    if(~isempty(MD) && isa(MD.getReader(),'BioformatsReader'))
+        rethrow(err);
+    else
+        msgbox('Cannot show metadata for a movie of this type',...
+            'Metadata Unavailable');
+    end
+end
+
+
+
+function edit_pixelSizeZ_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_pixelSizeZ (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_pixelSizeZ as text
+%        str2double(get(hObject,'String')) returns contents of edit_pixelSizeZ as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_pixelSizeZ_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_pixelSizeZ (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end

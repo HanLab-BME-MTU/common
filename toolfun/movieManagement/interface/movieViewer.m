@@ -41,7 +41,7 @@ ip = inputParser;
 ip.addRequired('MO',@(x) isa(x,'MovieObject'));
 ip.addOptional('procId',[],@isnumeric);
 ip.addOptional('refresher',[],@isstr);
-ip.addParamValue('movieIndex',0,@isscalar);
+ip.addParameter('movieIndex',0,@isscalar);
 ip.parse(MO,varargin{:});
 
 if strcmp(ip.Results.refresher, '1') == 1
@@ -133,17 +133,21 @@ if isa(userData.MO,'MovieData')
     % Create controls for switching between process image output
     hPosition=10;
     nProc = numel(imageProc);
-    for iProc=nProc:-1:1;
+    for iProc=nProc:-1:1
         output=imageProc{iProc}.getDrawableOutput;
         validChan = imageProc{iProc}.checkChannelOutput;
         validOutput = find(strcmp({output.type},'image'));
         for iOutput=validOutput(end:-1:1)
             createOutputText(imagePanel,imageProcId(iProc),iOutput,hPosition,output(iOutput).name);
-            arrayfun(@(x) createProcButton(imagePanel,imageProcId(iProc),iOutput,x,hPosition),...
-                find(validChan));
+            if strcmp({output(iOutput).var},'merged')
+                createProcButton(imagePanel,imageProcId(iProc),iOutput,1,hPosition);
+            else
+                arrayfun(@(x) createProcButton(imagePanel,imageProcId(iProc),iOutput,x,hPosition),...
+                    find(validChan));            
+            end
             hPosition=hPosition+20;
         end
-        createProcText(imagePanel,imageProcId(iProc),iOutput,hPosition,imageProc{iProc}.getName);
+        createProcText(imagePanel,imageProcId(iProc),iOutput,hPosition,imageProc{iProc}.name_);
         hPosition=hPosition+20;
     end
     
@@ -178,7 +182,7 @@ if ~isempty(overlayProc)
     % Create overlay options
     hPosition=10;
     nProc = numel(overlayProc);
-    for iProc=nProc:-1:1;
+    for iProc=nProc:-1:1
         output=overlayProc{iProc}.getDrawableOutput;
         
         % Create checkboxes for movie overlays
@@ -198,7 +202,7 @@ if ~isempty(overlayProc)
                 'Callback',@(h,event) redrawOverlay(h,guidata(h))),find(validChan));
             hPosition=hPosition+20;
         end
-        createProcText(overlayPanel,overlayProcId(iProc),iOutput,hPosition,overlayProc{iProc}.getName);
+        createProcText(overlayPanel,overlayProcId(iProc),iOutput,hPosition,overlayProc{iProc}.name_);
         hPosition=hPosition+20;
     end
     
@@ -582,8 +586,9 @@ nFrames = userData.MO.nFrames_;
 startFrame = get(handles.slider_frame,'Value');
 if startFrame == nFrames, startFrame =1; end;
 if get(hObject,'Value')
-   action = 'Stop'; 
-else action = 'Run'; 
+    action = 'Stop'; 
+else
+    action = 'Run';
 end
 set(hObject,'String',[action ' movie']);
 
@@ -593,7 +598,7 @@ saveFrames = get(handles.checkbox_saveFrames,'Value');
 props = get(handles.popupmenu_movieFormat,{'String','Value'});
 movieFormat = props{1}{props{2}};
 
-if saveMovie,
+if saveMovie
     moviePath = fullfile(userData.MO.outputDirectory_,['Movie.' lower(movieFormat)]);
 end
 
@@ -635,7 +640,13 @@ end
 % Finish frame/movie creation
 if saveFrames; fprintf('\n'); end
 if saveMovie && strcmpi(movieFormat,'mov'), MakeQTMovie('finish'); end
-if saveMovie && strcmpi(movieFormat,'avi'), movie2avi(movieFrames,moviePath); end
+
+if saveMovie && strcmpi(movieFormat,'avi') 
+    v = VideoWriter(moviePath);
+    open(v);
+    writeVideo(v, movieFrames);
+    close(v); 
+end
 
 % Reset button
 set(hObject,'String', 'Run movie', 'Value', 0);
@@ -699,7 +710,12 @@ end
 % Finish frame/movie creation
 if saveFrames; fprintf('\n'); end
 if saveMovie && strcmpi(movieFormat,'mov'), MakeQTMovie('finish'); end
-if saveMovie && strcmpi(movieFormat,'avi'), movie2avi(movieFrames,moviePath); end
+if saveMovie && strcmpi(movieFormat,'avi')
+    v = VideoWriter(moviePath);
+    open(v);
+    writeVideo(v, movieFrames);
+    close(v); 
+end
 
 % Reset button
 set(hObject,'String', 'Show 3D', 'Value', 0);
@@ -773,12 +789,22 @@ if(isfield(userData.figures,figName) ...
         && isvalid(handle(userData.figures.(figName))))
     h = userData.figures.(figName);
 else
-    h = findobj(0,'-regexp','Name',['^' figName '$']);;
+    h = findobj(0,'-regexp','Name',['^' figName '$']);
 end
 if ~isempty(h)
     figure(h);
-    userData.figures.(figName) = h;
-    set(handles.figure1,'UserData',userData);
+    try
+        userData.figures.(figName) = h;
+        set(handles.figure1,'UserData',userData);
+    catch err
+        switch(err.identifier)
+            case 'MATLAB:AddField:InvalidFieldName'
+                % figName may not be a proper field name
+                % Ignore error
+            otherwise
+                rethrow(err)
+        end
+    end
     return;
 end
 
@@ -864,7 +890,11 @@ else
     iOutput = str2double(tokens{1}{2});
     output = outputList(iOutput).var;
     iChan = str2double(tokens{1}{3});
-    userData.MO.processes_{procId}.draw(iChan,frameNr,'output',output,varargin{:});
+    if userData.MO.is3D
+        userData.MO.processes_{procId}.draw(iChan,frameNr, ZNr, 'output',output,varargin{:});
+    else
+        userData.MO.processes_{procId}.draw(iChan,frameNr, 'output',output,varargin{:});
+    end
     displayMethod = userData.MO.processes_{procId}.displayMethod_{iOutput,iChan};
 end
 
@@ -931,10 +961,12 @@ if ~isempty(tokens)
     inputArgs={iChan,frameNr};
     graphicTag =['process' num2str(procId) '_channel'...
         num2str(iChan) '_output' num2str(iOutput)];
+    movieOverlay = false;
 else
     iChan = [];
     inputArgs={frameNr};
     graphicTag = ['process' num2str(procId) '_output' num2str(iOutput)];
+    movieOverlay = true;
 end
 % Get options figure handle
 optFig = findobj(0,'-regexp','Name','Movie options');
@@ -949,24 +981,33 @@ if get(hObject,'Value')
     end    
     if userData.MO.is3D() % && userData.MO.processes_{procId}.is3DP()
         ZNr = get(handles.slider_depth,'Value');
-    userData.MO.processes_{procId}.draw(inputArgs{:},'output',output,... % draw method of process object modificiation for 3D!!!
-        options{:}, 'iZ',ZNr);
-    else
         userData.MO.processes_{procId}.draw(inputArgs{:},'output',output,... % draw method of process object modificiation for 3D!!!
-        options{:});
+        options{:},'movieOverlay', movieOverlay,'iZ', ZNr);
+    else
+        userData.MO.processes_{procId}.draw(inputArgs{:},'output',output,...
+        options{:},'movieOverlay', movieOverlay);
     end
 else
-    h=findobj('Tag',graphicTag);
+    h = findobj('Tag',graphicTag);
+%     if isempty(h) % debugging when non-channel specific tags are
+%     mis-matched
+%         try 
+%            graphicTag = ['^process' num2str(procId) '_'];
+%            h = findobj(0,'-regexp','Tag', graphicTag);
+%            delete(h);
+%         catch
+%         end
+%     end
     if ~isempty(h), delete(h); end
 end
 
 % Get display method and update option status
-if isempty(iChan),
+if isempty(iChan)
     displayMethod = userData.MO.processes_{procId}.displayMethod_{iOutput};
 else
     displayMethod = userData.MO.processes_{procId}.displayMethod_{iOutput,iChan}; %% 3D depth specific process???
 end
-if ~isempty(optFig),
+if ~isempty(optFig)
     userData.setOverlayOptions(displayMethod)
 end
 

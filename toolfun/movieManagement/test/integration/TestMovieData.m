@@ -264,6 +264,15 @@ classdef TestMovieData < TestMovieObject
             assertEqual(self.movie.getPackage(1),...
                 self.movie.getROI(1).getPackage(1));
         end
+        
+        function testIsEqual(self)
+            % Check to see if two movies loading from the same file are
+            % equal according to isequal
+            self.setUpMovie();
+            self.movie.sanityCheck();
+            movie2 = MovieData.load(self.movie.getFullPath());
+            assertEqual(self.movie,movie2);
+        end
     end
     
     methods (Abstract)

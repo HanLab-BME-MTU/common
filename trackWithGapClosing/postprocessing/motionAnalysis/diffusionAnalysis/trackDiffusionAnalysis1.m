@@ -18,17 +18,21 @@ function [diffAnalysisRes,errFlag] = trackDiffusionAnalysis1(tracks,...
 %       checkAsym   : 1 to check for asymmetric tracks and to analyze their
 %                     diffusion after dimensionality reduction, 0
 %                     otherwise. Optional. Default: 0.
-%       alphaValues : Row vector with 2 entries. First entry is the
-%                     alpha-value for MSS analysis (can take the values
-%                     0.2, 0.1, 0.05 and 0.01; see help of trackMSSAnalysis
-%                     for most up-to-date values allowed). Second entry is
-%                     the alpha-value for asymmetry determination (can take
-%                     the values 0.2, 0.1, 0.05 and 0.01; see help of
-%                     asymDeterm2D3D for most up-to-date values allowed).
-%                     Optional. Default: [0.05 0.1]. If only one value is
+%       alphaValues : Row vector with 2 entries. 
+%                     *** First entry is the alpha-value for MSS analysis.
+%                     Can take the values 0.2, 0.1, 0.05 or 0.01; or the
+%                     negative of these values for NEW CLASSIFICATION SCHEME.
+%                     See trackMSSAnalysis for most up-to-date values
+%                     allowed and explanation of NEW CLASSIFICATION SCHEME.
+%                     *** Second entry is the alpha-value for asymmetry
+%                     determination. Can take the values 0.2, 0.1, 0.05 or
+%                     0.01. See help of asymDeterm2D3D for most up-to-date
+%                     values allowed.
+%                     *** Optional. Default: [0.05 0.1]. If only one value is
 %                     entered, it is taken as the alpha-value for MSS
 %                     analysis, while the alpha-value for asymmetry
 %                     analysis is given the default value.
+%
 %       plotRes     : 1 to plot results, 0 otherwise. Optional. Default: 0.
 %                     Results can be plotted only if problem is 2D.
 %                     See plotTracksDiffAnalysis2D for color code.
@@ -82,9 +86,10 @@ function [diffAnalysisRes,errFlag] = trackDiffusionAnalysis1(tracks,...
 %                            there is no need for repetition.
 %       errFlag         : 0 if executed normally, 1 otherwise.
 %
-%REMARKS While tracks do not have to be linear in order to be asymmetric,
+%REMARKS 
+%(1)While tracks do not have to be linear in order to be asymmetric,
 %the last analysis step assumes that tracks are linear.
-%
+
 %Khuloud Jaqaman, March 2008
 
 %% Output
@@ -199,19 +204,7 @@ numTrackSegments = size(tracks,1);
 momentOrders = 0 : 6;
 [trackClassMSS,mssSlope,genDiffCoef,scalingPower,normDiffCoef] = ...
     trackMSSAnalysis(tracks,probDim,momentOrders,alphaValues(1));
-% for iTrack = 1:length(trackClassMSS)
-%                     if trackClassMSS(iTrack) > 1
-%                     %% Testing variance as indicator
-%                         coordXYZ(:,1) = (tracks(iTrack,1:8:end))';
-%                         coordXYZ(:,2) = (tracks(iTrack,2:8:end))';
-%                         distances = pdist(coordXYZ,'euclidean');
-%                         variance(iTrack) = var(distances);
-%                         if variance(iTrack) < 4
-%                             trackClassMSS(iTrack) =1;
-%                         end
-%                         clear coordXYZ
-%                     end
-% end
+
 %% track classification based on asymmetry
 
 %this classification scheme is taken from Huet et al (BJ 2006)
@@ -263,7 +256,6 @@ if checkAsym
     indxAsym = find(trackClassAsym(:,1) == 1);
     
 end
-
 
 %% moment scaling spectrum analysis on reduced-dimensionality data
 
@@ -366,26 +358,7 @@ if ~isempty(indxConf)
             confRadius(iTrack,1) = sqrt( mean(eigenVal) * (probDim + 2) );
         end
         
-        %% New part calculate the track's center
-        principalComponents = [-0.3059 0.9518; 0.9518 0.3059];
-        traj = xyzCoord(:,1:2);
-        trajLength = length(traj);
-        if trajLength <= 100 %Could even go up to 100, look into further
-            trajMean = nanmean(xyzCoord(:,1:probDim));
-            distXYConf = traj- repmat(trajMean,trajLength,1);
-            distConf = sqrt(sum(distXYConf.^2,2));
-            posXYConf = distXYConf > 0;
-            numSwitchConf = length(find(sum(diff(posXYConf),2) > 0));
-            fracSwitchConf(iTrack) = numSwitchConf / (trajLength-1);
-            sTest(:,1) = fracSwitchConf(iTrack);
-            sTest(:,2)= mssSlope(iTrack);
-            pc = sTest*principalComponents;
-            if pc(1) <0.01
-% %                 trackClassMSS(iTrack) = 0;
-% %             else
-% %                 trackClassMSS(iTrack) = 1;
-            end
-        end
+
     end
 end
 

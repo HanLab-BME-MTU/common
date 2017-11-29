@@ -208,5 +208,55 @@ classdef TracksHandle < Tracks & dynamicprops
                 P = addprop@dynamicprops(obj,propName);
             end
         end
+        function out = subsasgn(A,S,B,varargin)
+            try
+                if(isempty(A))
+                    A = TracksHandle.empty;
+                end
+                out = builtin('subsasgn',A,S,B,varargin{:});
+            catch err
+                switch(err.identifier)
+                    case 'MATLAB:noPublicFieldForClass'
+                        if(~all(isprop(A,S(1).subs)))
+                            rethrow(err);
+                        end
+                        if(nargin < 4)
+                            % Allow for [tracks.prop] = 5; for dynamic
+                            % properties
+                            out = arrayfun(@(t) subsasgn(t,S,B),A,'UniformOutput',false);
+                            out = [out{:}];
+                            out = reshape(out,size(A));
+                        else
+                            % Allow for
+                            % test = {1,2,3,4,5}
+                            % [tracks.prop] = test{:}
+                            % for dynamic properties
+                            out = arrayfun(@(t,b) subsasgn(t,S,b{1}),A,[{B} varargin],'UniformOutput',false);
+                            out = [out{:}];
+                            out = reshape(out,size(A));
+                        end
+                    otherwise
+                        rethrow(err)
+                end
+            end
+        end
+        function varargout = subsref(A,S)
+            try
+                [varargout{1:nargout}] = builtin('subsref',A,S);
+            catch err
+                switch(err.identifier)
+                    case 'MATLAB:noSuchMethodOrField'
+                        if(all(isprop(A,S(1).subs)))
+                            % Allow for tracks.prop where prop is a dynamic
+                            % property
+                            varargout = arrayfun(@(t) subsref(t,S),A,'Unif',false);
+                        else
+                            rethrow(err);
+                        end
+                    otherwise
+                        rethrow(err);
+                end
+            end
+        end
     end
 end

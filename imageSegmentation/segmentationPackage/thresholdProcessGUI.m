@@ -22,7 +22,7 @@ function varargout = thresholdProcessGUI(varargin)
 
 % Edit the above text to modify the response to help thresholdProcessGUI
 
-% Last Modified by GUIDE v2.5 12-Dec-2011 17:52:57
+% Last Modified by GUIDE v2.5 05-Sep-2017 17:50:52
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -90,28 +90,77 @@ threshMethods = userData.crtProc.getMethods();
 set(handles.popupmenu_thresholdingMethod,'String',{threshMethods(:).name},...
     'Value',funParams.MethodIndx);
 
-if isempty(funParams.ThresholdValue)
+if(~isfield(funParams,'PreThreshold'))
+    funParams.PreThreshold = false;
+end
+
+if(~isfield(funParams,'ExcludeOutliers'))
+    funParams.ExcludeOutliers = false;
+end
+
+if(~isfield(funParams,'ExcludeZero'))
+    funParams.ExcludeZero = false;
+end
+
+if(~isfield(funParams,'Invert'))
+    funParams.Invert = false;
+end
+
+set(handles.checkbox_invert, 'Value', funParams.Invert);
+
+useAutomatic = isempty(funParams.ThresholdValue) || funParams.PreThreshold;
+useFixed = ~isempty(funParams.ThresholdValue) || funParams.PreThreshold;
+
+if useAutomatic
    
     set(handles.checkbox_auto, 'Value', 1);
     set(get(handles.uipanel_automaticThresholding,'Children'),'Enable','on');
-    set(get(handles.uipanel_fixedThreshold,'Children'),'Enable','off');
     if funParams.MaxJump
         set(handles.checkbox_max, 'Value', 1);
         set(handles.edit_jump, 'Enable','on','String',funParams.MaxJump);
     else
         set(handles.edit_jump, 'Enable', 'off');
     end
+    if funParams.PreThreshold
+        set(handles.checkbox_preThreshold, 'Value', 1);
+    end
+    
+    if funParams.ExcludeOutliers
+        set(handles.checkbox_exclude_outliers,'Value',1);
+        set(handles.edit_exclude_outliers_k_sigma,'Enable','on','String',num2str(funParams.ExcludeOutliers));
+    else
+        set(handles.checkbox_exclude_outliers,'Value',0);
+        set(handles.edit_exclude_outliers_k_sigma,'Enable','off','String','');
+    end
+    
+    set(handles.checkbox_exclude_zero,'Value',funParams.ExcludeZero);      
+
+else
+    set(handles.checkbox_auto, 'Value', 0);
+    set(get(handles.uipanel_automaticThresholding,'Children'),'Enable','off');
+    
+end
+
+if useFixed    
+    if(isempty(funParams.ThresholdValue))
+        funParams.ThresholdValue(1) = 0;
+    end
+    if(isempty(funParams.IsPercentile))
+        funParams.IsPercentile = false(size(funParams.ThresholdValue));
+    end
+%     set(handles.checkbox_auto, 'Value', 0);
+    set(get(handles.uipanel_fixedThreshold,'Children'),'Enable','on');
+%     set(get(handles.uipanel_automaticThresholding,'Children'),'Enable','off');
+    set(handles.listbox_thresholdValues, 'String', thresholdsToString(funParams.ThresholdValue,funParams.IsPercentile));
+    userData.thresholdValue=funParams.ThresholdValue(1);
+    set(handles.slider_threshold, 'Value',funParams.ThresholdValue(1))
+    set(handles.checkbox_is_percentile,'Value',funParams.IsPercentile(1));
+else
+    set(get(handles.uipanel_fixedThreshold,'Children'),'Enable','off');
     nSelectedChannels  = numel(get(handles.listbox_selectedChannels, 'String'));
     set(handles.listbox_thresholdValues, 'String',...
         num2cell(zeros(1,nSelectedChannels)));
     userData.thresholdValue=0;
-else
-    set(handles.checkbox_auto, 'Value', 0);
-    set(get(handles.uipanel_fixedThreshold,'Children'),'Enable','on');
-    set(get(handles.uipanel_automaticThresholding,'Children'),'Enable','off');
-    set(handles.listbox_thresholdValues, 'String', num2cell(funParams.ThresholdValue));
-    userData.thresholdValue=funParams.ThresholdValue(1);
-    set(handles.slider_threshold, 'Value',funParams.ThresholdValue(1))
 end
 
 % Initialize the frame number slider and eidt
@@ -177,9 +226,15 @@ if isnan(gaussFilterSigma) || gaussFilterSigma < 0
 end
 funParams.GaussFilterSigma=gaussFilterSigma;
 
+funParams.Invert = get(handles.checkbox_invert,'Value');
 
-if get(handles.checkbox_auto, 'value')
-    funParams.ThresholdValue = [ ];
+% Automatic and fixed are not mutually exclusive.
+% If PreThreshold, one could use both automatic and fixed thresholds.
+useAutomatic = get(handles.checkbox_auto, 'value');
+useFixed = ~useAutomatic || get(handles.checkbox_preThreshold, 'value');
+
+if useAutomatic
+%     funParams.ThresholdValue = [ ];
     funParams.MethodIndx=get(handles.popupmenu_thresholdingMethod,'Value');
     
     if get(handles.checkbox_max, 'Value')
@@ -190,8 +245,44 @@ if get(handles.checkbox_auto, 'value')
             return;
         end    
         funParams.MaxJump = str2double(get(handles.edit_jump,'String'));
+    else
+        funParams.MaxJump = 0;
+    end
+    
+    if get(handles.checkbox_exclude_outliers, 'Value')
+        excludeOutliersKSigma = str2double(get(handles.edit_exclude_outliers_k_sigma, 'String'));
+        if isnan(excludeOutliersKSigma) || excludeOutliersKSigma <= 0
+            errordlg('Please provide a valid input for ''Exclude Outliers Sigma''.','Setting Error','modal');
+            return;
+        end
+        funParams.ExcludeOutliers = excludeOutliersKSigma;
+    else
+        funParams.ExcludeOutliers = 0;
+    end
+    
+    if get(handles.checkbox_exclude_zero, 'Value')
+        funParams.ExcludeZero = true;
+    else
+        funParams.ExcludeZero = false;
+    end
+    
+    if useFixed
+        % Use the fixed thresholds below before automatic thresholding
+        funParams.PreThreshold = true;
+    else
+        % Threshold value will be determined only automatically
+        funParams.PreThreshold = false;
+        funParams.ThresholdValue = [ ];
     end
 else
+    % No automatic thresholding
+    funParams.PreThreshold = false;
+    % Since ~useAutomatic, useFixed is true and thus will be set below
+    funParams.ThresholdValue = [ ];
+    funParams.MaxJump = 0;
+end
+
+if useFixed
     threshold = get(handles.listbox_thresholdValues, 'String');
     if isempty(threshold)
        errordlg('Please provide at least one threshold value.','Setting Error','modal')
@@ -200,13 +291,15 @@ else
        errordlg('Please provide the same number of threshold values as the input channels.','Setting Error','modal')
        return
     else
-        threshold = str2double(threshold);
-        if any(isnan(threshold)) || any(threshold < 0)
-            errordlg('Please provide valid threshold values. Threshold cannot be a negative number.','Setting Error','modal')
+        [threshold,isPercentile] = stringToThresholds(threshold);
+%         threshold = str2double(threshold);
+        if any(isnan(threshold))
+            errordlg('Please provide valid threshold values.','Setting Error','modal')
             return            
         end
     end
     funParams.ThresholdValue = threshold;
+    funParams.IsPercentile = isPercentile;
 end
    
 
@@ -263,7 +356,8 @@ id = get(handles.listbox_availableChannels, 'Value');
 % If channel has already been added, return;
 chanIndex1 = get(handles.listbox_availableChannels, 'Userdata');
 chanIndex2 = get(handles.listbox_selectedChannels, 'Userdata');
-thresholdValues = cellfun(@str2num,get(handles.listbox_thresholdValues,'String'));
+[thresholdValues,isPercentile] = stringToThresholds(get(handles.listbox_thresholdValues,'String'));
+% thresholdValues = cellfun(@str2num,get(handles.listbox_thresholdValues,'String'));
 
 for i = id
     if any(strcmp(contents1{i}, contents2) )
@@ -271,13 +365,14 @@ for i = id
     else
         contents2{end+1} = contents1{i};
         thresholdValues(end+1) = 0;
+        isPercentile(end+1) = false;
         chanIndex2 = cat(2, chanIndex2, chanIndex1(i));
 
     end
 end
 
 set(handles.listbox_selectedChannels, 'String', contents2, 'Userdata', chanIndex2);
-set(handles.listbox_thresholdValues,'String',num2cell(thresholdValues))
+set(handles.listbox_thresholdValues,'String',thresholdsToString(thresholdValues,isPercentile))
 update_data(hObject,eventdata,handles);
 
 
@@ -301,9 +396,11 @@ chanIndex2(id) = [ ];
 set(handles.listbox_selectedChannels, 'Userdata', chanIndex2);
 
 % Update thresholdValues
-thresholdValues = cellfun(@str2num,get(handles.listbox_thresholdValues,'String'));
+% thresholdValues = cellfun(@str2num,get(handles.listbox_thresholdValues,'String'));
+[thresholdValues,isPercentile] = stringToThresholds(get(handles.listbox_thresholdValues,'String'));
 thresholdValues(id) = [];
-set(handles.listbox_thresholdValues,'String',num2cell(thresholdValues));
+isPercentile(id) = [];
+set(handles.listbox_thresholdValues,'String',thresholdsToString(thresholdValues,isPercentile));
 
 % Point 'Value' to the second last item in the list once the 
 % last item has been deleted
@@ -320,12 +417,16 @@ function checkbox_auto_Callback(hObject, eventdata, handles)
 % Hint: get(hObject,'Value') returns toggle state of checkbox_auto
 if get(hObject, 'Value')
     set(get(handles.uipanel_automaticThresholding,'Children'),'Enable','on');
-    set(get(handles.uipanel_fixedThreshold,'Children'),'Enable','off');
+    if ~get(handles.checkbox_preThreshold,'Value')
+%         set(handles.edit_preThreshold,'Enable','off'); 
+        set(get(handles.uipanel_fixedThreshold,'Children'),'Enable','off');
+    end
     if ~get(handles.checkbox_max,'Value'), set(handles.edit_jump,'Enable','off'); end
 else 
     set(get(handles.uipanel_automaticThresholding,'Children'),'Enable','off');
     set(get(handles.uipanel_fixedThreshold,'Children'),'Enable','on')
     set(handles.checkbox_max, 'Value', 0);
+    set(handles.checkbox_preThreshold, 'Value', 0);
     set(handles.checkbox_applytoall, 'Value',0);
     set(handles.checkbox_preview, 'Value',1);
 end
@@ -352,6 +453,47 @@ else
     set(handles.edit_jump, 'Enable', 'off');
 end
 
+function edit_preThreshold_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_preThreshold (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_preThreshold as text
+%        str2double(get(hObject,'String')) returns contents of edit_preThreshold as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_preThreshold_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_preThreshold (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on button press in checkbox_preThreshold.
+function checkbox_preThreshold_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox_preThreshold (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of checkbox_preThreshold
+if get(hObject, 'value')
+    set(get(handles.uipanel_fixedThreshold,'Children'),'Enable','on')
+%     set(handles.checkbox_max, 'Value', 0);
+%     set(handles.checkbox_preThreshold, 'Value', 0);
+%     set(handles.checkbox_applytoall, 'Value',0);
+    set(handles.checkbox_preview, 'Value',1);
+else 
+    set(get(handles.uipanel_fixedThreshold,'Children'),'Enable','off');
+%     set(handles.edit_preThreshold, 'Enable', 'off');
+end
+update_data(hObject,eventdata,handles);
+
 
 % --- Executes on key press with focus on pushbutton_done and none of its controls.
 function pushbutton_done_KeyPressFcn(hObject, eventdata, handles)
@@ -372,10 +514,13 @@ end
 function pushbutton_set_threshold_Callback(hObject, eventdata, handles)
 
 newThresholdValue = get(handles.slider_threshold,'Value');
+newIsPercentile = get(handles.checkbox_is_percentile,'Value');
 indx = get(handles.listbox_selectedChannels,'Value');
-thresholdValues = cellfun(@str2num,get(handles.listbox_thresholdValues,'String'));
+% thresholdValues = cellfun(@str2num,get(handles.listbox_thresholdValues,'String'));
+[thresholdValues,isPercentile] = stringToThresholds(get(handles.listbox_thresholdValues,'String'));
 thresholdValues(indx) = newThresholdValue;
-set(handles.listbox_thresholdValues,'String',num2cell(thresholdValues));
+isPercentile(indx) = newIsPercentile;
+set(handles.listbox_thresholdValues,'String',thresholdsToString(thresholdValues,isPercentile));
 
 
 % --- Executes on button press in checkbox_preview.
@@ -405,7 +550,7 @@ end
 thresholdValue=round(thresholdValue);
 
 % Check the validity of the supplied threshold
-if isnan(thresholdValue) || thresholdValue < 0 || thresholdValue > get(handles.slider_threshold,'Max')
+if isnan(thresholdValue) || thresholdValue < get(handles.slider_threshold,'Min') || thresholdValue > get(handles.slider_threshold,'Max')
     warndlg('Please provide a valid coefficient.','Setting Error','modal');
     thresholdValue=userData.thresholdValue;
 end
@@ -460,12 +605,14 @@ if strcmp(get(get(hObject,'Parent'),'Tag'),'uipanel_channels') ||...
     end
     thresholdString = get(handles.listbox_thresholdValues,'String');
     if ~isempty(thresholdString)
-        thresholdValue = str2double(thresholdString{value});
+%         thresholdValue = str2double(thresholdString{value});
+        [thresholdValue,isPercentile] = stringToThresholds(thresholdString{value});
     else
         thresholdValue=0;
     end
     set(handles.edit_threshold,'String',thresholdValue);
     set(handles.slider_threshold,'Value',thresholdValue);
+    setPercentileMode(handles,isPercentile);
     if isempty(thresholdString),
         if isfield(userData, 'previewFig'), delete(userData.previewFig); end
         set(handles.figure1, 'UserData', userData);
@@ -492,11 +639,18 @@ if (chanIndx~=userData.chanIndx) ||  (imIndx~=userData.imIndx)
     end
     
     % Get the value of the new maximum threshold
-    maxThresholdValue=max(max(userData.imData(:)),1);
+    if(get(handles.checkbox_is_percentile,'Value'))
+        maxThresholdValue = 100;
+        minThresholdValue = 0;
+    else
+        maxThresholdValue=max(max(userData.imData(:)),1);
+        minThresholdValue=min(min(userData.imData(:)),0);
+    end
     % Update the threshold Value if above the new maximum
     thresholdValue=min(thresholdValue,maxThresholdValue);
     
     set(handles.slider_threshold,'Value',thresholdValue,'Max',maxThresholdValue,...
+        'Min',minThresholdValue, ...
         'SliderStep',[1/double(maxThresholdValue)  10/double(maxThresholdValue)]);
     set(handles.edit_threshold,'String',thresholdValue);
     
@@ -549,14 +703,76 @@ if get(handles.checkbox_preview,'Value')
         methodIndx=get(handles.popupmenu_thresholdingMethod,'Value');
         threshMethod = userData.crtProc.getMethods(methodIndx).func;
         
-        try %#ok<TRYNC>
-            currThresh = threshMethod( imData);
-            alphamask(imData<=currThresh)=.4;
+        try
+            p.PreThreshold = get(handles.checkbox_preThreshold,'Value');
+            p.ExcludeZero = get(handles.checkbox_exclude_zero,'Value');
+            p.ExcludeOutliers = get(handles.checkbox_exclude_outliers,'Value') ...
+                              * str2double(get(handles.edit_exclude_outliers_k_sigma,'String'));
+            % iChan is not really 1, but we are reusing code from thresholdMovie              
+            iChan = 1;
+            p.ThresholdValue = get(handles.slider_threshold, 'Value');
+            p.IsPercentile = get(handles.checkbox_is_percentile,'Value');
+            p.Invert = get(handles.checkbox_invert,'Value');
+            
+            if(isnan(p.ExcludeOutliers))
+                p.ExcludeOutliers = 0;
+            end
+            
+            data = imData;
+            
+            %% Perform automatic thresholding
+            if(p.PreThreshold)
+                % Use automatic thresholding method only on pixels
+                % above fixed threshold
+                absoluteThreshold = p.ThresholdValue(iChan);
+                if(p.IsPercentile(iChan))
+                    absoluteThreshold = prctile(data(:),absoluteThreshold);
+                end
+                data = data(data > absoluteThreshold);
+            end
+            if(p.ExcludeZero)
+                data = data(data ~= 0);
+            end
+            if(p.ExcludeOutliers)
+                % Exclude outliers before perforing automatic
+                % thresholding
+                [~,inliers] = detectOutliers(data,p.ExcludeOutliers);
+                data = data(inliers);
+            end
+
+            currThresh = threshMethod(data);
+
+            if(p.PreThreshold)
+                % Ensure absolute threshold is above fixed threshold
+                currThresh = max(currThresh,absoluteThreshold);
+            end
+            if(p.ExcludeZero)
+                % Threshold must be at least zero if excluding zeros
+                currThresh = max(currThresh,0);
+            end
+            
+            %% Use automatic thresholding
+
+            if(p.Invert)
+                alphamask(imData>=currThresh)=.4;
+            else
+                alphamask(imData<=currThresh)=.4;
+            end
+        catch err
+            % To debug breakpoint here
+            rethrow(err);
         end
     else
         % Preview manual threshold
         thresholdValue = get(handles.slider_threshold, 'Value');
-        alphamask(imData<=thresholdValue)=.4;
+        if(get(handles.checkbox_is_percentile,'Value'))
+            thresholdValue = prctile(userData.imData(:),thresholdValue);
+        end
+        if(get(handles.checkbox_invert,'Value'))
+            alphamask(imData>=thresholdValue)=.4;
+        else
+            alphamask(imData<=thresholdValue)=.4;
+        end
     end
     set(imHandle,'AlphaData',alphamask,'AlphaDataMapping','none');
 
@@ -565,3 +781,123 @@ if get(handles.checkbox_preview,'Value')
     set(handles.figure1, 'UserData', userData);
     guidata(hObject,handles);
 end
+
+
+% --- Executes on button press in checkbox_is_percentile.
+function checkbox_is_percentile_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox_is_percentile (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of checkbox_is_percentile
+if get(handles.checkbox_is_percentile,'Value')
+    % Convert threshold values into percentiles
+    thresholdValue = get(handles.slider_threshold, 'Value');
+    userData = get(handles.figure1, 'UserData');
+    threshPercent = sum(userData.imData(:) < thresholdValue)/numel(userData.imData(:))*100;
+    set(handles.slider_threshold,'Value',threshPercent,'Min',0,'Max',100, ...
+        'SliderStep',[0.01 0.1] ...
+        );
+    set(handles.edit_threshold,'String',threshPercent);
+    set(handles.text_percentile,'String','%');
+    update_data(hObject,eventdata, handles)
+else
+    % Convert percentile to threshold values
+    thresholdPercent = get(handles.slider_threshold, 'Value');
+    userData = get(handles.figure1, 'UserData');
+    thresholdValue = prctile(userData.imData(:),thresholdPercent);
+    maxThresholdValue=max(max(userData.imData(:)),1);
+    minThresholdValue=min(min(userData.imData(:)),0);
+    set(handles.slider_threshold,'Value',thresholdValue,'Min',minThresholdValue,'Max',maxThresholdValue, ...
+        'SliderStep',[1/double(maxThresholdValue)  10/double(maxThresholdValue)]);
+    set(handles.edit_threshold,'String',thresholdValue);
+    set(handles.text_percentile,'String','');
+end
+
+function strings = thresholdsToString(thresholdValues,isPercentile)
+    strings = num2cell(thresholdValues);
+    strings = cellfun(@num2str,strings,'UniformOutput',false);
+    percent = cell(size(strings));
+    [percent{isPercentile}] = deal('%');
+    strings = strcat(strings,percent);
+    
+    
+function [thresholdValues,isPercentile] = stringToThresholds(thresholdStrings)
+    if(ischar(thresholdStrings))
+        thresholdStrings = {thresholdStrings};
+    end
+    isPercentile = cellfun(@(x) x(end) == '%',thresholdStrings);
+    thresholdStrings(isPercentile) = cellfun(@(x) x(1:end-1),thresholdStrings(isPercentile),'UniformOutput',false);
+    thresholdValues = str2double(thresholdStrings);
+
+function setPercentileMode(handles,isPercentile)
+    percent = '%';
+    set(handles.text_percentile,'String',percent(isPercentile));
+    set(handles.checkbox_is_percentile,'Value',isPercentile);
+
+
+% --- Executes on button press in checkbox_exclude_outliers.
+function checkbox_exclude_outliers_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox_exclude_outliers (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of checkbox_exclude_outliers
+if get(hObject,'Value')
+    set(handles.edit_exclude_outliers_k_sigma,'Enable','on','String','3');
+else
+    set(handles.edit_exclude_outliers_k_sigma,'Enable','off');
+end
+
+
+function edit_exclude_outliers_k_sigma_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_exclude_outliers_k_sigma (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_exclude_outliers_k_sigma as text
+%        str2double(get(hObject,'String')) returns contents of edit_exclude_outliers_k_sigma as a double
+userData = get(hObject, 'UserData');
+k_sigma = str2double(get(hObject,'String'));
+try
+    validateattributes(k_sigma,{'numeric'},{'nonnan','positive'})
+    userData.k_sigma = k_sigma;
+    set(hObject,'UserData',userData);
+catch err
+    warndlg('Please provide a valid sigma multiplier','Setting Error','modal');
+    if(isempty(userData.k_sigma))
+        userData.k_sigma = 3;
+    end
+    set(hObject,'String',userData.k_sigma);
+end
+
+% --- Executes during object creation, after setting all properties.
+function edit_exclude_outliers_k_sigma_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_exclude_outliers_k_sigma (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on button press in checkbox_exclude_zero.
+function checkbox_exclude_zero_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox_exclude_zero (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of checkbox_exclude_zero
+
+
+% --- Executes on button press in checkbox_invert.
+function checkbox_invert_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox_invert (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of checkbox_invert
+update_data(hObject,eventdata,handles);

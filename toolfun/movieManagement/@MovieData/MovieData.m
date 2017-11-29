@@ -207,7 +207,7 @@ classdef  MovieData < MovieObject & matlab.mixin.Heterogeneous
             % Retrieve the names of the images in a specific channel
             
             if nargin < 2 || isempty(iChan), iChan = 1:numel(obj.channels_); end
-            assert(all(ismember(iChan,1:numel(obj.channels_))),...
+            assert(all(insequence(iChan,1,numel(obj.channels_))),...
                 'Invalid channel numbers! Must be positive integers less than the number of image channels!');
             
             % Delegates the method to the classes
@@ -233,14 +233,14 @@ classdef  MovieData < MovieObject & matlab.mixin.Heterogeneous
         
         function channel = getChannel(obj, i)
             % Returns the channel corresponding to the specified index
-            assert(isscalar(i) && ismember(i, 1:numel(obj.channels_)));
+            assert(insequence_and_scalar(i, 1,numel(obj.channels_)));
             channel = obj.channels_(i);
         end
         
         function chanPaths = getChannelPaths(obj,iChan)
             % Returns the directories for the selected channels
             if nargin < 2 || isempty(iChan), iChan = 1:numel(obj.channels_); end
-            assert(all(ismember(iChan,1:numel(obj.channels_))),...
+            assert(all(insequence(iChan,1,numel(obj.channels_))),...
                 'Invalid channel index specified! Cannot return path!');
             
             chanPaths = obj.getReader().getChannelNames(iChan);
@@ -249,7 +249,7 @@ classdef  MovieData < MovieObject & matlab.mixin.Heterogeneous
         function chanNames = getChannelNames(obj,iChan)
             % Returns the directories for the selected channels
             if nargin < 2 || isempty(iChan), iChan = 1:numel(obj.channels_); end
-            assert(all(ismember(iChan,1:numel(obj.channels_))),...
+            assert(all(insequence(iChan,1,numel(obj.channels_))),...
                 'Invalid channel index specified!');
             chanNames = arrayfun(@(x) obj.getChannel(x).getName(), iChan,...
                 'UniformOutput', false);
@@ -289,13 +289,13 @@ classdef  MovieData < MovieObject & matlab.mixin.Heterogeneous
         
         function roi = getROI(obj, i)
             % Returns the region of interest corresponding to the specified index
-            assert(isscalar(i) && ismember(i, 1:numel(obj.rois_)));
+            assert(insequence_and_scalar(i, 1,numel(obj.rois_)));
             roi = obj.rois_(i);
         end
         
         function deleteROI(obj, index, askUser)
             % Deletes the region of interest corresponding to the specified index
-            assert(all(ismember(index,1:numel(obj.rois_))));
+            assert(all_insequence(index,1,numel(obj.rois_)));
             if nargin < 3, askUser = true; end
             paths = arrayfun(@(x) getFullPath(x, askUser), obj.rois_(index),'Unif',false);
             
@@ -598,7 +598,7 @@ classdef  MovieData < MovieObject & matlab.mixin.Heterogeneous
                 end
             end
             if nargin>1
-                assert(all(ismember(index,1:numel(input))));
+                assert(all(insequence(index,1,numel(input))));
                 input=input(index);
             end
         end
@@ -721,12 +721,24 @@ classdef  MovieData < MovieObject & matlab.mixin.Heterogeneous
             end
         end
         
+        tf = isequal(obj,MD,varargin);
+        tf = isequaln(obj,MD,varargin);
+        tf = isequalwithequalnans(obj,MD,varargin);
     end
     methods(Static)
         function obj = load(varargin)
             % Load or re-load a movie object
             
-            assert(nargin > 0);
+            if(nargin == 0)
+                %If called with no arguments prompt for a .mat file
+                [filename,pathname] = uigetfile('*.mat','Select .mat file containing a MovieData object');
+                if(filename)
+                    varargin{1} = [pathname filesep filename];
+                else
+                    obj = MovieData.empty;
+                    return;
+                end
+            end
 %             assert(MovieData.isOmeroSession(varargin{1}) || ...
 %                 exist(varargin{1}, 'file') == 2)
             

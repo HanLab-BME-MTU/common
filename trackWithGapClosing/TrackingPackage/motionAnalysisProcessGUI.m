@@ -22,7 +22,7 @@ function varargout = motionAnalysisProcessGUI(varargin)
 
 % Edit the above text to modify the response to help motionAnalysisProcessGUI
 
-% Last Modified by GUIDE v2.5 03-Apr-2012 18:20:06
+% Last Modified by GUIDE v2.5 09-Jan-2017 11:37:47
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -58,6 +58,7 @@ set(handles.popupmenu_probDim,'String',{'2','3'},'UserData',[2 3],...
     'Value',find(funParams.probDim==[2 3]));
 
 set(handles.checkbox_checkAsym,'Value',funParams.checkAsym);
+
 % Set confinement radius methods
 confRadMethods = MotionAnalysisProcess.getConfinementRadiusMethods;
 set(handles.popupmenu_confRadMin,'String',{confRadMethods.name},...
@@ -66,8 +67,13 @@ set(handles.popupmenu_confRadMin,'String',{confRadMethods.name},...
 
 % Set alpha values
 alphaValues = MotionAnalysisProcess.getAlphaValues;
+
+% Set to use new MSS if MSS alpha value is negative
+set(handles.checkbox_NewMSSThresh,'Value',funParams.alphaValues(1) < 0);
+
+% Display only positive alpha values
 set(handles.popupmenu_alphaValueMSS,'String',num2cell(alphaValues),...
-    'Value',find(funParams.alphaValues(1)==alphaValues),...
+    'Value',find(abs(funParams.alphaValues(1))==alphaValues),...
     'UserData',alphaValues);
 set(handles.popupmenu_alphaValueAsym,'String',num2cell(alphaValues),...
     'Value',find(funParams.alphaValues(2)==alphaValues),...
@@ -138,6 +144,9 @@ funParams.checkAsym=get(handles.checkbox_checkAsym,'Value');
 % Get alpha values
 props = get(handles.popupmenu_alphaValueMSS, {'UserData','Value'});
 funParams.alphaValues(1) =props{1}(props{2});
+if(get(handles.checkbox_NewMSSThresh,'Value'))
+    funParams.alphaValues(1) = -funParams.alphaValues(1);
+end
 props = get(handles.popupmenu_alphaValueAsym, {'UserData','Value'});
 funParams.alphaValues(2) =props{1}(props{2});
 
@@ -146,3 +155,12 @@ funParams.confRadMin=props{1}(props{2});
 
 
 processGUI_ApplyFcn(hObject, eventdata, handles,funParams);
+
+
+% --- Executes on button press in checkbox_NewMSSThresh.
+function checkbox_NewMSSThresh_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox_NewMSSThresh (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of checkbox_NewMSSThresh

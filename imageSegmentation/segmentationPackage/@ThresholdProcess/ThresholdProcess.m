@@ -1,4 +1,4 @@
-classdef ThresholdProcess < SegmentationProcess
+classdef ThresholdProcess < SegmentationProcess & NonSingularProcess
     %A function-specific process for segmenting via thresholding using
     %thresholdMovie.m
     
@@ -29,14 +29,46 @@ classdef ThresholdProcess < SegmentationProcess
             
             obj = obj@SegmentationProcess(super_args{:});
         end
-        
+        function output = getDrawableOutput(obj)
+            output = obj.getDrawableOutput@SegmentationProcess();
+            
+            n = length(output)+1;
+            output(n).name = 'Threshold Values';
+            output(n).var = 'thresholdValues';
+            output(n).formatData = @(x) [(1:length(x)).' x(:)];
+            output(n).type = 'graph';
+            output(n).defaultDisplayMethod = @LineDisplay;
+        end
+        function mask = loadChannelOutput(obj, iChan, iFrame, varargin)
+            ip = inputParser;
+            ip.addOptional('iFrame',1,@isnumeric);
+            ip.addParameter('output','',@ischar);
+            ip.StructExpand = true;
+            try
+                ip.parse(iFrame,varargin{:});
+            
+                output = ip.Results.output;
+            catch err
+                output = '';
+            end
+            
+            switch(output)
+                case 'thresholdValues'
+                    pfName = 'threshold_values_for_channel_';
+                    p = obj.getParameters();
+                    out = load([p.OutputDirectory filesep pfName num2str(iChan) '.mat'],'thresholdValues');
+                    mask = out.thresholdValues;
+                otherwise
+                    mask = obj.loadChannelOutput@SegmentationProcess(iChan,iFrame,varargin{:});
+            end
+        end
     end
     methods (Static)
         function name = getName()
             name = 'Thresholding';
         end
         function h = GUI()
-            h= @thresholdProcessGUI;
+            h = @thresholdProcessGUI;
         end
         function methods = getMethods(varargin)
             thresholdingMethods(1).name = 'MinMax';
@@ -63,11 +95,21 @@ classdef ThresholdProcess < SegmentationProcess
             ip.parse(owner, varargin{:})
             outputDir=ip.Results.outputDir;
             
+            % Detect other threshold processes
+            isThresholdProcess = cellfun(@(p) isa(p,'ThresholdProcess'),owner.processes_);
+            
             % Set default parameters
             funParams.ChannelIndex = 1:numel(owner.channels_);
-            funParams.OutputDirectory = [outputDir  filesep 'masks'];
+            if(all(~isThresholdProcess))
+                funParams.OutputDirectory = [outputDir  filesep 'masks'];
+            else
+                % Number mask directories by expected process index
+                funParams.OutputDirectory = [outputDir  filesep 'masks' num2str(length(owner.processes_)+1)];
+            end
             funParams.ProcessIndex = [];%Default is to use raw images
+            funParams.PreThreshold = false; % use fixed threshold before automatic threshold
             funParams.ThresholdValue = []; % automatic threshold selection
+            funParams.IsPercentile = []; % use percentile rather than absolute
             funParams.MaxJump = 0; %Default is no jump suppression
             funParams.GaussFilterSigma = 0; %Default is no filtering.
             funParams.BatchMode = false;

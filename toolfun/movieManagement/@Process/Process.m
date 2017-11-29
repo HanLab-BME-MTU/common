@@ -4,7 +4,6 @@ classdef Process < hgsetget
     %
     
     properties (SetAccess = private, GetAccess = public)
-        name_           % Process name
         owner_          % Movie data object owning the process
         createTime_     % Time process was created
         startTime_      % Time process was last started
@@ -12,6 +11,9 @@ classdef Process < hgsetget
     end
     
     properties  (SetAccess = protected)
+        name_           % Process name
+        tag_            % User definable/queriable tag for orgnaizational convenience
+        
         % Success/Uptodate flags
         procChanged_   % Whether process parameters have been changed
         success_       % If the process has been successfully run
@@ -25,6 +27,8 @@ classdef Process < hgsetget
         inFilePaths_    % Path to the process input
         outFilePaths_   % Path to the process output
         
+        is3Dcompatible_ % can process handle 3D movie data
+
     end
     properties
         notes_          % Process notes
@@ -46,10 +50,15 @@ classdef Process < hgsetget
                 if nargin > 1
                     obj.name_ = name;
                 end
+
                 obj.createTime_ = clock;
                 obj.procChanged_ = false;
                 obj.success_ = false;
                 obj.updated_ = true;
+                
+                % set default tag label
+                numproc = numel(owner.getProcessIndex(class(obj), Inf, 0));
+                obj.tag_ = [class(obj) '_' num2str(numproc+1)];
             end
         end
     end
@@ -64,6 +73,11 @@ classdef Process < hgsetget
         function parameters = getParameters(obj)
             % Get the process parameters
             parameters = obj.funParams_;
+        end
+
+        function is3Dcompatible = get3DCompatible(obj)
+            % Get the process parameters
+            is3Dcompatible = obj.is3Dcompatible_;
         end
         
         function setParameters(obj, para)
@@ -95,17 +109,17 @@ classdef Process < hgsetget
         
         function status = checkChanNum(obj,iChan)
             assert(~isempty(iChan) && isnumeric(iChan),'Please provide a valid channel input');
-            status = ismember(iChan, 1:numel(obj.getOwner().channels_));
+            status = insequence(iChan, 1,numel(obj.getOwner().channels_));
         end
         
         function status = checkFrameNum(obj,iFrame)
             assert(~isempty(iFrame) && isnumeric(iFrame),'Please provide a valid frame input');
-            status = ismember(iFrame, 1:obj.getOwner().nFrames_);
+            status = insequence(iFrame, 1, obj.getOwner().nFrames_);
         end
         
         function status = checkDepthNum(obj, iZ)
             assert(~isempty(iZ) && isnumeric(iZ),'Please provide a valid z input');
-            status = ismember(iZ, 1:obj.getOwner().zSize_);
+            status = insequence(iZ, 1,obj.getOwner().zSize_);
         end
         
         function sanityCheck(obj)
@@ -258,7 +272,21 @@ classdef Process < hgsetget
              
 
         end
-        
+
+        function setProcessTag(obj, tag)
+            obj.tag_ = tag;
+        end
+
+        function tag = getProcessTag(obj)
+            if isprop(obj, 'tag_')
+                tag = obj.tag_;
+            else
+                numproc = numel(obj.owner_.getProcessIndex(class(obj), Inf, 0));
+                tag = ['proc_' class(obj) '_' num2str(numproc+1)];
+                obj.setProcessTag(tag);
+            end
+        end
+
         function time = getProcessingTime(obj)
             %The process has been re-run, update the time.
             time=sec2struct(24*3600*(datenum(obj.finishTime_)-datenum(obj.startTime_)));
@@ -297,11 +325,12 @@ classdef Process < hgsetget
             ip.addRequired('obj',@(x) isa(x,'Process'));
             ip.addRequired('iChan',@isnumeric);
             ip.addOptional('iFrame',[],@isnumeric);
-            ip.addParamValue('output',outputList(1).var,@(x) any(cellfun(@(y) isequal(x,y),{outputList.var})));
-            ip.addParamValue('useCache',false,@islogical);
+            ip.addParameter('output',outputList(1).var,@(x) any(cellfun(@(y) isequal(x,y),{outputList.var})));
+            ip.addParameter('useCache', false, @islogical);
+            ip.addParameter('movieOverlay', false, @islogical);
             ip.KeepUnmatched = true;
             if obj.owner_.is3D()
-                ip.addOptional('iZ',[],@(x) ismember(x,1:obj.owner_.zSize_));
+                ip.addOptional('iZ',[],@(x) insequence(x,1,obj.owner_.zSize_));
             end
             ip.parse(obj,iChan,varargin{:});
             
@@ -337,7 +366,10 @@ classdef Process < hgsetget
             
             % Create graphic tag and delegate drawing to the display class
             tag = ['process' num2str(obj.getIndex()) '_channel' num2str(iChan) '_output' num2str(iOutput)];
-            h=obj.getDisplayMethod(iOutput, iChan).draw(data,tag,ip.Unmatched);
+            if ip.Results.movieOverlay % if not channel specific (to match what movieViewer expects)
+                tag = ['process' num2str(obj.getIndex()) '_output' num2str(iOutput)];
+            end
+            h = obj.getDisplayMethod(iOutput, iChan).draw(data,tag,ip.Unmatched);
         end
         
         function index = getIndex(obj)

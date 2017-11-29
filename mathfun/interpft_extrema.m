@@ -1,4 +1,4 @@
-function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_extrema(x,dim,sorted,TOL)
+function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_extrema(x,dim,sorted,TOL,dofft)
 % interpft_extrema finds the extrema of the function when interpolated by fourier transform
 % This is the equivalent of doing sinc interpolation.
 %
@@ -11,6 +11,7 @@ function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_
 %       the root of the derivative is real.
 %       If tolerance is negative, then use 10*abs(log(abs(root))) as the
 %       tolerance only if no roots are found with tolerance at -TOL.
+% dofft - logical. If true, transforms dim with fft. Default: true
 %
 % OUTPUT
 % maxima - angle between 0 and 2*pi indicating location of local maxima
@@ -53,7 +54,7 @@ function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_
 % Author: Mark Kittisopikul, May 2016
     
 %     original_size = size(x);
-    if(nargin > 1)
+    if(nargin > 1 && ~isempty(dim))
         x = shiftdim(x,dim-1);
         unshift = ndims(x) - dim + 1;
     else
@@ -68,24 +69,43 @@ function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_
         end
     end
     
-    if(nargin < 3)
+    if(nargin < 3 || isempty(sorted))
         sorted = false;
     end
-    if(nargin < 4)
+    if(nargin < 4 || isempty(TOL))
     	% Tolerance for log(abs(root)) to be near zero, in which case the root is real
         % Set negative so that tolerance adapts if no roots are found
-        TOL = -eps*1e2;
+        TOL = -eps(class(x))*1e3;
     end
+    if(nargin < 5 || isempty(dofft))
+        dofft = true;
+    end
+
 
 
     output_size = size(x);
     output_size(1) = output_size(1) - 1;
+    
 
     s = size(x);
     scale_factor = s(1);
+    
+    if(s(1) == 1)
+        maxima = shiftdim(zeros(s),unshift);
+        minima = maxima;
+        other = maxima;
+        maxima_value = shiftdim(x,unshift);
+        minima_value = maxima_value;
+        other_value = maxima_value;
+        return;
+    end
 
     % Calculate fft and nyquist frequency
-    x_h = fft(x);
+    if(dofft)
+        x_h = fft(x);
+    else
+        x_h = x;
+    end
     nyquist = ceil((s(1)+1)/2);
 
     % If there is an even number of fourier coefficients, split the nyquist frequency
@@ -210,8 +230,10 @@ function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_
             clear maxima_value_inf;
             numMax = sum(maxima_map);
             numMax = max(numMax(:));
-            maxima = maxima(1:numMax,:,:);
-            maxima_value = maxima_value(1:numMax,:,:);
+            colons = {':'};
+            colons = colons(ones(1,ndims(maxima)-1));
+            maxima = maxima(1:numMax,colons{:});
+            maxima_value = maxima_value(1:numMax,colons{:});
             
             if(nargout > 1)
                 minima_value_inf = minima_value;
@@ -220,8 +242,8 @@ function [maxima,minima,maxima_value,minima_value,other,other_value] = interpft_
                 clear minima_value_inf;
                 numMin = sum(minima_map);
                 numMin = max(numMin(:));
-                minima = minima(1:numMin,:,:);
-                minima_value = minima_value(1:numMin,:,:);
+                minima = minima(1:numMin,colons{:});
+                minima_value = minima_value(1:numMin,colons{:});
             end
                        
         end

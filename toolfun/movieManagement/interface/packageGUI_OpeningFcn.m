@@ -58,6 +58,8 @@ ip.addOptional('MO',[],@(x) isa(x,'MovieObject'));
 ip.addParamValue('MD',[],@(x) isempty(x) || isa(x,'MovieData'));
 ip.addParamValue('ML',[],@(x) isempty(x) || isa(x,'MovieList'));
 ip.addParamValue('packageConstr','',@(x) isa(x,'function_handle'));
+ip.addParamValue('packageIndx',{},@iscell);
+ip.addParamValue('cluster',[],@(x) isempty(x) || isa(x,'parallel.Cluster'));
 ip.parse(hObject,eventdata,handles,packageName,varargin{:});
 
 % Read the package name
@@ -71,6 +73,9 @@ if isempty(userData), userData = struct(); end
 userData.packageName = packageName;
 userData.MD = ip.Results.MD;
 userData.ML = ip.Results.ML;
+if(~isempty(ip.Results.cluster))
+    uTrackParCluster(ip.Results.cluster);
+end
 
 %If package GUI supplied without argument, saves a boolean which will be
 %read by packageNameGUI_OutputFcn
@@ -104,13 +109,19 @@ end
 
 % ----------------------------- Load MovieData ----------------------------
 nMovies = numel(ip.Results.MO);
-packageIndx = cell(1, nMovies);
+if(isempty(ip.Results.packageIndx))
+    packageIndx = cell(1, nMovies);
 
-% I. Before loading MovieData, firstly check if the current package exists
-for i = 1:nMovies
-    % Check for existing packages and create them if false
-    packageIndx{i} = ip.Results.MO(i).getPackageIndex(packageName,1,false);
+    % I. Before loading MovieData, firstly check if the current package exists
+    for i = 1:nMovies
+        % Check for existing packages and create them if false
+        packageIndx{i} = ip.Results.MO(i).getPackageIndex(packageName,1,false);
+    end
+else
+    % I (alt). If given the package index, use that instead
+    packageIndx = ip.Results.packageIndx;
 end
+
 
 for i = find(~cellfun(@isempty, packageIndx))
     userData.package(i) = ip.Results.MO(i).packages_{packageIndx{i}};
@@ -124,7 +135,7 @@ if any(cellfun(@isempty, packageIndx))
         packageConstr = str2func(userData.packageName);
     else
         % Launch interface to determine constructor
-        concretePackages = eval([userData.packageName '.getConcretePackages()']);
+        concretePackages = eval([userData.packageName '.getConcretePackages(ip.Results.MO)']);
         [selection, status] = listdlg('Name','',...
             'PromptString',{'Select the type of object';'you want to track:'},...
             'ListString', {concretePackages.name},'SelectionMode','single');
@@ -230,6 +241,7 @@ templateTag{3} = 'pushbutton_show';
 templateTag{4} = 'pushbutton_set';
 templateTag{5} = 'axes_prochelp';
 templateTag{6} = 'pushbutton_open';
+templateTag{7} = 'processTagLabel';
 
 set(handles.(templateTag{6}),'CData',userData.openIconData);
 
@@ -261,9 +273,24 @@ for i = 1 : nProc
   
     % Set name of the process in the corresponding checkbox
     processClassName = userData.crtPackage.getProcessClassNames{i};
-    processName=eval([processClassName '.getName']);
+    try
+        processName = userData.crtPackage.processes_{i}.name_;
+    catch err
+        processName=eval([processClassName '.getName']);
+    end
+
     checkboxString = [' Step ' num2str(i) ': ' processName];
     set(handles.(procTag{1}),'String',checkboxString)
+
+    if ~isempty(userData.crtPackage.processes_{i}) ...
+        && isprop(userData.crtPackage.processes_{i}, 'tag_') && ~isempty(userData.crtPackage.processes_{i}.tag_)
+        processTagLabelString = ['[' userData.crtPackage.processes_{i}.tag_ ']'];
+    else
+        processTagLabelString = '{no tag}';
+    end
+
+    set(handles.(procTag{7}),'String',processTagLabelString)
+    set(handles.(procTag{7}),'Visible','off')
     
     % Setup help button
     set(handles.figure1,'CurrentAxes',handles.(procTag{5}));
@@ -273,6 +300,7 @@ for i = 1 : nProc
     set(Img,'ButtonDownFcn',@icon_ButtonDownFcn,...
         'UserData', struct('class', processClassName))
 end
+handles.processTagLabels = findall(0,'-regexp','Tag', 'processTagLabel_');
 
 % Remove templates and remove from the handles structure
 cellfun(@(x) delete(handles.(x)), templateTag)
@@ -333,8 +361,8 @@ end
 set(handles.pushbutton_run, 'Callback', @(hObject,eventdata)packageGUI_RunFcn(hObject,eventdata,guidata(hObject)));
 % Set web links in menu
 set(handles.menu_about_gpl,'UserData','http://www.gnu.org/licenses/gpl.html')
-set(handles.menu_about_lccb,'UserData','http://lccb.hms.harvard.edu/')
-set(handles.menu_about_lccbsoftware,'UserData','http://lccb.hms.harvard.edu/software.html')
+set(handles.menu_about_lccb,'UserData','http://www.utsouthwestern.edu/labs/danuser/')
+set(handles.menu_about_lccbsoftware,'UserData','http://www.utsouthwestern.edu/labs/danuser/software/')
  
 % Update handles structure
 set(handles.figure1,'UserData',userData);

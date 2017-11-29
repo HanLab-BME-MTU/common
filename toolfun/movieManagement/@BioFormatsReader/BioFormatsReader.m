@@ -17,7 +17,7 @@ classdef  BioFormatsReader < Reader
             % Input check
             ip = inputParser();
             ip.addRequired('id', @ischar);
-            ip.addOptional('series', 0, @(x) isscalar(x) && isnumeric(x));
+            ip.addOptional('series', 0, @(x) validateattributes(x, {'numeric'}, {'scalar'}));
             ip.addParamValue('reader', [], @(x) isa(x, 'loci.formats.IFormatReader'));
             ip.parse(varargin{:});
             
@@ -119,6 +119,10 @@ classdef  BioFormatsReader < Reader
         function delete(obj)
             obj.formatReader.close()
         end
+        
+        xml = getXML(obj,castToChar);
+        metaWindow = showMetadata(obj);
+        deltaT = getDeltaT(obj, c, t, z);
     end
     methods ( Access = protected )
         function I = loadImage_(obj, c, t, z, varargin)

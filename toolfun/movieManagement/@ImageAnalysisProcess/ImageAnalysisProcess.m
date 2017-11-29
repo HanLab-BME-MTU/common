@@ -52,7 +52,7 @@ classdef ImageAnalysisProcess < Process
                 end
                 obj.outFilePaths_ = outFilePaths;
             else
-                obj.outFilePaths_ = cell(1,numel(owner.channels_));
+                obj.outFilePaths_ = cell(1, numel(owner.channels_));
             end
             
         end

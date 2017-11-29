@@ -44,10 +44,21 @@ noise  = zeros(1,numel(imf(1,:)));
 imfOut = imf;
 
 %Decomposing noise into IMF's
+flag_mexError = false;
 for i=1:nSurr
     
-    wnImf{i}  = emdc([],Wn(:,i));
+    try 
+        wnImf{i}  = emdc([],Wn(:,i)); %(T,X)
+    catch
+        flag_mexError = true;
+%         warning('mex emdc failed, reverting to slower matlab-based emd');
+        wnImf{i}  = emd(Wn(:,i), 'T', []);
+    end
     
+end
+
+if flag_mexError
+    warning('mex emdc failed, reverting to slower matlab-based emd');
 end
 
 %Testing each imf

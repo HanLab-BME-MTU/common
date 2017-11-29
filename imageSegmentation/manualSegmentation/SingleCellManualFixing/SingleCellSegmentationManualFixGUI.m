@@ -280,7 +280,11 @@ if handles.segThisCell > 1
 
     % do the complete checking first
     if ~exist(compPath,'dir')        
-        mkdir(compPath)        
+        try
+            mkdir(compPath)        
+        catch
+            system(['mkdir -p ' compPath]);        
+        end
     end
     
     save([compPath filesep 'completedFrames.mat'],'isCompleted','boxall');

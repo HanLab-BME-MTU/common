@@ -135,6 +135,14 @@ classdef MaskProcess < Process
                 
                 
             end
+            
+            n = length(output)+1;
+            
+            output(n).name = 'Mask';
+            output(n).formatData = @(x) double(x);
+            output(n).var = 'mask_img';
+            output(n).type = 'image';
+            output(n).defaultDisplayMethod = @ImageDisplay;
         end
         
         function setMaxIndex(obj,maxIndex)
@@ -152,8 +160,8 @@ classdef MaskProcess < Process
             % List concrete mask classes
             procClasses = ...
                 {'ThresholdProcess';
-                'MSSSegmentationProcess';
-                'ThresholdProcess3D'};
+                 'MSSSegmentationProcess';
+                 'ThresholdProcess3D'};
         end
         
         function overlayIm = getMaskOverlayImage(mask,cMap)

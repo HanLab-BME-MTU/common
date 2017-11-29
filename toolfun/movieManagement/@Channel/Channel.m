@@ -158,7 +158,7 @@ classdef Channel < hgsetget & matlab.mixin.Copyable
             if(~obj.checkProperty(property))
                 propName = lower(property(1:end-(property(end) == '_')));
                 error('lccb:set:readonly',...
-                    ['The channel''s' propName ' has been set previously and cannot be changed!']);
+                    ['The channel''s ' propName ' has been set previously and cannot be changed!']);
             end
             
             % Test if the supplied value is valid
@@ -270,6 +270,21 @@ classdef Channel < hgsetget & matlab.mixin.Copyable
             
             I = obj.getReader().loadStack(obj.getChannelIndex(),varargin{:});
 
+        end
+        
+        function deltaT = getDeltaT(obj,varargin)
+            % GETDELTAT Obtain the time since acquisition began
+            %
+            % Obtain deltaT for all images in channel 1
+            % deltaT = MD.channels_(1).getDeltaT 
+            %
+            % Obtain deltaT for a specific image
+            % deltaT = MD.channels_(1).getDeltaT(t);
+            % deltaT = MD.channels_(1).getDeltaT(t,z);
+            %
+            % See also BioformatsReader.getDeltaT
+            assert(obj.owner_.isBF(),'getDeltaT:BioformatsRequired','getDeltaT is only implemented when using Bioformats');
+            deltaT = obj.getReader().getDeltaT(obj.getChannelIndex(),varargin{:});
         end
         
         %% Bio-formats/OMERO functions

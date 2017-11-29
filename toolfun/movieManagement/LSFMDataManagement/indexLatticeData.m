@@ -6,7 +6,7 @@ function ML=indexLatticeData(moviePaths,moviesRoot,varargin)
 % - Optionnaly deskew, dezip on demand)
 %
 % EXAMPLE1:  indexLSFMData(  '/path/to/your/cells/Cell_*/whatever/CAM_0{ch}*.tif','/path/to/your/cells', 'timeInterval',1.03,'createMIP',true)
-%
+%M
 % INPUT:  - moviePaths is either: 
 %              ** A regular expression describing all the file of intereste using the following format: 
 %                '/path/to/cell/Cell_*/path/to/tiff/xp_whatever_chanel_{ch}_*.tif'

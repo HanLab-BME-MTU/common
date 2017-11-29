@@ -30,9 +30,9 @@ ip.addRequired('handles',@isstruct);
 ip.addRequired('string',@(x) isequal(x,'mainFig'));
 ip.addOptional('mainFig',[],@ishandle);
 ip.addOptional('procID',[],@isscalar);
-ip.addParamValue('procConstr',[],@(x) isa(x,'function_handle'));
-ip.addParamValue('procClassName','',@ischar);
-ip.addParamValue('initChannel',0,@isscalar);
+ip.addParameter('procConstr',[],@(x) isa(x,'function_handle'));
+ip.addParameter('procClassName','',@ischar);
+ip.addParameter('initChannel',0,@isscalar);
 ip.parse(hObject,eventdata,handles,string,varargin{:});
 
 % Retrieve userData and read function input 
@@ -65,7 +65,11 @@ end
 
 % Retrieve crtProc if procID step of the package is set up AND is the same
 % class as the current process
-crtProcName = eval([userData.crtProcClassName '.getName']);
+try
+    crtProcName = userData.crtPackage.processes_{userData.procID}.name_;
+catch
+    crtProcName = eval([userData.crtProcClassName '.getName']);
+end
 if isa(userData.crtPackage.processes_{userData.procID},userData.crtProcClassName)    
     userData.crtProc = userData.crtPackage.processes_{userData.procID};
 else

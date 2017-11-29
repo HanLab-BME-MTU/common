@@ -6,7 +6,7 @@ classdef (Abstract = true) Tracks < handle  & matlab.mixin.Copyable
 %
 % This class extends the struct that is the output of trackCloseGapsKalman.
 %
-% See also trackObj , plotTracks2D, 
+% See also trackObj , plotTracks2D,
 % common/trackWithGapClosing/postprocessing/misc
 % common/trackWithGapClosing/postprocessing/motionAnalysis
 % common/trackWithGapClosing/postprocessing/HuetImplementation
@@ -17,8 +17,8 @@ classdef (Abstract = true) Tracks < handle  & matlab.mixin.Copyable
 %                      structure
 %
 % .tracksCoordAmpCG3D: The positions and amplitudes of the tracked
-%                      features, after gap closing. 
-%                               
+%                      features, after gap closing.
+%
 %                      This 3D matrix has dimensions as follows:
 %                      numSegments x 8 x numFrames
 %                      * numSegments (rows) = number of track segments in compound
@@ -114,14 +114,19 @@ classdef (Abstract = true) Tracks < handle  & matlab.mixin.Copyable
     properties
         % Index assigned on construction of object or by reindex()
         index
-    end
-    properties ( Dependent = true )
-        lifetime
-        nSeg
-        f
+        % Time, defaults to f-1
         t
     end
+    properties ( Dependent = true )
+        % Length of sequence from startFrame to endFrame
+        lifetime
+        % Sequence from startFrame to endFrame
+        f
+    end
     properties ( Dependent = true , Hidden)
+        % Alias for numSegments, deprecated
+        nSeg
+        % Alias for startFrame, deprecated
         start
     end
     methods
@@ -135,7 +140,20 @@ classdef (Abstract = true) Tracks < handle  & matlab.mixin.Copyable
             f = obj.startFrame : obj.endFrame;
         end
         function t = get.t(obj)
-            t = obj.f - 1;
+            if(isempty(obj.t))
+                % default to f -1 if empty, backwards-compatible
+                t = obj.f - 1;
+            else
+                % otherwiser return the stored value
+                t = obj.t;
+            end
+        end
+        function set.t(obj,t)
+            assert(numel(t) == numel(obj.t) || isempty(t), ...
+                'Tracks:set_t:timePointLength', ...
+                ['The new number of timepoints must be' ...
+                 'the same as the number of frames, unless empty.']);
+            obj.t = t(:).';
         end
         function s = get.start(obj)
             s = obj.startFrame;
@@ -169,6 +187,15 @@ classdef (Abstract = true) Tracks < handle  & matlab.mixin.Copyable
         [ obj ] = normalizeSeqOfEvents( obj );
         [ obj ] = setFeatFromIdx(obj,movieInfo);
         [ obj ] = setMovieInfo(obj,movieInfo);
+        [ obj ] = addCoord(obj,tracks);
+        [ newTracks ] = getAddCoord(obj,tracks);
+        [ obj ] = overlapping(obj,tracks);
+        [ newTracks ] = getOverlapping(obj,tracks);
+        [ obj ] = multCoord(obj,scalar);
+        [ newTracks ] = getMultCoord(obj,scalar);
         [ movieInfo ] = getMovieInfo(obj);
+        %mapFramesToTime map frames to timepoints for the collection of Tracks
+        [ obj ] = mapFramesToTimepoints( obj, timepoints, frames );
+        [ combinedTrack ] = combine( obj );
     end
 end

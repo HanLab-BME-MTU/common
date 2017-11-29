@@ -6,7 +6,8 @@ function detectMovieSubResFeatures(movieDataOrProcess,varargin)
 % SYNOPSIS detectMovieSubResFeatures(movieData,paramsIn)
 %
 % INPUT   
-%   movieData - A MovieData object describing the movie to be processed
+%   movieDataOrProcess - A MovieData object describing the movie to be processed
+%                      - or a Process object containing info for processing (including the movie)
 %
 %   paramsIn - Structure with inputs for optional parameters. The
 %   parameters should be stored as fields in the structure, with the field
@@ -57,6 +58,9 @@ for i = p.ChannelIndex;
     mkClrDir(currDir);
 end
 
+% Get ROI mask if any.
+roiMask = movieData.getROIMask;
+p.detectionParam.roiMask = roiMask;
 
 %% --------------- Sub-resolution object detection ---------------%%% 
 disp('Starting detecting diffraction-limited objects...')

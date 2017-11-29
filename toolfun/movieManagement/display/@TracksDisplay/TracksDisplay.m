@@ -107,7 +107,7 @@ classdef TracksDisplay < MovieDataDisplay
             yLast = yData(iLast);
             
             % Fill gaps
-            for gapLength = 1 : max(gapLengths)
+            for gapLength = uGapLengths(:)'
                 s = gapLengths == gapLength;
                 px = [cc.PixelIdxList{s}];
                 
@@ -130,17 +130,20 @@ classdef TracksDisplay < MovieDataDisplay
             dragtailWindows = [trackLengths - displayLength + 1 ; trackLengths];
             
             %% Initialize matrix for split events
-            if(eventsExist)
-                hasSplitEvents = ~cellfun('isempty',{tracks.splitEvents})';
-            end
             xSplitData = NaN(dLength, nTracks);
             ySplitData = NaN(dLength, nTracks);
+            
+            if(eventsExist)
+                hasSplitEvents = ~cellfun('isempty',{tracks.splitEvents})';
+                eventTimes = [tracks(hasSplitEvents).splitEvents];
+                eventTracks = zeros(size(eventTimes));
+                eventTrackIdx = cumsum([1 cellfun('length',{tracks(hasSplitEvents).splitEvents})]);
+                hasSplitEventsIdx = find(hasSplitEvents);
+            else
+                hasSplitEventsIdx = [];
+            end
 
 
-            eventTimes = [tracks(hasSplitEvents).splitEvents];
-            eventTracks = zeros(size(eventTimes));
-            eventTrackIdx = cumsum([1 cellfun('length',{tracks(hasSplitEvents).splitEvents})]);
-            hasSplitEventsIdx = find(hasSplitEvents);
             if(~isempty(hasSplitEventsIdx))
                 eventTracks(eventTrackIdx(1:end-1)) = [hasSplitEventsIdx(1);  diff(hasSplitEventsIdx)];
                 eventTracks = cumsum(eventTracks);
@@ -156,17 +159,20 @@ classdef TracksDisplay < MovieDataDisplay
             end
                         
             %% Initialize matrix for split events
-
-            if(eventsExist)
-                hasMergeEvents = ~cellfun('isempty',{tracks.mergeEvents})';
-            end
             xMergeData = NaN(dLength, nTracks);
             yMergeData = NaN(dLength, nTracks);
+
             
-            eventTimes = [tracks(hasMergeEvents).mergeEvents];
-            eventTracks = zeros(size(eventTimes));
-            eventTrackIdx = cumsum([1 cellfun('length',{tracks(hasMergeEvents).mergeEvents})]);
-            hasMergeEventsIdx = find(hasMergeEvents);
+            if(eventsExist)
+                hasMergeEvents = ~cellfun('isempty',{tracks.mergeEvents})';
+                eventTimes = [tracks(hasMergeEvents).mergeEvents];
+                eventTracks = zeros(size(eventTimes));
+                eventTrackIdx = cumsum([1 cellfun('length',{tracks(hasMergeEvents).mergeEvents})]);
+                hasMergeEventsIdx = find(hasMergeEvents);
+            else
+                hasMergeEventsIdx = [];
+            end
+
             if(~isempty(hasMergeEventsIdx))
                 eventTracks(eventTrackIdx(1:end-1)) = [hasMergeEventsIdx(1);  diff(hasMergeEventsIdx)];
                 eventTracks = cumsum(eventTracks);

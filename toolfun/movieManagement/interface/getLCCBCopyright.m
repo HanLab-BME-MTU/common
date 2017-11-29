@@ -1,6 +1,6 @@
 function copyright = getLCCBCopyright()
 %
-% This is a user-defined function used in LCCB software. 
+% This is a user-defined function used in UTSW software. 
 % It is called when any GUI is generated. It configures the copyright
 % information.
 %
@@ -13,7 +13,8 @@ function copyright = getLCCBCopyright()
 %
 % Chuangang Ren, 11/2010
 % Sebastien Besson, Feb 2013
+% Andrew Jamieson, Nov 2016 - UTSW
 
 % Set year and version information
-str_year = '2014';
-copyright = sprintf('Copyright %s LCCB', str_year);
+str_year = datestr(date,'YYYY');
+copyright = sprintf('Copyright %s Danuser Lab - UTSouthwestern', str_year);

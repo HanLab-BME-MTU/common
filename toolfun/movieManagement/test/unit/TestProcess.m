@@ -28,6 +28,37 @@ classdef TestProcess < TestLibrary
         function testGetProcessIndexByName(self)
             assertEqual(self.movie.getProcessIndex(class(self.process)), 1);
         end
+
+        function testGetProcessByTag(self)
+            tag = self.process.getProcessTag;
+            assertEqual(tag, self.movie.getProcess(1).tag_)
+            assertEqual(self.movie.getProcess(tag), self.movie.getProcess(1));
+            
+            self.setUpProcess();
+            assertFalse(strcmp(tag, self.movie.getProcess(2).tag_));
+            tags = self.movie.getProcessTags;
+            assertEqual(self.movie.getProcess(tags{2}), self.movie.getProcess(2));
+        end
+
+        function testFindProcessByTag(self)
+            [procs, tags] = self.movie.findProcessTag('MockPr');
+            assertTrue(isa(procs, 'MockProcess'));
+            assertEqual(self.movie.processes_{1}, procs);
+            assertEqual(tags{:}, self.process.tag_);
+            assertExceptionThrown(@() self.movie.findProcessTag('MockPr', true),'');
+        end
+        
+        function testSetTag(self)
+            self.process.setProcessTag('tagTest');
+            assertEqual(self.movie.getProcessTags, {'tagTest'});
+        end
+        
+        function testGetProcessByTagMultiple(self)
+            self.setUpProcess();
+            [procs, tags] = self.movie.findProcessTag(class(self.process));
+            assertEqual(tags, [{'MockProcess_1'} {'MockProcess_2'}]);
+            assertEqual([procs{:}], [self.movie.processes_{1} self.movie.processes_{2}]);
+        end
         
         function testGetProcessIndexMultiple(self)
             self.setUpProcess();

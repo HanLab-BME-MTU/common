@@ -22,7 +22,7 @@ function varargout = cropMovieGUI(varargin)
 
 % Edit the above text to modify the response to help cropMovieGUI
 
-% Last Modified by GUIDE v2.5 30-Sep-2011 15:09:12
+% Last Modified by GUIDE v2.5 16-Feb-2017 18:07:16
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
