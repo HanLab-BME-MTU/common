@@ -20,6 +20,8 @@ function analyzeMovieDiffusionModes(movieDataOrProcess,varargin)
 %       ('ChannelIndex' -> Positive integer scalar or vector)
 %       The integer index of the channel(s) containing tracks to be analyzed.
 %
+%       PARAMETERS FOR DIFFUSION MODE DECOMPOSITION:   
+%
 %       ('probDim' -> Positive integer) 
 %       Problem dimensionality. Default is 2.
 % 
@@ -56,6 +58,18 @@ function analyzeMovieDiffusionModes(movieDataOrProcess,varargin)
 %       1 in order to do mono-exponential control, 0 otherwise. 
 %       Default: 1.
 %
+%       ('forceDecompose' -> Boolean)
+%       1 in order to force run diffusion mode decomposition, 0 to
+%       use old decomposition results if available.  
+%       Default: 1.
+%
+%       PARAMETERS FOR TRACK DIFFUSION MODE ASSIGNMENT
+%
+%       ('diffModeDividerStruct' -> Structure)
+%       See function trackDiffModeAnalysis for structure details.       
+%       Default: [], in which case the tracks are not classified into modes
+%       but only their diffusion coefficient is output.
+%
 % Khuloud Jaqaman, August 2017
 
 %% Input
@@ -76,7 +90,7 @@ p = parseProcessParams(postProc,paramsIn);
 %% --------------- Initialization ---------------%%
 
 % Check tracking process first
-iTrackProc =movieData.getProcessIndex('TrackingProcess',1,1);
+iTrackProc = movieData.getProcessIndex('TrackingProcess',1,1);
 
 assert(~isempty(iTrackProc),['Tracking has not been run! '...
     'Please run tracking prior to post-processing!'])
@@ -100,11 +114,25 @@ for i = p.ChannelIndex
     inFilePaths{1,i} = trackProc.outFilePaths_{1,i};
 end
 postProc.setInFilePaths(inFilePaths);
-    
+
+%variables related to diffusion mode decomposition
+newDecompose = ones(numel(movieData.channels_),1);
+diffModeDecomposeOld = cell(numel(movieData.channels_),1);
+
 % Set up the output file
+%store old diffusion mode decomposition if relevant
 outFilePaths = cell(1,numel(movieData.channels_));
 for i = p.ChannelIndex
     outFilePaths{1,i} = [p.OutputDirectory filesep 'channel_' num2str(i) '.mat'];
+    if ~p.forceDecompose && exist(outFilePaths{1,i})~=0
+        tmp = load(outFilePaths{1,i});
+        if isfield(tmp,'diffModeDecomposition')
+            diffModeDecomposeOld{i} = tmp.diffModeDecomposition;
+        else
+            diffModeDecomposeOld{i} = tmp.diffModeAnalysisRes;
+        end
+        newDecompose(i) = 0;
+    end
 end
 mkClrDir(p.OutputDirectory);
 postProc.setOutFilePaths(outFilePaths);
@@ -116,6 +144,7 @@ disp('Starting diffusion mode analysis ...')
 for i = p.ChannelIndex
     
     tracks = trackProc.loadChannelOutput(i);
+    
     %     try
     %         if postProc.funParams_.driftCorrect ==1
     %             [tracks] = scriptCorrectImageDrift(tracks,movieData);
@@ -123,21 +152,32 @@ for i = p.ChannelIndex
     %     catch
     %
     %     end
-    [modeParam,numMode,modeParamControl,numModeControl] = ...
-        getDiffModes(tracks,p.minLength,p.alpha,p.showPlot,p.maxNumMode,...
-        p.binStrategy,p.plotName,p.subSampSize,p.doControl,mask);
-    diffModeAnalysisRes.modeParam = modeParam;
-    diffModeAnalysisRes.numMode = numMode;
-    diffModeAnalysisRes.modeParamControl = modeParamControl;
-    diffModeAnalysisRes.numModeControl = numModeControl;
     
-    %     tracks = trackProc.loadChannelOutput(i);
-    %     for j = 1:numel(tracks)
-    %         tracks(j).classification = diffAnalysisRes(j).classification;
-    %     end
+    %diffusion mode decomposition from frame-to-frame displacements
+    if newDecompose(i)==1
+        [modeParam,numMode,modeParamControl,numModeControl] = ...
+            getDiffModes(tracks,p.minLength,p.alpha,p.showPlot,p.maxNumMode,...
+            p.binStrategy,p.plotName,p.subSampSize,p.doControl,mask);
+        diffModeDecomposition.modeParam = modeParam;
+        diffModeDecomposition.numMode = numMode;
+        diffModeDecomposition.modeParamControl = modeParamControl;
+        diffModeDecomposition.numModeControl = numModeControl;
+    else
+        diffModeDecomposition = diffModeDecomposeOld{i};
+    end
+    
+    %diffusion mode assignment per track
+    diffModeAnalysisRes = trackDiffModeAnalysis(tracks,p.diffModeDividerStruct);
+    
+    tracks = trackProc.loadChannelOutput(i);
+    for j = 1:numel(tracks)
+        tracks(j).classification = diffModeAnalysisRes(j).diffMode;
+    end
+    
     % save each projData in its own directory
-    save(outFilePaths{1,i},'diffModeAnalysisRes', 'tracks')
+    save(outFilePaths{1,i},'diffModeAnalysisRes', 'diffModeDecomposition','tracks')
     
 end
 
 disp('Finished diffusion mode analysis!')
+

@@ -37,7 +37,7 @@ classdef DiffusionModeAnalysisProcess < PostTrackingProcess
         function varargout = loadChannelOutput(obj,iChan,varargin)
             
             % Input check
-            outputList = {'diffModeAnalysisRes', 'tracks'};
+            outputList = {'diffModeAnalysisRes', 'diffModeDecomposition', 'tracks'};
             ip =inputParser;
             ip.addRequired('iChan',@(x) isscalar(x) && obj.checkChanNum(x));
             ip.addOptional('iFrame',[],@(x) isempty(x) || isscalar(x) && obj.checkFrameNum(x));
@@ -60,7 +60,7 @@ classdef DiffusionModeAnalysisProcess < PostTrackingProcess
                 switch output{i}
                     case 'tracks'
                         tracksFinal = s.(output{i});
-                        if ~isempty(iFrame),
+                        if ~isempty(iFrame)
                             % Filter tracks existing in input frame
                             trackSEL=getTrackSEL(tracksFinal);
                             validTracks = (iFrame>=trackSEL(:,1) &iFrame<=trackSEL(:,2));
@@ -74,6 +74,8 @@ classdef DiffusionModeAnalysisProcess < PostTrackingProcess
                             varargout{i} = tracksFinal;
                         end
                     case 'diffModeAnalysisRes'
+                        varargout{i} = s.(output{i});
+                    case 'diffModeDecomposition'
                         varargout{i} = s.(output{i});
                 end
             end
@@ -140,6 +142,8 @@ classdef DiffusionModeAnalysisProcess < PostTrackingProcess
             funParams.plotName = 'Figure';
             funParams.subSampSize = [];
             funParams.doControl = 1;
+            funParams.diffModeDividerStruct = [];
+            funParams.forceDecompose = 1;
             
         end
         
@@ -201,10 +205,10 @@ classdef DiffusionModeAnalysisProcess < PostTrackingProcess
         function types = getTrackTypes()
             % Get the color map for classified tracks
             %
-            % Mode 1: brown
+            % Mode 1: brownish red
             types(1).name = 'Mode 1';
             types(1).f = @(x) x(:, 1) == 1;
-            types(1).color = [0.5 0.3 0];
+            types(1).color = [0.8 0.2 0];
             % Mode 2: blue
             types(2).name = 'Mode 2';
             types(2).f = @(x) x(:, 1) == 2;
@@ -217,10 +221,14 @@ classdef DiffusionModeAnalysisProcess < PostTrackingProcess
             types(4).name = 'Mode 4';
             types(4).f = @(x) x(:, 1) == 4;
             types(4).color = [1 0 1];
-            % Mode 5: purple
+            % Mode 5: yellow
             types(5).name = 'Mode 5';
             types(5).f = @(x) x(:, 1) == 5;
-            types(5).color = [.6 0 1];
+            types(5).color = [1 0.7 0];
+            % Unclassified: gray
+            types(6).name = 'Too short for classification';
+            types(6).f = @(x) isnan(x(:,1));
+            types(6).color = [0.7 0.7 0.7];
         end
         
         function hIm = showTrackTypes(newFigure)

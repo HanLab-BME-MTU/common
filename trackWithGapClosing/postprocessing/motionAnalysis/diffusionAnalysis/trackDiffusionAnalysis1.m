@@ -464,6 +464,7 @@ if isstruct(tracksInput)
     diffAnalysisRes(1).summary.probMotionType = probMotionType;
     diffAnalysisRes(1).summary.motionChar = motionChar;
 end
+
 %% plotting
 
 %plot results if requested
