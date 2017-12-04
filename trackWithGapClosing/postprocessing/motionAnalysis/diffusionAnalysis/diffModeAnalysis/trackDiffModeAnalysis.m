@@ -26,7 +26,10 @@ function diffModeAnalysisRes = trackDiffModeAnalysis(tracksFinal,diffModeDivider
 %                         track:
 %           .diffMode: Diffusion mode.
 %           .diffCoef: Diffusion coefficient as calculated from the mean
-%           square frame-to-frame displacement.
+%           square frame-to-frame displacement and mean positional standard
+%           deviaton.
+%           .msdF2F  : Mean square frame-to-frame displacement.
+%           .meanPosStd: Mean positonal standard deviation.
 %
 %REMARKS Code is written for 2D case only, but can be generalized to 3D.
 %
@@ -69,7 +72,8 @@ numTracks = length(tracksFinal);
 %% Diffusion mode classification
 
 %reserve memory for output parameters
-diffModeAnalysisRes = repmat(struct('diffMode',[],'diffCoef',[]),numTracks,1);
+diffModeAnalysisRes = repmat(struct('diffMode',[],'diffCoef',[],'msdF2F',[],...
+    'meanPosStd',[]),numTracks,1);
 
 %go over all compound tracks
 for iTrack = 1 : numTracks
@@ -111,8 +115,10 @@ for iTrack = 1 : numTracks
     diffCoefCurrent = msdF2F/4 - meanPosVar;
     diffCoefCurrent(indxBad) = NaN;
     
-    %store diffusion coefficient in output variable
+    %store diffusion coefficient, mean square displacement and mean positional std in output variable
     diffModeAnalysisRes(iTrack).diffCoef = diffCoefCurrent;
+    diffModeAnalysisRes(iTrack).msdF2F = msdF2F;
+    diffModeAnalysisRes(iTrack).meanPosStd = meanPosStd;
 
     if ~isempty(diffModeDividerStruct)
         
@@ -134,6 +140,17 @@ for iTrack = 1 : numTracks
         
     end
     
+end
+
+%call code to summarize diffusion analysis results
+%store in .summary field of first track - rest stay empty
+if isstruct(tracksFinal)
+    probDim = 2;
+    extractType = 1;
+    [probMotionMode,modeMotionChar] = summarizeDiffModeRes(tracksFinal,...
+        diffModeAnalysisRes,minLength,probDim,extractType);
+    diffModeAnalysisRes(1).summary.probMotionMode = probMotionMode;
+    diffModeAnalysisRes(1).summary.modeMotionChar = modeMotionChar;
 end
 
 %% ~~~ the end ~~~

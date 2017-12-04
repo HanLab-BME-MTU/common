@@ -1,19 +1,22 @@
 function analyzeDiffusionModesMLMD(MLMD,minLength,alpha,showPlot,maxNumMode,...
-    binStrategy,plotName,subSampSize,doControl)
+    binStrategy,plotName,subSampSize,doControl,diffModeDividerStruct,forceDecompose)
 %analyzeDiffusionModesMLMD performs diffusion mode analysis on single particle tracks
 %
 %SYNOPSIS analyzeDiffusionModesMLMD(MLMD,minLength,alpha,showPlot,maxNumMode,...
-%    binStrategy,plotName,subSampSize,doControl)
+%    binStrategy,plotName,subSampSize,doControl,diffModeDividerStruct,forceDecompose)
 %
 %INPUT 
 %   Mandatory
 %       MLMD: MovieList or MovieData object for movie(s) to be analyzed
 %   Optional
-%       All other parameters. See getDiffModes for parameter information.
+%       - forceDecompose: 1 to force run diffusion mode decomposition, 0 to
+%       use old decomposition results if available. Default: 1.
+%       - For all other parameters, see functions "getDiffModes" and
+%       "trackDiffModeAnalysis" for parameter information.
 %
 %OUPUT Output is saved in directory DiffusionModeAnalysis belonging to each
-%      analyzed movie. See getDiffModes for detailed description
-%      of saved output.
+%      analyzed movie. See functions "getDiffModes" and
+%      "trackDiffModeAnalysis" for detailed description of saved output.
 %
 %Khuloud Jaqaman, August 2017
 
@@ -64,6 +67,14 @@ end
 
 if nargin < 9 || isempty(doControl)
     doControl = 1;
+end
+
+if nargin < 10 || isempty(diffModeDividerStruct)
+    diffModeDividerStruct = [];
+end
+
+if nargin < 11 || isempty(forceDecompose)
+    forceDecompose = 1;
 end
 
 %% Analysis
@@ -123,6 +134,8 @@ for iM = 1 : numMovies
     funParams.plotName = plotName;
     funParams.subSampSize = subSampSize;
     funParams.doControl = doControl;
+    funParams.diffModeDividerStruct = diffModeDividerStruct;
+    funParams.forceDecompose = forceDecompose;
     
     %general again
     parseProcessParams(MD.getProcess(iProc),funParams);

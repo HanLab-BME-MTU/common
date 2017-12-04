@@ -1,5 +1,5 @@
 function [ refined, refined_derivs ] = halleyft( v, guess, freq, deriv, TOL, maxIter, avoidNaN )
-%newtonft Does Halley iteration to refine roots of Fourier series
+%halleyft Does Halley iteration to refine roots of Fourier series
 %
 % INPUT
 % v - known values of Fourier series at regular intervals or it's Fourier
