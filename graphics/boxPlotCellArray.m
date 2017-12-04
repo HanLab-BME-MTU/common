@@ -14,7 +14,6 @@ function []=boxPlotCellArray(cellArrayData,nameList,convertFactor,notchOn,plotIn
 %If there is no data, exclude them in the plot
 idEmptyData = cellfun(@isempty,cellArrayData);
 cellArrayData(idEmptyData)=[];
-nameList(idEmptyData)=[];
 numConditions = numel(cellArrayData);
 matrixData = NaN(lengthLongest,numConditions);
 for k=1:numConditions
@@ -24,6 +23,7 @@ if all(isnan(matrixData(:)))
     disp('All data are NaNs. Returning...')
     return
 end
+
 if nargin<6
     forceShowP=false;
 end
@@ -47,6 +47,8 @@ if nargin<2
     notchOn=true;
     forceShowP=false;
 end
+nameList(idEmptyData)=[];
+
 boxWidth=0.5;
 whiskerRatio=1.5;
 matrixData=matrixData*convertFactor;
@@ -79,7 +81,7 @@ set(gca,'XTickLabelRotation',45)
 
 % hold on
 % perform ranksum test for every single combination
-maxPoint = quantile(matrixData,[0.25 0.75]);
+maxPoint = quantile(matrixData,[0.25; 0.75]);
 maxPoint2 = maxPoint(2,:)+(maxPoint(2,:)-maxPoint(1,:))*whiskerRatio;
 maxPoint2 = max(maxPoint2);
 lineGap=maxPoint2*0.01;
@@ -108,7 +110,7 @@ for k=1:(numConditions-1)
     end
 end
 q=q+lineGap*3;
-minPoint = quantile(matrixData,[0.25 0.75]);
+minPoint = quantile(matrixData,[0.25; 0.75]);
 minPoint2 = minPoint(1,:)-(minPoint(2,:)-minPoint(1,:))*whiskerRatio;
 minPoint2 = min(minPoint2);
 if ~plotIndivPoint && forceShowP
