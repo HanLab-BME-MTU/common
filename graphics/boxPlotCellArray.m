@@ -116,8 +116,11 @@ minPoint2 = min(minPoint2);
 if ~plotIndivPoint && forceShowP
     maxPoint2 = maxPoint2+q;
 end
-ylim([minPoint2-lineGap*2 maxPoint2+q])
-
+try
+    ylim([minPoint2-lineGap*2 maxPoint2+q])
+catch
+    ylim auto
+end
 set(gca,'FontSize',7)
 set(findobj(gca,'Type','Text'),'FontSize',6)
 
