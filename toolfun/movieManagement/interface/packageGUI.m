@@ -137,11 +137,13 @@ delete(handles.figure1);
 function figure1_DeleteFcn(hObject, eventdata, handles)
 
 userData = get(handles.figure1, 'UserData');
-if ~isempty(userData.MD)
-if userData.MD.isMock()
-    load([userData.MD.mockMD_.parent.movieDataPath_, filesep, userData.MD.mockMD_.parent.movieDataFileName_]);
-    movieViewer(MD, 'refresher', '1');
-end
+if ~isempty(userData)
+    if ~isempty(userData.MD)
+        if userData.MD.isMock()
+            load([userData.MD.mockMD_.parent.movieDataPath_, filesep, userData.MD.mockMD_.parent.movieDataFileName_]);
+            movieViewer(MD, 'refresher', '1');
+        end
+    end
 end
 
 % Find all figures stored in userData and delete them

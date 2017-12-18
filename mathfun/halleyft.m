@@ -1,5 +1,5 @@
 function [ refined, refined_derivs ] = halleyft( v, guess, freq, deriv, TOL, maxIter, avoidNaN )
-%newtonft Does Halley iteration to refine roots of Fourier series
+%halleyft Does Halley iteration to refine roots of Fourier series
 %
 % INPUT
 % v - known values of Fourier series at regular intervals or it's Fourier
@@ -86,13 +86,14 @@ derivs = [0 1 2] + deriv;
         guess_sz = size(guess);
         guess = guess(:,:);
         guess_count = size(guess,1)-sum(isnan(guess),1);
-        refined = guess;
+        refined = NaN(size(guess));
         if(nargout > 1)
-            refined_derivs = guess(:,:,[1 1 1]);
+            refined_derivs = refined(:,:,[1 1 1]);
             for i=1:size(guess,1)
                 s = guess_count == i;
                 [refined(1:i,s),refined_derivs(1:i,s,:)] = halleyft(v_hat(:,s), guess(1:i,s), true, deriv, TOL, maxIter, false);
             end
+            refined_derivs = reshape(refined_derivs,[guess_sz 3]);
         else
             for i=1:size(guess,1)
                 s = guess_count == i;
