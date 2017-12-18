@@ -72,7 +72,6 @@ function [transDiffAnalysisRes,errFlag] = trackTransientDiffusionAnalysis1(track
 %Khuloud Jaqaman, March 2008
 %Edited: Tony Vega 2017
 %% Output
-
 transDiffAnalysisRes = [];
 errFlag = 0;
 
@@ -419,7 +418,8 @@ for iTrack = indx4analysis'
 
                 %if this part got some classification ...
                 if ~isempty(pointClassMSS~=-1)
-                    
+                    [switch123,classDuration] = getSwitchPointClassDuration(pointClassMSS);
+
                     %reclassify unclassified subparts
                     pointClassMSS = reclassUnclassPoints(pointClassMSS,...
                         mssSlope,tracks(iTrack,:),halfWindowMSS,probDim,...
@@ -801,6 +801,9 @@ function [pointClassMSS,mssSlope,halfWindowStartRemoved,halfWindowEndRemoved] ..
 %less than their respective minDuration frames, and convert them into pure Brownian
 badClass = find( (classDuration(:,1)<minDuration(1) & classDuration(:,2)==1) ...
     | (classDuration(:,1)<minDuration(2) & classDuration(:,2)==3) );
+badClassImm = find( (classDuration(:,1)<minDuration(1) & classDuration(:,2)==0)); %N
+badClass = [badClass;badClassImm];%N
+
 for iClass = badClass'
     pointClassMSS(switch123(iClass,1):switch123(iClass+1,1)-1) = 2;
 end
@@ -812,6 +815,8 @@ mssSlope = [NaN(halfWindowMSS,1); mssSlope; NaN(halfWindowMSS,1)];
 %get points still classified as confined or directed
 pointClassMSSTmp = pointClassMSS;
 indxGood = find(pointClassMSS==1 | pointClassMSS==3);
+indxImm = find(pointClassMSS==0);%N
+indxGood = [indxGood;indxImm];%N
 
 %go over these points and expand their classification to the points around 
 %them and constituting their window
@@ -819,17 +824,24 @@ for iPoint = indxGood'
 
     %get point classification, thus determine the opposite classification
     currentClass = pointClassMSSTmp(iPoint);
-    oppositeClass = setdiff([1 3],currentClass);
-
+%     oppositeClass = setdiff([1 3],currentClass);
+    oppositeClass = setdiff([0 1 3],currentClass);%N Check that this works
     %find the start and end points of this point's window
     pointMin = iPoint - halfWindowMSS;
     pointMax = iPoint + halfWindowMSS;
 
     %find the closest points of opposite classification on either side
-    oppClassMin = find(pointClassMSSTmp(1:iPoint-1)==oppositeClass,1,'last');
-    oppClassMax = find(pointClassMSSTmp(iPoint+1:end)==oppositeClass,1,'first') ...
+    oppClassMin = find(pointClassMSSTmp(1:iPoint-1)==oppositeClass(1),1,'last'); %Added the index (1)
+    oppClassMax = find(pointClassMSSTmp(iPoint+1:end)==oppositeClass(1),1,'first') ...
         + iPoint;
-
+    
+    oppClassMin2 = find(pointClassMSSTmp(1:iPoint-1)==oppositeClass(2),1,'last'); %N
+    oppClassMax2 = find(pointClassMSSTmp(iPoint+1:end)==oppositeClass(2),1,'first') ...
+        + iPoint;%N
+    
+    oppClassMin = max([oppClassMin,oppClassMin2]);%N Find closest class
+    oppClassMax = min([oppClassMax,oppClassMax2]);%N Find closest class
+    
     %get the windows of those points
     pointMinMax = oppClassMin + halfWindowMSS;
     pointMaxMin = oppClassMax - halfWindowMSS;

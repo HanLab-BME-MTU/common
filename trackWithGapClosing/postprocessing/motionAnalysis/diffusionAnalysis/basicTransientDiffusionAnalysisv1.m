@@ -1,5 +1,5 @@
-function [transDiffAnalysisRes,errFlag] = basicTransientDiffusionAnalysisv1(tracks,...
-    probDim,alphaValues,minDuration,plotRes,confRadMin,peakAlpha)
+function [transDiffAnalysisRes,errFlag,initCount] = basicTransientDiffusionAnalysisv1(tracks,...
+    probDim,alphaValues,minDuration,plotRes,confRadMin,peakAlpha,windowMSS)
 %BASICTRANSIENTDIFFUSIONANALYSISV1 detects potential diffusion segments of a track and performs MSS analysis on these segments
 %
 %SYNOPSIS [transDiffAnalysisRes,errFlag] = basicTransientDiffusionAnalysis(tracks,...
@@ -89,8 +89,11 @@ function [transDiffAnalysisRes,errFlag] = basicTransientDiffusionAnalysisv1(trac
 
 %% Output
 checkAsym = 0; %Needs work so not imposed currently
+alphaAsym = 0.05;
 transDiffAnalysisRes = [];
+fitMS = [];
 errFlag = 0;
+
 %% Input
 
 %check whether tracks were input
@@ -129,6 +132,10 @@ if nargin < 7 || isempty(peakAlpha)
     peakAlpha = 95;
 end
 
+% % if nargin < 8 || isempty(checkAsym)
+% %     checkAsym = 0;
+% % end
+
 if errFlag
     disp('--trackTransientDiffusionAnalysis1: Please fix input variables');
     return
@@ -139,14 +146,20 @@ end
     load(strcat(p(1:end-33),'positionConfidenceCI.mat'))
     load(strcat(p(1:end-33),'positionConfidenceFC.mat'))
     load(strcat(p(1:end-33),'positionConfidenceDF.mat'))
+    
+    if checkAsym
+        load(strcat(p(1:end-33),'positionConfidenceCI_1D.mat'))
+        load(strcat(p(1:end-33),'positionConfidenceFC_1D.mat'))
+        load(strcat(p(1:end-33),'positionConfidenceDF_1D.mat'))  
+    end
 %define window sizes
 windowAsym = 5;
-windowMSS =11;
+% windowMSS =11;
 windowMSSMin = 20;
 halfWindowMSS = (windowMSS - 1) / 2;
 
 %specify MSS analysis moment orders
-momentOrders = 0 : 6;
+momentOrders = 0:6;
 
 %% Track extraction for analysis
 
@@ -276,12 +289,13 @@ for iTrack = indx4analysis'
         gaussDeriv{iTrack} = [];
     end
 end
-
+initCount = NaN(length(indx4analysis),1);
 %% Step 1b and Step 2: Segmenation Phase 2 and segment classification
 % Once again go through tracks long enough for classification
 for iTrack = indx4analysis'
     % Separate tracks that change and those that don't
     trackFull = gaussDeriv{iTrack};
+%     trackFull = [];
     if ~isempty(trackFull)
         % If track has MPD vector, take maxima above threshold as initial
         % guesses for segments
@@ -312,11 +326,11 @@ for iTrack = indx4analysis'
                 %get the particle positions along the track
                 coordX = (tracks(iTrack,8*(startPoint-1)+1:8:8*endPoint))';
                 coordY = (tracks(iTrack,8*(startPoint-1)+2:8:8*endPoint))';
-                %coordZ = (tracks(iTrack,8*(startPoint-1)+3:8:8*endPoint))';%Not implemented yet
-                coordXY = [coordX coordY];
+                coordZ = (tracks(iTrack,8*(startPoint-1)+3:8:8*endPoint))';%Not implemented yet
+                coordXYZ = [coordX coordY coordZ];
 
                 %determine whether the track is sufficiently asymmetric
-                [~,asymFlag] = asymDeterm2D3D(coordXY(:,1:probDim),alphaAsym);
+                [~,asymFlag] = asymDeterm2D3D(coordXYZ(:,1:probDim),alphaAsym);
 
                 %classify track as ...
                 %1 = linear, if the asymmetry parameter is larger than the threshold
@@ -398,11 +412,11 @@ for iTrack = indx4analysis'
                                 %get the particle positions along the track
                                 coordX = (tracks(iTrack,8*(startPoint-1)+1:8:8*endPoint))';
                                 coordY = (tracks(iTrack,8*(startPoint-1)+2:8:8*endPoint))';
-                                %coordZ = (tracks(iTrack,8*(startPoint-1)+3:8:8*endPoint))';%Not implemented yet
-                                coordXY = [coordX coordY];
+                                coordZ = (tracks(iTrack,8*(startPoint-1)+3:8:8*endPoint))';%Not implemented yet
+                                coordXYZ = [coordX coordY];
 
                                 %determine whether the track is sufficiently asymmetric
-                                [~,asymFlag] = asymDeterm2D3D(coordXY(:,1:probDim),alphaAsym);
+                                [~,asymFlag] = asymDeterm2D3D(coordXYZ(:,1:probDim),alphaAsym);
 
                                 %classify track as ...
                                 %1 = linear, if the asymmetry parameter is larger than the threshold
@@ -424,6 +438,10 @@ for iTrack = indx4analysis'
                 %}
         %% Step 2. Initial Segment Classification
         %Initialize all variables that will be saved later
+        count = length(segPointsA)-2;
+
+        initCount(iTrack) = count;
+
         n = 1:length(segPointsA)-1;
         difference = segPointsA(n+1)-segPointsA(n);
         pointClassMSS = NaN(length(n),1);
@@ -537,12 +555,24 @@ for iTrack = indx4analysis'
                                 changeSeg = find((partClassMSST(:,3)-partClassMSS(:,3)) > 0);
                                 if changeSeg
                                         if partClassMSS(changeSeg,3) == 1 && partClassMSST(changeSeg,3) ==2 %If confined track became free
-                                            oldConfidenceList = positionConfidenceFC{1,min(length(partClassTmp(ismember(mssSlopeTmp,mssSlope),1):partClassTmp(ismember(mssSlopeTmp,mssSlope),2)),500)};
-                                            newConfidenceList = positionConfidenceFC{1,min(length(partClassMSS(changeSeg,1):partClassMSS(changeSeg,2)),500)};
+                                            
+                                            if isnan(partClassMSS1D(:,3))
+                                                oldConfidenceList = positionConfidenceFC{1,min(length(partClassTmp(ismember(mssSlopeTmp,mssSlope),1):partClassTmp(ismember(mssSlopeTmp,mssSlope),2)),500)};
+                                            else
+                                                oldConfidenceList = positionConfidenceFC_1D{1,min(length(partClassTmp(ismember(mssSlopeTmp,mssSlope),1):partClassTmp(ismember(mssSlopeTmp,mssSlope),2)),500)};
+                                            end
+                                            
+                                            if isnan(partClassMSS1D(:,3))
+                                                newConfidenceList = positionConfidenceFC{1,min(length(partClassMSS(changeSeg,1):partClassMSS(changeSeg,2)),500)};
+                                            else
+                                                newConfidenceList = positionConfidenceFC_1D{1,min(length(partClassMSS(changeSeg,1):partClassMSS(changeSeg,2)),500)};
+                                            end
+                                            
                                             oldConfidence = oldConfidenceList(round(oldConfidenceList(:,1)*1E4)./1E4==round(mssSlope(changeSeg)*1E4)./1E4,3);
                                             newConfidence = newConfidenceList(round(newConfidenceList(:,1)*1E4)./1E4==round(mssSlopeT(changeSeg)*1E4)./1E4,2);
 
                                         elseif partClassMSS(changeSeg,3) == 0 && partClassMSST(changeSeg,3) ==1 %If immobile track became confined
+                                            
                                             oldConfidenceList = positionConfidenceCI{1,min(length(partClassTmp(ismember(mssSlopeTmp,mssSlope),1):partClassTmp(ismember(mssSlopeTmp,mssSlope),2)),500)};
                                             newConfidenceList = positionConfidenceCI{1,min(length(partClassMSS(changeSeg,1):partClassMSS(changeSeg,2)),500)};
                                             oldConfidence = oldConfidenceList(round(oldConfidenceList(:,1)*1E4)./1E4==round(mssSlope(changeSeg)*1E4)./1E4,3);
@@ -842,10 +872,10 @@ for iTrack = indx4analysis'
             coordX = (tracks(iTrack,1:8:end))';
             coordY = (tracks(iTrack,2:8:end))';
 %             coordZ = tracks(iTrack,3:8:end)';
-            coordXY = [coordX coordY];
+            coordXYZ = [coordX coordY];
 
             %determine whether the track is sufficiently asymmetric
-            [~,asymFlag] = asymDeterm2D3D(coordXY(:,1:probDim),0.05);
+            [~,asymFlag] = asymDeterm2D3D(coordXYZ(:,1:probDim),0.05);
 
             if asymFlag ==1
 
@@ -1133,11 +1163,11 @@ function [pointClass, mssSlopeT,genDiffCoefT,scalingPowerT,normDiffCoefT,trackCe
     trackMSSAnalysis(trackCoord2,1,momentOrders,alphaAsym);
 
 %% Confinement of asym 
-    xyCoord = [trackCoordX trackCoordY];
+    xyzCoord = [trackCoordX trackCoordY trackCoordZ];
 
     %find the eignevalues of the variance-covariance matrix of this track's
     %positions
-    [eigenVec,eigenVal] = eig(nancov(xyCoord(:,1:probDim)));
+    [eigenVec,eigenVal] = eig(nancov(xyzCoord(:,1:probDim)));
     eigenVal = diag(eigenVal);
 
     %calculate the confinement radius along the preferred direction of
@@ -1149,7 +1179,7 @@ function [pointClass, mssSlopeT,genDiffCoefT,scalingPowerT,normDiffCoefT,trackCe
     confRadius1D(1,1) = sqrt( mean(eigenVal(eigenVal~=max(eigenVal))) * (probDim + 1) );
 
     %calculate the track's center
-    trackCenter = nanmean(xyCoord(:,1:probDim));
+    trackCenter = nanmean(xyzCoord(:,1:probDim));
 
     %store the preferred direction of motion
     prefDir = eigenVec(:,eigenVal==max(eigenVal))';

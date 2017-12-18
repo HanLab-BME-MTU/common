@@ -1,5 +1,5 @@
 function plotTracksDiffAnalysis2D(trackedFeatureInfo,diffAnalysisRes,timeRange,...
-    newFigure,image,showConf,simplifyLin,offset)
+    newFigure,image,showConf,simplifyLin,offset,hideUnclass)
 %PLOTTRACKSDIFFANALYSIS2D plots tracks in 2D highlighting the different diffusion types
 %
 %SYNOPSIS plotTracksDiffAnalysis2D(trackedFeatureInfo,diffAnalysisRes,timeRange,...
@@ -65,6 +65,9 @@ function plotTracksDiffAnalysis2D(trackedFeatureInfo,diffAnalysisRes,timeRange,.
 %                           Optional. Default: 0.
 %       offset            : [dx,dy] that is to be added to the coordinates.
 %                           Optional. Default: [0,0]
+%
+%       hideUnclass       : 1 to not display any tracks shorter than 20
+%                           frames
 %
 %OUTPUT The plot.
 %       Color coding:
@@ -161,6 +164,11 @@ end
 %check whether there is an offset
 if nargin < 8 || isempty(offset)
     offset = [0 0];
+end
+
+%check whether there to include tracks below 20 frames
+if nargin < 9 
+    hideUnclass = 0;
 end
 
 %exit if there are problems in input variables
@@ -268,7 +276,11 @@ if isfield(diffAnalysisRes,'classification') %output of trackDiffusionAnalysis1
     
     %get track segment types from diffusion analysis
     trackSegmentType = vertcat(diffAnalysisRes.classification);
-    
+    if hideUnclass==1
+        checkClass = ~isnan(trackSegmentType(:,2));
+        trackSegmentType = trackSegmentType(checkClass,:);
+        numTrackSegments = size(trackSegmentType,1);
+    end
     %color coding:
     %       linear & 1D immobile -> gray
     %       linear & 1D confined diffusion -> orange
@@ -327,12 +339,12 @@ if isfield(diffAnalysisRes,'classification') %output of trackDiffusionAnalysis1
         case {1,2}
             trackSegmentColor(indx,:) = repmat([1 0 0],length(indx),1);
     end
-    %random/unclassified + 2D immobile
+    %random/unclassified + 2D immobile[0.5 0.3 0]
     indx = find(trackSegmentType(:,1) ~= 1 & trackSegmentType(:,2) == 0);
-    trackSegmentColor(indx,:) = repmat([0.5 0.3 0],length(indx),1);
+    trackSegmentColor(indx,:) = repmat([0 0 0],length(indx),1);
     %random/unclassified + 2D confined
     indx = find(trackSegmentType(:,1) ~= 1 & trackSegmentType(:,2) == 1);
-    trackSegmentColor(indx,:) = repmat([0 0 1],length(indx),1);
+    trackSegmentColor(indx,:) = repmat([0 0.5 0],length(indx),1);
     %random/unclassified + 2D normal
     indx = find(trackSegmentType(:,1) ~= 1 & trackSegmentType(:,2) == 2);
     trackSegmentColor(indx,:) = repmat([0 1 1],length(indx),1);
