@@ -54,6 +54,10 @@ end
 delete(h);
 hold on;
 
+% Removing NaNs
+nanIndex=isnan(u);
+x(nanIndex)=[]; y(nanIndex)=[]; u(nanIndex)=[]; v(nanIndex)=[]; 
+
 % Index vectors per magnitude
 nColors = size(ip.Results.Colormap,1);
 intensity= (u.^2+v.^2).^(1/2);

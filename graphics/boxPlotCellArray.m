@@ -1,4 +1,4 @@
-function []=boxPlotCellArray(cellArrayData,nameList,convertFactor,notchOn,plotIndivPoint,forceShowP)
+function [sucess]=boxPlotCellArray(cellArrayData,nameList,convertFactor,notchOn,plotIndivPoint,forceShowP)
 % function []=boxPlotCellArray(cellArrayData,nameList,convertFactor,notchOn,plotIndivPoint,forceShowP) automatically converts cell array
 % format input to matrix input to use matlab function 'boxplot'
 % input: cellArrayData          cell array data
@@ -14,6 +14,14 @@ function []=boxPlotCellArray(cellArrayData,nameList,convertFactor,notchOn,plotIn
 %If there is no data, exclude them in the plot
 idEmptyData = cellfun(@isempty,cellArrayData);
 cellArrayData(idEmptyData)=[];
+sucess=false;
+% Return when one of columns are all NaNs
+isAnyGroupAllNaNs = cellfun(@(x) all(isnan(x)), cellArrayData);
+if any(isAnyGroupAllNaNs)
+    disp([num2str(find(isAnyGroupAllNaNs)) 'th group contains all NaNs. Returning...'])
+    return
+end
+
 numConditions = numel(cellArrayData);
 matrixData = NaN(lengthLongest,numConditions);
 for k=1:numConditions
@@ -54,25 +62,42 @@ whiskerRatio=1.5;
 matrixData=matrixData*convertFactor;
 nameListNew = cellfun(@(x,y) [x '(N=' num2str(length(y)) ')'],nameList,cellArrayData,'UniformOutput', false);
 
+onlyOneDataAllGroups=false;
+numCategories = numel(cellArrayData);
+onlyOneDataPerEachGroup=false(1,numCategories);
 if plotIndivPoint
     % individual data jitter plot
-    numCategories = size(matrixData,2);
+%     numCategories = size(matrixData,2);
     % width=boxWidth/2;
     for ii=1:numCategories
-        xData = ii+0.1*boxWidth*(randn(size(matrixData,1),1));
-        scatter(xData,matrixData(:,ii),'filled','MarkerFaceColor',[.3 .3 .3],'MarkerEdgeColor','none','SizeData',2)
+        curNumData = numel(matrixData(:,ii));
+        if curNumData==1
+            plot(ii,matrixData(:,ii),'k.')
+            onlyOneDataPerEachGroup(ii)=true;
+        else
+            xData = ii+0.1*boxWidth*(randn(size(matrixData,1),1));
+            scatter(xData,matrixData(:,ii),'filled','MarkerFaceColor',[.3 .3 .3],'MarkerEdgeColor','none','SizeData',2)
+        end
         hold on
     end
     alpha(.5)
 end
-if notchOn %min(sum(~isnan(matrixData),1))>20 || 
-    boxplot(matrixData,'whisker',whiskerRatio,'notch','on',...
-        'labels',nameListNew,'symbol','','widths',boxWidth,'jitter',1,'colors','k');%, 'labelorientation','inline');
-else % if the data is too small, don't use notch
-    boxplot(matrixData,'whisker',whiskerRatio*0.5,'notch','off',...
-        'labels',nameListNew,'symbol','','widths',boxWidth,'jitter',0,'colors','k');%, 'labelorientation','inline');
+if all(onlyOneDataPerEachGroup)
+    onlyOneDataAllGroups=true;
 end
-    
+if ~onlyOneDataAllGroups
+    if notchOn %min(sum(~isnan(matrixData),1))>20 || 
+        boxplot(matrixData,'whisker',whiskerRatio,'notch','on',...
+            'labels',nameListNew,'symbol','','widths',boxWidth,'jitter',1,'colors','k');%, 'labelorientation','inline');
+    else % if the data is too small, don't use notch
+        boxplot(matrixData,'whisker',whiskerRatio*0.5,'notch','off',...
+            'labels',nameListNew,'symbol','','widths',boxWidth,'jitter',0,'colors','k');%, 'labelorientation','inline');
+    end
+else
+    xlim([0 numCategories+1])
+    set(gca,'XTick',1:numCategories)
+    set(gca,'XTicklabel',nameListNew)
+end    
 set(findobj(gca,'LineStyle','--'),'LineStyle','-')
 set(findobj(gca,'tag','Median'),'LineWidth',2)
 % set(gca,'XTick',1:numel(nameList))
@@ -123,4 +148,6 @@ catch
 end
 set(gca,'FontSize',7)
 set(findobj(gca,'Type','Text'),'FontSize',6)
+sucess=true;
+hold off
 
