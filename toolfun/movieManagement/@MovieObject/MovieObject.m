@@ -331,6 +331,20 @@ classdef  MovieObject < hgsetget
             if isValid, delete(process); end
         end
         
+        function [removedIDs,remainingIDs] = removeEmptyProcesses(obj)
+            % Remove empty processes from processes_ cell array
+            emptyProcesses = cellfun('isempty',obj.processes_);
+            obj.processes_ = obj.processes_(~emptyProcesses);
+            if(nargout > 0)
+                % Return the original indexes that were removed
+                removedIDs = find(emptyProcesses);
+            end
+            if(nargout > 1)
+                % Return the original indexes that were kept
+                remainingIDs = find(~emptyProcesses);
+            end
+        end
+        
         function replaceProcess(obj, pid, newprocess)
             % Replace process object by another in the processes list
             
