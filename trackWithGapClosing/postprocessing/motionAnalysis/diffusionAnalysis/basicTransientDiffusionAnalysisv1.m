@@ -1,9 +1,9 @@
-function [transDiffAnalysisRes,errFlag,initCount] = basicTransientDiffusionAnalysisv1(tracks,...
-    probDim,alphaValues,minDuration,plotRes,confRadMin,peakAlpha,windowMSS)
+function [transDiffAnalysisRes,errFlag] = basicTransientDiffusionAnalysisv1(tracks,...
+    probDim,plotRes,peakAlpha)
 %BASICTRANSIENTDIFFUSIONANALYSISV1 detects potential diffusion segments of a track and performs MSS analysis on these segments
 %
 %SYNOPSIS [transDiffAnalysisRes,errFlag] = basicTransientDiffusionAnalysis(tracks,...
-%     probDim,alphaValues,minDuration,plotRes,confRadMin,checkAsym)
+%     probDim,plotRes,peakAlpha)
 %
 %INPUT  tracks      : -- EITHER --
 %                     Output of trackWithGapClosing (matrix),
@@ -13,23 +13,6 @@ function [transDiffAnalysisRes,errFlag,initCount] = basicTransientDiffusionAnaly
 %
 %       probDim     : Problem dimensionality.
 %                     Optional. Default: 2.
-%       alphaValues : Alpha-value for classification. Can take the values
-%                     0.2, 0.1, 0.05 and 0.01. One can enter one value, in
-%                     which case it will be used for both confined and
-%                     directed, or two values, where the first will be used
-%                     for confined and the second for directed.
-%                     Optional. 
-%
-%                     NEW DIFFUSION CLASSIFICATION: New method (see Remark
-%                     #2) uses best thresholds to separate
-%                     immobile,confined, free, and directed tracks in unbiased manner. 
-%                     To use, enter any arbitrary alpha value with preceding minus sign (ex. -0.05). Will 
-%                     not work for multiple inputs.
-%                     
-%                     Default: -0.05.
-%       minDuration : Minimum amount of rolling windows a track can have to
-%                     be segmented 
-%                     Optional. Default: 5 (At least one classified segment + an asymmetric portion).
 %       plotRes     : 1 to plot results, 0 otherwise.
 %                     Optional. Default: 0.
 %                     Results can be plotted only if problem is 2D.
@@ -39,11 +22,6 @@ function [transDiffAnalysisRes,errFlag,initCount] = basicTransientDiffusionAnaly
 %                     *cyan: normal diffusion.
 %                     *magenta: super diffusion.
 %                     *black: unclassified.
-%       confRadMin  : 1 to calculate the confinement radius of confined
-%                     particles using the minimum positional standard
-%                     deviation, 0 to calculate it using the mean
-%                     positional standard deviation.
-%                     Optional. Default: 0.
 %
 %
 %       peakAlpha   : confidence level for choosing peaks when initially
@@ -70,7 +48,7 @@ function [transDiffAnalysisRes,errFlag,initCount] = basicTransientDiffusionAnaly
 %                                classified as confined (NaN otherwise).
 %           .momentScalingSpectrum1D: same as above but in 1D for asym
 %           tracks, additionally includes preferred direction value
-%           .asymmetry, .asymmetryAfterMSS: NOT IMPLEMENTED RIGHT NOW.
+%           .asymmetry: NOT IMPLEMENTED RIGHT NOW.
 %
 %       errFlag         : 0 if executed normally, 1 otherwise.
 %
@@ -88,14 +66,11 @@ function [transDiffAnalysisRes,errFlag,initCount] = basicTransientDiffusionAnaly
 %Tony Vega, July 2016
 
 %% Output
-checkAsym = 0; %Needs work so not imposed currently
-alphaAsym = 0.05;
 transDiffAnalysisRes = [];
-fitMS = [];
 errFlag = 0;
 
 %% Input
-
+checkAsym = 0; %Needs work so not imposed currently
 %check whether tracks were input
 if nargin < 1
     disp('--basicTransientDiffusionAnalysisv1: Please input at least the tracks to be analyzed!');
@@ -107,34 +82,18 @@ if nargin < 2 || isempty(probDim)
     probDim = 2;
 end
 
-if nargin < 3 || isempty(alphaValues)
-    alphaValues = -0.05;
-end
 
-
-if nargin < 4|| isempty(minDuration)
-    minDuration = 5;
-end
-
-if nargin < 5 || isempty(plotRes)
+if nargin < 3 || isempty(plotRes)
     plotRes = 0;
 elseif plotRes == 1 && probDim ~= 2
     disp('--basicTransientDiffusionAnalysisv1: Cannot plot tracks if problem is not 2D!');
     plotRes = 0;
 end
 
-if nargin < 6 || isempty(confRadMin)
-    confRadMin = 0;
-end
-
-
-if nargin < 7 || isempty(peakAlpha)
+if nargin < 4 || isempty(peakAlpha)
     peakAlpha = 95;
 end
 
-% % if nargin < 8 || isempty(checkAsym)
-% %     checkAsym = 0;
-% % end
 
 if errFlag
     disp('--trackTransientDiffusionAnalysis1: Please fix input variables');
@@ -148,15 +107,22 @@ end
     load(strcat(p(1:end-33),'positionConfidenceDF.mat'))
     
     if checkAsym
-        load(strcat(p(1:end-33),'positionConfidenceCI_1D.mat'))
-        load(strcat(p(1:end-33),'positionConfidenceFC_1D.mat'))
-        load(strcat(p(1:end-33),'positionConfidenceDF_1D.mat'))  
+        disp('Sorry - not implemented yet!')
+        errFlag = 1;
+%         load(strcat(p(1:end-33),'positionConfidenceCI_1D.mat'))
+%         load(strcat(p(1:end-33),'positionConfidenceFC_1D.mat'))
+%         load(strcat(p(1:end-33),'positionConfidenceDF_1D.mat'))  
     end
 %define window sizes
 windowAsym = 5;
-% windowMSS =11;
+windowMSS =11;
 windowMSSMin = 20;
 halfWindowMSS = (windowMSS - 1) / 2;
+
+%Set other variables
+alphaAsym = 0.05;
+minDuration = 5;
+confRadMin = 0;
 
 %specify MSS analysis moment orders
 momentOrders = 0:6;
@@ -215,8 +181,7 @@ indxNot4analysis = setdiff((1:numTrackSegments)',indx4analysis);
 %reserve memory
 trackSegmentClassRes = repmat(struct('asymmetry',NaN(1,3),...
     'momentScalingSpectrum',NaN(1,20+probDim),...
-    'momentScalingSpectrum1D',NaN(1,20+probDim),...
-    'asymmetryAfterMSS',NaN(1,3)),...
+    'momentScalingSpectrum1D',NaN(1,20+probDim)),...
     numTrackSegments,1);
 
 %% Step 1a. Initial track segmentation
@@ -289,7 +254,7 @@ for iTrack = indx4analysis'
         gaussDeriv{iTrack} = [];
     end
 end
-initCount = NaN(length(indx4analysis),1);
+
 %% Step 1b and Step 2: Segmenation Phase 2 and segment classification
 % Once again go through tracks long enough for classification
 for iTrack = indx4analysis'
@@ -413,7 +378,7 @@ for iTrack = indx4analysis'
                                 coordX = (tracks(iTrack,8*(startPoint-1)+1:8:8*endPoint))';
                                 coordY = (tracks(iTrack,8*(startPoint-1)+2:8:8*endPoint))';
                                 coordZ = (tracks(iTrack,8*(startPoint-1)+3:8:8*endPoint))';%Not implemented yet
-                                coordXYZ = [coordX coordY];
+                                coordXYZ = [coordX coordY coordZ];
 
                                 %determine whether the track is sufficiently asymmetric
                                 [~,asymFlag] = asymDeterm2D3D(coordXYZ(:,1:probDim),alphaAsym);
@@ -440,7 +405,6 @@ for iTrack = indx4analysis'
         %Initialize all variables that will be saved later
         count = length(segPointsA)-2;
 
-        initCount(iTrack) = count;
 
         n = 1:length(segPointsA)-1;
         difference = segPointsA(n+1)-segPointsA(n);
@@ -478,7 +442,7 @@ for iTrack = indx4analysis'
 
                     % If segment is asymmetric, run different analysis to
                     % get 1D classification
-                    [pointClass,mssSlopeT,genDiffCoefT,scalingPowerT,normDiffCoefT,trackCenter(k,:),confRadius1D(k,:),prefDir(k,:)] = asymmetricDiffusion(startPoint,endPoint,0.05,probDim,tracks,iTrack);
+                    [pointClass,mssSlopeT,genDiffCoefT,scalingPowerT,normDiffCoefT,trackCenter(k,:),confRadius1D(k,:),prefDir(k,:)] = asymmetricDiffusion(startPoint,endPoint,probDim,tracks,iTrack);
 
                     %since not all track segments may be linear, put analysis results in their
                     %proper place among all track segments
@@ -497,7 +461,7 @@ for iTrack = indx4analysis'
                 % Run MSS Analysis
                     [pointClassMSS(k),mssSlope(k),genDiffCoef(k,:),scalingPower(k,:),normDiffCoef(k)] = trackMSSAnalysis(...
                         tracks(iTrack,8*(startPoint-1)+1:8*endPoint),...
-                        probDim,momentOrders,alphaValues(1));
+                        probDim,momentOrders,-0.05);
 
                 % If segment is classified as confined or immobile, get
                 % additional information
@@ -545,13 +509,11 @@ for iTrack = indx4analysis'
                             if size(partClassMSS,1) < size(partClassTmp,1)
         
                             [partClassMSST,mssSlopeT,normDiffCoefT,confRadTmpT,centerTmpT,genDiffCoefT,scalingPowerT,...
-                                partClassMSS1DT,mssSlope1DT,normDiffCoef1DT,confRadius1DT,trackCenterT,genDiffCoef1DT,scalingPower1DT,prefDirT] = reclassifySegments(partClassMSS,probDim, tracks, iTrack,momentOrders,alphaValues,0.05,confRadMin,checkAsym);
+                                partClassMSS1DT,mssSlope1DT,normDiffCoef1DT,confRadius1DT,trackCenterT,genDiffCoef1DT,scalingPower1DT,prefDirT] = reclassifySegments(partClassMSS,probDim, tracks, iTrack,momentOrders,alphaAsym,confRadMin,checkAsym);
                                 
                                 % If reclassification results in more
                                 % mobile segment, check if probability of
                                 % misclassification has improved
-                                % this section should mostly be from other
-                                % version of code
                                 changeSeg = find((partClassMSST(:,3)-partClassMSS(:,3)) > 0);
                                 if changeSeg
                                         if partClassMSS(changeSeg,3) == 1 && partClassMSST(changeSeg,3) ==2 %If confined track became free
@@ -628,7 +590,7 @@ for iTrack = indx4analysis'
                                           partClassMSS = partClassTmp;
                                           peakThresh = peakThreshTmp;
                                         [partClassMSS,mssSlope,normDiffCoef,confRadTmp,centerTmp,genDiffCoef,scalingPower,...
-                                    partClassMSS1D,mssSlope1D,normDiffCoef1D,confRadius1D,trackCenter,genDiffCoef1D,scalingPower1D,prefDir] = reclassifySegments(partClassMSS,probDim, tracks, iTrack,momentOrders,alphaValues,0.05,confRadMin,checkAsym);
+                                    partClassMSS1D,mssSlope1D,normDiffCoef1D,confRadius1D,trackCenter,genDiffCoef1D,scalingPower1D,prefDir] = reclassifySegments(partClassMSS,probDim, tracks, iTrack,momentOrders,alphaAsym,confRadMin,checkAsym);
                                             clear oldConfidence newConfidence
                                         end      
 
@@ -707,7 +669,7 @@ for iTrack = indx4analysis'
                     %these parts. Otherwise continue
                     if size(partClassMSS,1) < size(partClassTmp,1)
                         [partClassMSST,mssSlopeT,normDiffCoefT,confRadTmpT,centerTmpT,genDiffCoefT,scalingPowerT,...
-                        partClassMSS1DT,mssSlope1DT,normDiffCoef1DT,confRadius1DT,trackCenterT,genDiffCoef1DT,scalingPower1DT,prefDirT] = reclassifySegments(partClassMSS,probDim, tracks, iTrack,momentOrders,alphaValues,0.05,confRadMin,checkAsym);
+                        partClassMSS1DT,mssSlope1DT,normDiffCoef1DT,confRadius1DT,trackCenterT,genDiffCoef1DT,scalingPower1DT,prefDirT] = reclassifySegments(partClassMSS,probDim, tracks, iTrack,momentOrders,alphaAsym,confRadMin,checkAsym);
                     
                         %If new classification results in
                         %more mobile class, compare new probability of
@@ -766,11 +728,11 @@ for iTrack = indx4analysis'
                             %If there was a bad change, revert it back but
                             %keep good changes
                             if ~isempty(badChange)
-                                %If the amo
+                                
                                 if size(partClassMSST,1) == length(changeSegF)
                                       partClassMSS = partClassTmp;
                                     [partClassMSS,mssSlope,normDiffCoef,confRadTmp,centerTmp,genDiffCoef,scalingPower,...
-                                partClassMSS1D,mssSlope1D,normDiffCoef1D,confRadius1D,trackCenter,genDiffCoef1D,scalingPower1D,prefDir] = reclassifySegments(partClassMSS,probDim, tracks, iTrack,momentOrders,alphaValues,0.05,confRadMin,checkAsym);
+                                partClassMSS1D,mssSlope1D,normDiffCoef1D,confRadius1D,trackCenter,genDiffCoef1D,scalingPower1D,prefDir] = reclassifySegments(partClassMSS,probDim, tracks, iTrack,momentOrders,alphaAsym,confRadMin,checkAsym);
                                 clear oldConfidence newConfidence
                                 else
                                     %Get segments that will stay new (i.e did not result worse prob. of misclassification)
@@ -788,7 +750,7 @@ for iTrack = indx4analysis'
                                     %this is easiest eay to stich data together
                                     partClassMSS = sortrows([keep;partClassTmp(revertSeg,:)]);
                                         [partClassMSS,mssSlope,normDiffCoef,confRadTmp,centerTmp,genDiffCoef,scalingPower,...
-                                partClassMSS1D,mssSlope1D,normDiffCoef1D,confRadius1D,trackCenter,genDiffCoef1D,scalingPower1D,prefDir] = reclassifySegments(partClassMSS,probDim, tracks, iTrack,momentOrders,alphaValues,0.05,confRadMin,checkAsym);
+                                partClassMSS1D,mssSlope1D,normDiffCoef1D,confRadius1D,trackCenter,genDiffCoef1D,scalingPower1D,prefDir] = reclassifySegments(partClassMSS,probDim, tracks, iTrack,momentOrders,alphaAsym,confRadMin,checkAsym);
                                 clear oldConfidence newConfidence
                                 end
                             else
@@ -871,15 +833,15 @@ for iTrack = indx4analysis'
             %get the particle positions along the track
             coordX = (tracks(iTrack,1:8:end))';
             coordY = (tracks(iTrack,2:8:end))';
-%             coordZ = tracks(iTrack,3:8:end)';
-            coordXYZ = [coordX coordY];
+            coordZ = tracks(iTrack,3:8:end)';
+            coordXYZ = [coordX coordY coordZ];
 
             %determine whether the track is sufficiently asymmetric
             [~,asymFlag] = asymDeterm2D3D(coordXYZ(:,1:probDim),0.05);
 
             if asymFlag ==1
 
-                [pointClass,mssSlope1D,genDiffCoef1D,scalingPower1D,normDiffCoef1D,trackCenter,confRadius1D,prefDir] = asymmetricDiffusion(trackSELCurrent(:,1),trackSELCurrent(:,2),0.05,probDim,tracks,iTrack);
+                [pointClass,mssSlope1D,genDiffCoef1D,scalingPower1D,normDiffCoef1D,trackCenter,confRadius1D,prefDir] = asymmetricDiffusion(trackSELCurrent(:,1),trackSELCurrent(:,2),probDim,tracks,iTrack);
 
                 partClassMSS1D = [trackSELCurrent(:,1:2) asymFlag];
                 partClassMSS = [trackSELCurrent(:,1:2) pointClass];
@@ -889,7 +851,7 @@ for iTrack = indx4analysis'
                 trackSELCurrent = trackSEL(iTrack,:);
                 [pointClassMSS,mssSlope,genDiffCoef,scalingPower,normDiffCoef] = trackMSSAnalysis(...
                     tracks(iTrack,:),...
-                    probDim,momentOrders,alphaValues(1));
+                    probDim,momentOrders,-0.05);
                 %Get confinement info if necessary
                 if pointClassMSS == 1
                     [confRadTmp,centerTmp] = estimConfRad(tracks(iTrack,:),probDim,confRadMin);
@@ -926,11 +888,10 @@ for iTrack = indx4analysis'
     
     %% Store results
     trackClassMSS = [partClassMSS,mssSlope,genDiffCoef,scalingPower, normDiffCoef,confRadTmp,centerTmp];
-    trackClassMSS1D = [partClassMSS1D,mssSlope1D,genDiffCoef1D,scalingPower1D, normDiffCoef1D,confRadius1D,trackCenter,prefDir]; %COMPLETE
-    trackSegmentClassRes(iTrack).asymmetry = partClassMSS1D;% [1 352 NaN]
+    trackClassMSS1D = [partClassMSS1D,mssSlope1D,genDiffCoef1D,scalingPower1D, normDiffCoef1D,confRadius1D,trackCenter,prefDir]; 
+    trackSegmentClassRes(iTrack).asymmetry = partClassMSS1D;
     trackSegmentClassRes(iTrack).momentScalingSpectrum = trackClassMSS;
     trackSegmentClassRes(iTrack).momentScalingSpectrum1D = trackClassMSS1D;
-%     trackSegmentClassRes(iTrack).asymmetryAfterMSS = trackClassAsym;% [1 352 NaN] Verify whether this is needed
     
 end
 %% Store trivial nonclassification information for tracks that are not classifiable
@@ -940,13 +901,12 @@ for iTrack = indxNot4analysis'
     trackSegmentClassRes(iTrack).asymmetry(1:2) = trackSELCurrent(1:2);
     trackSegmentClassRes(iTrack).momentScalingSpectrum(1:2) = trackSELCurrent(1:2);
     trackSegmentClassRes(iTrack).momentScalingSpectrum1D(1:2) = trackSELCurrent(1:2);
-%     trackSegmentClassRes(iTrack).asymmetryAfterMSS(1:2) = trackSELCurrent(1:2);
 end
 end
 %% save results in output structure
 
 %reserve memory
-segmentClass = struct('asymmetry',[],'momentScalingSpectrum',[],'momentScalingSpectrum1D',[],'asymmetryAfterMSS',[]);
+segmentClass = struct('asymmetry',[],'momentScalingSpectrum',[],'momentScalingSpectrum1D',[]);
 transDiffAnalysisRes = repmat(struct('segmentClass',segmentClass),numInputTracks,1);
 
 %go over all input tracks
@@ -982,7 +942,7 @@ end
 
 %% Subfunctions
 function [partClassMSS,mssSlope,normDiffCoef,confRadTmp,centerTmp,genDiffCoef,scalingPower,...
-partClassMSS1D,mssSlope1D,normDiffCoef1D,confRadius1D,trackCenter,genDiffCoef1D,scalingPower1D,prefDir] = reclassifySegments(partClassMSS,probDim, tracks, iTrack,momentOrders,alphaValues,alphaAsym,confRadMin,checkAsym)                 
+partClassMSS1D,mssSlope1D,normDiffCoef1D,confRadius1D,trackCenter,genDiffCoef1D,scalingPower1D,prefDir] = reclassifySegments(partClassMSS,probDim, tracks, iTrack,momentOrders,alphaAsym,confRadMin,checkAsym)                 
 % Description: Same analysis at Step 2 in main code (lines: 424-503), just created subfunction to save space since used frequently    
     numSeg = size(partClassMSS,1);
     pointClassMSS = NaN(numSeg,1);
@@ -1010,8 +970,8 @@ partClassMSS1D,mssSlope1D,normDiffCoef1D,confRadius1D,trackCenter,genDiffCoef1D,
                 %get the particle positions along the track
                 coordX = (tracks(iTrack,8*(startPoint-1)+1:8:8*endPoint))';
                 coordY = (tracks(iTrack,8*(startPoint-1)+2:8:8*endPoint))';
-%                                     coordZ = (tracks(iTrack,8*(startPoint-1)+3:8:8*endPoint))';
-                coordXY = [coordX coordY];
+                coordZ = (tracks(iTrack,8*(startPoint-1)+3:8:8*endPoint))';
+                coordXY = [coordX coordY coordZ];
 
                 %determine whether the track is sufficiently asymmetric
 
@@ -1025,7 +985,7 @@ partClassMSS1D,mssSlope1D,normDiffCoef1D,confRadius1D,trackCenter,genDiffCoef1D,
 
                 if asymFlag ==1
 
-                    [pointClass,mssSlopeT,genDiffCoefT,scalingPowerT,normDiffCoefT,trackCenter(k,:),confRadius1D(k,:),prefDir(k,:)] = asymmetricDiffusion(startPoint,endPoint,alphaAsym,probDim,tracks,iTrack);
+                    [pointClass,mssSlopeT,genDiffCoefT,scalingPowerT,normDiffCoefT,trackCenter(k,:),confRadius1D(k,:),prefDir(k,:)] = asymmetricDiffusion(startPoint,endPoint,probDim,tracks,iTrack);
 
                     %since not all track segments are linear, put analysis results in their
                     %proper place among all track segment
@@ -1044,7 +1004,7 @@ partClassMSS1D,mssSlope1D,normDiffCoef1D,confRadius1D,trackCenter,genDiffCoef1D,
 
                     [pointClassMSS(k),mssSlope(k),genDiffCoef(k,:),scalingPower(k,:),normDiffCoef(k)] = trackMSSAnalysis(...
                         tracks(iTrack,8*(startPoint-1)+1:8*endPoint),...
-                        probDim,momentOrders,alphaValues(1));
+                        probDim,momentOrders,-0.05);
                     
                     partClassMSS1D(k,1)= startPoint;
                     partClassMSS1D(k,2)= endPoint;
@@ -1138,7 +1098,7 @@ function  [partClassMSS,partClassMSS1D,mssSlope,peakThresh] = mergeUnclassSegmen
             end
         end
 end
-function [pointClass, mssSlopeT,genDiffCoefT,scalingPowerT,normDiffCoefT,trackCenter,confRadius1D,prefDir] = asymmetricDiffusion(startPoint,endPoint,alphaAsym,probDim,tracks, iTrack)
+function [pointClass, mssSlopeT,genDiffCoefT,scalingPowerT,normDiffCoefT,trackCenter,confRadius1D,prefDir] = asymmetricDiffusion(startPoint,endPoint,probDim,tracks, iTrack)
 % Description: Classifies segment based on 1d diffusion
     trackCoordX = tracks(iTrack,8*(startPoint-1)+1:8:8*endPoint)';
     deltaCoordX = tracks(iTrack,8*(startPoint-1)+5:8:8*endPoint)';
@@ -1160,7 +1120,7 @@ function [pointClass, mssSlopeT,genDiffCoefT,scalingPowerT,normDiffCoefT,trackCe
     trackCoord2 = trackCoord2(:)';
     momentOrders = 0 : 6;
     [pointClass,mssSlopeT,genDiffCoefT,scalingPowerT,normDiffCoefT] = ...
-    trackMSSAnalysis(trackCoord2,1,momentOrders,alphaAsym);
+    trackMSSAnalysis(trackCoord2,1,momentOrders,-0.05);
 
 %% Confinement of asym 
     xyzCoord = [trackCoordX trackCoordY trackCoordZ];

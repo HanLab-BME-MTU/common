@@ -30,6 +30,9 @@ function [traj,trackMatrix,trajTransDiffClass,errFlag] = ...
 %                      between segments, 0 to allow switching to the same
 %                      motion type but possibly with different parameters.
 %
+%       immPrecision: Localization precision for simulating immobile tracks
+%                     (default : 0.8)
+%
 %OUTPUT traj       : (Number of time points) - by - (dimension) - by -
 %                    (number of particles) array of particle trajectories.
 %       trackMatrix: Trajectories in matrix format, as output by
@@ -58,6 +61,9 @@ if nargin < nargin('simMultiMotionTypeTraj')
     return
 end
 
+if nargin < 10 || isempty(immPrecision)
+    immPrecision = 0.8;
+end
 %get system dimensionality
 dimension = length(volumeEdges);
 
