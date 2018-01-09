@@ -51,11 +51,21 @@ assert(status, '%s is not a valid path', dataPath);
 assert(~f.directory, '%s is a directory', dataPath);
 dataPath = f.Name;
 
+% Set output directory (based on image extraction flag)
+[mainPath, movieName, movieExt] = fileparts(dataPath);
+token = regexp([movieName,movieExt], '^(.+)\.ome\.tiff{0,1}$', 'tokens');
+if ~isempty(token), movieName = token{1}{1}; end
+
+if ~isempty(ip.Results.outputDirectory)
+    mainOutputDir = ip.Results.outputDirectory;
+else
+    mainOutputDir = fullfile(mainPath, movieName);
+end
+
 try
     % autoload java path and configure log4j
     bfInitLogging();
-    % Retrieve movie reader and metadata
-    r = loci.formats.Memoizer(bfGetReader(),0);
+    r = bfGetMemoizer();
     r.setId(dataPath);
     r.setSeries(0);
 catch bfException
@@ -68,17 +78,6 @@ end
 nSeries = r.getSeriesCount();
 MD(1, nSeries) = constructor();
 assert(isa(MD,'MovieData'),'class parameter must be a MovieData subclass');
-
-% Set output directory (based on image extraction flag)
-[mainPath, movieName, movieExt] = fileparts(dataPath);
-token = regexp([movieName,movieExt], '^(.+)\.ome\.tiff{0,1}$', 'tokens');
-if ~isempty(token), movieName = token{1}{1}; end
-
-if ~isempty(ip.Results.outputDirectory)
-    mainOutputDir = ip.Results.outputDirectory;
-else
-    mainOutputDir = fullfile(mainPath, movieName);
-end
 
 % Create movie channels
 nChan = r.getSizeC();
