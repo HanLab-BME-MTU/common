@@ -115,8 +115,11 @@ classdef TestMovieList < TestMovieObject & TestCase
             % Test MovieList loading generate non-existing memo files
             
             self.setUpMovieList();
+            
+            % May need to modify this depending on resolution of https://github.com/openmicroscopy/bioformats/issues/3034
+            filesepidx = strfind(self.path,filesep);
             % Check the memo file exists
-            memoFilePath = fullfile(self.path, '.test.fake.bfmemo');
+            memoFilePath = fullfile(bfGetMemoDirectory,self.path(filesepidx(1):end), '.test.fake.bfmemo');
             assertTrue(exist(memoFilePath, 'file') == 2);
             % Delete the memo file
             delete(memoFilePath);
