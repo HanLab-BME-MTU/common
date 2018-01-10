@@ -80,7 +80,16 @@ classdef Process < hgsetget
             is3Dcompatible = obj.is3Dcompatible_;
         end
         
-        function setParameters(obj, para)
+        function setParameters(obj, para,varargin)
+            % If the arguments are a field,value pair list
+            % Then update the current parameters with those values
+            if(ischar(para) && mod(nargin,2) == 1)
+                in = [para varargin];
+                para = obj.funParams_;
+                for ii = 1:2:length(in)
+                    para.(in{ii}) = in{ii+1};
+                end
+            end
             % Set the process parameters
             if isequal(obj.funParams_, para), return; end
             obj.funParams_ = para;
@@ -92,8 +101,8 @@ classdef Process < hgsetget
             end
         end
         
-        function setPara(obj, parameters)
-            setParameters(obj, parameters)
+        function setPara(obj, parameters, varargin)
+            setParameters(obj, parameters, varargin{:})
         end
         
         function setUpdated(obj, is)
