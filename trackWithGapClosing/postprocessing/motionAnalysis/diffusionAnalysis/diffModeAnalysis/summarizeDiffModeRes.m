@@ -1,13 +1,14 @@
 function [probMotionMode,modeMotionChar,errFlag] = summarizeDiffModeRes(tracks,...
-    diffAnalysisRes,minTrackLen,probDim,extractType)
+    diffAnalysisRes,numMode,minTrackLen,probDim,extractType)
 %SUMMARIZEDIFFMODERES calculates diffusion mode probabilities and motion characteristics from diffusion mode analysis
 %
 %SYNOPSIS [probMotionMode,modeMotionChar,errFlag] = summarizeDiffModeRes(tracks,...
-%    minTrackLen,probDim,diffAnalysisRes,extractType)    
+%    minTrackLen,probDim,diffAnalysisRes,extractType,numMode)    
 %
 %INPUT  tracks     : Output of trackCloseGapsKalman.
 %       diffAnalysisRes: Diffusion mode analysis results (output of
 %                    trackDiffModeAnalysis).
+%       numMode    : Number of modes.
 %       minTrackLen: Minimum length of a track to be used in getting
 %                    motion type statistics.
 %                    Optional. Default: 5.
@@ -21,11 +22,12 @@ function [probMotionMode,modeMotionChar,errFlag] = summarizeDiffModeRes(tracks,.
 %                    Variable irrelevant if tracks are input as a matrix.
 %                    Optional. Default: 1.
 %
-%OUTPUT probMotionMode:Number of modes - by - 2 array. 
+%OUTPUT probMotionMode: (Number of modes + 1) - by - 2 array. 
 %                    Rows refer to mode 1, mode 2, mode 3, etc.
-%                    1st column: Each motion type's probability.
-%                    2rd column: Number of features per frame in each
-%                    motion mode.
+%                    Last row is for tracks with undetermined mode (too
+%                    short for analysis).
+%                    1st column: Each mode's probability.
+%                    2rd column: Number of features per frame in each mode.
 %       modeMotionChar:Structure array summarizing motion characteristics
 %                    for each diffusion mode. Last entry is for
 %                    unclassified tracks.
@@ -51,20 +53,20 @@ errFlag = 0;
 
 %% input
 
-if nargin < 2 || isempty(tracks) || isempty(diffAnalysisRes)
+if nargin < 3 || isempty(tracks) || isempty(diffAnalysisRes) || isempty(numMode)
     disp('summarizeDiffModeRes: Missing input arguments!');
     return
 end
 
-if nargin < 3 || isempty(minTrackLen)
+if nargin < 4 || isempty(minTrackLen)
     minTrackLen = 5;
 end
 
-if nargin < 4 || isempty(probDim)
+if nargin < 5 || isempty(probDim)
     probDim = 2;
 end
 
-if nargin < 5 || isempty(extractType)
+if nargin < 6 || isempty(extractType)
     extractType = 1;
 else
     if ~any(extractType == [1 2])
@@ -113,7 +115,7 @@ aveFeatPerFrame = numFeatTot / numFrames;
 
 %get track segment modes from diffusion mode analysis
 trackSegmentMode = vertcat(diffAnalysisRes.diffMode);
-numModes = max(trackSegmentMode) + 1;
+numModes = numMode + 1; %add 1 to account for unclassified tracks
 
 %get indices of the different modes
 indxMode = cell(numModes,1);

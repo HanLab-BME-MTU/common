@@ -148,7 +148,7 @@ if isstruct(tracksFinal)
     probDim = 2;
     extractType = 1;
     [probMotionMode,modeMotionChar] = summarizeDiffModeRes(tracksFinal,...
-        diffModeAnalysisRes,minLength,probDim,extractType);
+        diffModeAnalysisRes,numModeDiv+1,minLength,probDim,extractType);
     diffModeAnalysisRes(1).summary.probMotionMode = probMotionMode;
     diffModeAnalysisRes(1).summary.modeMotionChar = modeMotionChar;
 end
