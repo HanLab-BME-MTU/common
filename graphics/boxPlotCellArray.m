@@ -109,7 +109,7 @@ if size(matrixData,2)>1
     minPoint2 = minPoint(1,:)-(minPoint(2,:)-minPoint(1,:))*whiskerRatio;
     minPoint2 = min(minPoint2);
 else
-    minPoint2 = minPoint(2)+(minPoint(2)-minPoint(1))*whiskerRatio;
+    minPoint2 = minPoint(2)-(minPoint(2)-minPoint(1))*whiskerRatio;
 end
 if plotIndivPoint && ~forceShowP
     maxPoint2 = quantile(matrixData(:),0.99);
