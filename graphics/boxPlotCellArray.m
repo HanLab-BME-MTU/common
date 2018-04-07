@@ -72,8 +72,12 @@ set(gca,'XTickLabelRotation',45)
 % hold on
 % perform ranksum test for every single combination
 maxPoint = quantile(matrixData,[0.25 0.75]);
-maxPoint2 = maxPoint(2,:)+(maxPoint(2,:)-maxPoint(1,:))*whiskerRatio;
-maxPoint2 = max(maxPoint2);
+if size(matrixData,2)>1
+    maxPoint2 = maxPoint(2,:)+(maxPoint(2,:)-maxPoint(1,:))*whiskerRatio;
+    maxPoint2 = max(maxPoint2);
+else
+    maxPoint2 = maxPoint(2)+(maxPoint(2)-maxPoint(1))*whiskerRatio;
+end
 lineGap=maxPoint2*0.05;
 q=0;
 for k=1:(numConditions-1)
@@ -101,8 +105,12 @@ for k=1:(numConditions-1)
 end
 q=q+lineGap*3;
 minPoint = quantile(matrixData,[0.25 0.75]);
-minPoint2 = minPoint(1,:)-(minPoint(2,:)-minPoint(1,:))*whiskerRatio;
-minPoint2 = min(minPoint2);
+if size(matrixData,2)>1
+    minPoint2 = minPoint(1,:)-(minPoint(2,:)-minPoint(1,:))*whiskerRatio;
+    minPoint2 = min(minPoint2);
+else
+    minPoint2 = minPoint(2)+(minPoint(2)-minPoint(1))*whiskerRatio;
+end
 if plotIndivPoint && ~forceShowP
     maxPoint2 = quantile(matrixData(:),0.99);
 else
