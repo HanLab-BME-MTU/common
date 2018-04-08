@@ -17,6 +17,10 @@ matrixData = NaN(lengthLongest,numConditions);
 for k=1:numConditions
     matrixData(1:length(cellArrayData{k}),k) = cellArrayData{k};
 end
+if isempty(matrixData)
+    text(0.4,0.5,'Empty Data')
+    return
+end
 if nargin<6
     forceShowP=false;
 end
@@ -116,7 +120,11 @@ if plotIndivPoint && ~forceShowP
 else
     maxPoint2 = maxPoint2+q;
 end
-ylim([minPoint2-lineGap*2 maxPoint2])
+if maxPoint2>minPoint2-lineGap*2
+    ylim([minPoint2-lineGap*2 maxPoint2])
+else
+    ylim auto
+end
 
 set(gca,'FontSize',7)
 set(findobj(gca,'Type','Text'),'FontSize',6)
