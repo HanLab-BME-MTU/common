@@ -43,7 +43,7 @@ else
 end
 
 
-if nargin < 3 && (fractionDone == 0) && isempty(starttime)
+if nargin < 3 && (fractionDone == 0) % && isempty(starttime)
     popupDisp = false;
 end
 

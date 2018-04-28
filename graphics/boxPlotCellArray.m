@@ -1,4 +1,4 @@
-function []=boxPlotCellArray(cellArrayData,nameList,convertFactor,notchOn,plotIndivPoint,forceShowP)
+function curAxes=boxPlotCellArray(cellArrayData,nameList,convertFactor,notchOn,plotIndivPoint,forceShowP)
 % function []=boxPlotCellArray(FAarea) automatically converts cell array
 % format input to matrix input to use matlab function 'boxplot'
 % input: cellArrayData      cell array data
@@ -72,6 +72,7 @@ set(findobj(gca,'tag','Median'),'LineWidth',2)
 % set(gca,'XTick',1:numel(nameList))
 % set(gca,'XTickLabel',nameList)
 set(gca,'XTickLabelRotation',45)
+curAxes = gca;
 
 % hold on
 % perform ranksum test for every single combination
