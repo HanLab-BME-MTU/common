@@ -1,4 +1,4 @@
-function [sucess]=boxPlotCellArray(cellArrayData,nameList,convertFactor,notchOn,plotIndivPoint,forceShowP)
+function [sucess]=boxPlotCellArray(cellArrayData,nameList,convertFactor,notchOn,plotIndivPoint,forceShowP,markerSize)
 % function []=boxPlotCellArray(cellArrayData,nameList,convertFactor,notchOn,plotIndivPoint,forceShowP) automatically converts cell array
 % format input to matrix input to use matlab function 'boxplot'
 % input: cellArrayData          cell array data
@@ -32,24 +32,32 @@ if all(isnan(matrixData(:)))
     return
 end
 
+if nargin<7
+    markerSize=2;
+end
 if nargin<6
+    markerSize=2;
     forceShowP=false;
 end
 if nargin<5
+    markerSize=2;
     forceShowP=false;
     plotIndivPoint = true;
 end
 if nargin<4
+    markerSize=2;
     forceShowP=false;
     notchOn=true;
     plotIndivPoint = true;
 end
 if nargin<3
+    markerSize=2;
     forceShowP=false;
     convertFactor = 1;
     notchOn=true;
 end
 if nargin<2
+    markerSize=2;
     nameList=arrayfun(@(x) num2str(x),(1:numConditions),'UniformOutput',false);
     convertFactor = 1;
     notchOn=true;
@@ -76,7 +84,7 @@ if plotIndivPoint
             onlyOneDataPerEachGroup(ii)=true;
         else
             xData = ii+0.1*boxWidth*(randn(size(matrixData,1),1));
-            scatter(xData,matrixData(:,ii),'filled','MarkerFaceColor',[.3 .3 .3],'MarkerEdgeColor','none','SizeData',2)
+            scatter(xData,matrixData(:,ii),'filled','MarkerFaceColor',[.3 .3 .3],'MarkerEdgeColor','none','SizeData',markerSize)
         end
         hold on
     end
