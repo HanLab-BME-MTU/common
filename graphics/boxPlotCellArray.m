@@ -35,6 +35,10 @@ end
 if nargin<7
     markerSize=2;
 end
+if isempty(matrixData)
+    text(0.4,0.5,'Empty Data')
+    return
+end
 if nargin<6
     markerSize=2;
     forceShowP=false;
@@ -111,13 +115,18 @@ set(findobj(gca,'tag','Median'),'LineWidth',2)
 % set(gca,'XTick',1:numel(nameList))
 % set(gca,'XTickLabel',nameList)
 set(gca,'XTickLabelRotation',45)
+curAxes = gca;
 
 % hold on
 % perform ranksum test for every single combination
-maxPoint = quantile(matrixData,[0.25; 0.75]);
-maxPoint2 = maxPoint(2,:)+(maxPoint(2,:)-maxPoint(1,:))*whiskerRatio;
-maxPoint2 = max(maxPoint2);
-lineGap=maxPoint2*0.01;
+maxPoint = quantile(matrixData,[0.25 0.75]);
+if size(matrixData,2)>1
+    maxPoint2 = maxPoint(2,:)+(maxPoint(2,:)-maxPoint(1,:))*whiskerRatio;
+    maxPoint2 = max(maxPoint2);
+else
+    maxPoint2 = maxPoint(2)+(maxPoint(2)-maxPoint(1))*whiskerRatio;
+end
+lineGap=maxPoint2*0.05;
 q=0;
 for k=1:(numConditions-1)
     for ii=k+1:numConditions
@@ -143,17 +152,24 @@ for k=1:(numConditions-1)
     end
 end
 q=q+lineGap*3;
-minPoint = quantile(matrixData,[0.25; 0.75]);
-minPoint2 = minPoint(1,:)-(minPoint(2,:)-minPoint(1,:))*whiskerRatio;
-minPoint2 = min(minPoint2);
-if ~plotIndivPoint && forceShowP
+minPoint = quantile(matrixData,[0.25 0.75]);
+if size(matrixData,2)>1
+    minPoint2 = minPoint(1,:)-(minPoint(2,:)-minPoint(1,:))*whiskerRatio;
+    minPoint2 = min(minPoint2);
+else
+    minPoint2 = minPoint(2)-(minPoint(2)-minPoint(1))*whiskerRatio;
+end
+if plotIndivPoint && ~forceShowP
+    maxPoint2 = quantile(matrixData(:),0.99);
+else
     maxPoint2 = maxPoint2+q;
 end
-try
-    ylim([minPoint2-lineGap*2 maxPoint2+q])
-catch
+if maxPoint2>minPoint2-lineGap*2
+    ylim([minPoint2-lineGap*2 maxPoint2])
+else
     ylim auto
 end
+
 set(gca,'FontSize',7)
 set(findobj(gca,'Type','Text'),'FontSize',6)
 sucess=true;
