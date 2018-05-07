@@ -72,7 +72,7 @@ nameList(idEmptyData)=[];
 boxWidth=0.5;
 whiskerRatio=1.5;
 matrixData=matrixData*convertFactor;
-nameListNew = cellfun(@(x,y) [x '(N=' num2str(length(y)) ')'],nameList,cellArrayData,'UniformOutput', false);
+nameListNew = cellfun(@(x,y) [x '(N=' num2str(sum(~isnan(y))) ')'],nameList,cellArrayData,'UniformOutput', false);
 
 onlyOneDataAllGroups=false;
 numCategories = numel(cellArrayData);
