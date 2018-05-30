@@ -1,4 +1,4 @@
-function [sucess]=boxPlotCellArray(cellArrayData,nameList,convertFactor,notchOn,plotIndivPoint,forceShowP)
+function [sucess]=boxPlotCellArray(cellArrayData,nameList,convertFactor,notchOn,plotIndivPoint,forceShowP,markerSize)
 % function []=boxPlotCellArray(cellArrayData,nameList,convertFactor,notchOn,plotIndivPoint,forceShowP) automatically converts cell array
 % format input to matrix input to use matlab function 'boxplot'
 % input: cellArrayData          cell array data
@@ -32,24 +32,36 @@ if all(isnan(matrixData(:)))
     return
 end
 
+if nargin<7
+    markerSize=2;
+end
+if isempty(matrixData)
+    text(0.4,0.5,'Empty Data')
+    return
+end
 if nargin<6
+    markerSize=2;
     forceShowP=false;
 end
 if nargin<5
+    markerSize=2;
     forceShowP=false;
     plotIndivPoint = true;
 end
 if nargin<4
+    markerSize=2;
     forceShowP=false;
     notchOn=true;
     plotIndivPoint = true;
 end
 if nargin<3
+    markerSize=2;
     forceShowP=false;
     convertFactor = 1;
     notchOn=true;
 end
 if nargin<2
+    markerSize=2;
     nameList=arrayfun(@(x) num2str(x),(1:numConditions),'UniformOutput',false);
     convertFactor = 1;
     notchOn=true;
@@ -60,7 +72,7 @@ nameList(idEmptyData)=[];
 boxWidth=0.5;
 whiskerRatio=1.5;
 matrixData=matrixData*convertFactor;
-nameListNew = cellfun(@(x,y) [x '(N=' num2str(length(y)) ')'],nameList,cellArrayData,'UniformOutput', false);
+nameListNew = cellfun(@(x,y) [x '(N=' num2str(sum(~isnan(y))) ')'],nameList,cellArrayData,'UniformOutput', false);
 
 onlyOneDataAllGroups=false;
 numCategories = numel(cellArrayData);
@@ -76,7 +88,7 @@ if plotIndivPoint
             onlyOneDataPerEachGroup(ii)=true;
         else
             xData = ii+0.1*boxWidth*(randn(size(matrixData,1),1));
-            scatter(xData,matrixData(:,ii),'filled','MarkerFaceColor',[.3 .3 .3],'MarkerEdgeColor','none','SizeData',2)
+            scatter(xData,matrixData(:,ii),'filled','MarkerFaceColor',[.3 .3 .3],'MarkerEdgeColor','none','SizeData',markerSize)
         end
         hold on
     end
@@ -105,13 +117,18 @@ set(findobj(gca,'tag','Median'),'LineWidth',2)
 % set(gca,'XTick',1:numel(nameList))
 % set(gca,'XTickLabel',nameList)
 set(gca,'XTickLabelRotation',45)
+curAxes = gca;
 
 % hold on
 % perform ranksum test for every single combination
-maxPoint = quantile(matrixData,[0.25; 0.75]);
-maxPoint2 = maxPoint(2,:)+(maxPoint(2,:)-maxPoint(1,:))*whiskerRatio;
-maxPoint2 = max(maxPoint2);
-lineGap=maxPoint2*0.01;
+maxPoint = quantile(matrixData,[0.25 0.75]);
+if size(matrixData,2)>1
+    maxPoint2 = maxPoint(2,:)+(maxPoint(2,:)-maxPoint(1,:))*whiskerRatio;
+    maxPoint2 = max(maxPoint2);
+else
+    maxPoint2 = maxPoint(2)+(maxPoint(2)-maxPoint(1))*whiskerRatio;
+end
+lineGap=maxPoint2*0.05;
 q=0;
 for k=1:(numConditions-1)
     for ii=k+1:numConditions
@@ -137,17 +154,24 @@ for k=1:(numConditions-1)
     end
 end
 q=q+lineGap*3;
-minPoint = quantile(matrixData,[0.25; 0.75]);
-minPoint2 = minPoint(1,:)-(minPoint(2,:)-minPoint(1,:))*whiskerRatio;
-minPoint2 = min(minPoint2);
-if ~plotIndivPoint && forceShowP
+minPoint = quantile(matrixData,[0.25 0.75]);
+if size(matrixData,2)>1
+    minPoint2 = minPoint(1,:)-(minPoint(2,:)-minPoint(1,:))*whiskerRatio;
+    minPoint2 = min(minPoint2);
+else
+    minPoint2 = minPoint(2)-(minPoint(2)-minPoint(1))*whiskerRatio;
+end
+if plotIndivPoint && ~forceShowP
+    maxPoint2 = quantile(matrixData(:),0.99);
+else
     maxPoint2 = maxPoint2+q;
 end
-try
-    ylim([minPoint2-lineGap*2 maxPoint2+q])
-catch
+if maxPoint2>minPoint2-lineGap*2
+    ylim([minPoint2-lineGap*2 maxPoint2])
+else
     ylim auto
 end
+
 set(gca,'FontSize',7)
 set(findobj(gca,'Type','Text'),'FontSize',6)
 sucess=true;
