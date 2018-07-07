@@ -158,7 +158,13 @@ classdef Package < hgsetget
             
             % Allow dynamic package extension
             if nProc>numel(obj.processes_), 
-                obj.processes_{numel(obj.processes_)+1:nProc}=deal([]); 
+                try
+                    obj.processes_{numel(obj.processes_)+1:nProc}=deal([]); 
+                catch
+                    for ii=numel(obj.processes_)+1:nProc
+                        obj.processes_{ii}=deal([]); 
+                    end
+                end
             end
             
             % Check processes are consistent with process class names
@@ -252,7 +258,7 @@ classdef Package < hgsetget
                     isempty(newProcess)      
                 obj.processes_{i} = newProcess;
             else
-                error('User-defined: input should be Process object or empty.')
+                disp('User-defined: input should be Process object or empty. Skipping...')
             end
         end
         
