@@ -170,6 +170,10 @@ for p = 1:np
                 A_init = A(p);
             end
             
+            if isa(window,'integer')
+                window  = double(window);
+            end
+            
             [prm, prmStd, ~, res] = fitGaussian2D(window, [x(p)-xi(p) y(p)-yi(p) A_init sigma(p) c_init], mode);
             
             dx = prm(1);

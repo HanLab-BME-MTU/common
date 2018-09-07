@@ -111,11 +111,17 @@ classdef  TiffSeriesReader < Reader
             % Channel path is a directory of image files
             if isempty(obj.filenames{iChan})
                 obj.checkPath(iChan);
-                [files, nofExt] = imDir(obj.paths{iChan}, true);
-                assert(nofExt~=0,['No proper image files are detected in:'...
-                    '\n\n%s\n\nValid image file extension: tif, TIF, STK, bmp, BMP, jpg, JPG.'],obj.paths{iChan});
-                assert(nofExt==1,['More than one type of image files are found in:'...
-                    '\n\n%s\n\nPlease make sure all images are of same type.'],obj.paths{iChan});
+                try
+                    [files] = imDir(obj.paths{iChan});
+                    assert(~isempty(files),['No proper image files are detected in:'...
+                        '\n\n%s\n\nValid image file extension: tif, TIF, STK, bmp, BMP, jpg, JPG.'],obj.paths{iChan});
+                catch
+                    [files, nofExt] = imDir(obj.paths{iChan}, true);
+                    assert(nofExt~=0,['No proper image files are detected in:'...
+                        '\n\n%s\n\nValid image file extension: tif, TIF, STK, bmp, BMP, jpg, JPG.'],obj.paths{iChan});
+                    assert(nofExt==1,['More than one type of image files are found in:'...
+                        '\n\n%s\n\nPlease make sure all images are of same type.'],obj.paths{iChan});
+                end
                 
                 obj.filenames{iChan} = arrayfun(@(x) x.name, files, 'unif', 0);
             end

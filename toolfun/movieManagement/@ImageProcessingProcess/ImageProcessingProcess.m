@@ -185,7 +185,14 @@ classdef ImageProcessingProcess < Process
                     outStack = obj.loadOutImage(iChan, iFrame, varargin{:});
                 end
             else
-                outStack = obj.loadOutImage(iChan, iFrame, varargin{:});
+                if nargin<3
+                    nFrames = obj.owner_.nFrames_;
+                    for ii=nFrames:-1:1
+                        outStack(:,:,ii) = obj.loadOutImage(iChan, ii, varargin{:});
+                    end
+                else
+                    outStack = obj.loadOutImage(iChan, iFrame, varargin{:});
+                end
             end
         end
         
