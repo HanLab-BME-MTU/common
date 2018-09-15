@@ -14,7 +14,8 @@ function copyright = getLCCBCopyright()
 % Chuangang Ren, 11/2010
 % Sebastien Besson, Feb 2013
 % Andrew Jamieson, Nov 2016 - UTSW
+% Sangyoon Han, Sep 2018 - Michigan Tech
 
 % Set year and version information
 str_year = datestr(date,'YYYY');
-copyright = sprintf('Copyright %s Danuser Lab - UTSouthwestern', str_year);
+copyright = sprintf('Copyright %s Han Lab, Michigan Tech and Danuser Lab, UTSW', str_year);
