@@ -18,4 +18,4 @@ function copyright = getLCCBCopyright()
 
 % Set year and version information
 str_year = datestr(date,'YYYY');
-copyright = sprintf('Copyright %s Han Lab, Michigan Tech and Danuser Lab, UTSW', str_year);
+copyright = sprintf('Copyright %s Han Lab, MTU & Danuser Lab, UTSW', str_year);
