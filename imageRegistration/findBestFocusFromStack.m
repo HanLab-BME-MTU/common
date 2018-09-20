@@ -28,7 +28,7 @@ for jj=1:numZ
 end
 maxVar = max(curVar);
 normVar = curVar/maxVar;
-averagingRange = normVar>=thresVariance;
+averagingRange = find(normVar>=thresVariance);
 
 end
 
