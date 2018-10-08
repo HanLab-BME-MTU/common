@@ -419,6 +419,37 @@ classdef  MovieData < MovieObject & matlab.mixin.Heterogeneous
                 obj.getChannel(i).sanityCheck(obj);
             end
             
+            % This has created a problem when channel location was moved to
+            % somewhere else. We have relocate the channel here if we can't
+            % find the folder from the path.
+            % Check that channels paths start with oldRootDir
+            oldRootDir = obj.getPath;
+            channelPaths = arrayfun(@(x) x.channelPath_, obj.channels_,...
+                'Unif', false);
+            status = cellfun(@(x) ~isempty(regexp(x,['^' regexptranslate('escape',oldRootDir) '*'],...
+                'once')),channelPaths);
+            if ~all(status)
+                relocateMsg=sprintf(['The movie channels can not be automatically relocated.\n'...
+                    'Do you want to manually relocate channel %g:\n %s?'],1,channelPaths{1});
+                confirmRelocate = questdlg(relocateMsg,'Relocation - channels','Yes','No','Yes');
+                if ~strcmp(confirmRelocate,'Yes'), return; end
+                try
+                    disp(['Original channel path was ' channelPaths{1} '.'])
+                    newChannelPath = uigetdir(channelPaths{1});
+                catch
+                    newChannelPath = uigetdir(oldRootDir);
+                end
+                if isequal(newChannelPath,0), return; end
+                [oldRootDir, newRootDir]=getRelocationDirs(channelPaths{1},newChannelPath);
+            end
+            
+            % Relocate the movie channels
+            fprintf(1,'Relocating channels from %s to %s\n',oldRootDir,newRootDir);
+            for i=1:numel(obj.channels_),
+                obj.channels_(i).relocate(oldRootDir,newRootDir);
+            end
+            
+            
             obj.checkDimensions()
 
             % Fix roi/parent initialization
@@ -480,8 +511,11 @@ classdef  MovieData < MovieObject & matlab.mixin.Heterogeneous
             % Check that channels paths start with oldRootDir
             channelPaths = arrayfun(@(x) x.channelPath_, obj.channels_,...
                 'Unif', false);
-            status = cellfun(@(x) ~isempty(regexp(x,['^' regexptranslate('escape',oldRootDir) '*'],...
-                'once')),channelPaths);
+%             status = cellfun(@(x) ~isempty(regexp(x,['^' regexptranslate('escape',oldRootDir) '*'],...
+%                 'once')),channelPaths);
+            % Comparing using regexp with '*' doesn't match too generously.
+            % I'll take it out
+            status = cellfun(@(x) ~isempty(regexp(x,['^' regexptranslate('escape',oldRootDir)],'once')),channelPaths);
             if ~all(status)
                 relocateMsg=sprintf(['The movie channels can not be automatically relocated.\n'...
                     'Do you want to manually relocate channel %g:\n %s?'],1,channelPaths{1});

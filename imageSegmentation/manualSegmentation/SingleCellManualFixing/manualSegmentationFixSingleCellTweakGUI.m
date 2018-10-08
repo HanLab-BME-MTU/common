@@ -254,7 +254,7 @@ data_get_fgnd_bgnd_seeds_3d_points.imgNames = imageNames;
     
     if current_box(1)==1 && current_box(2)==1 ...
             && current_box(3)==size(current_mask,1)...
-            && current_box(4)==size(current_mask,2)
+            && current_box(4)==size(current_mask,2) && any(find(current_mask>0))
         
         [indy,indx] = find(current_mask>0);
         
