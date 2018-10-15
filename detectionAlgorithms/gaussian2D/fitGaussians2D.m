@@ -163,15 +163,15 @@ for p = 1:np
         
         if npx >= 10 % only perform fit if window contains sufficient data points
         
+            if isa(window,'integer')
+                window  = double(window);
+            end
+            
             % fit
             if isempty(A)
                 A_init = max(window(:))-c_init;
             else
                 A_init = A(p);
-            end
-            
-            if isa(window,'integer')
-                window  = double(window);
             end
             
             [prm, prmStd, ~, res] = fitGaussian2D(window, [x(p)-xi(p) y(p)-yi(p) A_init sigma(p) c_init], mode);
