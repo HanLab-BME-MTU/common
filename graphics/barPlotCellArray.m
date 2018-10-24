@@ -15,7 +15,8 @@ if nargin<2
     nameList=arrayfun(@(x) num2str(x),(1:numConditions),'UniformOutput',false);
 end
 bar(1:numConditions, cellfun(@nanmean,cellArrayData)*convertFactor,'FaceColor',[1 1 1],'EdgeColor',[0 0 0],'LineWidth',1.5); hold on
-errorbar(1:numConditions, cellfun(@nanmean,cellArrayData)*convertFactor,cellfun(@(x) nanstd(x)/sqrt(length(x)),cellArrayData)*convertFactor,'Marker','none','LineStyle','none','Color','k','LineWidth',1.5);
+errorbar(1:numConditions,cellfun(@nanmean,cellArrayData)*convertFactor,cellfun(@(x) nanstd(x)/sqrt(length(x)),cellArrayData)*convertFactor,'Marker','none','LineStyle','none','Color','k','LineWidth',1.5); %SEM option 
+% errorbar(1:numConditions, cellfun(@nanmean,cellArrayData)*convertFactor,cellfun(@(x) nanstd(x),cellArrayData)*convertFactor,'Marker','none','LineStyle','none','Color','k','LineWidth',1.5); %SD option 
 nameListNew = cellfun(@(x,y) [x '(N=' num2str(length(y)) ')'],nameList,cellArrayData,'UniformOutput', false);
 set(gca,'XTickLabel',nameListNew)
 set(gca,'XTickLabelRotation',45)
