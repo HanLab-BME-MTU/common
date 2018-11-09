@@ -41,14 +41,14 @@ classdef  MovieObject < hgsetget
             % Test if the property is writable
             if(~obj.checkProperty(property))
                 propName = lower(property(1:end-(property(end) == '_')));
-                error('lccb:set:readonly',...
+                error('mbl&lccb:set:readonly',...
                     ['The ' propName ' has been set previously and cannot be changed!']);
             end
             
             % Test if the supplied value is valid
             if(~obj.checkValue(property,value))
                 propName = lower(property(1:end-(property(end) == '_')));
-                error('lccb:set:invalid',...
+                error('mbl&lccb:set:invalid',...
                     ['The supplied ' propName ' is invalid!']);
             end
         end
@@ -529,7 +529,7 @@ classdef  MovieObject < hgsetget
             end
             
             if isempty(obj.outputDirectory_),
-                warning('lccb:MovieObject:sanityCheck',...
+                warning('mbl&lccb:MovieObject:sanityCheck',...
                     'Empty output directory!');
             end
         end
@@ -607,10 +607,10 @@ classdef  MovieObject < hgsetget
             [status, f] = fileattrib(filepath);
             if(~status)
                 if(ischar(f))
-                    error('lccb:movieObject:invalidFilePath', ...
+                    error('mbl&lccb:movieObject:invalidFilePath', ...
                         [f filepath]);
                 else
-                    error('lccb:movieObject:invalidFilePath', ...
+                    error('mbl&lccb:movieObject:invalidFilePath', ...
                         ['Cannot obtain file attributes for ' filepath]);
                 end
             else
@@ -624,7 +624,7 @@ classdef  MovieObject < hgsetget
                  % (takes same time as checking vars via whos)
                 data = load(filepath, '-mat');
             catch whosException
-                ME = MException('lccb:movieObject:load', 'Fail to open file. Make sure it is a MAT file.');
+                ME = MException('mbl&lccb:movieObject:load', 'Fail to open file. Make sure it is a MAT file.');
                 ME = ME.addCause(whosException);
                 throw(ME);
             end
@@ -635,11 +635,11 @@ classdef  MovieObject < hgsetget
             % Check if a single movie object is in the variables
             isMovie = cellfun(@(x) strcmp(x, classname) || ...
                 any(strcmp(superclasses(x), classname)),struct2cell(classes));
-            assert(any(isMovie),'lccb:movieObject:load', ...
+            assert(any(isMovie),'mbl&lccb:movieObject:load', ...
                 'No object of type %s is found in selected MAT file.', classname);
-            assert(sum(isMovie)==1,'lccb:movieObject:load', ...
+            assert(sum(isMovie)==1,'mbl&lccb:movieObject:load', ...
                 'Multiple objects are found in selected MAT file.');
-            assert(isequal(prod(cellfun('prodofsize',struct2cell(data))), 1),'lccb:movieObject:load', ...
+            assert(isequal(prod(cellfun('prodofsize',struct2cell(data))), 1),'mbl&lccb:movieObject:load', ...
                 'Multiple objects are found in selected MAT file.');
             
             obj= data.(vars{isMovie});
@@ -705,7 +705,7 @@ if askUser
     iProc = iProc(iSelected);
     assert(~isempty(iProc), 'You must select a process to continue!');
 else
-    warning('lccb:process', ['More than ' num2str(nDesired) ' objects '...
+    warning('mbl&lccb:process', ['More than ' num2str(nDesired) ' objects '...
         'of class ' type ' were found! Returning most recent!'])
     iProc = iProc(end:-1:(end-nDesired+1));
 end
