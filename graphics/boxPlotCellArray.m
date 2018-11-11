@@ -18,6 +18,10 @@ sucess=false;
 % Return when one of columns are all NaNs
 isAnyGroupAllNaNs = cellfun(@(x) all(isnan(x)), cellArrayData);
 if any(isAnyGroupAllNaNs)
+    % Making the 1xN vector if isAnyGroupAllNaNs is Nx1 vector
+    if size(isAnyGroupAllNaNs,1)>1
+        isAnyGroupAllNaNs=isAnyGroupAllNaNs';
+    end
     disp([num2str(find(isAnyGroupAllNaNs)) 'th group contains all NaNs. Returning...'])
     return
 end
