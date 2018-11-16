@@ -38,7 +38,7 @@ function button = questdlgtimeout(delay, varargin)
 % MRC Brain Network Dynamics Unit
 % University of Oxford
 % 08-Mar-2017 16:06:58
-f1 = findall(0, 'Type', 'figures');
+f1 = findall(0, 'Type', 'figure');
 t = timer('TimerFcn', {@closeit f1}, 'StartDelay', delay);
 start(t);
 dlg = @questdlg;
