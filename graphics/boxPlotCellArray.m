@@ -171,7 +171,7 @@ else
     maxPoint2 = maxPoint2+q;
 end
 if maxPoint2>minPoint2-lineGap*2
-    ylim([minPoint2-lineGap*2 maxPoint2])
+    ylim([minPoint2-lineGap*10 maxPoint2+lineGap*10])
 else
     ylim auto
 end
