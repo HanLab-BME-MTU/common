@@ -26,20 +26,18 @@ function [ tf ] = insequence_and_scalar( x, start, stop , interval)
 % Completely wrong using isscalar. Changed to isvector
 % Sangyoon Han
 
+if (nargin < 4)
+    interval=1;
+end
+
 if(isvector(x))
 
-    if(x < start || x > stop)
+    if(x(1) < start || x(end) > stop)
         tf = false;
         return;
-    end
-
-    if(nargin < 4)
-        x = (x - start);
-
     else
-        x = (x - start)./interval;
+        tf = true;
     end
-    tf = x == round(x);
 
 else
     
