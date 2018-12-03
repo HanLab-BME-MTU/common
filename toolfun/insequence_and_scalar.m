@@ -23,8 +23,10 @@ function [ tf ] = insequence_and_scalar( x, start, stop , interval)
 % Mark Kittisopikul, April 2017
 % Jaqaman Lab
 % UT Southwestern
+% Completely wrong using isscalar. Changed to isvector
+% Sangyoon Han
 
-if(isscalar(x))
+if(isvector(x))
 
     if(x < start || x > stop)
         tf = false;
