@@ -199,7 +199,13 @@ if handles.segThisCell > 1
     nFrame = currObj.nFrames_;
     
     if ~handles.loadedCells(handles.currCell)
-        images = currObj.channels_(handles.target_channelIdx).loadImage(1:nFrame);
+        try
+            images = currObj.channels_(handles.target_channelIdx).loadImage(1:nFrame);
+        catch
+            for ii=nFrame:-1:1
+                images = currObj.channels_(handles.target_channelIdx).loadImage(ii);
+            end
+        end
         maskIdx   = currObj.getProcessIndex('MaskRefinementProcess');
         cellMask  = arrayfun(@(x) currObj.processes_{maskIdx}.loadChannelOutput(currChan,x),1:nFrame,'Unif',0);
         sup_cellMask  = arrayfun(@(x) currObj.processes_{maskIdx}.loadChannelOutput(supChan,x),1:nFrame,'Unif',0);
