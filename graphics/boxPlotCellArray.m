@@ -1,4 +1,4 @@
-function [sucess]=boxPlotCellArray(cellArrayData,nameList,convertFactor,notchOn,plotIndivPoint,forceShowP,markerSize)
+function [sucess]=boxPlotCellArray(cellArrayData,nameList,convertFactor,notchOn,plotIndivPoint,forceShowP,markerSize,varargin)
 % function []=boxPlotCellArray(cellArrayData,nameList,convertFactor,notchOn,plotIndivPoint,forceShowP) automatically converts cell array
 % format input to matrix input to use matlab function 'boxplot'
 % input: cellArrayData          cell array data
@@ -36,41 +36,54 @@ if all(isnan(matrixData(:)))
     return
 end
 
-if nargin<7
-    markerSize=2;
-end
-if isempty(matrixData)
-    text(0.4,0.5,'Empty Data')
-    return
-end
-if nargin<6
-    markerSize=2;
-    forceShowP=false;
-end
-if nargin<5
-    markerSize=2;
-    forceShowP=false;
-    plotIndivPoint = true;
-end
-if nargin<4
-    markerSize=2;
-    forceShowP=false;
-    notchOn=true;
-    plotIndivPoint = true;
-end
-if nargin<3
-    markerSize=2;
-    forceShowP=false;
-    convertFactor = 1;
-    notchOn=true;
-end
-if nargin<2
-    markerSize=2;
-    nameList=arrayfun(@(x) num2str(x),(1:numConditions),'UniformOutput',false);
-    convertFactor = 1;
-    notchOn=true;
-    forceShowP=false;
-end
+ip = inputParser;
+ip.CaseSensitive = false;
+addRequired(ip,'cellArrayData');
+addOptional(ip,'nameList',arrayfun(@(x) num2str(x),(1:numConditions),'UniformOutput',false));
+addOptional(ip,'convertFactor',1);
+addOptional(ip,'notchOn',true);
+addOptional(ip,'plotIndivPoint',true);
+addOptional(ip,'forceShowP',false);
+addOptional(ip,'markerSize',2);
+addParameter(ip,'ax',gca);
+parse(ip,cellArrayData,varargin{:});
+ax=ip.Results.ax;
+
+% if nargin<7
+%     markerSize=2;
+% end
+% if isempty(matrixData)
+%     text(0.4,0.5,'Empty Data')
+%     return
+% end
+% if nargin<6
+%     markerSize=2;
+%     forceShowP=false;
+% end
+% if nargin<5
+%     markerSize=2;
+%     forceShowP=false;
+%     plotIndivPoint = true;
+% end
+% if nargin<4
+%     markerSize=2;
+%     forceShowP=false;
+%     notchOn=true;
+%     plotIndivPoint = true;
+% end
+% if nargin<3
+%     markerSize=2;
+%     forceShowP=false;
+%     convertFactor = 1;
+%     notchOn=true;
+% end
+% if nargin<2
+%     markerSize=2;
+%     nameList=arrayfun(@(x) num2str(x),(1:numConditions),'UniformOutput',false);
+%     convertFactor = 1;
+%     notchOn=true;
+%     forceShowP=false;
+% end
 nameList(idEmptyData)=[];
 
 boxWidth=0.5;
@@ -103,25 +116,24 @@ if all(onlyOneDataPerEachGroup)
 end
 if ~onlyOneDataAllGroups
     if notchOn %min(sum(~isnan(matrixData),1))>20 || 
-        boxplot(matrixData,'whisker',whiskerRatio,'notch','on',...
+        boxplot(ax,matrixData,'whisker',whiskerRatio,'notch','on',...
             'labels',nameListNew,'symbol','','widths',boxWidth,'jitter',1,'colors','k');%, 'labelorientation','inline');
     else % if the data is too small, don't use notch
 %         boxplot(matrixData,'whisker',whiskerRatio*0.95,'notch','off',...
 %             'labels',nameListNew,'symbol','','widths',boxWidth,'jitter',0,'colors','k');%, 'labelorientation','inline');
-        boxplot(matrixData,...
+        boxplot(ax,matrixData,...
             'labels',nameListNew,'symbol','','widths',boxWidth,'jitter',0,'colors','k');%, 'labelorientation','inline');
     end
 else
     xlim([0 numCategories+1])
-    set(gca,'XTick',1:numCategories)
-    set(gca,'XTicklabel',nameListNew)
+    set(ax,'XTick',1:numCategories)
+    set(ax,'XTicklabel',nameListNew)
 end    
-set(findobj(gca,'LineStyle','--'),'LineStyle','-')
-set(findobj(gca,'tag','Median'),'LineWidth',2)
+set(findobj(ax,'LineStyle','--'),'LineStyle','-')
+set(findobj(ax,'tag','Median'),'LineWidth',2)
 % set(gca,'XTick',1:numel(nameList))
 % set(gca,'XTickLabel',nameList)
-set(gca,'XTickLabelRotation',45)
-curAxes = gca;
+set(ax,'XTickLabelRotation',45)
 
 % hold on
 % perform ranksum test for every single combination
@@ -141,17 +153,17 @@ for k=1:(numConditions-1)
                 [p]=ranksum(cellArrayData{k},cellArrayData{ii});
                 if (p<0.05 && forceShowP~=2) || forceShowP==1 
                     q=q+lineGap;
-                    line([k ii], ones(1,2)*(maxPoint2+q),'Color','k')    
+                    line(ax,[k ii], ones(1,2)*(maxPoint2+q),'Color','k')    
                     q=q+lineGap;
-                    text(floor((k+ii)/2)+0.3, maxPoint2+q,['p=' num2str(p) ' (r)'])
+                    text(ax,floor((k+ii)/2)+0.3, maxPoint2+q,['p=' num2str(p) ' (r)'])
                 end
             else
                 [~,p]=ttest2(cellArrayData{k},cellArrayData{ii});
                 if (p<0.05 && forceShowP~=2) || forceShowP==1
                     q=q+lineGap;
-                    line([k ii], ones(1,2)*(maxPoint2+q),'Color','k')    
+                    line(ax,[k ii], ones(1,2)*(maxPoint2+q),'Color','k')    
                     q=q+lineGap;
-                    text(floor((k+ii)/2)+0.3, maxPoint2+q,['p=' num2str(p) ' (t)'])
+                    text(ax,floor((k+ii)/2)+0.3, maxPoint2+q,['p=' num2str(p) ' (t)'])
                 end
             end
         end
@@ -176,8 +188,8 @@ else
     ylim auto
 end
 
-set(gca,'FontSize',7)
-set(findobj(gca,'Type','Text'),'FontSize',6)
+set(ax,'FontSize',7)
+set(findobj(ax,'Type','Text'),'FontSize',6)
 sucess=true;
 hold off
 
