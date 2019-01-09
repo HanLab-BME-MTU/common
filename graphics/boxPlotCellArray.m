@@ -48,7 +48,11 @@ addOptional(ip,'markerSize',2);
 addParameter(ip,'ax',gca);
 parse(ip,cellArrayData,varargin{:});
 ax=ip.Results.ax;
-
+markerSize = ip.Results.markerSize;
+forceShowP = ip.Results.forceShowP;
+notchOn = ip.Results.notchOn;
+plotIndivPoint = ip.Results.plotIndivPoint;
+convertFactor = ip.Results.convertFactor;
 % if nargin<7
 %     markerSize=2;
 % end
