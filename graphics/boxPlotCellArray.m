@@ -43,11 +43,11 @@ addOptional(ip,'nameList',arrayfun(@(x) num2str(x),(1:numConditions),'UniformOut
 addOptional(ip,'convertFactor',1);
 addOptional(ip,'notchOn',true);
 addOptional(ip,'plotIndivPoint',true);
-addOptional(ip,'forceShowP',false);
-addOptional(ip,'markerSize',2);
+addParameter(ip,'forceShowP',false);
+addParameter(ip,'markerSize',2);
 addParameter(ip,'ax',gca);
 addParameter(ip,'horizontalPlot',false);
-parse(ip,cellArrayData,nameList,convertFactor,notchOn,plotIndivPoint,forceShowP,markerSize,varargin{:});
+parse(ip,cellArrayData,nameList,convertFactor,notchOn,plotIndivPoint,varargin{:});
 ax=ip.Results.ax;
 horizontalPlot=ip.Results.horizontalPlot;
 markerSize = ip.Results.markerSize;
@@ -105,15 +105,17 @@ if plotIndivPoint
     % individual data jitter plot
 %     numCategories = size(matrixData,2);
     % width=boxWidth/2;
+    uArrayAll = cell(size(cellArrayData));
+    Nall = cell(size(cellArrayData));
     for ii=1:numCategories
         Nall{ii} = histcounts(matrixData(:,ii));
         uArrayAll{ii} = unique(matrixData(~isnan(matrixData(:,ii)),ii));
     end
-    if mean(cellfun(@(x,y) length(y)/length(x),uArrayAll,cellArrayData))>3
-        Nmax = max(cellfun(@max,cellfun(@(x,y) arrayfun(@(z) sum(y==z),x) ,uArrayAll,cellArrayData,'unif',false)));
-    else
+%     if mean(cellfun(@(x,y) length(y)/length(x),uArrayAll,cellArrayData))>3
+%         Nmax = max(cellfun(@max,cellfun(@(x,y) arrayfun(@(z) sum(y==z),x) ,uArrayAll,cellArrayData,'unif',false)));
+%     else
         Nmax = max(cellfun(@max,Nall));
-    end
+%     end
     for ii=1:numCategories
         curNumData = numel(matrixData(:,ii));
         if curNumData==1
