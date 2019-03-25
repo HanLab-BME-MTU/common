@@ -63,13 +63,15 @@ if nargin < 3 || isempty(showFigs)
 end
 
 if nargin < 4 || isempty(xType)
-    xType = 'projective';
+    xType = 'nonreflective similarity';
 end
 
 if nargin < 5 || isempty(iGuess)
     %If no initial guess given, use identity transform.
     switch xType
 
+        case 'nonreflective similarity'    
+            iGuess = eye(3);            
         case 'projective'    
             iGuess = eye(3);            
         case 'polynomial'
@@ -85,7 +87,7 @@ if nargin < 5 || isempty(iGuess)
 end
 
 %% -------- Init -------- %%
-
+error('This is worse than the initial transform! Do not use it for now.')
 
 
 %If the images are actually masks, scale them differently to avoid rounding
@@ -110,6 +112,8 @@ end
 %time the objective function is evaluated.
 if strcmp(xType,'projective')
     dumXf = maketform('projective',eye(3));
+elseif strcmp(xType,'nonreflective similarity')
+    dumXf = affine2d; %fitgeotrans('nonreflective similarity',eye(3));
 else
     dumXf = cp2tform(ones(10,2),ones(10,2)+rand(10,2)/10,'polynomial',2);     
 end
@@ -146,6 +150,9 @@ tMat(:) = x(:);
 %Convert it to transform structure
 if strcmp(xType,'projective')
     optimalXform = maketform('projective',tMat);
+elseif strcmp(xType,'nonreflective similarity')
+    tMat(:,3)=[0 0 1]';
+    optimalXform = affine2d(tMat);
 else
     %There HAS to be a better way to do this????!!!!??
     optimalXform = cp2tform(ones(10,2),ones(10,2)+rand(10,2)/10,'polynomial',3);
@@ -159,7 +166,12 @@ if showFigs
     subplot(1,2,1)
     image(cat(3,mat2gray(baseImage),mat2gray(inputImage),zeros(size(inputImage))))
     title('Original Overlay'),axis image
-    newImage = imtransform(inputImage,optimalXform,'XData',[1 size(baseImage,2)],'YData',[1 size(baseImage,1)],'FillValues',1);
+    if isa(optimalXform,'affine2d')
+        R = imref2d(size(baseImage));
+        newImage = imwarp(inputImage,optimalXform,'OutputView',R,'FillValues',1);
+    else
+        newImage = imtransform(inputImage,optimalXform,'XData',[1 size(baseImage,2)],'YData',[1 size(baseImage,1)],'FillValues',1);
+    end
     subplot(1,2,2)
     image(cat(3,mat2gray(baseImage),mat2gray(newImage),zeros(size(inputImage))))
     title('Aligned Overlay'),axis image

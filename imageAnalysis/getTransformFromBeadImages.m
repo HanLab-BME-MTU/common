@@ -46,7 +46,7 @@ function xForm = getTransformFromBeadImages(baseImage,inputImage,xFormType,beadR
 %
 % Hunter Elliott 
 % 10/2010
-%
+% Updated with lap by Sangyoon Han March 2019
 
 %% ------------ Input ----------- %%
 
@@ -85,18 +85,22 @@ disp(['Initial RMSD between images: ' num2str(rmsdInit)]);
 
 disp('Detecting beads in both images...')
 
-%Detect local maxima in both images
-bMax = locmax2d(baseImage,[fSize fSize]);
-iMax = locmax2d(inputImage,[fSize fSize]);
+% %Detect local maxima in both images
+% bMax = locmax2d(baseImage,[fSize fSize]);
+% iMax = locmax2d(inputImage,[fSize fSize]);
 
-%Keep only the "bright" local maxima. The image should be mostly
-%background, so we just use the average of the whole image to get
-%approximate background intensity and standard deviation.
-bMax = bMax > (mean(baseImage(:))+2*std(double(baseImage(:))));
-iMax = iMax > (mean(inputImage(:))+2*std(double(inputImage(:))));
+% %Keep only the "bright" local maxima. The image should be mostly
+% %background, so we just use the average of the whole image to get
+% %approximate background intensity and standard deviation.
+% bMax = bMax > (mean(baseImage(:))+2*std(double(baseImage(:))));
+% iMax = iMax > (mean(inputImage(:))+2*std(double(inputImage(:))));
 
+% Trying to use pointSourceDetection
+bStruct = pointSourceDetection(baseImage,beadRad);
+xB = bStruct.x; yB = bStruct.y;
 
-
+iStruct = pointSourceDetection(inputImage,beadRad);
+xI = iStruct.x; yI = iStruct.y;
 
 
 %% ------------ Assignment --------- %%
@@ -104,117 +108,136 @@ iMax = iMax > (mean(inputImage(:))+2*std(double(inputImage(:))));
 
 disp('Determining bead correspondence between images...')
 
-[xB,yB] = find(bMax);
-[xI,yI] = find(iMax);
+% Now using linear assignment proble
+% calculate distance matrix between the point sets
+dm = distMat2([xB' yB'],[xI' yI']);
+% % remove all links that are longer than a threshold (mark with -1)
+% dm(dm>5) = -1;
+%   % print distance matrix
+%   disp(dm)
+% link via lap. nonlinkmarker=-1, augment the matrix and show
+[links12, links21] = lap(dm,-1,0,1);
+% Only the first numel(xB) are counted, i.e., links12(1:numel(xB))
+% And any index out of numel(xI) are virtual.
+workingLink12 = links12(1:numel(xB));
+validLink12 = workingLink12(workingLink12<=numel(xI));
+xB2=xB(links12(1:numel(xB))<=numel(xI));
+yB2=yB(links12(1:numel(xB))<=numel(xI));
 
-%Number of spots detected in base image
-nDetBase = numel(xB);
+xI2=xI(validLink12); yI2=yI(validLink12);
+nBeads = numel(xB2);
 
-minD = zeros(nDetBase,1);
-xIc = zeros(nDetBase,1);%Corresponding points in input image
-yIc = zeros(nDetBase,1);
-
-for j = 1:nDetBase
-
-    %Calculate distance from this point to all those in input image
-    currDists = sqrt((xB(j)-xI) .^2 + (yB(j)-yI) .^2);
-    
-    %And to every point in the base image
-    currSameDist = sqrt((xB(j)-xB) .^2 + (yB(j)-yB) .^2);
-    
-    %find the closest point in the input image and it's distance
-    [minD(j),iClosest] = min(currDists);
-    
-    %Make sure there isn't a point in the base image which is closer
-    minDb = min(currSameDist(currSameDist>0));    
-    if minD(j) < minDb
-        %Assign this point as corresponding
-        xIc(j) = xI(iClosest);
-        yIc(j) = yI(iClosest);
-        
-        %Prevent duplicate assignment by removing it.
-        xI(iClosest) = [];
-        yI(iClosest) = [];                
-        
-    end
-    
-            
-        
-end
-
-
-%Remove outliers at 95%, as these are probably bad assignments
-iOutlier = detectOutliers(minD,2);
-
-xB(iOutlier) = [];
-yB(iOutlier) = [];
-xIc(iOutlier) = [];
-yIc(iOutlier) = [];
-
-
-%Now do sub-resulution detection for the selected points in each image
-disp('Performing sub-resolution position refinement...');
-
-%Get window size for gaussian fitting.
-winSize = ceil(beadRad)+2;
-%Make sure none of the points are too close to the image border
-isOK = (xIc - winSize) > 0 & (yIc - winSize) > 0 & ...
-       (xIc + winSize) <= M & (yIc + winSize) <= M & ...
-       (xB - winSize) > 0 & (yB - winSize) > 0 & ...
-       (xB + winSize) <= M & (yB + winSize) <= M;
-xIc = xIc(isOK);
-yIc = yIc(isOK);
-xB = xB(isOK);
-yB = yB(isOK);
-
-nBeads = numel(xB);
-       
-
-for j = 1:nBeads
-        
-    %Get the sub-region of the image for readability/debugging    
-    imROI = double(inputImage(xIc(j)-winSize:xIc(j)+winSize,...
-                              yIc(j)-winSize:yIc(j)+winSize));
-    
-    %Fit a gaussian to get the sub-pixel location of each bead.
-    pVec = fitGaussian2D(imROI,...
-                    [0 0 double(inputImage(xIc(j),yIc(j))) ...
-                    beadRad/2 mean(double(inputImage(:)))],'xyAsc');
-        
-    %Make sure the fit converged, and then add it to the integer position
-    if all(abs(pVec(1:2))) < winSize;                  
-        xIc(j) = xIc(j) + pVec(2);
-        yIc(j) = yIc(j) + pVec(1);
-    else
-        disp('unconverged!')
-    end
-        
-    
-    %Get the sub-region of the image for readability/debugging  
-    imROI = double(baseImage(xB(j)-winSize:xB(j)+winSize,...
-                              yB(j)-winSize:yB(j)+winSize));
-
-    %Fit a gaussian to get the sub-pixel location of each bead.                      
-    pVec = fitGaussian2D(imROI,...
-                [0 0 double(baseImage(xB(j),yB(j))) ...
-                 beadRad/2 mean(double(baseImage(:)))],'xyAsc');
-        
-    %Make sure it converged to somewhere within the window
-    if all(abs(pVec(1:2)) < winSize);                             
-        xB(j) = xB(j) + pVec(2);
-        yB(j) = yB(j) + pVec(1);
-    else
-        disp('unconverged!')
-    end
-     
-end
+% [xB,yB] = find(bMax);
+% [xI,yI] = find(iMax);
+% 
+% %Number of spots detected in base image
+% nDetBase = numel(xB);
+% 
+% minD = zeros(nDetBase,1);
+% xIc = zeros(nDetBase,1);%Corresponding points in input image
+% yIc = zeros(nDetBase,1);
+% 
+% for j = 1:nDetBase
+% 
+%     %Calculate distance from this point to all those in input image
+%     currDists = sqrt((xB(j)-xI) .^2 + (yB(j)-yI) .^2);
+%     
+%     %And to every point in the base image
+%     currSameDist = sqrt((xB(j)-xB) .^2 + (yB(j)-yB) .^2);
+%     
+%     %find the closest point in the input image and it's distance
+%     [minD(j),iClosest] = min(currDists);
+%     
+%     %Make sure there isn't a point in the base image which is closer
+%     minDb = min(currSameDist(currSameDist>0));    
+%     if minD(j) < minDb
+%         %Assign this point as corresponding
+%         xIc(j) = xI(iClosest);
+%         yIc(j) = yI(iClosest);
+%         
+%         %Prevent duplicate assignment by removing it.
+%         xI(iClosest) = [];
+%         yI(iClosest) = [];                
+%         
+%     end
+%     
+%             
+%         
+% end
+% 
+% 
+% %Remove outliers at 95%, as these are probably bad assignments
+% iOutlier = detectOutliers(minD,2);
+% 
+% xB(iOutlier) = [];
+% yB(iOutlier) = [];
+% xIc(iOutlier) = [];
+% yIc(iOutlier) = [];
+% 
+% 
+% %Now do sub-resulution detection for the selected points in each image
+% disp('Performing sub-resolution position refinement...');
+% 
+% %Get window size for gaussian fitting.
+% winSize = ceil(beadRad)+2;
+% %Make sure none of the points are too close to the image border
+% isOK = (xIc - winSize) > 0 & (yIc - winSize) > 0 & ...
+%        (xIc + winSize) <= M & (yIc + winSize) <= M & ...
+%        (xB - winSize) > 0 & (yB - winSize) > 0 & ...
+%        (xB + winSize) <= M & (yB + winSize) <= M;
+% xIc = xIc(isOK);
+% yIc = yIc(isOK);
+% xB = xB(isOK);
+% yB = yB(isOK);
+% 
+% nBeads = numel(xB);
+%        
+% 
+% for j = 1:nBeads
+%         
+%     %Get the sub-region of the image for readability/debugging    
+%     imROI = double(inputImage(xIc(j)-winSize:xIc(j)+winSize,...
+%                               yIc(j)-winSize:yIc(j)+winSize));
+%     
+%     %Fit a gaussian to get the sub-pixel location of each bead.
+%     pVec = fitGaussian2D(imROI,...
+%                     [0 0 double(inputImage(xIc(j),yIc(j))) ...
+%                     beadRad/2 mean(double(inputImage(:)))],'xyAsc');
+%         
+%     %Make sure the fit converged, and then add it to the integer position
+%     if all(abs(pVec(1:2))) < winSize;                  
+%         xIc(j) = xIc(j) + pVec(2);
+%         yIc(j) = yIc(j) + pVec(1);
+%     else
+%         disp('unconverged!')
+%     end
+%         
+%     
+%     %Get the sub-region of the image for readability/debugging  
+%     imROI = double(baseImage(xB(j)-winSize:xB(j)+winSize,...
+%                               yB(j)-winSize:yB(j)+winSize));
+% 
+%     %Fit a gaussian to get the sub-pixel location of each bead.                      
+%     pVec = fitGaussian2D(imROI,...
+%                 [0 0 double(baseImage(xB(j),yB(j))) ...
+%                  beadRad/2 mean(double(baseImage(:)))],'xyAsc');
+%         
+%     %Make sure it converged to somewhere within the window
+%     if all(abs(pVec(1:2)) < winSize);                             
+%         xB(j) = xB(j) + pVec(2);
+%         yB(j) = yB(j) + pVec(1);
+%     else
+%         disp('unconverged!')
+%     end
+%      
+% end
 
 %% ----------- Get Transform ---------- %%
 
 disp('Determining transformation...')
 
 %Use matlab built in function to determine transform
-xForm = cp2tform([yIc xIc],[yB xB],xFormType);
+xForm = cp2tform([xI2' yI2'],[xB2' yB2'],xFormType);
 
 
 if showFigs
@@ -223,10 +246,10 @@ if showFigs
     imshow(cat(3,mat2gray(baseImage),mat2gray(inputImage),zeros(size(baseImage))),[]);
     hold on
 
-    plot(yB,xB,'ro')
-    plot(yIc,xIc,'go')
+    plot(xB2,yB2,'ro')
+    plot(xI2,yI2,'go')
     for j = 1:nBeads                      
-        plot([yIc(j) yB(j)],[xIc(j) xB(j)],'--b')                        
+        plot([xI2(j) xB2(j)],[yI2(j) yB2(j)],'--c')                        
     end
     
     legend('Base Image','Input Image','Correspondence');    
