@@ -27,7 +27,7 @@ for jj=firstFrameCC:lastFrameCC
     ts1_segment = ts1(jj-halfTfluc:jj+halfTfluc); avgTS1 = mean(ts1_segment);
     ts2_seg = ts2(jj-halfTfluc:jj+halfTfluc); avgTS2 = mean(ts2_seg);
     sigma2cc=1/tFluc*sum((ts1_segment-avgTS1).*(ts2_seg-avgTS2));
-    Bcc(jj) = sigma2cc/sqrt(avgTS1*avgTS2);
+    Bcc(jj) = sigma2cc/sqrt(abs(avgTS1*avgTS2));
     
     % For background,
     % 1. get the average fluctuation from the two signals
@@ -46,7 +46,7 @@ for jj=firstFrameCC:lastFrameCC
     bgBccSeries(jj) = sigma2ccRand/sqrt(abs(avgTS1Rand*avgTS2Rand));
 end
 
-bgBcc = 2*nanstd(bgBccSeries); %nanmean(bgBccSeries)+
+bgBcc = nanstd(bgBccSeries); %nanmean(bgBccSeries)+
 
 % % 2. Make random time series out of distribution of fluc1 and fluc2
 % randTS1 = std(fluc1)*randn([1 (lastFrameCC-firstFrameCC+1)*tFluc]);

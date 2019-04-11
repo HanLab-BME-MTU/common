@@ -129,6 +129,8 @@ if plotIndivPoint
             if 3*length(uCurArray) < sum(~isnan(matrixData(:,ii)))
                 N = arrayfun(@(x) sum(matrixData(:,ii)==x),uCurArray)';
                 edges=[uCurArray' nanmax(matrixData(:,ii))];
+                curMaxNratio = max(N/Nmax);
+                scatterWidth = boxWidth/curMaxNratio;
             else
                 [N,edges] = histcounts(matrixData(:,ii));
             end
