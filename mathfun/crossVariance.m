@@ -14,8 +14,8 @@ if nargin<3
     tFluc = 11;
 end
 halfTfluc = floor(tFluc/2);
-lastFrameCC = find(~isnan(ts1),1,'last') -halfTfluc;
-firstFrameCC = find(~isnan(ts1),1) +halfTfluc;
+lastFrameCC = min(find(~isnan(ts1),1,'last'),find(~isnan(ts2),1,'last')) -halfTfluc;
+firstFrameCC = max(find(~isnan(ts1),1),find(~isnan(ts2),1)) +halfTfluc;
 Bcc = NaN(size(ts1));
 bgBccSeries = NaN(size(ts1));
 
