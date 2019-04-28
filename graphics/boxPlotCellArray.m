@@ -256,7 +256,11 @@ if maxPoint2>minPoint2-lineGap*2
     if horizontalPlot
         xlim([minPoint2-lineGap*10 maxPoint2+lineGap*10])
     else
-        ylim([minPoint2-lineGap*10 maxPoint2+lineGap*10])
+        try
+            ylim([minPoint2-lineGap*10 maxPoint2+lineGap*10])
+        catch
+            ylim auto
+        end
     end
 else
     if horizontalPlot
