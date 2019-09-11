@@ -22,7 +22,8 @@ classdef ImageDisplay < MovieDataDisplay
             h=imshow(data/obj.ScaleFactor,varargin{:});
             set(h,'Tag',tag,'CDataMapping','scaled');
             hAxes = get(h,'Parent');
-            set(hAxes,'XLim',[0 size(data,2)],'YLim',[0 size(data,1)]);
+            % set(hAxes,'XLim',[0 size(data,2)],'YLim',[0 size(data,1)]); I
+            % don't think this is necessary -SH Sep 9 2019
             
             % Tag all objects displayed by this class, so they can be
             % easily identified and cleared.

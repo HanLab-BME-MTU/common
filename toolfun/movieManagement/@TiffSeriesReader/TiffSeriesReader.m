@@ -137,7 +137,7 @@ classdef  TiffSeriesReader < Reader
             chanNames = obj.paths(iChan);
         end
         
-        function I = loadImage(obj, c, t, varargin)
+        function I = loadImage(obj, c, t, z)%, varargin)
         % loadImage reads a single image plane as a 2D, YX Matrix
         %
         % loadImage(c,t,z) reads the YX plane at (c,t,z)
@@ -166,7 +166,7 @@ classdef  TiffSeriesReader < Reader
             ip.addOptional('z', 1, ...
                 @(z) isscalar(z) && ismember(z, 1 : obj.getSizeZ()) || ...
                     isempty(z));
-            ip.parse(c, t, varargin{:});
+            ip.parse(c,t,z); % (c,t, varargin{:});
                      
             z = ip.Results.z;
             if(isempty(z))
