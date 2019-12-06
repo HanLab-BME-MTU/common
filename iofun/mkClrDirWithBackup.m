@@ -17,14 +17,16 @@ if nargin < 1 || isempty(dirPath)
     error('You must specify the directory to set up!')
 end
 
-disp('Backing up the original data')
-ii = 1;
-backupFolder = [dirPath ' Backup ' num2str(ii)];
-while exist(backupFolder,'dir') && isempty(dir(backupFolder))
+if exist(dirPath,'dir')
+    disp('Backing up the original data')
+    ii = 1;
     backupFolder = [dirPath ' Backup ' num2str(ii)];
-    ii=ii+1;
+    while exist(backupFolder,'dir') && isempty(dir(backupFolder))
+        backupFolder = [dirPath ' Backup ' num2str(ii)];
+        ii=ii+1;
+    end
+    movefile(dirPath, backupFolder,'f')
 end
-movefile(dirPath, backupFolder,'f')
 mkClrDir(dirPath);
 
 end
