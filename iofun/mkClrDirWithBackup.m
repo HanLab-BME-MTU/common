@@ -17,6 +17,10 @@ if nargin < 1 || isempty(dirPath)
     error('You must specify the directory to set up!')
 end
 
+if strcmp(dirPath(end),filesep)
+    dirPath=[dirPath filesep];
+end
+
 if exist(dirPath,'dir')
     disp('Backing up the original data')
     ii = 1;
@@ -25,7 +29,9 @@ if exist(dirPath,'dir')
         backupFolder = [dirPath ' Backup ' num2str(ii)];
         ii=ii+1;
     end
-    movefile(dirPath, backupFolder,'f')
+    mkClrDir(backupFolder);
+
+    movefile(dirPath, backupFolder, 'f')
 end
 mkClrDir(dirPath);
 
