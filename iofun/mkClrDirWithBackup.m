@@ -29,7 +29,6 @@ if exist(dirPath,'dir')
         backupFolder = [dirPath ' Backup ' num2str(ii)];
         ii=ii+1;
     end
-    mkClrDir(backupFolder);
 
     movefile(dirPath, backupFolder, 'f')
 end
