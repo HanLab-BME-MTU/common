@@ -37,5 +37,5 @@ else
             && ~strcmp('..',x.name)),inDir));
         arrayfun(@(x)(delete([dirPath filesep x.name])),inDir);
     end
-    display(['The folder ' dirPath ' already existed. Cleaning the folder ...'])
+    disp(['The folder ' dirPath ' already existed. Cleaning the folder ...'])
 end
