@@ -96,7 +96,12 @@ boxWidth=0.5;
 scatterWidth=boxWidth*2;
 whiskerRatio=1.5;
 matrixData=matrixData*convertFactor;
-nameListNew = cellfun(@(x,y) [x '(N=' num2str(sum(~isnan(y))) ')'],nameList,cellArrayData,'UniformOutput', false);
+try
+    nameListNew = cellfun(@(x,y) [x '(N=' num2str(sum(~isnan(y))) ')'],nameList,cellArrayData,'UniformOutput', false);
+catch
+    nameList=arrayfun(@num2str,(1:numel(cellArrayData))','unif',false);
+    nameListNew = cellfun(@(x,y) [x '(N=' num2str(sum(~isnan(y))) ')'],nameList,cellArrayData,'UniformOutput', false);
+end
 
 onlyOneDataAllGroups=false;
 numCategories = numel(cellArrayData);
