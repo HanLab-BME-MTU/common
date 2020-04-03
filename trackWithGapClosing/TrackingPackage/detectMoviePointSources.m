@@ -135,44 +135,47 @@ for i = 1:numel(p.ChannelIndex)
     
     %Set up parameter structure for detection on this channel
     detP = splitPerChannelParams(p, iChan);
+    detP.Mask = roiMask(:,:,1);
     
     % Initialize a movieInfo structure with the minimum amount of fields
     clear movieInfo
     movieInfo(1 : nFrames)= struct('xCoord', [], 'yCoord', [],...
         'amp', [], 'sigmaX', [], 'sigmaY', [], 'bkg', []);
     
-    for j= 1:nFrames
+    parfor j= 1:nFrames
         
         currImage = double(movieData.channels_(iChan).loadImage(j));
         if ~isempty(p.MaskProcessIndex) && ~isempty(p.MaskChannelIndex)
             currMask = maskProc.loadChannelOutput(p.MaskChannelIndex(i),j) & roiMask(:,:,j);
-            detP.Mask =  currMask;
+%             detP.Mask =  currMask;
         else
-            detP.Mask = roiMask(:,:,j);
+            currMask = roiMask(:,:,j);
         end
+%         detP.Mask = currMask;
         
         % Call main detection function
-        pstruct = pointSourceDetection(currImage,p.filterSigma(iChan),detP);
-        
-        if ~isempty(pstruct) &&...
-                ~isequal(fieldnames(pstruct), fieldnames(movieInfo(j)))
-            allFields = fieldnames(pstruct);
+        pstruct{j} = pointSourceDetection(currImage,p.filterSigma(iChan),detP,'Mask',currMask);
+    end
+    for j= 1:nFrames
+        if ~isempty(pstruct{j}) &&...
+                ~isequal(fieldnames(pstruct{j}), fieldnames(movieInfo(j)))
+            allFields = fieldnames(pstruct{j});
             for iField = 1:numel(allFields)
-                movieInfo(j).(allFields{iField}) = pstruct.(allFields{iField}); %#ok<AGROW>
+                movieInfo(j).(allFields{iField}) = pstruct{j}.(allFields{iField}); %#ok<AGROW>
             end
             movieInfo = orderfields(movieInfo);
         end
         % add xCoord, yCoord, amp fields for compatibilty  with tracker
-        if ~isempty(pstruct)
+        if ~isempty(pstruct{j})
             
-            pstruct.xCoord = [pstruct.x' pstruct.x_pstd'];
-            pstruct.yCoord = [pstruct.y' pstruct.y_pstd'];
-            pstruct.amp = [pstruct.A' pstruct.A_pstd'];
-            pstruct.sigmaX = [pstruct.s' pstruct.s_pstd'];
-            pstruct.sigmaY = [pstruct.s' pstruct.s_pstd'];
-            pstruct.bkg = [pstruct.c' pstruct.c_pstd'];
+            pstructOrdered.xCoord = [pstruct{j}.x' pstruct{j}.x_pstd'];
+            pstructOrdered.yCoord = [pstruct{j}.y' pstruct{j}.y_pstd'];
+            pstructOrdered.amp = [pstruct{j}.A' pstruct{j}.A_pstd'];
+            pstructOrdered.sigmaX = [pstruct{j}.s' pstruct{j}.s_pstd'];
+            pstructOrdered.sigmaY = [pstruct{j}.s' pstruct{j}.s_pstd'];
+            pstructOrdered.bkg = [pstruct{j}.c' pstruct{j}.c_pstd'];
             
-            movieInfo(j) = orderfields(pstruct); %#ok<AGROW>
+            movieInfo(j) = orderfields(pstructOrdered); %#ok<AGROW>
         end
         
         if mod(j,5)==1 && ishandle(wtBar)
