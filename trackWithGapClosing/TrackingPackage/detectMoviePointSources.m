@@ -168,6 +168,7 @@ for i = 1:numel(p.ChannelIndex)
         % add xCoord, yCoord, amp fields for compatibilty  with tracker
         if ~isempty(pstruct{j})
             
+            pstructOrdered = pstruct{j};
             pstructOrdered.xCoord = [pstruct{j}.x' pstruct{j}.x_pstd'];
             pstructOrdered.yCoord = [pstruct{j}.y' pstruct{j}.y_pstd'];
             pstructOrdered.amp = [pstruct{j}.A' pstruct{j}.A_pstd'];
