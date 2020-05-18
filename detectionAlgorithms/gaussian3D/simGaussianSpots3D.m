@@ -12,6 +12,12 @@
 %           'npoints'   : number of 2D Gaussian to be generated
 %           'Background': value of background offset for entire volume
 %           'Border' : border conditions: 'padded' (default), 'periodic', or 'truncated'
+%               'padded': removes points when it is outside dims
+%               'periodic': mirrors points of outside dims back to the dims
+%                           (so it is not recommended for deformd bead
+%                           image stack)
+%               'truncated': place all the points of outside-dims to the
+%                           borders of the dims
 %           'Normalization: 'on' | {'off'} divides Gaussians by 2*pi*sigma^2 when 'on'
 %           'Verbose': 'on' | {'off'}
 %
@@ -97,8 +103,8 @@ end
 if strcmpi(ip.Results.Border, 'padded');
     % discard signals close to image border
     if ~isempty(xv)
-        idx = xv <= wv(:,1) | yv <= wv(:,1) | zv <= wv(:,2) |...
-            xv > nx-wv(:,1) | yv > ny-wv(:,1) | zv > nz-wv(:,2);
+        idx = round(xv) <= wv(:,1) | round(yv) <= wv(:,1) | round(zv) <= wv(:,2) |...
+            round(xv) > nx-wv(:,1) | round(yv) > ny-wv(:,1) | round(zv) > nz-wv(:,2);
         xv(idx) = [];
         yv(idx) = [];
         zv(idx) = [];
