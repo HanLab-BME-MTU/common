@@ -1,4 +1,4 @@
-function buildPackage(varargin)
+function buildPackageFromFile(varargin)
 % Build the selected packages and export them to a given repository
 %
 % SYNOPSIS
@@ -25,44 +25,15 @@ function buildPackage(varargin)
 %   Default: extern.
 %
 
-% Sebastien Besson, July 2011 (last modified: Nov 2012)
+% Sangyoon Han, May 2020 adopted from Sebatian's buildPackage
 
 % Input check
 ip = inputParser;
 isClass = @(x) exist(x,'class')==8;
-ip.addOptional('packageList',{},@(x) ischar(x) || iscell(x));
+ip.addOptional('fileName',{},@(x) ischar(x) || iscell(x));
 ip.addOptional('outDir','',@ischar);
 ip.addParameter('exclude', {[]}, @(x) (ischar(x) || iscell(x)));
 ip.parse(varargin{:});
-
-if isempty(ip.Results.packageList)
-    % List available packages and additional files required for running them
-    buildPackageList = {
-        'BiosensorsPackage';...
-        'IntegratorPackage';...
-        'QFSMPackage';...
-        'SegmentationPackage';...
-        'TrackingPackage';...
-        'WindowingPackage';...
-        'TFMPackage';
-        'FocalAdhesionPackage'};
-    validPackage = cellfun(isClass, buildPackageList);
-    buildPackageList = buildPackageList(validPackage);
-    if isempty(buildPackageList), error('No package found'); end
-    
-    % Create package names
-    packageNames = cellfun(@(x) eval([x '.getName']),buildPackageList,'Unif',0);
-    [packageNames,index]=sort(packageNames);
-    buildPackageList=buildPackageList(index);
-    
-    % Ask the user which packages to build
-    [packageIndx,status] = listdlg('PromptString','Select the package(s) to build:',...
-        'SelectionMode','multiple','ListString',packageNames);
-    if ~status, return; end
-    packageList=buildPackageList(packageIndx);
-else
-    packageList = ip.Results.packageList;
-end
 
 % Ask for the output directory if not supplied
 if isempty(ip.Results.outDir)
@@ -71,12 +42,11 @@ else
     outDir = ip.Results.outDir;
 end
 
-% Add legacy code to the package list for dependency search
-legacyFunctions = getLegacyCode(packageList);
+fileName = ip.Results.fileName;
 
 %Get all the function dependencies and display toolboxes
 [packageFuns, toolboxesUsed] = getFunDependencies(...
-    vertcat(packageList, legacyFunctions), ip.Results.exclude);
+    fileName, ip.Results.exclude);
 disp('The package uses the following toolboxes:')
 disp(toolboxesUsed)
 % toolboxesUsed is the just the list of names, see getFunDependencies
@@ -177,7 +147,7 @@ end
 %% Export package files
 % Create package output directory if non-existing
 disp('Creating release directory...')
-if ~isdir(outDir), mkdir(outDir); end
+if ~isfolder(outDir), mkdir(outDir); end
 
 
 % Copy function files
@@ -201,7 +171,7 @@ end
 % Create icons output directory if non-existing
 disp('Creating icons directory...')
 iconsDir=[outDir filesep 'icons'];
-if ~isdir(iconsDir), mkdir(iconsDir); end
+if ~isfolder(iconsDir), mkdir(iconsDir); end
 
 % Copy icons
 nIcons = numel(packageIcons);
@@ -214,7 +184,7 @@ end
 % Create documentation output directory if non-existing
 disp('Creating documenation directory...')
 docDir=[outDir filesep 'doc'];
-if ~isdir(docDir), mkdir(docDir); end
+if ~isfolder(docDir), mkdir(docDir); end
 
 % Copy documentation
 nDocFiles = numel(packageDocs);
@@ -228,7 +198,7 @@ if ~isempty(packageMexFuns)
     % Create mex output directory if non-existing
     disp('Creating MEX-files directory...')
     mexDir=[outDir filesep 'mex'];
-    if ~isdir(mexDir), mkdir(mexDir); end
+    if ~isfolder(mexDir), mkdir(mexDir); end
     
     % Copy mex-files
     nMexFiles = numel(packageMexFuns);
@@ -242,7 +212,7 @@ end
 %% External libraries
 disp('Creating external directory...')
 externDir=[outDir filesep 'extern'];
-if ~isdir(externDir), mkdir(externDir); end
+if ~isfolder(externDir), mkdir(externDir); end
 if ~isempty(packExternXBF)
     % Copy function files
     nFiles = numel(packExternXBF);
@@ -264,15 +234,3 @@ copyfile(fullfile(bfSourceDir), bfTargetDir)
 
 disp(['Wrote package to ' outDir])
 
-
-function legacyFunctions = getLegacyCode(packageList)
-
-legacyFunctions = {};
-if any(strcmp('TrackingPackage', packageList))
-    legacyFunctions = {...
-        'scriptDetectGeneral.m';
-        'scriptTrackGeneral.m';...
-        'overlayFeaturesMovie.m';...
-        'overlayTracksMovieNew.m';...
-        'plotTracks2D.m'};
-end
