@@ -195,7 +195,7 @@ end
 % hold on
 % perform ranksum test for every single combination
 maxPoint = quantile(matrixData,[0.25 0.75]);
-if size(matrixData,2)>1
+if size(matrixData,2)>1 && size(matrixData,1)>1
     maxPoint2 = maxPoint(2,:)+(maxPoint(2,:)-maxPoint(1,:))*whiskerRatio;
     maxPoint2 = max(maxPoint2);
 else
@@ -246,7 +246,7 @@ for k=1:(numConditions-1)
 end
 q=q+lineGap*3;
 minPoint = quantile(matrixData,[0.25 0.75]);
-if size(matrixData,2)>1
+if size(matrixData,2)>1 && size(minPoint,1)>1
     minPoint2 = minPoint(1,:)-(minPoint(2,:)-minPoint(1,:))*whiskerRatio;
     minPoint2 = min(minPoint2);
 else
