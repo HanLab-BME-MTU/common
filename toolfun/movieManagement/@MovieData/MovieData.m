@@ -151,6 +151,13 @@ classdef  MovieData < MovieObject & matlab.mixin.Heterogeneous
             obj.checkPropertyValue('channels_',value);
             obj.channels_=value;
         end
+
+        
+        function setChannel(obj, inputChannel)
+            % Returns the channel corresponding to the specified index
+            obj.channels_=inputChannel;
+        end
+        
         
         function set.pixelSize_(obj, value)
             obj.checkPropertyValue('pixelSize_',value);
