@@ -15,8 +15,8 @@ ip.addParameter('Position', 'both', @(x) any(strcmpi(x, {'both', 'top', 'bottom'
 ip.parse(he, varargin{:});
 de = ip.Results.de;
 
-he = get(he, 'Children'); % deprecated 
-xd = get(he(2), 'XData');
+% he = get(he, 'Children'); % deprecated 
+xd = get(he, 'XData');
 if strcmpi(ip.Results.Position, 'bottom')
     xd(4:9:end) = xd(1:9:end);
     xd(5:9:end) = xd(1:9:end);
@@ -31,4 +31,4 @@ else
     xd(7:9:end) = xd(1:9:end) - de;
     xd(8:9:end) = xd(1:9:end) + de;
 end
-set(he(2), 'XData', xd);
+set(he, 'XData', xd);

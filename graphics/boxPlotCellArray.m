@@ -9,6 +9,12 @@ function [sucess]=boxPlotCellArray(cellArrayData,nameList,convertFactor,notchOn,
 %           forceShowP          0 if you want to show only significant p
 %                               1 if you want to show all p 
 %                               2 if you do not want to show any p
+% Example:
+% sampleArray{1}=randn(100,1);
+% sampleArray{2}=randn(100,1)*1.3+2;
+% sampleArray{3}=randn(50,1)*1.5+1;
+% nameList={'G1','G2','G3'};
+% boxPlotCellArray(sampleArray,nameList,1,1,1)
 % Sangyoon Han, March 2016
 [lengthLongest]=max(cellfun(@(x) length(x),cellArrayData));
 %If there is no data, exclude them in the plot
@@ -55,41 +61,7 @@ forceShowP = ip.Results.forceShowP;
 notchOn = ip.Results.notchOn;
 plotIndivPoint = ip.Results.plotIndivPoint;
 convertFactor = ip.Results.convertFactor;
-% if nargin<7
-%     markerSize=2;
-% end
-% if isempty(matrixData)
-%     text(0.4,0.5,'Empty Data')
-%     return
-% end
-% if nargin<6
-%     markerSize=2;
-%     forceShowP=false;
-% end
-% if nargin<5
-%     markerSize=2;
-%     forceShowP=false;
-%     plotIndivPoint = true;
-% end
-% if nargin<4
-%     markerSize=2;
-%     forceShowP=false;
-%     notchOn=true;
-%     plotIndivPoint = true;
-% end
-% if nargin<3
-%     markerSize=2;
-%     forceShowP=false;
-%     convertFactor = 1;
-%     notchOn=true;
-% end
-% if nargin<2
-%     markerSize=2;
-%     nameList=arrayfun(@(x) num2str(x),(1:numConditions),'UniformOutput',false);
-%     convertFactor = 1;
-%     notchOn=true;
-%     forceShowP=false;
-% end
+
 nameList(idEmptyData)=[];
 
 boxWidth=0.5;
@@ -102,6 +74,33 @@ catch
     nameList=arrayfun(@num2str,(1:numel(cellArrayData))','unif',false);
     nameListNew = cellfun(@(x,y) [x '(N=' num2str(sum(~isnan(y))) ')'],nameList,cellArrayData,'UniformOutput', false);
 end
+
+% Generating color group
+%      r  red       1               
+%      g  green     2
+%      b  blue      3
+%      y  yellow    4            
+%      m  magenta   5           
+%      c  cyan      6        
+%      a  apple green 7  
+%      d  dark gray 8   
+%      e  evergreen 9    
+%      f  fuchsia   10                  
+%      h  honey     11     
+%      i  indigo    12                  
+%      j  jade      13               
+%      l  lilac     14            
+%      n  nutbrown  15         
+%      p  pink      16                  
+%      q  kumquat   17             
+%      s  sky blue  18                    
+%      t  tan       19                          
+%      u  umber     20                            
+%      v  violet    21                           
+%      z  zinc      22
+%      k  black     23
+colorSwitch = 'qkjlrabnfilkpuvdt';
+color = extendedColors(colorSwitch);
 
 onlyOneDataAllGroups=false;
 numCategories = numel(cellArrayData);
@@ -147,9 +146,9 @@ if plotIndivPoint
                 xData(curIdx) = ii - N(jj)/Nmax*scatterWidth/2 + N(jj)/Nmax*scatterWidth*(rand(size(xData(curIdx),1),1));
             end
             if horizontalPlot
-                scatter(ax, matrixData(:,ii), xData,'filled','MarkerFaceColor',[.3 .3 .3],'MarkerEdgeColor','none','SizeData',markerSize)
+                scatter(ax, matrixData(:,ii), xData,'filled','MarkerFaceColor',color(ii,:)*0.5,'MarkerEdgeColor','none','SizeData',markerSize)
             else
-                scatter(ax, xData,matrixData(:,ii),'filled','MarkerFaceColor',[.3 .3 .3],'MarkerEdgeColor','none','SizeData',markerSize)
+                scatter(ax, xData,matrixData(:,ii),'filled','MarkerFaceColor',color(ii,:)*0.5,'MarkerEdgeColor','none','SizeData',markerSize)
             end
         end
         hold on
@@ -163,20 +162,20 @@ if ~onlyOneDataAllGroups
     if notchOn %min(sum(~isnan(matrixData),1))>20 || 
         if horizontalPlot
             boxplot(ax,matrixData,'whisker',whiskerRatio,'notch','on',...
-                'labels',nameListNew,'symbol','','widths',boxWidth,'jitter',1,'colors','k','Orientation','horizontal');%, 'labelorientation','inline');
+                'labels',nameListNew,'symbol','','widths',boxWidth,'jitter',1,'colors',color,'Orientation','horizontal');%, 'labelorientation','inline');
         else
             boxplot(ax,matrixData,'whisker',whiskerRatio,'notch','on',...
-                'labels',nameListNew,'symbol','','widths',boxWidth,'jitter',1,'colors','k');%, 'labelorientation','inline');
+                'labels',nameListNew,'symbol','','widths',boxWidth,'jitter',1,'colors',color);%, 'labelorientation','inline');
         end
     else % if the data is too small, don't use notch
 %         boxplot(matrixData,'whisker',whiskerRatio*0.95,'notch','off',...
 %             'labels',nameListNew,'symbol','','widths',boxWidth,'jitter',0,'colors','k');%, 'labelorientation','inline');
         if horizontalPlot
             boxplot(ax,matrixData,...
-                'labels',nameListNew,'symbol','','widths',boxWidth,'jitter',1,'colors','k','Orientation','horizontal');%, 'labelorientation','inline');
+                'labels',nameListNew,'symbol','','widths',boxWidth,'jitter',1,'colors',color,'Orientation','horizontal');%, 'labelorientation','inline');
         else
             boxplot(ax,matrixData,...
-                'labels',nameListNew,'symbol','','widths',boxWidth,'jitter',0,'colors','k');%, 'labelorientation','inline');
+                'labels',nameListNew,'symbol','','widths',boxWidth,'jitter',0,'colors',color);%, 'labelorientation','inline');
         end
     end
 else
@@ -202,8 +201,9 @@ else
     maxPoint2 = maxPoint(2)+(maxPoint(2)-maxPoint(1))*whiskerRatio;
 end
 lineGap=maxPoint2*0.05;
-q=0;
+xGap = 0.02;
 for k=1:(numConditions-1)
+    q=-2*lineGap;
     for ii=k+1:numConditions
         if numel(cellArrayData{k})>1 && numel(cellArrayData{ii})>1
             if kstest(cellArrayData{k}) % this means the test rejects the null hypothesis
@@ -213,14 +213,14 @@ for k=1:(numConditions-1)
                     if horizontalPlot
                         line(ax,ones(1,2)*(maxPoint2+q),[k ii], 'Color','k')    
                     else
-                        line(ax,[k ii], ones(1,2)*(maxPoint2+q),'Color','k')    
+                        line(ax,[k+xGap ii-xGap], ones(1,2)*(maxPoint2+q),'Color','k')    
                     end
                     q=q+lineGap;
                     if horizontalPlot
-                        t=text(ax,maxPoint2+q, floor((k+ii)/2)+0.3, ['p=' num2str(p,'%3.2e') ' (r)']);
+                        t=text(ax,maxPoint2+q, floor((k+ii)/2)+0.3, ['p=' num2str(p,'%2.2e') ' (r)']);
                         t.Rotation=45;
                     else
-                        text(ax,floor((k+ii)/2)+0.3, maxPoint2+q,['p=' num2str(p,'%3.2e') ' (r)'])
+                        text(ax,floor((k+ii)/2)+0.3, maxPoint2+q,['p=' num2str(p,'%2.2e') ' (r)'])
                     end
                 end
             else
@@ -228,9 +228,9 @@ for k=1:(numConditions-1)
                 if (p<0.05 && forceShowP~=2) || forceShowP==1
                     q=q+lineGap;
                     if horizontalPlot
-                        line(ax,ones(1,2)*(maxPoint2+q),[k ii], 'Color','k')    
+                        line(ax,ones(1,2)*(maxPoint2+q),[k+xGap ii-xGap], 'Color','k')    
                     else
-                        line(ax,[k ii], ones(1,2)*(maxPoint2+q),'Color','k')    
+                        line(ax,[k+xGap ii-xGap], ones(1,2)*(maxPoint2+q),'Color','k')    
                     end
                     q=q+lineGap;
                     if horizontalPlot
@@ -262,7 +262,7 @@ if maxPoint2>minPoint2-lineGap*2
         xlim([minPoint2-lineGap*10 maxPoint2+lineGap*10])
     else
         try
-            ylim([minPoint2-lineGap*10 maxPoint2+lineGap*10])
+            ylim([minPoint2+lineGap*5 maxPoint2+lineGap*12])
         catch
             ylim auto
         end
