@@ -28,7 +28,7 @@ classdef MovieList < MovieObject
                         movies,'UniformOutput',false);
                     obj.movies_ = num2cell(movies);
                 else
-                    error('lccb:ml:constructor','Movies should be a cell array or a array of MovieData');
+                    error('lccb&hanlab:ml:constructor','Movies should be a cell array or a array of MovieData');
                 end
                 
                 obj.outputDirectory_ = outputDirectory;
