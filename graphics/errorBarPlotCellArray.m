@@ -14,11 +14,17 @@ ip.CaseSensitive = false;
 addRequired(ip,'cellArrayData');
 addOptional(ip,'nameList',arrayfun(@(x) num2str(x),(1:numel(cellArrayData)),'UniformOutput',false));
 addOptional(ip,'convertFactor',1);
+addParameter(ip,'colorful',true);
+addParameter(ip,'color','r');
+addParameter(ip,'Stat',true);
 addParameter(ip,'markerSize',6);
 addParameter(ip,'ax',gca);
 addParameter(ip,'horizontalPlot',false);
 parse(ip,cellArrayData,nameList,convertFactor,varargin{:});
 MSize = ip.Results.markerSize;
+colorful = ip.Results.colorful;
+colorSelected = ip.Results.color;
+doStat = ip.Results.Stat;
 
 [lengthLongest]=max(cellfun(@(x) length(x),cellArrayData));
 numConditions = numel(cellArrayData);
@@ -28,23 +34,36 @@ for k=1:numConditions
 end
 
 colorSwitch = 'qkjlrabnfilkpuvdt';
-color = extendedColors(colorSwitch);
+colors = extendedColors(colorSwitch);
 
 matrixData=matrixData*convertFactor;
 meanAll = nanmean(matrixData);
 
-for ii=1:numConditions
-    if iscell(nameList)
-        errorbar(ii,nanmean(matrixData(:,ii)),...
-            stdErrMean(matrixData(:,ii)),...
-            'Marker', 'x','MarkerSize',MSize,'Color', color(ii,:));
-    else
-        errorbar(nameList(ii),nanmean(matrixData(:,ii)),...
-            stdErrMean(matrixData(:,ii)),...
-            'Marker', 'x','MarkerSize',MSize,'Color', color(ii,:));
+if colorful
+    for ii=1:numConditions
+        if iscell(nameList)
+            errorbar(ii,nanmean(matrixData(:,ii)),...
+                stdErrMean(matrixData(:,ii)),...
+                'Marker', 'x','MarkerSize',MSize,'Color', colors(ii,:));
+        else
+            errorbar(nameList(ii),nanmean(matrixData(:,ii)),...
+                stdErrMean(matrixData(:,ii)),...
+                'Marker', 'x','MarkerSize',MSize,'Color', colors(ii,:));
+        end
+        hold on
     end
-    hold on
+else
+    if iscell(nameList)
+        errorbar(1:numConditions,nanmean(matrixData),...
+            stdErrMean(matrixData),...
+            'Marker', 'x','MarkerSize',MSize,'Color', colorSelected);
+    else
+        errorbar(nameList,nanmean(matrixData),...
+            stdErrMean(matrixData),...
+            'Marker', 'x','MarkerSize',MSize,'Color', colorSelected);
+    end
 end
+
 set(gca,'XTickLabelRotation',45)
 if iscell(nameList)
     set(gca,'XTickLabel',nameList)
@@ -63,36 +82,39 @@ maxPoint2 = nanmax(maxPoint(:));
 lineGap=maxPoint2*0.03;
 xGap = 0.02;
 ax = gca;
-if iscell(nameList)
-    xi = 1:numel(nameList);
-else
-    xi = nameList;
-end
-for k=1:(numConditions-1)
-    q=-2*lineGap;
-    for ii=k+1:numConditions
-        if numel(cellArrayData{k})>1 && numel(cellArrayData{ii})>1
-            if kstest(cellArrayData{k}) % this means the test rejects the null hypothesis
-                [p]=ranksum(cellArrayData{k},cellArrayData{ii});
-                if (p<0.05) 
-                    q=q+lineGap;
-                    line(ax,[xi(k)+xGap xi(ii)-xGap], ones(1,2)*(maxPoint2+q),'Color','k')    
-                    q=q+lineGap;
-                    text(ax,floor((xi(k)+xi(ii))/2)+0.3, maxPoint2+q,['p=' num2str(p,'%2.2e') ' (r)'])
-                end
-            else
-                [~,p]=ttest2(cellArrayData{k},cellArrayData{ii});
-                if (p<0.05 ) 
-                    q=q+lineGap;
-                    line(ax,[xi(k)+xGap xi(ii)-xGap], ones(1,2)*(maxPoint2+q),'Color','k')    
-                    q=q+lineGap;
-                    text(ax,floor((xi(k)+xi(ii))/2)+0.3, maxPoint2+q,['p=' num2str(p,'%3.2e') ' (t)'])
+if doStat
+    if iscell(nameList)
+        xi = 1:numel(nameList);
+    else
+        xi = nameList;
+    end
+    for k=1:(numConditions-1)
+        q=-2*lineGap;
+        for ii=k+1:numConditions
+            if numel(cellArrayData{k})>1 && numel(cellArrayData{ii})>1
+                if kstest(cellArrayData{k}) % this means the test rejects the null hypothesis
+                    [p]=ranksum(cellArrayData{k},cellArrayData{ii});
+                    if (p<0.05) 
+                        q=q+lineGap;
+                        line(ax,[xi(k)+xGap xi(ii)-xGap], ones(1,2)*(maxPoint2+q),'Color','k')    
+                        q=q+lineGap;
+                        text(ax,floor((xi(k)+xi(ii))/2)+0.3, maxPoint2+q,['p=' num2str(p,'%2.2e') ' (r)'])
+                    end
+                else
+                    [~,p]=ttest2(cellArrayData{k},cellArrayData{ii});
+                    if (p<0.05 ) 
+                        q=q+lineGap;
+                        line(ax,[xi(k)+xGap xi(ii)-xGap], ones(1,2)*(maxPoint2+q),'Color','k')    
+                        q=q+lineGap;
+                        text(ax,floor((xi(k)+xi(ii))/2)+0.3, maxPoint2+q,['p=' num2str(p,'%3.2e') ' (t)'])
+                    end
                 end
             end
         end
     end
+else
+    q=0;
 end
-
 set(gca,'FontSize',6)
 set(findobj(gca,'Type','Text'),'FontSize',5)
 
