@@ -104,6 +104,9 @@ color = extendedColors(colorSwitch);
 
 onlyOneDataAllGroups=false;
 numCategories = numel(cellArrayData);
+while size(color,1)<numCategories
+    color = [color; color];
+end
 onlyOneDataPerEachGroup=false(1,numCategories);
 if plotIndivPoint
     % individual data jitter plot
@@ -202,6 +205,7 @@ else
 end
 lineGap=maxPoint2*0.05;
 xGap = 0.02;
+q=-2*lineGap;
 for k=1:(numConditions-1)
     q=-2*lineGap;
     for ii=k+1:numConditions
