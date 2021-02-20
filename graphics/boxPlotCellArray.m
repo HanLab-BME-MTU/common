@@ -205,26 +205,37 @@ else
 end
 lineGap=maxPoint2*0.05;
 xGap = 0.02;
-q=-2*lineGap;
+% q=-2*lineGap;
+qUsed=[];
 for k=1:(numConditions-1)
-    q=-2*lineGap;
+%     q=-2*lineGap + 0.5*lineGap*(k-1); %0.5*lineGap*mod(k-1,2);
     for ii=k+1:numConditions
         if numel(cellArrayData{k})>1 && numel(cellArrayData{ii})>1
             if kstest(cellArrayData{k}) % this means the test rejects the null hypothesis
                 [p]=ranksum(cellArrayData{k},cellArrayData{ii});
                 if (p<0.05 && forceShowP~=2) || forceShowP==1 
+                    q = quantile(cell2mat(cellArrayData(k:ii)'),0.95);
+                    tol=0.95*lineGap;
+                    
+                    a=find(abs(qUsed-q)<tol,1);
+                    while ~isempty(a) %ismember(q,qUsed) 
+                        q=qUsed(a)+lineGap;
+                        a=find(abs(qUsed-q)<tol,1);
+                    end
+                    qUsed = [qUsed q];
                     q=q+lineGap;
                     if horizontalPlot
                         line(ax,ones(1,2)*(maxPoint2+q),[k ii], 'Color','k')    
                     else
-                        line(ax,[k+xGap ii-xGap], ones(1,2)*(maxPoint2+q),'Color','k')    
+                        line(ax,[k+xGap ii-xGap], ones(1,2)*(q),'Color','k')    
                     end
-                    q=q+lineGap;
+                    q=q+lineGap*0.5;
                     if horizontalPlot
                         t=text(ax,maxPoint2+q, floor((k+ii)/2)+0.3, ['p=' num2str(p,'%2.2e') ' (r)']);
                         t.Rotation=45;
                     else
-                        text(ax,floor((k+ii)/2)+0.3, maxPoint2+q,['p=' num2str(p,'%2.2e') ' (r)'])
+%                         text(ax,floor((k+ii)/2)+0.3, maxPoint2+q,['p=' num2str(p,'%2.2e') ' (r)'])
+                        text(ax,((k+ii)/2)-0.4, q,['p=' num2str(p,'%2.2e') ' (r)'])
                     end
                 end
             else
@@ -241,43 +252,47 @@ for k=1:(numConditions-1)
                         t=text(ax, maxPoint2+q, floor((k+ii)/2)+0.3, ['p=' num2str(p,'%3.2e') ' (t)']);
                         t.Rotation=45;
                     else
-                        text(ax,floor((k+ii)/2)+0.3, maxPoint2+q,['p=' num2str(p,'%3.2e') ' (t)'])
+                        text(ax,((k+ii)/2), maxPoint2+q,['p=' num2str(p,'%2.1e') ' (t)'])
+%                         text(ax,floor((k+ii)/2)+0.3, maxPoint2+q,['p=' num2str(p,'%3.2e') ' (t)'])
                     end
                 end
             end
         end
     end
 end
-q=q+lineGap*3;
-minPoint = quantile(matrixData,[0.25 0.75]);
-if size(matrixData,2)>1 && size(minPoint,1)>1
-    minPoint2 = minPoint(1,:)-(minPoint(2,:)-minPoint(1,:))*whiskerRatio;
-    minPoint2 = min(minPoint2);
-else
-    minPoint2 = minPoint(2)-(minPoint(2)-minPoint(1))*whiskerRatio;
-end
-if plotIndivPoint && ~forceShowP
-    maxPoint2 = quantile(matrixData(:),0.99);
-else
-    maxPoint2 = maxPoint2+q;
-end
-if maxPoint2>minPoint2-lineGap*2
-    if horizontalPlot
-        xlim([minPoint2-lineGap*10 maxPoint2+lineGap*10])
-    else
-        try
-            ylim([minPoint2+lineGap*5 maxPoint2+lineGap*12])
-        catch
-            ylim auto
-        end
-    end
-else
-    if horizontalPlot
-        xlim auto
-    else
-        ylim auto
-    end
-end
+% q=q+lineGap*3;
+% minPoint = quantile(matrixData,[0.25 0.75]);
+% if size(matrixData,2)>1 && size(minPoint,1)>1
+%     minPoint2 = minPoint(1,:)-(minPoint(2,:)-minPoint(1,:))*whiskerRatio;
+%     minPoint2 = min(minPoint2);
+% else
+%     minPoint2 = minPoint(2)-(minPoint(2)-minPoint(1))*whiskerRatio;
+% end
+% if plotIndivPoint && ~forceShowP
+%     maxPoint2 = quantile(matrixData(:),0.99);
+% else
+%     maxPoint2 = maxPoint2+q;
+% end
+% if maxPoint2>minPoint2-lineGap*2
+%     if horizontalPlot
+%         xlim([minPoint2-lineGap*10 maxPoint2+lineGap*10])
+%     else
+%         try
+%             ylim([minPoint2-lineGap*5 maxPoint2+lineGap*12])
+%         catch
+%             ylim auto
+%         end
+%     end
+% else
+%     if horizontalPlot
+%         xlim auto
+%     else
+%         ylim auto
+%     end
+% end
+
+xlim auto
+ylim auto
 
 set(ax,'FontSize',7)
 set(findobj(ax,'Type','Text'),'FontSize',6)
