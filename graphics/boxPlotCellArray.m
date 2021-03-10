@@ -193,7 +193,17 @@ set(findobj(ax,'tag','Median'),'LineWidth',2)
 if ~horizontalPlot
     set(ax,'XTickLabelRotation',45)
 end
-
+% We assume that at each cell array, there is Nx1 vectors (not 1xN vectors)
+% we flip them if they are in row vectors:
+if size(cellArrayData{1},1)==1 && size(cellArrayData{1},2)>1
+    cellArrayData = cellfun(@transpose, cellArrayData, 'unif', false);
+elseif size(cellArrayData{2},1)==1 && size(cellArrayData{2},2)>1
+    cellArrayData = cellfun(@transpose, cellArrayData, 'unif', false);
+end
+% We also have to format cellArrayData to be only a colume.
+if size(cellArrayData,1)==1 && size(cellArrayData,2)>1
+    cellArrayData = cellArrayData';
+end
 % hold on
 % perform ranksum test for every single combination
 maxPoint = quantile(matrixData,[0.25 0.75]);
@@ -204,7 +214,7 @@ else
     maxPoint2 = maxPoint(2)+(maxPoint(2)-maxPoint(1))*whiskerRatio;
 end
 lineGap=maxPoint2*0.05;
-xGap = 0.02;
+xGap = 0.05;
 % q=-2*lineGap;
 qUsed=[];
 for k=1:(numConditions-1)
@@ -212,49 +222,36 @@ for k=1:(numConditions-1)
     for ii=k+1:numConditions
         if numel(cellArrayData{k})>1 && numel(cellArrayData{ii})>1
             if kstest(cellArrayData{k}) % this means the test rejects the null hypothesis
+                method = 'ranksum test';
                 [p]=ranksum(cellArrayData{k},cellArrayData{ii});
-                if (p<0.05 && forceShowP~=2) || forceShowP==1 
-                    q = quantile(cell2mat(cellArrayData(k:ii)'),0.95);
-                    tol=0.95*lineGap;
-                    
-                    a=find(abs(qUsed-q)<tol,1);
-                    while ~isempty(a) %ismember(q,qUsed) 
-                        q=qUsed(a)+lineGap;
-                        a=find(abs(qUsed-q)<tol,1);
-                    end
-                    qUsed = [qUsed q];
-                    q=q+lineGap;
-                    if horizontalPlot
-                        line(ax,ones(1,2)*(maxPoint2+q),[k ii], 'Color','k')    
-                    else
-                        line(ax,[k+xGap ii-xGap], ones(1,2)*(q),'Color','k')    
-                    end
-                    q=q+lineGap*0.5;
-                    if horizontalPlot
-                        t=text(ax,maxPoint2+q, floor((k+ii)/2)+0.3, ['p=' num2str(p,'%2.2e') ' (r)']);
-                        t.Rotation=45;
-                    else
-%                         text(ax,floor((k+ii)/2)+0.3, maxPoint2+q,['p=' num2str(p,'%2.2e') ' (r)'])
-                        text(ax,((k+ii)/2)-0.4, q,['p=' num2str(p,'%2.2e') ' (r)'])
-                    end
-                end
             else
+                method = 'unpaired t-test';
                 [~,p]=ttest2(cellArrayData{k},cellArrayData{ii});
-                if (p<0.05 && forceShowP~=2) || forceShowP==1
-                    q=q+lineGap;
-                    if horizontalPlot
-                        line(ax,ones(1,2)*(maxPoint2+q),[k+xGap ii-xGap], 'Color','k')    
-                    else
-                        line(ax,[k+xGap ii-xGap], ones(1,2)*(maxPoint2+q),'Color','k')    
-                    end
-                    q=q+lineGap;
-                    if horizontalPlot
-                        t=text(ax, maxPoint2+q, floor((k+ii)/2)+0.3, ['p=' num2str(p,'%3.2e') ' (t)']);
-                        t.Rotation=45;
-                    else
-                        text(ax,((k+ii)/2), maxPoint2+q,['p=' num2str(p,'%2.1e') ' (t)'])
-%                         text(ax,floor((k+ii)/2)+0.3, maxPoint2+q,['p=' num2str(p,'%3.2e') ' (t)'])
-                    end
+            end
+            if (p<0.05 && forceShowP~=2) || forceShowP==1 
+%                 q = quantile(cell2mat(cellArrayData(k:ii)),0.92);
+                q = max(cellfun(@(x) quantile(x,0.95),cellArrayData(k:ii)));
+                tol=0.95*lineGap;
+
+                a=find(abs(qUsed-q(1))<tol,1);
+                while ~isempty(a) %ismember(q,qUsed) 
+                    q=qUsed(a)+lineGap;
+                    a=find(abs(qUsed-q)<tol,1);
+                end
+                qUsed = [qUsed q];
+                q=q+lineGap;
+                if horizontalPlot
+                    line(ax,ones(1,2)*(maxPoint2+q),[k ii], 'Color','k')    
+                else
+                    line(ax,[k+xGap ii-xGap], ones(1,2)*(q),'Color','k')    
+                end
+                q=q+lineGap*0.5;
+                if horizontalPlot
+                    t=text(ax,maxPoint2+q, floor((k+ii)/2)+0.3, ['p=' num2str(p,'%2.2e') ' (r)']);
+                    t.Rotation=45;
+                else
+%                         text(ax,floor((k+ii)/2)+0.3, maxPoint2+q,['p=' num2str(p,'%2.2e') ' (r)'])
+                    text(ax,((k+ii)/2)-0.2, q,['p=' num2str(p,2)]); %'%2.2e'
                 end
             end
         end
@@ -297,5 +294,7 @@ ylim auto
 set(ax,'FontSize',7)
 set(findobj(ax,'Type','Text'),'FontSize',6)
 sucess=true;
+text(ax,ii-1.5,ax.YLim(1)+lineGap,method)
+
 hold off
 
