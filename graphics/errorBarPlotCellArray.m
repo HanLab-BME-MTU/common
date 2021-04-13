@@ -20,11 +20,14 @@ addParameter(ip,'Stat',true);
 addParameter(ip,'markerSize',6);
 addParameter(ip,'ax',gca);
 addParameter(ip,'horizontalPlot',false);
+addParameter(ip,'usePairedTTest',false);
+
 parse(ip,cellArrayData,nameList,convertFactor,varargin{:});
 MSize = ip.Results.markerSize;
 colorful = ip.Results.colorful;
 colorSelected = ip.Results.color;
 doStat = ip.Results.Stat;
+usePairedTTest = ip.Results.usePairedTTest;
 
 [lengthLongest]=max(cellfun(@(x) length(x),cellArrayData));
 numConditions = numel(cellArrayData);
@@ -33,8 +36,12 @@ for k=1:numConditions
     matrixData(1:length(cellArrayData{k}),k) = cellArrayData{k};
 end
 
-colorSwitch = 'qkjlrabnfilkpuvdt';
-colors = extendedColors(colorSwitch);
+if numConditions<18
+    colorSwitch = 'qkjlrabnfilkpuvdt';
+    colors = extendedColors(colorSwitch);
+else
+    colors = distinguishable_colors(numConditions,'w');
+end
 
 matrixData=matrixData*convertFactor;
 meanAll = nanmean(matrixData);
@@ -77,9 +84,11 @@ end
 
 hold on
 % perform ranksum test for every single combination
-maxPoint =cellfun(@nanmedian,cellArrayData)+cellfun(@(x) nanstd(x),cellArrayData); %/sqrt(length(x))
+maxPoint =cellfun(@nanmean,cellArrayData)+cellfun(@(x) stdErrMean(x),cellArrayData); %/sqrt(length(x))
 maxPoint2 = nanmax(maxPoint(:));
 lineGap=maxPoint2*0.03;
+qUsed=[];
+xUsed=[];
 xGap = 0.02;
 ax = gca;
 if doStat
@@ -92,23 +101,43 @@ if doStat
         q=-2*lineGap;
         for ii=k+1:numConditions
             if numel(cellArrayData{k})>1 && numel(cellArrayData{ii})>1
-                if kstest(cellArrayData{k}) % this means the test rejects the null hypothesis
+                if usePairedTTest
+                    method = 'paired t-test';
+                    [~,p] = ttest(cellArrayData{k},cellArrayData{ii});
+                elseif kstest(cellArrayData{k}) % this means the test rejects the null hypothesis
+                    method = 'ranksum test';
                     [p]=ranksum(cellArrayData{k},cellArrayData{ii});
-                    if (p<0.05) 
-                        q=q+lineGap;
-                        line(ax,[xi(k)+xGap xi(ii)-xGap], ones(1,2)*(maxPoint2+q),'Color','k')    
-                        q=q+lineGap;
-                        text(ax,floor((xi(k)+xi(ii))/2)+0.3, maxPoint2+q,['p=' num2str(p,'%2.2e') ' (r)'])
-                    end
                 else
+                    method = 'unpaired t-test';
                     [~,p]=ttest2(cellArrayData{k},cellArrayData{ii});
-                    if (p<0.05 ) 
-                        q=q+lineGap;
-                        line(ax,[xi(k)+xGap xi(ii)-xGap], ones(1,2)*(maxPoint2+q),'Color','k')    
-                        q=q+lineGap;
-                        text(ax,floor((xi(k)+xi(ii))/2)+0.3, maxPoint2+q,['p=' num2str(p,'%3.2e') ' (t)'])
-                    end
                 end
+                if (p<0.05) 
+                    q = max(cellfun(@(x) nanmean(x)+stdErrMean(x),cellArrayData(k:ii)));
+                    tol=0.95*lineGap;
+
+                    qOverlap=abs(qUsed-q)<tol;
+                    xOverlap=false(1,size(xUsed,1));
+                    for kk=1:size(xUsed,1)
+                        xOverlap(kk)=(k<xUsed(kk,2) & ii>xUsed(kk,1));
+                    end
+                    a = find(qOverlap & xOverlap,1);
+                    while ~isempty(a) %ismember(q,qUsed) 
+                        q=qUsed(a)+lineGap;
+                        qOverlap=abs(qUsed-q)<tol;
+                        a = find(qOverlap & xOverlap,1);
+                    end
+                    qUsed = [qUsed q];
+                    xUsed = [xUsed; k ii];
+                    q=q+lineGap*0.1;
+                    line(ax,[k+xGap ii-xGap], ones(1,2)*(q),'Color','k')    
+                    q=q+lineGap*0.3;
+%                         text(ax,floor((k+ii)/2)+0.3, maxPoint2+q,['p=' num2str(p,'%2.2e') ' (r)'])
+                    text(ax,((k+ii)/2)-0.4, q,['p=' num2str(p,2)]) %'%2.2e'
+%                         line(ax,[xi(k)+xGap xi(ii)-xGap], ones(1,2)*(maxPoint2+q),'Color','k')    
+%                         q=q+lineGap;
+%                         text(ax,floor((xi(k)+xi(ii))/2)+0.3, maxPoint2+q,['p=' num2str(p,'%2.2e') ' (r)'])
+                end
+
             end
         end
     end
@@ -122,5 +151,7 @@ q=q+lineGap*3;
 minPoint =cellfun(@nanmedian,cellArrayData)-cellfun(@(x) nanstd(x)/sqrt(length(x)),cellArrayData);
 minPoint2 = nanmin(minPoint(:));
 
-yMin = min(minPoint2-lineGap*2, 0);
+yMin = max(minPoint2-lineGap*2, 0);
 ylim([yMin maxPoint2+q+lineGap*8])
+text(ax,ii-1,yMin+lineGap,method)
+
