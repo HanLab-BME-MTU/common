@@ -66,7 +66,7 @@ nameList(idEmptyData)=[];
 
 boxWidth=0.5;
 scatterWidth=boxWidth*2;
-whiskerRatio=1.5;
+whiskerRatio=0.5;
 matrixData=matrixData*convertFactor;
 try
     nameListNew = cellfun(@(x,y) [x '(N=' num2str(sum(~isnan(y))) ')'],nameList,cellArrayData,'UniformOutput', false);
@@ -165,19 +165,19 @@ if ~onlyOneDataAllGroups
     if notchOn %min(sum(~isnan(matrixData),1))>20 || 
         if horizontalPlot
             boxplot(ax,matrixData,'whisker',whiskerRatio,'notch','on',...
-                'labels',nameListNew,'symbol','','widths',boxWidth,'jitter',1,'colors',color,'Orientation','horizontal');%, 'labelorientation','inline');
+                'labels',nameListNew,'symbol','','widths',boxWidth,'jitter',0,'colors',color,'Orientation','horizontal');%, 'labelorientation','inline');
         else
             boxplot(ax,matrixData,'whisker',whiskerRatio,'notch','on',...
-                'labels',nameListNew,'symbol','','widths',boxWidth,'jitter',1,'colors',color);%, 'labelorientation','inline');
+                'labels',nameListNew,'symbol','','widths',boxWidth,'jitter',0,'colors',color);%, 'labelorientation','inline');
         end
     else % if the data is too small, don't use notch
 %         boxplot(matrixData,'whisker',whiskerRatio*0.95,'notch','off',...
 %             'labels',nameListNew,'symbol','','widths',boxWidth,'jitter',0,'colors','k');%, 'labelorientation','inline');
         if horizontalPlot
-            boxplot(ax,matrixData,...
+            boxplot(ax,matrixData,'whisker',whiskerRatio,...
                 'labels',nameListNew,'symbol','','widths',boxWidth,'jitter',1,'colors',color,'Orientation','horizontal');%, 'labelorientation','inline');
         else
-            boxplot(ax,matrixData,...
+            boxplot(ax,matrixData,'whisker',whiskerRatio,...
                 'labels',nameListNew,'symbol','','widths',boxWidth,'jitter',0,'colors',color);%, 'labelorientation','inline');
         end
     end
