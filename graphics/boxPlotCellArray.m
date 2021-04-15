@@ -1,4 +1,4 @@
-function [sucess]=boxPlotCellArray(cellArrayData,nameList,convertFactor,notchOn,plotIndivPoint,forceShowP,markerSize,varargin)
+function [sucess]=boxPlotCellArray(cellArrayData,nameList,convertFactor,notchOn,plotIndivPoint,varargin)
 % function []=boxPlotCellArray(cellArrayData,nameList,convertFactor,notchOn,plotIndivPoint,forceShowP) automatically converts cell array
 % format input to matrix input to use matlab function 'boxplot'
 % input: cellArrayData          cell array data
@@ -53,6 +53,7 @@ addParameter(ip,'forceShowP',false);
 addParameter(ip,'markerSize',2);
 addParameter(ip,'ax',gca);
 addParameter(ip,'horizontalPlot',false);
+addParameter(ip,'forceTtest',false);
 parse(ip,cellArrayData,nameList,convertFactor,notchOn,plotIndivPoint,varargin{:});
 ax=ip.Results.ax;
 horizontalPlot=ip.Results.horizontalPlot;
@@ -61,6 +62,7 @@ forceShowP = ip.Results.forceShowP;
 notchOn = ip.Results.notchOn;
 plotIndivPoint = ip.Results.plotIndivPoint;
 convertFactor = ip.Results.convertFactor;
+forceTtest =  ip.Results.forceTtest;
 
 nameList(idEmptyData)=[];
 
@@ -221,7 +223,7 @@ for k=1:(numConditions-1)
 %     q=-2*lineGap + 0.5*lineGap*(k-1); %0.5*lineGap*mod(k-1,2);
     for ii=k+1:numConditions
         if numel(cellArrayData{k})>1 && numel(cellArrayData{ii})>1
-            if kstest(cellArrayData{k}) % this means the test rejects the null hypothesis
+            if kstest(cellArrayData{k}) && ~forceTtest % this means the test rejects the null hypothesis
                 method = 'ranksum test';
                 [p]=ranksum(cellArrayData{k},cellArrayData{ii});
             else
