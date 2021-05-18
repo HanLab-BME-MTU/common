@@ -126,7 +126,7 @@ end
 m=?MovieData;
 movieFieldsAccess=cellfun(@(x) x.SetAccess,m.Properties,'Unif',false);
 moviePublicFields= cellfun(@(x) strcmpi(x,'public'),movieFieldsAccess);
-changedFields = {'outputDirectory_','movieDataPath_','movieDataFileName_'};
+changedFields = {'roiMaskPath_','outputDirectory_','movieDataPath_','movieDataFileName_'};
 movieChangedFields= cellfun(@(x) any(strcmpi(x.Name,changedFields)),m.Properties);
 
 % Create movieData object and copy public properties
