@@ -199,7 +199,7 @@ end
 % we flip them if they are in row vectors:
 if size(cellArrayData{1},1)==1 && size(cellArrayData{1},2)>1
     cellArrayData = cellfun(@transpose, cellArrayData, 'unif', false);
-elseif size(cellArrayData{2},1)==1 && size(cellArrayData{2},2)>1
+elseif numel(cellArrayData)>1 && size(cellArrayData{2},1)==1 && size(cellArrayData{2},2)>1
     cellArrayData = cellfun(@transpose, cellArrayData, 'unif', false);
 end
 % We also have to format cellArrayData to be only a colume.
@@ -218,6 +218,7 @@ end
 lineGap=maxPoint2*0.05;
 xGap = 0.05;
 % q=-2*lineGap;
+method='';
 qUsed=[];
 for k=1:(numConditions-1)
 %     q=-2*lineGap + 0.5*lineGap*(k-1); %0.5*lineGap*mod(k-1,2);
