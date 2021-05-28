@@ -91,12 +91,16 @@ imageDilatedNorm(nzInd) = (imageDilated(nzInd) - minSignal) / (maxSignal - minSi
 
 %estimate the intensity level to use for thresholding the image
 level1 = graythresh(imageDilatedNorm(nzInd)); %Otsu
-[dummy, level2] = cutFirstHistMode(imageDilatedNorm(nzInd),0); %Rosin
+[~, level2] = cutFirstHistMode(imageDilatedNorm(nzInd),0); %Rosin
 level = 0.33333*level1 + 0.66667*level2;
 
 %threshold the image
-imageThresholded = im2bw(imageDilatedNorm,level);
+imageThresholded = imbinarize(imageDilatedNorm,level);
 
+if sum(imageThresholded(:))/sum(mask(:)) < 0.003 % too small portion
+    level = level2;
+    imageThresholded = imbinarize(imageDilatedNorm,level); %'adaptive'
+end
 %fill holes in thresholded image to make continuous blobs
 imageThresholdedFilled = imfill(imageThresholded,'holes');
 
