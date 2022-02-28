@@ -27,6 +27,9 @@ MSize = ip.Results.markerSize;
 colorful = ip.Results.colorful;
 colorSelected = ip.Results.color;
 doStat = ip.Results.Stat;
+if isnumeric(nameList)
+    doStat = false;
+end
 usePairedTTest = ip.Results.usePairedTTest;
 
 [lengthLongest]=max(cellfun(@(x) length(x),cellArrayData));
@@ -45,7 +48,7 @@ end
 
 matrixData=matrixData*convertFactor;
 meanAll = nanmean(matrixData);
-
+errorKind = 'STD';
 if colorful
     for ii=1:numConditions
         if iscell(nameList)
@@ -53,9 +56,19 @@ if colorful
                 stdErrMean(matrixData(:,ii)),...
                 'Marker', 'x','MarkerSize',MSize,'Color', colors(ii,:));
         else
-            errorbar(nameList(ii),nanmean(matrixData(:,ii)),...
-                stdErrMean(matrixData(:,ii)),...
-                'Marker', 'x','MarkerSize',MSize,'Color', colors(ii,:));
+            if size(matrixData,1)<1000000
+                errorbar(nameList(ii),nanmean(matrixData(:,ii)),...
+                    stdErrMean(matrixData(:,ii)),...
+                    'Marker', 'x','MarkerSize',MSize,'Color', colors(ii,:));
+                errorKind = 'SEM';
+                text(nameList(ii),nanmean(matrixData(:,ii))+1.1*stdErrMean(matrixData(:,ii)),...
+                    ['\it N=' num2str(sum(~isnan(matrixData(:,ii))))],'FontSize',6,...
+                    'HorizontalAlignment','center','VerticalAlignment','bottom');
+            else
+                errorbar(nameList(ii),nanmean(matrixData(:,ii)),...
+                    nanstd(matrixData(:,ii)),...
+                    'Marker', 'x','MarkerSize',MSize,'Color', colors(ii,:));
+            end
         end
         hold on
     end
@@ -65,9 +78,17 @@ else
             stdErrMean(matrixData),...
             'Marker', 'x','MarkerSize',MSize,'Color', colorSelected);
     else
-        errorbar(nameList,nanmean(matrixData),...
-            stdErrMean(matrixData),...
-            'Marker', 'x','MarkerSize',MSize,'Color', colorSelected);
+        if size(matrixData,1)<1000000
+            errorbar(nameList,nanmean(matrixData),...
+                stdErrMean(matrixData),...
+                'Marker', 'x','MarkerSize',MSize,'Color', colorSelected);
+            errorKind = 'SEM';
+        else
+            errorbar(nameList,nanmean(matrixData),...
+                std(matrixData),...
+                'Marker', 'x','MarkerSize',MSize,'Color', colorSelected);
+            errorKind = 'STD';
+        end
     end
 end
 
@@ -153,5 +174,9 @@ minPoint2 = nanmin(minPoint(:));
 
 yMin = max(minPoint2-lineGap*2, 0);
 ylim([yMin maxPoint2+q+lineGap*8])
-text(ax,ii-1,yMin+lineGap,method)
+if doStat
+    text(ax,ii-1,yMin+lineGap,method)
+else
+    text(ax,nameList(end),yMin,errorKind)
+end
 
