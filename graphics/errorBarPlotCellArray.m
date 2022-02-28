@@ -118,7 +118,7 @@ if doStat
                     qOverlap=abs(qUsed-q)<tol;
                     xOverlap=false(1,size(xUsed,1));
                     for kk=1:size(xUsed,1)
-                        xOverlap(kk)=(k<xUsed(kk,2) & ii>xUsed(kk,1));
+                        xOverlap(kk)=(xi(k)<xUsed(kk,2) & xi(ii)>xUsed(kk,1));
                     end
                     a = find(qOverlap & xOverlap,1);
                     while ~isempty(a) %ismember(q,qUsed) 
@@ -127,12 +127,12 @@ if doStat
                         a = find(qOverlap & xOverlap,1);
                     end
                     qUsed = [qUsed q];
-                    xUsed = [xUsed; k ii];
+                    xUsed = [xUsed; xi(k) xi(ii)];
                     q=q+lineGap*0.1;
-                    line(ax,[k+xGap ii-xGap], ones(1,2)*(q),'Color','k')    
+                    line(ax,[xi(k)+xGap xi(ii)-xGap], ones(1,2)*(q),'Color','k')    
                     q=q+lineGap*0.3;
 %                         text(ax,floor((k+ii)/2)+0.3, maxPoint2+q,['p=' num2str(p,'%2.2e') ' (r)'])
-                    text(ax,((k+ii)/2)-0.4, q,['p=' num2str(p,2)]) %'%2.2e'
+                    text(ax,((xi(k)+xi(ii))/2)-0.4, q,['p=' num2str(p,2)]) %'%2.2e'
 %                         line(ax,[xi(k)+xGap xi(ii)-xGap], ones(1,2)*(maxPoint2+q),'Color','k')    
 %                         q=q+lineGap;
 %                         text(ax,floor((xi(k)+xi(ii))/2)+0.3, maxPoint2+q,['p=' num2str(p,'%2.2e') ' (r)'])
@@ -153,5 +153,7 @@ minPoint2 = nanmin(minPoint(:));
 
 yMin = max(minPoint2-lineGap*2, 0);
 ylim([yMin maxPoint2+q+lineGap*8])
-text(ax,ii-1,yMin+lineGap,method)
+if doStat
+    text(ax,ii-1,yMin+lineGap,method)
+end
 

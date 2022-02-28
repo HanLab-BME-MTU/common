@@ -54,6 +54,7 @@ addParameter(ip,'markerSize',2);
 addParameter(ip,'ax',gca);
 addParameter(ip,'horizontalPlot',false);
 addParameter(ip,'forceTtest',false);
+addParameter(ip,'singleColor',0);
 parse(ip,cellArrayData,nameList,convertFactor,notchOn,plotIndivPoint,varargin{:});
 ax=ip.Results.ax;
 horizontalPlot=ip.Results.horizontalPlot;
@@ -63,6 +64,7 @@ notchOn = ip.Results.notchOn;
 plotIndivPoint = ip.Results.plotIndivPoint;
 convertFactor = ip.Results.convertFactor;
 forceTtest =  ip.Results.forceTtest;
+singleColor = ip.Results.singleColor;
 
 nameList(idEmptyData)=[];
 
@@ -109,6 +111,7 @@ numCategories = numel(cellArrayData);
 while size(color,1)<numCategories
     color = [color; color];
 end
+
 onlyOneDataPerEachGroup=false(1,numCategories);
 if plotIndivPoint
     % individual data jitter plot
@@ -150,10 +153,15 @@ if plotIndivPoint
                 % Calculate the width according to N(jj)
                 xData(curIdx) = ii - N(jj)/Nmax*scatterWidth/2 + N(jj)/Nmax*scatterWidth*(rand(size(xData(curIdx),1),1));
             end
-            if horizontalPlot
-                scatter(ax, matrixData(:,ii), xData,'filled','MarkerFaceColor',color(ii,:)*0.5,'MarkerEdgeColor','none','SizeData',markerSize)
+            if singleColor==0
+                curColor = color(ii,:);
             else
-                scatter(ax, xData,matrixData(:,ii),'filled','MarkerFaceColor',color(ii,:)*0.5,'MarkerEdgeColor','none','SizeData',markerSize)
+                curColor = singleColor;
+            end
+            if horizontalPlot
+                scatter(ax, matrixData(:,ii), xData,'filled','MarkerFaceColor',curColor*0.5,'MarkerEdgeColor','none','SizeData',markerSize)
+            else
+                scatter(ax, xData,matrixData(:,ii),'filled','MarkerFaceColor',curColor*0.5,'MarkerEdgeColor','none','SizeData',markerSize)
             end
         end
         hold on
@@ -163,24 +171,32 @@ end
 if all(onlyOneDataPerEachGroup)
     onlyOneDataAllGroups=true;
 end
-if ~onlyOneDataAllGroups
+
+% color setting for box plots
+if singleColor==0
+    colors = color(ii,:);
+else
+    colors = singleColor;
+end
+
+if ~onlyOneDataAllGroups %Here I need to change color option for single color.
     if notchOn %min(sum(~isnan(matrixData),1))>20 || 
         if horizontalPlot
             boxplot(ax,matrixData,'whisker',whiskerRatio,'notch','on',...
-                'labels',nameListNew,'symbol','','widths',boxWidth,'jitter',0,'colors',color,'Orientation','horizontal');%, 'labelorientation','inline');
+                'labels',nameListNew,'symbol','','widths',boxWidth,'jitter',0,'colors',colors,'Orientation','horizontal');%, 'labelorientation','inline');
         else
             boxplot(ax,matrixData,'whisker',whiskerRatio,'notch','on',...
-                'labels',nameListNew,'symbol','','widths',boxWidth,'jitter',0,'colors',color);%, 'labelorientation','inline');
+                'labels',nameListNew,'symbol','','widths',boxWidth,'jitter',0,'colors',colors);%, 'labelorientation','inline');
         end
     else % if the data is too small, don't use notch
 %         boxplot(matrixData,'whisker',whiskerRatio*0.95,'notch','off',...
 %             'labels',nameListNew,'symbol','','widths',boxWidth,'jitter',0,'colors','k');%, 'labelorientation','inline');
         if horizontalPlot
             boxplot(ax,matrixData,'whisker',whiskerRatio,...
-                'labels',nameListNew,'symbol','','widths',boxWidth,'jitter',1,'colors',color,'Orientation','horizontal');%, 'labelorientation','inline');
+                'labels',nameListNew,'symbol','','widths',boxWidth,'jitter',1,'colors',colors,'Orientation','horizontal');%, 'labelorientation','inline');
         else
             boxplot(ax,matrixData,'whisker',whiskerRatio,...
-                'labels',nameListNew,'symbol','','widths',boxWidth,'jitter',0,'colors',color);%, 'labelorientation','inline');
+                'labels',nameListNew,'symbol','','widths',boxWidth,'jitter',0,'colors',colors);%, 'labelorientation','inline');
         end
     end
 else
