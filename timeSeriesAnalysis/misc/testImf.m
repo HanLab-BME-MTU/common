@@ -57,9 +57,9 @@ for i=1:nSurr
     
 end
 
-if flag_mexError
-    warning('mex emdc failed, reverting to slower matlab-based emd');
-end
+% if flag_mexError
+%     disp('mex emdc failed, reverting to slower matlab-based emd');
+% end
 
 %Testing each imf
 for i = 1:nImf
