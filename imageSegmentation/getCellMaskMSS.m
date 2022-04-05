@@ -117,22 +117,22 @@ idx(idx==0) = []; % remove background label
 CC.NumObjects = numel(idx);
 CC.PixelIdxList = CC.PixelIdxList(idx);
 CC.NumPixels = CC.NumPixels(idx);
-CC.PixelOrder = CC.PixelOrder(idx);
+% CC.PixelOrder = CC.PixelOrder(idx); %CC does not have PixelOrder anymore -SH
 CC.EndpointIdx = CC.EndpointIdx(idx);
-CC.rval = CC.rval(idx);
-CC.lval = CC.lval(idx);
+% CC.rval = CC.rval(idx);
+% CC.lval = CC.lval(idx);
 % labels = double(labelmatrix(CC));
 
-% order interpolated intensities such that the lower intensities are always in 'lval'
-for k = 1:CC.NumObjects
-    rmean = nanmean(CC.rval{k}(:));
-    lmean = nanmean(CC.lval{k}(:));
-    if rmean<lmean
-        tmp = CC.rval{k};
-        CC.rval{k} = CC.lval{k};
-        CC.lval{k} = tmp;
-    end
-end
+% % order interpolated intensities such that the lower intensities are always in 'lval'
+% for k = 1:CC.NumObjects
+%     rmean = nanmean(CC.rval{k}(:));
+%     lmean = nanmean(CC.lval{k}(:));
+%     if rmean<lmean
+%         tmp = CC.rval{k};
+%         CC.rval{k} = CC.lval{k};
+%         CC.lval{k} = tmp;
+%     end
+% end
 
 % mask with average intensity of each segment
 avgInt = cellfun(@(px) sum(nms(px)), CC.PixelIdxList) ./ CC.NumPixels;
@@ -154,7 +154,7 @@ cellBoundary = edgeMask > T;
 %cellBoundary = edgeMask;
 
 % 1st graph matching based on orientation at endpoints, with small search radius
-[matchedMask] = matchSegmentEndPoints(cellBoundary, theta, 'SearchRadius', ip.Results.SearchRadius, 'Display', false);
+[matchedMask] = matchSegmentEndPoints(CC, theta, 'SearchRadius', ip.Results.SearchRadius, 'Display', false);
 matchedMask = double(matchedMask);
 
 % merge edge information: intensities on both sides, endpoints
