@@ -173,7 +173,11 @@ minPoint =cellfun(@nanmedian,cellArrayData)-cellfun(@(x) nanstd(x)/sqrt(length(x
 minPoint2 = nanmin(minPoint(:));
 
 yMin = max(minPoint2-lineGap*2, 0);
-ylim([yMin maxPoint2+q+lineGap*8])
+try
+    ylim([yMin maxPoint2+q+lineGap*8])
+catch
+    ylim auto
+end
 if doStat
     text(ax,ii-1,yMin+lineGap,method)
 else
