@@ -236,16 +236,33 @@ xGap = 0.05;
 % q=-2*lineGap;
 method='';
 qUsed=[];
+if numel(cellArrayData)>2
+    method = 'ANOVA with Tukey’s honestly significant difference procedure';
+    [pAnova,~,stat] = anova1(matrixData,nameList,"off");
+    if pAnova<0.05
+        c = multcompare(stat,"Display","off");
+    else
+        c = [];
+    end
+else
+    c=[];
+end
+
 for k=1:(numConditions-1)
 %     q=-2*lineGap + 0.5*lineGap*(k-1); %0.5*lineGap*mod(k-1,2);
     for ii=k+1:numConditions
         if numel(cellArrayData{k})>1 && numel(cellArrayData{ii})>1
-            if kstest(cellArrayData{k}) && ~forceTtest % this means the test rejects the null hypothesis
-                method = 'ranksum test';
-                [p]=ranksum(cellArrayData{k},cellArrayData{ii});
+            if isempty(c)
+                if kstest(cellArrayData{k}) && ~forceTtest % this means the test rejects the null hypothesis
+                    method = 'ranksum test';
+                    [p]=ranksum(cellArrayData{k},cellArrayData{ii});
+                else
+                    method = 'unpaired t-test';
+                    [~,p]=ttest2(cellArrayData{k},cellArrayData{ii});
+                end
             else
-                method = 'unpaired t-test';
-                [~,p]=ttest2(cellArrayData{k},cellArrayData{ii});
+                % find the correnponding condition
+                p = c(c(:,1)==k & c(:,2)==ii,6);
             end
             if (p<0.05 && forceShowP~=2) || forceShowP==1 
 %                 q = quantile(cell2mat(cellArrayData(k:ii)),0.92);
