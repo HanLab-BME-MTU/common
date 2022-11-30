@@ -149,6 +149,7 @@ function imageStats(imgStack, MD)
     title('Time series of 5 summary statistics');
 
     %%
+    mkdir(fullfile(MD.outputDirectory_, 'MultiScaleAutoSeg'))
     saveas(fts, fullfile(MD.outputDirectory_, 'MultiScaleAutoSeg', 'TS_of_5statistics.png'), 'png')
     saveas(fts, fullfile(MD.outputDirectory_, 'MultiScaleAutoSeg', 'TS_of_5statistics.fig'), 'fig')
 end
