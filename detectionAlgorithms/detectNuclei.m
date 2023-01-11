@@ -154,21 +154,21 @@ if doPlot==1
 end
 
 % cut off the maxima in the noise:
-try
-    if ip.Results.confluent
-        % This only works for dense sheets!
-        level1 = thresholdFluorescenceImageFewBg(Imax(Imax(:)>0), doPlot);
-    else
-        % This only works for significant amount of Bg, but is then more reliable than the above method!
-        level1 = thresholdFluorescenceImage(Imax(Imax(:)>0), doPlot, 1);
-    end
-catch
-    % This shouldn't be used anymore. Instead, one should use the
-    % algorithm above!
-    display('!!!switched to cutFirstHistMode!!!')
-    [~, level1]=cutFirstHistMode(Imax(Imax(:)>0),0);
-end
-Imax(Imax(:)<level1)=0;
+% try
+%     if ip.Results.confluent
+%         % This only works for dense sheets!
+%         level1 = thresholdFluorescenceImageFewBg(Imax(Imax(:)>0), doPlot);
+%     else
+%         % This only works for significant amount of Bg, but is then more reliable than the above method!
+%         level1 = thresholdFluorescenceImage(Imax(Imax(:)>0), doPlot, 1);
+%     end
+% catch
+%     % This shouldn't be used anymore. Instead, one should use the
+%     % algorithm above!
+%     display('!!!switched to cutFirstHistMode!!!')
+%     [~, level1]=cutFirstHistMode(Imax(Imax(:)>0),0);
+% end
+% Imax(Imax(:)<level1)=0;
 Imax(Imax(:)>0)=1;
 
 % Show the first set of maxima:

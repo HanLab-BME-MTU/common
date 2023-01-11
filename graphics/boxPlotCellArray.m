@@ -245,7 +245,7 @@ for k=1:(numConditions-1)
                 [p]=ranksum(cellArrayData{k},cellArrayData{ii});
             else
                 method = 'unpaired t-test';
-                [~,p]=ttest2(cellArrayData{k},cellArrayData{ii});
+                [~,p]=ttest2(cellArrayData{k},cellArrayData{ii},'Tail','left');
             end
             if (p<0.05 && forceShowP~=2) || forceShowP==1 
 %                 q = quantile(cell2mat(cellArrayData(k:ii)),0.92);
