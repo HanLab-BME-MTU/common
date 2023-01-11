@@ -13,7 +13,16 @@ if ~isempty(iMaskProcess)
 else
     error('Please run Mask Refinement Process and run this function again')
 end
-maskCell = maskProc.loadChannelOutput(iChan,ii);
+
+if sum(maskProc.checkChannelOutput)==1
+    iMaskChan = find(maskProc.checkChannelOutput);
+    maskCell = maskProc.loadChannelOutput(iMaskChan,1);
+else
+    %Combine the the multiple masks to one
+    maskEach = arrayfun(@(x) maskProc.loadChannelOutput(x,1),find(maskProc.checkChannelOutput),'UniformOutput',false);
+    maskAll=reshape(cell2mat(maskEach),size(I,1),size(I,2),[]);
+    maskCell = any(maskAll,3);
+end
 
 pixSize_mu=movieData.pixelSize_*1e-3; % in um/pixel
 areaConvert=pixSize_mu^2; % in um2/pixel
