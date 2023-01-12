@@ -18,6 +18,7 @@ if sum(maskProc.checkChannelOutput)==1
     iMaskChan = find(maskProc.checkChannelOutput);
     maskCell = maskProc.loadChannelOutput(iMaskChan,1);
 else
+    I=double(movieData.channels_(1).loadImage(1));
     %Combine the the multiple masks to one
     maskEach = arrayfun(@(x) maskProc.loadChannelOutput(x,1),find(maskProc.checkChannelOutput),'UniformOutput',false);
     maskAll=reshape(cell2mat(maskEach),size(I,1),size(I,2),[]);
