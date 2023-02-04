@@ -74,7 +74,11 @@ end
 try
     cellAreaCell = cellfun(@(x) cell2mat(cellfun(@(y) y(:),x,'unif',false)), cellAreaGroup,'unif',false);
 catch
-    cellAreaCell = cellfun(@(x) cell2mat(x),cellAreaGroup,'unif',false);
+    try
+        cellAreaCell = cellfun(@(x) cell2mat(x),cellAreaGroup,'unif',false);
+    catch
+        cellAreaCell = cellAreaGroup;
+    end
 end
 % cellAreaCell = cellfun(@(x) x(:), cellAreaCell,'unif',false);
 h1=figure; 
@@ -86,6 +90,7 @@ hgsave(h1,strcat(figPath,'/cellArea'),'-v7.3')
 tableCellarea=table(cellAreaCell,'RowNames',nameList);
 writetable(tableCellarea,strcat(dataPath,'/CellArea.csv'))
 %% error bar plot
+figure,
 errorBarPlotCellArray(cellAreaCell,nameList,1);
 ylabel('Cell area (\mum^2)')
 title('Cell area')
