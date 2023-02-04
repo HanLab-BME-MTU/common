@@ -21,12 +21,17 @@ addParameter(ip,'markerSize',6);
 addParameter(ip,'ax',gca);
 addParameter(ip,'horizontalPlot',false);
 addParameter(ip,'usePairedTTest',false);
+addParameter(ip,'addFitLine',false);
+addParameter(ip,'fitType','power1');
 
 parse(ip,cellArrayData,nameList,convertFactor,varargin{:});
 MSize = ip.Results.markerSize;
 colorful = ip.Results.colorful;
 colorSelected = ip.Results.color;
 doStat = ip.Results.Stat;
+addFitLine = ip.Results.addFitLine;
+fitType = ip.Results.fitType;
+
 if isnumeric(nameList)
     doStat = false;
 end
@@ -165,6 +170,27 @@ if doStat
 else
     q=0;
 end
+
+if addFitLine && ~iscell(nameList)
+    outRatio = 1;
+    weights = 1./stdErrMean(matrixData);
+    weights = weights/norm(weights);
+
+    fit1 = fit(nameList',meanAll',fitType);
+    fdata = feval(fit1,nameList'); 
+    I = abs(fdata - meanAll') > outRatio*std(meanAll'); 
+    outliers = excludedata(nameList',meanAll','indices',I);
+    
+    [mdl,gof] = fit(nameList',meanAll',fitType,...
+        'StartPoint',[nameList(1),meanAll(1)] ,'Weights',weights','Exclude',outliers);
+%     mdl = fitlm(nameList,meanAll,'Weights',weights,'Exclude',4);
+    plot(mdl,'k:')
+    disp((mdl))
+    disp((gof))
+    disp([num2str(find(I)) 'th data point was excluded because it is outside of ' ...
+        num2str(outRatio) ' time(s) of the output standard deviation.'])
+end
+
 set(gca,'FontSize',6)
 set(findobj(gca,'Type','Text'),'FontSize',5)
 
