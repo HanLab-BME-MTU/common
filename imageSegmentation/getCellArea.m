@@ -1,4 +1,4 @@
-function areaCell = getCellArea(movieData)
+function [areaCell,areaConvert] = getCellArea(movieData)
 % function area = getCellArea(MD) returns area from mask refinement process
 % of MD
 % input:
@@ -21,8 +21,11 @@ else
     I=double(movieData.channels_(1).loadImage(1));
     %Combine the the multiple masks to one
     maskEach = arrayfun(@(x) maskProc.loadChannelOutput(x,1),find(maskProc.checkChannelOutput),'UniformOutput',false);
-    maskAll=reshape(cell2mat(maskEach),size(I,1),size(I,2),[]);
-    maskCell = any(maskAll,3);
+%     maskAll=reshape(cell2mat(maskEach),size(I,1),size(I,2),[]);
+    areaEach = cellfun(@(x)sum(x(:)),maskEach);
+    [~,iMin] = min(areaEach);
+    maskCell = maskEach{iMin};
+%     maskCell = all(maskAll,3); %changed from any
 end
 
 pixSize_mu=movieData.pixelSize_*1e-3; % in um/pixel

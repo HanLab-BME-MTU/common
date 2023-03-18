@@ -51,6 +51,7 @@ N=zeros(numConditions,1);
 cellAreaGroup = cell(numConditions,1);
 
 sampleMovie = MLAll(1).movies_{1};
+areaThresh = 8600; %in um2. Over this, it will be from multi-cells or background
 
 for ii=1:numConditions
     N(ii) = numel(MLAll(ii).movies_);
@@ -67,7 +68,7 @@ for ii=1:numConditions
             cellAreaCond(p) = curArea;
         end
     end
-    cellAreaGroup{ii} = cellAreaCond;
+    cellAreaGroup{ii} = cellAreaCond(cellAreaCond<areaThresh);
 end
 
 %% Plotting cell area
@@ -90,11 +91,13 @@ hgsave(h1,strcat(figPath,'/cellArea'),'-v7.3')
 tableCellarea=table(cellAreaCell,'RowNames',nameList);
 writetable(tableCellarea,strcat(dataPath,'/CellArea.csv'))
 %% error bar plot
-figure,
+h2 = figure;
 errorBarPlotCellArray(cellAreaCell,nameList,1);
 ylabel('Cell area (\mum^2)')
 title('Cell area')
-hgexport(h1,strcat(figPath,'/cellAreaScatter'),hgexport('factorystyle'),'Format','eps')
-hgsave(h1,strcat(figPath,'/cellAreaScatter'),'-v7.3')
+hgexport(h2,strcat(figPath,'/cellAreaScatter'),hgexport('factorystyle'),'Format','eps')
+hgsave(h2,strcat(figPath,'/cellAreaScatter'),'-v7.3')
 
 %% bar plot
+%% save
+save(strcat(dataPath,'/CellArea.mat'))
