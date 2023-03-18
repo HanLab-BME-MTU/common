@@ -181,14 +181,22 @@ if addFitLine && ~iscell(nameList)
     I = abs(fdata - meanAll') > outRatio*std(meanAll'); 
     outliers = excludedata(nameList',meanAll','indices',I);
     
-    [mdl,gof] = fit(nameList',meanAll',fitType,...
-        'StartPoint',[nameList(1),meanAll(1)] ,'Weights',weights','Exclude',outliers);
+%     [mdl,gof,output] = fit(nameList',meanAll',fitType,...
+%         'StartPoint',[nameList(1),meanAll(1)] ,'Weights',weights','Exclude',outliers);
+    aFitType = @(b,x)b(1)*x.^b(2);
+    mdl = fitnlm(nameList',meanAll',aFitType,...
+        [nameList(1),meanAll(1)] ,'Weights',weights','Exclude',find(outliers));
 %     mdl = fitlm(nameList,meanAll,'Weights',weights,'Exclude',4);
-    plot(mdl,'k:')
+    mdl.plotSlice
     disp((mdl))
-    disp((gof))
+%     disp((gof))
     disp([num2str(find(I)) 'th data point was excluded because it is outside of ' ...
         num2str(outRatio) ' time(s) of the output standard deviation.'])
+    save('mdl.mat','mdl')
+%     fileID = fopen('fitModel.txt','w');
+%     fprintf(fileID,disp(mdl));
+%     fprintf(fileID,disp(gof));
+%     fclose(fileID);
 end
 
 set(gca,'FontSize',6)
