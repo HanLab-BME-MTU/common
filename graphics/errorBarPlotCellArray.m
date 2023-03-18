@@ -86,7 +86,7 @@ else
         if size(matrixData,1)<1000000
             errorbar(nameList,nanmean(matrixData),...
                 stdErrMean(matrixData),...
-                'Marker', 'x','MarkerSize',MSize,'Color', colorSelected);
+                'Marker', 'x','MarkerSize',MSize,'Color', colorSelected,'LineStyle','none');
             errorKind = 'SEM';
         else
             errorbar(nameList,nanmean(matrixData),...
@@ -181,18 +181,24 @@ if addFitLine && ~iscell(nameList)
     I = abs(fdata - meanAll') > outRatio*std(meanAll'); 
     outliers = excludedata(nameList',meanAll','indices',I);
     
-%     [mdl,gof,output] = fit(nameList',meanAll',fitType,...
-%         'StartPoint',[nameList(1),meanAll(1)] ,'Weights',weights','Exclude',outliers);
-    aFitType = @(b,x)b(1)*x.^b(2);
-    mdl = fitnlm(nameList',meanAll',aFitType,...
-        [nameList(1),meanAll(1)] ,'Weights',weights','Exclude',find(outliers));
+    [mdl,gof,output] = fit(nameList',meanAll',fitType,...
+        'Weights',weights','Exclude',outliers);
+    plot(mdl)
+%     aFitType = @(b,x)b(1)*x.^b(2);
+%     mdl = fitnlm(nameList',meanAll',aFitType,...
+%         [nameList(1),meanAll(1)] ,'Weights',weights','Exclude',find(outliers));
 %     mdl = fitlm(nameList,meanAll,'Weights',weights,'Exclude',4);
-    mdl.plotSlice
-    disp((mdl))
-%     disp((gof))
-    disp([num2str(find(I)) 'th data point was excluded because it is outside of ' ...
-        num2str(outRatio) ' time(s) of the output standard deviation.'])
-    save('mdl.mat','mdl')
+%     mdl.plotSlice
+    disp(mdl)
+    disp(gof)
+    disp(output)
+    if any(I)
+        disp([num2str(find(I)) 'th data point was excluded because it is outside of ' ...
+            num2str(outRatio) ' time(s) of the output standard deviation.'])
+    else
+        disp('No outliner')
+    end
+    save('mdl.mat','mdl','gof','output')
 %     fileID = fopen('fitModel.txt','w');
 %     fprintf(fileID,disp(mdl));
 %     fprintf(fileID,disp(gof));
