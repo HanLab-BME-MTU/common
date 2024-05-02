@@ -160,7 +160,7 @@ classdef  MovieData < MovieObject & matlab.mixin.Heterogeneous
         
         
         function set.pixelSize_(obj, value)
-            obj.checkPropertyValue('pixelSize_',value);
+%             obj.checkPropertyValue('pixelSize_',value);
             obj.pixelSize_=value;
         end
         

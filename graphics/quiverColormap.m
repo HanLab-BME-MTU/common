@@ -36,6 +36,7 @@ function h= quiverColormap(x,y,u,v,varargin)
 ip=inputParser;
 ip.addParamValue('Colormap',jet,@(x) isnumeric(x) && size(x,2)==3);
 ip.addParamValue('CLim',[],@(x) isvector(x) || isempty(x));
+ip.addParameter('customIntensity',(u.^2+v.^2).^(1/2),@isnumeric)
 ip.KeepUnmatched=true;
 ip.parse(varargin{:});
 
@@ -60,7 +61,8 @@ x(nanIndex)=[]; y(nanIndex)=[]; u(nanIndex)=[]; v(nanIndex)=[];
 
 % Index vectors per magnitude
 nColors = size(ip.Results.Colormap,1);
-intensity= (u.^2+v.^2).^(1/2);
+intensity= ip.Results.customIntensity; %(u.^2+v.^2).^(1/2);
+intensity(nanIndex)=[]; 
 vColor=floor(scaleContrast(intensity,ip.Results.CLim,[1 nColors]));
 vColor(vColor<1)=1;
 vColor(vColor>nColors)=nColors;

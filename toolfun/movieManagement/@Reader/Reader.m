@@ -171,8 +171,9 @@ classdef  Reader < handle
         % parameters are c, t, z with only c required
         % t defaults to 1
         % z defaults to 1:sizeZ
-        %
-        
+        % If this fails, the function tries to load in terms of t -Sangyoon
+        % Han 2021
+        try
             % Load first image to get class and dimensions.
             first = obj.loadImage_( c , t , z(1) );
             % "I" will be a YXZ matrix.
@@ -182,7 +183,17 @@ classdef  Reader < handle
             for zi = 2:length(z)
                 I(:,:,zi) = obj.loadImage_( c , t , z(zi) );
             end
-                
+        catch
+            % Load first image to get class and dimensions.
+            first = obj.loadImage_( c , t(1) , z );
+            % "I" will be a YXZ matrix.
+            I = zeros( [ size(first) length(t) ] , class(first));
+            I(:,:,1) = first;
+            
+            for ti = 2:length(t)
+                I(:,:,ti) = obj.loadImage_( c , t(ti) , z );
+            end
+        end
         end
     %end
     %methods( Abstract, Access = protected )

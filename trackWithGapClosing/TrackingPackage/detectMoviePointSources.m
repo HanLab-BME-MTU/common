@@ -143,6 +143,7 @@ for i = 1:numel(p.ChannelIndex)
         'amp', [], 'sigmaX', [], 'sigmaY', [], 'bkg', []);
     
     parfor j= 1:nFrames
+%     for j= 1:nFrames
         
         currImage = double(movieData.channels_(iChan).loadImage(j));
         if ~isempty(p.MaskProcessIndex) && ~isempty(p.MaskChannelIndex)

@@ -1,4 +1,4 @@
-function []=barPlotCellArray(cellArrayData,nameList,convertFactor)
+function []=barPlotCellArray(cellArrayData,nameList,convertFactor,forceTTest)
 % function []=barPlotCellArray(cellArrayData,nameList,convertFactor) automatically converts cell array
 % format input to matrix input to use matlab function 'boxplot'
 % input: cellArrayData      cell array data
@@ -7,6 +7,9 @@ function []=barPlotCellArray(cellArrayData,nameList,convertFactor)
 %           convertFactor     conversion factor for physical unit (ex.
 %           pixelSize, timeInterval etc...)
 % Sangyoon Han, March 2016
+if nargin<4
+    forceTTest=0;
+end
 if nargin<3
     convertFactor = 1;
 end
@@ -17,7 +20,11 @@ end
 bar(1:numConditions, cellfun(@nanmean,cellArrayData)*convertFactor,'FaceColor',[1 1 1],'EdgeColor',[0 0 0],'LineWidth',1.5); hold on
 errorbar(1:numConditions,cellfun(@nanmean,cellArrayData)*convertFactor,cellfun(@(x) nanstd(x)/sqrt(length(x)),cellArrayData)*convertFactor,'Marker','none','LineStyle','none','Color','k','LineWidth',1.5); %SEM option 
 % errorbar(1:numConditions, cellfun(@nanmean,cellArrayData)*convertFactor,cellfun(@(x) nanstd(x),cellArrayData)*convertFactor,'Marker','none','LineStyle','none','Color','k','LineWidth',1.5); %SD option 
-nameListNew = cellfun(@(x,y) [x '(N=' num2str(length(y)) ')'],nameList,cellArrayData,'UniformOutput', false);
+try
+    nameListNew = cellfun(@(x,y) [x '(N=' num2str(length(y)) ')'],nameList,cellArrayData,'UniformOutput', false);
+catch
+    nameListNew = cellfun(@(x,y) [x '(N=' num2str(length(y)) ')'],nameList,cellArrayData','UniformOutput', false);
+end
 set(gca,'XTickLabel',nameListNew)
 set(gca,'XTickLabelRotation',45)
 
@@ -45,7 +52,7 @@ q=0;
 for k=1:(numConditions-1)
     for ii=k+1:numConditions
         if numel(cellArrayData{k})>1 && numel(cellArrayData{ii})>1
-            if kstest(cellArrayData{k}) % this means the test rejects the null hypothesis
+            if kstest(cellArrayData{k}) && ~forceTTest % this means the test rejects the null hypothesis
                 [p]=ranksum(cellArrayData{k},cellArrayData{ii});
                 if p<0.05
                     if extremePoint2>0

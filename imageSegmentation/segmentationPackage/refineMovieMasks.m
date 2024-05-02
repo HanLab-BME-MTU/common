@@ -328,7 +328,8 @@ for iChan = 1:nChanThresh
         if p.EdgeRefinement
             
             %Load the current image
-            currImage = imread([currImDir{iChan} filesep imageNames{iChan}{iImage}]);
+            currImage = movieData.channels_(p.ChannelIndex(iChan)).loadImage(iImage);
+%             currImage = imread([currImDir{iChan} filesep imageNames{iChan}{iImage}]);
             
             %Call the edge-refinement function
             currMask = refineMaskEdges(currMask,currImage,...

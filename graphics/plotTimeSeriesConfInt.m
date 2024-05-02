@@ -1,6 +1,17 @@
 function plotTimeSeriesConfInt(xSeries,curArray, varargin)
+% function plotTimeSeriesConfInt(xSeries,curArray, varargin) plots mean
+% time series of curArray (nanmean(curArray,1)) with confidence interval
+% with a shade.
+% input
+%   xSeries:    1xn vector for time
+%   curArray:   mxn matrix containing m different time sereis with n
+%               maximum 
+% example:
+%   plotTimeSeriesConfInt((1:nSampleFrames)*tInterval,forceArray, 
+%                         'Color', [240/255 128/255 128/255])
+
 ip = inputParser;
-ip.addParamValue('Color',[0.5 0.5 0.5],@isnumeric);
+ip.addParameter('Color',[0.5 0.5 0.5],@isnumeric);
 % ip.addParamValue('YLim',[],@isnumeric || @isempty);
 % ip.addParamValue('tInterval',1,@isnumeric);
 
