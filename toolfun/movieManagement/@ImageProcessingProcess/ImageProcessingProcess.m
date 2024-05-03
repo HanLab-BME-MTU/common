@@ -112,14 +112,12 @@ classdef ImageProcessingProcess < Process
                        obj.inFilePaths_{1,chanNum(j)} = imagePath{j};                
                    end                
                 else
-                    if ~exist(imagePath{j},'file') && isempty(obj.inFilePaths_{1,chanNum(j)})
+                    if ~exist(imagePath{j},'file')
                        error('lccb:set:fatal',...
                            ['The file specified for channel ' ...
                            num2str(chanNum(j)) ' is invalid!']) 
                     else
-                        if isempty(obj.inFilePaths_{1,chanNum(j)})
-                            obj.inFilePaths_{1,chanNum(j)} = imagePath{j};  
-                        end
+                        obj.inFilePaths_{1,chanNum(j)} = imagePath{j};  
                     end     
                 end
             end                        
