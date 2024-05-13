@@ -108,7 +108,11 @@ classdef  BioFormatsReader < Reader
         
         function channelNames = getChannelNames(obj, iChan)
             usedFiles = obj.getReader().getUsedFiles();
-            [~, fileName, fileExt] = fileparts(char(usedFiles(1)));
+            numInit = 1;
+            if numel(usedFiles)>2
+                numInit=2;%changed from 1 to 2 because sometimes 1 involves 'nd' file. -Sang
+            end
+            [~, fileName, fileExt] = fileparts(char(usedFiles(numInit))); 
             base = [fileName fileExt];
             if obj.getReader().getSeriesCount() > 1
                 base = [base ' Series ' num2str(obj.getSeries()+1)];

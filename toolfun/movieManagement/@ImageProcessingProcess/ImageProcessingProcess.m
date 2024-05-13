@@ -117,7 +117,7 @@ classdef ImageProcessingProcess < Process
                            ['The file specified for channel ' ...
                            num2str(chanNum(j)) ' is invalid!']) 
                     else
-                       obj.inFilePaths_{1,chanNum(j)} = imagePath{j};                
+                        obj.inFilePaths_{1,chanNum(j)} = imagePath{j};  
                     end     
                 end
             end                        
