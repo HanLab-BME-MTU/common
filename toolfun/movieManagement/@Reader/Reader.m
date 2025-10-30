@@ -114,7 +114,19 @@ classdef  Reader < handle
             % Flag to avoid infinite loops
             readerLoadImageFlag = true;
             
-            I = obj.loadImage_(c , t , z);
+            try
+                I = obj.loadImage_(c , t , z);
+            catch % in case of time series
+                % Load first image to get class and dimensions.
+                first = obj.loadImage_( c , t(1) , z );
+                % "I" will be a YXT matrix.
+                I = zeros( [ size(first) length(t) ] , class(first));
+                I(:,:,1) = first;
+                
+                for ti = 2:length(t)
+                    I(:,:,ti) = obj.loadImage_( c , t(ti) , z );
+                end
+            end
         end
         
         function I = loadStack(obj, c, t, varargin)

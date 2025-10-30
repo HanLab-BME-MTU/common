@@ -243,6 +243,10 @@ if handles.segThisCell > 1
          segIdx = currObj.getPackageIndex('QFSMPackage');    
     end
 
+    if(isempty(segIdx))
+         segIdx = currObj.getPackageIndex('FocalAdhesionPackage');    
+    end
+
     segPath   = currObj.packages_{segIdx}.outputDirectory_;
     
     
