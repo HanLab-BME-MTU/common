@@ -72,12 +72,13 @@ boxWidth=0.5;
 scatterWidth=boxWidth*2;
 whiskerRatio=0.5;
 matrixData=matrixData*convertFactor;
-try
-    nameListNew = cellfun(@(x,y) [x '(N=' num2str(sum(~isnan(y))) ')'],nameList,cellArrayData,'UniformOutput', false);
-catch
-    nameList=arrayfun(@num2str,(1:numel(cellArrayData))','unif',false);
-    nameListNew = cellfun(@(x,y) [x '(N=' num2str(sum(~isnan(y))) ')'],nameList,cellArrayData,'UniformOutput', false);
-end
+% try
+%     nameListNew = cellfun(@(x,y) [x],nameList,cellArrayData,'UniformOutput', false);
+% catch
+%     nameList=arrayfun(@num2str,(1:numel(cellArrayData))','unif',false);
+%     nameListNew = cellfun(@(x,y) [x '(N=' num2str(sum(~isnan(y))) ')'],nameList,cellArrayData,'UniformOutput', false);
+% end
+nameListNew = nameList;
 
 % Generating color group
 %      r  red       1               
@@ -111,6 +112,8 @@ numCategories = numel(cellArrayData);
 while size(color,1)<numCategories
     color = [color; color];
 end
+
+hold off
 
 onlyOneDataPerEachGroup=false(1,numCategories);
 if plotIndivPoint
@@ -174,9 +177,9 @@ end
 
 % color setting for box plots
 if singleColor==0
-    colors = color(ii,:);
+    colors = color; %(ii,:);
 else
-    colors = singleColor;
+    colors = color(2,:); %singleColor;
 end
 
 if ~onlyOneDataAllGroups %Here I need to change color option for single color.
@@ -327,10 +330,19 @@ end
 xlim auto
 ylim auto
 
+% Sample number writing on the base
+for k=1:numConditions
+    text(ax,k,ax.YLim(1)+lineGap,...
+        ['N=' num2str(sum(~isnan(cellArrayData{k})))],...
+        'HorizontalAlignment','center');
+end
+
+% text(ax,ii-1.5,ax.YLim(1)+lineGap,method)
+title(method)
+
 set(ax,'FontSize',7)
 set(findobj(ax,'Type','Text'),'FontSize',6)
 sucess=true;
-text(ax,ii-1.5,ax.YLim(1)+lineGap,method)
 
 hold off
 
