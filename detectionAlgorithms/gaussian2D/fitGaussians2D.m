@@ -174,7 +174,7 @@ for p = 1:np
                 A_init = A(p);
             end
             
-            [prm, prmStd, ~, res] = fitGaussian2D(window, [x(p)-xi(p) y(p)-yi(p) A_init sigma(p) c_init], mode);
+            [prm, prmStd, ~, res, ~] = fitGaussian2D(window, [x(p)-xi(p) y(p)-yi(p) A_init sigma(p) c_init], mode);
             
             dx = prm(1);
             dy = prm(2);
