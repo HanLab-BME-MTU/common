@@ -178,6 +178,42 @@ for p = 1:np
             
             dx = prm(1);
             dy = prm(2);
+
+            % --- BEGIN: compatibility tests expected by upstream code ---
+            
+            r = res.data(:);
+            
+            % 1) Anderson–Darling normality test (preferred by your pipeline)
+            if exist('adtest','file') == 2
+                try
+                    [hAD, pAD] = adtest(r);
+                catch
+                    hAD = NaN; pAD = NaN;
+                end
+            else
+                % Fallback if adtest is unavailable
+                hAD = NaN; pAD = NaN;
+            end
+            res.hAD = hAD;
+            res.pAD = pAD;
+            
+            % 2) (Optional) Also provide KS flags some codebases expect
+            if exist('kstest','file') == 2
+                try
+                    % Test against N(mean, std^2) inferred from residuals
+                    rZ = (r - mean(r,'omitnan')) / std(r,[],'omitnan');
+                    [hKS, pKS] = kstest(rZ);
+                catch
+                    hKS = NaN; pKS = NaN;
+                end
+            else
+                hKS = NaN; pKS = NaN;
+            end
+            res.hKS = hKS;
+            res.pKS = pKS;
+            
+            % --- END: compatibility tests ---
+
             
             % exclude points where localization failed
             if (dx > -w2 && dx < w2 && dy > -w2 && dy < w2 && prm(3)<2*diff(iRange))

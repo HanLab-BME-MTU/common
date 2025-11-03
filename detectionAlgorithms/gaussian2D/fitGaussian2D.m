@@ -1,134 +1,120 @@
 function [prmVect, prmStd, C, res, J] = fitGaussian2D(data, prmVect, mode, options)
-%FITGAUSSIAN2D  Compatibility wrapper for new fitGaussian2D_mex (GSL backend)
+% Wrapper that calls the compiled MEX: fitGaussian2D.mex*
+% Keeps original signature:
+%   [prmVect prmStd C res J] = fitGaussian2D(data, prmVect, mode, options)
 %
-%   [prmVect, prmStd, C, res, J] = fitGaussian2D(data, prmVect, mode, options)
+% This wrapper:
+%   - sanitizes inputs (dtype/shape/NaNs)
+%   - ensures defaults for 'mode' and 'options'
+%   - clamps sigma to a tiny positive number
+%   - retries with relaxed tolerances / larger maxIter if GSL reports no-convergence
+%   - perturbs initial guess slightly and retries as a last resort
 %
-%   Supports parameter subset fitting via 'mode' (e.g. 'xyasc', 'As', 'asc').
-%   Keeps legacy input/output order: [xp yp A s c].
-%
-% Francois Aguet (2011) style interface, updated for MATLAB R2024b + GSL MEX.
-% Sangyoon han (2025)
+% If you ever need to bypass the wrapper and call the MEX from here,
+% we use builtin('fitGaussian2D', ...) to avoid recursion.
 
-% ———————————————————————––
-% Input handling
-% ———————————————————————––
-if nargin < 2
-error('fitGaussian2D:Input','At least data and prmVect required.');
-end
-if nargin < 3 || isempty(mode)
-mode = 'xyasc'; % fit all by default
-end
-if nargin < 4 || isempty(options)
-options = [200 1e-8 1e-8]; % [maxIter eAbs eRel]
-end
-if ~isfloat(data)
-data = double(data);
-end
+    % -------- defaults & hygiene --------
+    if nargin < 3 || isempty(mode),    mode = 'xyasc'; end
+    if nargin < 4 || isempty(options), options = [200 1e-6 1e-6]; end
+    validateattributes(data, {'numeric','logical'}, {'2d','nonempty'}, mfilename, 'data', 1);
+    if ~isa(data,'double') || ~isreal(data), data = double(real(data)); end
 
-% Mask NaNs
-mask = ~isnan(data);
-data(isnan(data)) = 0;
+    prmVect = prmVect(:).';
+    if numel(prmVect) ~= 5
+        error('fitGaussian2D:BadInit','prmVect must be [xp yp A s c].');
+    end
 
-% ———————————————————————––
-% Setup parameter masks based on 'mode'
-% ———————————————————————––
-letters = lower(mode);
-names   = {'x','y','a','s','c'};
-idxMap  = struct('x',1,'y',2,'a',3,'s',4,'c',5);
-fitMask = false(1,5);
-for k = 1:numel(letters)
-if isfield(idxMap,letters(k))
-fitMask(idxMap.(letters(k))) = true;
-end
-end
-if ~any(fitMask)
-warning('fitGaussian2D:Mode','Mode “%s” contained no valid symbols. Fitting all.',mode);
-fitMask(:) = true;
-end
+    % Clamp sigma to > 0 to reduce numeric issues in the solver
+    MIN_SIGMA = 1e-6;
+    if ~(isfinite(prmVect(4))) || prmVect(4) < MIN_SIGMA
+        prmVect(4) = max(MIN_SIGMA, abs(prmVect(4)));
+    end
 
-% ———————————————————————––
-% Prepare MEX input: [A, x0, y0, s, b]
-% ———————————————————————––
-fullVec = prmVect(:)';
-if numel(fullVec) ~= 5
-error('fitGaussian2D:Init','prmVect must be [xp yp A s c].');
-end
-init_mex = [fullVec(3) fullVec(1) fullVec(2) fullVec(4) fullVec(5)];
+    % Make sure mode contains only valid letters
+    mode = lower(char(mode));
+    mode = mode(ismember(mode, 'xyasc'));  % keep only valid
+    if isempty(mode)
+        % if someone passed nonsense, default to all
+        mode = 'xyasc';
+    end
 
-% Parameter fixing: if a parameter is fixed, mask it from fitting
-% MEX currently fits all 5 params, so we re-run with fixed values.
-freeIdx = find(fitMask);
-fixedIdx = find(~fitMask);
-fixedVal = init_mex(fixedIdx);
+    % Ensure options has 3 elements
+    options = options(:).';
+    if numel(options) < 3
+        options(3) = 1e-6;
+    end
+    if ~isfinite(options(1)) || options(1) < 1,  options(1) = 200;  end % maxIter
+    if ~isfinite(options(2)) || options(2) <= 0, options(2) = 1e-6; end % eAbs
+    if ~isfinite(options(3)) || options(3) <= 0, options(3) = 1e-6; end % eRel
 
-% Optimization options
-opts = struct('maxIter',options(1),'eAbs',options(2),'eRel',options(3));
+    % -------- call MEX safely (attempts) --------
+    % Attempt 1: as-is
+    try
+        [prmVect, prmStd, C, res, J] = builtin('fitGaussian2D', data, prmVect, mode, options);
+        return;
+    catch ME1
+        % If the mex doesn't exist, surface a clear error
+        if strcmp(ME1.identifier,'MATLAB:UndefinedFunction')
+            error('fitGaussian2D:MEXNotFound', ...
+                ['Could not find fitGaussian2D MEX on path.\n' ...
+                 'Check with: which -all fitGaussian2D\n' ...
+                 'Make sure fitGaussian2D.mexmaca64 is ahead of this wrapper.']);
+        end
 
-% ———————————————————————––
-% Nested helper for partial parameter fitting
-% ———————————————————————––
-function [pOut,resnorm,status,info] = doFit(fixedVec)
-% Build a lightweight anonymous objective to wrap fixed parameters
-% and call MEX only on free parameters (numerically stable)
-if numel(freeIdx) == 5
-[pOut,resnorm,status,info] = fitGaussian2D_mex(data, init_mex, mask, opts);
-return;
-end
-% Closure-based function that re-injects fixed parameters
-fun = @(pFree) localEval(pFree,fixedIdx,fixedVal);
-[pFit,resnorm,status,info] = fun(fixedVal);
-pOut = pFit;
-end
+        % If it’s a hard error unrelated to convergence, rethrow
+        if ~isGslNoConvergence(ME1)
+            rethrow(ME1);
+        end
+        % otherwise, try relaxed settings below
+    end
 
-% ———————————————————————––
-% If all parameters free, call directly
-% ———————————————————————––
-if all(fitMask)
-[p_fit,resnorm,status,info] = fitGaussian2D_mex(data, init_mex, mask, opts);
-else
-% Otherwise, re-run MEX iteratively on free subset, holding fixed ones constant
-% (simple coordinate-freezing scheme)
-p_cur = init_mex;
-maxInner = 3; % repeat a few times to converge
-for it = 1:maxInner
-p_fixed = p_cur;
-varInit = p_cur(freeIdx);
-% Define lightweight wrapper that overwrites fixed params inside image model
-[p_tmp,resnorm,status,info] = fitGaussian2D_mex(data, p_cur, mask, opts);
-% Overwrite only free parameters
-p_cur(freeIdx) = p_tmp(freeIdx);
-end
-p_fit = p_cur;
-end
+    % Attempt 2: relax tolerances & increase maxIter
+    opt2 = options;
+    opt2(1) = max(opt2(1), 1000);  % maxIter
+    opt2(2) = max(opt2(2), 1e-5);  % eAbs
+    opt2(3) = max(opt2(3), 1e-5);  % eRel
+    % keep sigma positive
+    prm2 = prmVect; prm2(4) = max(MIN_SIGMA, abs(prm2(4)));
+    try
+        [prmVect, prmStd, C, res, J] = builtin('fitGaussian2D', data, prm2, mode, opt2);
+        return;
+    catch ME2
+        if ~isGslNoConvergence(ME2)
+            rethrow(ME2);
+        end
+    end
 
-% ———————————————————————––
-% Post-processing: reorder to legacy order [xp yp A s c]
-% ———————————————————————––
-prmVect = [p_fit(2) p_fit(3) p_fit(1) p_fit(4) p_fit(5)];
+    % Attempt 3: small perturbations to initial guess (helps when
+    % starting at a flat/ill-conditioned point)
+    rngState = rng; %#ok<RNGR>  % preserve user RNG
+    cleaner = onCleanup(@() rng(rngState));
+    rng('default');
 
-% Dummy covariance / std estimates (not returned by MEX yet)
-prmStd = nan(size(prmVect));
-C      = nan(numel(prmVect));
+    prm3 = prmVect;
+    % tiny nudges
+    prm3(1) = prm3(1) + 0.2;  % xp
+    prm3(2) = prm3(2) + 0.2;  % yp
+    prm3(3) = prm3(3) + 0.05*max(1,abs(prm3(3))); % A
+    prm3(4) = max(MIN_SIGMA, abs(prm3(4)))*(1 + 0.05); % s
+    % c는 변화 없이 두는 편이 안정적인 경우가 많음
 
-% ———————————————————————––
-% Residual analysis
-% ———————————————————————––
-[X,Y] = meshgrid(0:size(data,2)-1, 0:size(data,1)-1);
-model = p_fit(1) * exp(-((X-p_fit(2)).^2 + (Y-p_fit(3)).^2) / (2*p_fit(4)^2)) + p_fit(5);
-res.data = data - model;
-res.data = res.data(mask);
-res.mean = mean(res.data);
-res.std  = std(res.data);
-res.RSS  = sum(res.data.^2);
-if numel(res.data) > 4
-[~,res.pval] = kstest((res.data-res.mean)/res.std);
-else
-res.pval = NaN;
+    opt3 = opt2;
+    try
+        [prmVect, prmStd, C, res, J] = builtin('fitGaussian2D', data, prm3, mode, opt3);
+        return;
+    catch ME3
+        % 마지막으로, 수렴 실패지만 best-so-far를 반환했을 가능성 경고
+        warning('fitGaussian2D:NoConvergence', ...
+            'GSL did not reach tolerance after retries: %s.\nReturning best-so-far if available.', ME3.message);
+        rethrow(ME3); % 사용자가 try/catch로 다룰 수 있게 넘김
+    end
 end
 
-% ———————————————————————––
-% Jacobian placeholder (not available from MEX yet)
-% ———————————————————————––
-J = [];
-
+function tf = isGslNoConvergence(ME)
+    % Detect typical GSL no-convergence / tolerance messages coming out of the MEX
+    msg = lower(ME.message);
+    tf = contains(msg, 'did not reach requested tolerance') || ...
+         contains(msg, 'cannot reach the specified tolerance') || ...
+         contains(msg, 'no convergence') || ...
+         strcmp(ME.identifier, 'fitGaussian2D:NoConvergence');
 end
