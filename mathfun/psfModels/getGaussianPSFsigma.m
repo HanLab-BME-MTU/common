@@ -57,7 +57,11 @@ nl = numel(lambda);
 sigma = zeros(1,nl);
 for i = 1:nl
     p.lambda = lambda{i};
-    psf = vectorialPSF([0 0 0], 0, (2*ru)-1, p);
+    try
+        psf = vectorialPSF([0 0 0], 0, (2*ru)-1, p);
+    catch
+        psf = vectorialPSFnew([0 0 0], 0, (2*ru)-1, p);
+    end
     if strcmpi(ip.Results.Mode, 'confocal')
         % approximation: in theory this should be psf_ex.*psf_em
         psf = psf.^2;

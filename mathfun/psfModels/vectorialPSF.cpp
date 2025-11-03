@@ -676,7 +676,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     if (p.mode==0) {
         nx *= p.sf;
     }
-    const mwSize dims[3] = {nx, nx, nz};
+    const mwSize dims[3] = {
+        static_cast<mwSize>(nx),
+        static_cast<mwSize>(nx),
+        static_cast<mwSize>(nz)
+    };
     
     int N = nx*nx*nz;
     // copy PSF data
