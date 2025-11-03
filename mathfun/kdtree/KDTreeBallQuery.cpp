@@ -17,6 +17,9 @@
 #include <vector.hpp>
 #include <KDTree.hpp>
 
+#include <cmath>
+#include <limits>
+
 template <unsigned K>
 static void dispatch(int n, int m, double *x_ptr, double *c_ptr, double *d_ptr, int nlhs, mxArray *plhs[])
 {

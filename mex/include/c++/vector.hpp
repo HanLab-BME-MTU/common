@@ -93,7 +93,11 @@ public:
       n_l2 += data_[i] * data_[i];
     return sqrt(n_l2);
   }
-	
+
+  inline double norm() const {
+      return this->norm_l2();
+  }
+    
   const vector & normalize()
   {
     double n_l2 = this->norm_l2();
