@@ -353,12 +353,12 @@ static void copy_outputs_and_cleanup(
     }
     gsl_matrix_free(Jcur);
 
-    /* warn if convergence not reached (but return best-so-far) */
+    /* warn if convergence not reached (but return best-so-far) 
     if (status != GSL_SUCCESS) {
         mexWarnMsgIdAndTxt("fitGaussian2D:NoConvergence",
                            "GSL did not reach requested tolerance: %s. Returning best-so-far.",
                            gsl_strerror(status));
-    }
+    }*/
 
     /* free covariance copy */
     gsl_matrix_free(cov_np);
