@@ -7,7 +7,8 @@
  * Windows: mex COMPFLAGS="$COMPFLAGS /TP" -I"." -I"..\..\mex\include\c++" -output KDTreeRangeQuery KDTreeRangeQuery.cpp
  */
 
-# include <mex.h>
+#include "mex.h"
+#include "mexAdapter.hpp"
 
 #include <list>
 #include <map>
@@ -15,6 +16,9 @@
 
 #include <vector.hpp>
 #include <KDTree.hpp>
+
+using matlab::mex::ArgumentList;
+using matlab::mex::Function;
 
 template <unsigned K>
 static void dispatch(int n, int m, double *x_ptr, double *c_ptr, double *h_ptr, int nlhs, mxArray *plhs[])
@@ -106,6 +110,7 @@ static void dispatch(int n, int m, double *x_ptr, double *c_ptr, double *h_ptr, 
     }
 }
 
+extern "C"
 void mexFunction(int nlhs, mxArray *plhs[],
 		 int nrhs, const mxArray *prhs[])
 {
