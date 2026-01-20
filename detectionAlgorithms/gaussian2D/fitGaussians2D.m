@@ -186,7 +186,13 @@ for p = 1:np
             % 1) Anderson–Darling normality test (preferred by your pipeline)
             if exist('adtest','file') == 2
                 try
+                    warning('off','stats:adtest:OutOfRangePLow');
+                    warning('off','stats:adtest:OutOfRangePHigh');
+                    
                     [hAD, pAD] = adtest(r);
+                    
+                    warning('on','stats:adtest:OutOfRangePLow');
+                    warning('on','stats:adtest:OutOfRangePHigh');
                 catch
                     hAD = NaN; pAD = NaN;
                 end
