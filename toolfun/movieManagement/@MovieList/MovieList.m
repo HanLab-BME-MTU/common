@@ -30,7 +30,9 @@ classdef MovieList < MovieObject
                 else
                     error('lccb&hanlab:ml:constructor','Movies should be a cell array or a array of MovieData');
                 end
-                
+                if nargin<2
+                    outputDirectory = pwd;
+                end
                 obj.outputDirectory_ = outputDirectory;
                 if ~isempty(obj.outputDirectory_)
                     obj.setPath(obj.outputDirectory_)

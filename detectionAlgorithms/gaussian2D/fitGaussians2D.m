@@ -228,7 +228,9 @@ for p = 1:np
                 try
                     warning('off','stats:adtest:OutOfRangePLow');
                     warning('off','stats:adtest:OutOfRangePHigh');
+
                     [hAD, pAD] = adtest(r);
+
                     warning('on','stats:adtest:OutOfRangePLow');
                     warning('on','stats:adtest:OutOfRangePHigh');
                 catch

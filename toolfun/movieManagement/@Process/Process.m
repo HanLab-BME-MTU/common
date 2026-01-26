@@ -122,8 +122,12 @@ classdef Process < hgsetget
         end
         
         function status = checkFrameNum(obj,iFrame)
-            assert(~isempty(iFrame) && isnumeric(iFrame),'Please provide a valid frame input');
-            status = insequence(iFrame, 1, obj.getOwner().nFrames_);
+            if ~isempty(iFrame) && isnumeric(iFrame)
+                status = insequence(iFrame, 1, obj.getOwner().nFrames_);
+            else
+                disp('Please provide a valid frame input');
+                status = false;
+            end
         end
         
         function status = checkDepthNum(obj, iZ)
