@@ -9,12 +9,18 @@ function [sucess]=boxPlotCellArray(cellArrayData,nameList,convertFactor,notchOn,
 %           forceShowP          0 if you want to show only significant p
 %                               1 if you want to show all p 
 %                               2 if you do not want to show any p
+%           outlierMethod       'hard', iqr (default) or mad
 % Example:
 % sampleArray{1}=randn(100,1);
 % sampleArray{2}=randn(100,1)*1.3+2;
 % sampleArray{3}=randn(50,1)*1.5+1;
 % nameList={'G1','G2','G3'};
 % boxPlotCellArray(sampleArray,nameList,1,1,1)
+% --- OPTIONAL OUTLIER FILTERING (added) ---
+% usage:
+% boxPlotCellArray(dataCell, labels, ..., 'outlierMethod','hard', 'hardMax',500)
+% boxPlotCellArray(..., 'outlierMethod','iqr', 'iqrK',3)
+% boxPlotCellArray(..., 'outlierMethod','mad', 'madK',5)
 % Sangyoon Han, March 2016
 [lengthLongest]=max(cellfun(@(x) length(x),cellArrayData));
 %If there is no data, exclude them in the plot
@@ -55,6 +61,7 @@ addParameter(ip,'ax',gca);
 addParameter(ip,'horizontalPlot',false);
 addParameter(ip,'forceTtest',false);
 addParameter(ip,'singleColor',0);
+addParameter(ip,'outlierMethod','iqr');
 parse(ip,cellArrayData,nameList,convertFactor,notchOn,plotIndivPoint,varargin{:});
 ax=ip.Results.ax;
 horizontalPlot=ip.Results.horizontalPlot;
@@ -65,6 +72,7 @@ plotIndivPoint = ip.Results.plotIndivPoint;
 convertFactor = ip.Results.convertFactor;
 forceTtest =  ip.Results.forceTtest;
 singleColor = ip.Results.singleColor;
+outlierMethod = ip.Results.outlierMethod;
 
 nameList(idEmptyData)=[];
 
@@ -115,6 +123,63 @@ end
 
 hold off
 
+% --- OPTIONAL OUTLIER FILTERING (added) ---
+% usage:
+% boxPlotCellArray(dataCell, labels, ..., 'outlierMethod','hard', 'hardMax',500)
+% boxPlotCellArray(..., 'outlierMethod','iqr', 'iqrK',3)
+% boxPlotCellArray(..., 'outlierMethod','mad', 'madK',5)
+
+% outlierMethod = '';
+hardMax = inf;
+hardMin = -inf;
+iqrK = 3;      % Tukey rule (3 is conservative)
+madK = 5;      % median +/- madK*MAD (robust)
+
+% apply filtering per group
+for gi = 1:numel(cellArrayData)
+    x = cellArrayData{gi};
+    x = x(isfinite(x)); % always remove NaN/Inf
+
+    switch outlierMethod
+        case "hard"
+            x = x(x >= hardMin & x <= hardMax);
+
+        case "iqr"
+            if ~isempty(x)
+                q1 = prctile(x,25);
+                q3 = prctile(x,75);
+                I  = q3-q1;
+                lo = q1 - iqrK*I;
+                hi = q3 + iqrK*I;
+                x = x(x >= lo & x <= hi);
+            end
+
+        case "mad"
+            if ~isempty(x)
+                med = median(x);
+                m = mad(x,1); % median absolute deviation
+                lo = med - madK*m;
+                hi = med + madK*m;
+                x = x(x >= lo & x <= hi);
+            end
+    end
+
+    cellArrayData{gi} = x;
+end
+% --- END OPTIONAL OUTLIER FILTERING ---
+
+% Remaking matrixData
+[lengthLongest]=max(cellfun(@(x) length(x),cellArrayData));
+numConditions = numel(cellArrayData);
+matrixData = NaN(lengthLongest,numConditions);
+for k=1:numConditions
+    matrixData(1:length(cellArrayData{k}),k) = cellArrayData{k};
+end
+if all(isnan(matrixData(:)))
+    disp('All data are NaNs. Returning...')
+    return
+end
+
 onlyOneDataPerEachGroup=false(1,numCategories);
 if plotIndivPoint
     % individual data jitter plot
@@ -123,8 +188,8 @@ if plotIndivPoint
     uArrayAll = cell(size(cellArrayData));
     Nall = cell(size(cellArrayData));
     for ii=1:numCategories
-        Nall{ii} = histcounts(matrixData(:,ii));
-        uArrayAll{ii} = unique(matrixData(~isnan(matrixData(:,ii)),ii));
+        Nall{ii} = histcounts(cellArrayData{ii,1});
+        uArrayAll{ii} = unique(cellArrayData{ii,1}(~isnan(cellArrayData{ii,1}),:));
     end
 %     if mean(cellfun(@(x,y) length(y)/length(x),uArrayAll,cellArrayData))>3
 %         Nmax = max(cellfun(@max,cellfun(@(x,y) arrayfun(@(z) sum(y==z),x) ,uArrayAll,cellArrayData,'unif',false)));
@@ -132,27 +197,27 @@ if plotIndivPoint
         Nmax = max(cellfun(@max,Nall));
 %     end
     for ii=1:numCategories
-        curNumData = numel(matrixData(:,ii));
+        curNumData = numel(cellArrayData{ii,1});
         if curNumData==1
-            plot(ii,matrixData(:,ii),'k.')
+            plot(ii,cellArrayData{ii,1},'k.')
             onlyOneDataPerEachGroup(ii)=true;
         else
-            xData = ii+0.1*boxWidth*(randn(size(matrixData,1),1));
+            xData = ii+0.1*boxWidth*(randn(max(cellfun(@length,cellArrayData)),1));
             % Need to take care of xData more wisely
             % Going with matrixData(:,ii)
-            uCurArray = unique(matrixData(~isnan(matrixData(:,ii)),ii));
-            if 3*length(uCurArray) < sum(~isnan(matrixData(:,ii)))
-                N = arrayfun(@(x) sum(matrixData(:,ii)==x),uCurArray)';
-                edges=[uCurArray' nanmax(matrixData(:,ii))];
+            uCurArray = unique(cellArrayData{ii,1}(~isnan(cellArrayData{ii,1}),:));
+            if 3*length(uCurArray) < sum(~isnan(cellArrayData{ii,1}))
+                N = arrayfun(@(x) sum(cellArrayData{ii,1}==x),uCurArray)';
+                edges=[uCurArray' nanmax(cellArrayData{ii,1})];
                 curMaxNratio = max(N/Nmax);
                 scatterWidth = boxWidth/curMaxNratio;
             else
-                [N,edges] = histcounts(matrixData(:,ii));
+                [N,edges] = histcounts(cellArrayData{ii,1});
             end
             for jj=1:numel(N)
                 
                 % Get the subpopulation
-                curIdx = matrixData(:,ii)>=edges(jj) & matrixData(:,ii)<edges(jj+1);
+                curIdx = cellArrayData{ii,1}>=edges(jj) & cellArrayData{ii,1}<edges(jj+1);
                 % Calculate the width according to N(jj)
                 xData(curIdx) = ii - N(jj)/Nmax*scatterWidth/2 + N(jj)/Nmax*scatterWidth*(rand(size(xData(curIdx),1),1));
             end
@@ -162,7 +227,7 @@ if plotIndivPoint
                 curColor = singleColor;
             end
             if horizontalPlot
-                scatter(ax, matrixData(:,ii), xData,'filled','MarkerFaceColor',curColor*0.5,'MarkerEdgeColor','none','SizeData',markerSize)
+                scatter(ax, cellArrayData{ii,1}, xData,'filled','MarkerFaceColor',curColor*0.5,'MarkerEdgeColor','none','SizeData',markerSize)
             else
                 scatter(ax, xData,matrixData(:,ii),'filled','MarkerFaceColor',curColor*0.5,'MarkerEdgeColor','none','SizeData',markerSize)
             end
