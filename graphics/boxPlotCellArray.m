@@ -62,6 +62,11 @@ addParameter(ip,'horizontalPlot',false);
 addParameter(ip,'forceTtest',false);
 addParameter(ip,'singleColor',0);
 addParameter(ip,'outlierMethod','iqr');
+addParameter(ip,'jitterMode','kde');      % 'hist' (original) or 'kde'
+addParameter(ip,'jitterLog',true);        % if true, it will use log to condense the width
+addParameter(ip,'jitterGamma',0.7);       % 0.5~1.0 recommended
+addParameter(ip,'kdePoints',512);         % KDE grid resolution
+addParameter(ip,'kdeBandwidth',[]);       % If [], automatic. if number, it will be the width
 parse(ip,cellArrayData,nameList,convertFactor,notchOn,plotIndivPoint,varargin{:});
 ax=ip.Results.ax;
 horizontalPlot=ip.Results.horizontalPlot;
@@ -73,6 +78,11 @@ convertFactor = ip.Results.convertFactor;
 forceTtest =  ip.Results.forceTtest;
 singleColor = ip.Results.singleColor;
 outlierMethod = ip.Results.outlierMethod;
+jitterMode   = lower(string(ip.Results.jitterMode));
+jitterLog    = ip.Results.jitterLog;
+jitterGamma  = ip.Results.jitterGamma;
+kdePoints    = ip.Results.kdePoints;
+kdeBandwidth = ip.Results.kdeBandwidth;
 
 nameList(idEmptyData)=[];
 
@@ -203,33 +213,102 @@ if plotIndivPoint
             onlyOneDataPerEachGroup(ii)=true;
         else
             xData = ii+0.1*boxWidth*(randn(max(cellfun(@length,cellArrayData)),1));
-            % Need to take care of xData more wisely
-            % Going with matrixData(:,ii)
-            uCurArray = unique(cellArrayData{ii,1}(~isnan(cellArrayData{ii,1}),:));
-            if 3*length(uCurArray) < sum(~isnan(cellArrayData{ii,1}))
-                N = arrayfun(@(x) sum(cellArrayData{ii,1}==x),uCurArray)';
-                edges=[uCurArray' nanmax(cellArrayData{ii,1})];
-                curMaxNratio = max(N/Nmax);
-                scatterWidth = boxWidth/curMaxNratio;
-            else
-                [N,edges] = histcounts(cellArrayData{ii,1});
+            % % Need to take care of xData more wisely
+            % % Going with matrixData(:,ii)
+            % uCurArray = unique(cellArrayData{ii,1}(~isnan(cellArrayData{ii,1}),:));
+            % if 3*length(uCurArray) < sum(~isnan(cellArrayData{ii,1}))
+            %     N = arrayfun(@(x) sum(cellArrayData{ii,1}==x),uCurArray)';
+            %     edges=[uCurArray' nanmax(cellArrayData{ii,1})];
+            %     curMaxNratio = max(N/Nmax);
+            %     scatterWidth = boxWidth/curMaxNratio;
+            % else
+            %     [N,edges] = histcounts(cellArrayData{ii,1});
+            % end
+            % for jj=1:numel(N)
+            % 
+            %     % Get the subpopulation
+            %     curIdx = cellArrayData{ii,1}>=edges(jj) & cellArrayData{ii,1}<edges(jj+1);
+            %     % Calculate the width according to N(jj)
+            %     xData(curIdx) = ii - N(jj)/Nmax*scatterWidth/2 + N(jj)/Nmax*scatterWidth*(rand(size(xData(curIdx),1),1));
+            % end
+            % if singleColor==0
+            %     curColor = color(ii,:);
+            % else
+            %     curColor = singleColor;
+            % end
+            % if horizontalPlot
+            %     scatter(ax, cellArrayData{ii,1}, xData,'filled','MarkerFaceColor',curColor*0.5,'MarkerEdgeColor','none','SizeData',markerSize)
+            % else
+            %     scatter(ax, xData,matrixData(:,ii),'filled','MarkerFaceColor',curColor*0.5,'MarkerEdgeColor','none','SizeData',markerSize)
+            % end
+            y = matrixData(:,ii);
+            y = y(~isnan(y));
+            
+            % base random jitter (centered at group index)
+            xData = ii + (rand(size(y)) - 0.5) * 1e-6; % tiny init
+            
+            switch jitterMode
+                case "hist"
+                    % ===== ?? ?? ?? =====
+                    [N,edges] = histcounts(y);
+                    NmaxBin = max(N);
+                    for jj=1:numel(N)
+                        curIdx = (y>=edges(jj) & y<edges(jj+1));
+                        frac = N(jj)/max(NmaxBin,1);
+            
+                        % log/sqrt ?? ?? (???)
+                        if jitterLog
+                            frac = log1p(9*frac)/log(10);   % 0~1? ??
+                        else
+                            frac = frac.^jitterGamma;
+                        end
+            
+                        w = scatterWidth * frac;
+                        xData(curIdx) = ii + (rand(sum(curIdx),1)-0.5).*w;
+                    end
+            
+                case "kde"
+                    % ===== KDE ?? (violin-like) =====
+                    yMin = min(y); yMax = max(y);
+                    if yMin==yMax
+                        dens = ones(size(y));
+                    else
+                        yi = linspace(yMin, yMax, kdePoints);
+            
+                        if isempty(kdeBandwidth)
+                            f = ksdensity(y, yi);  % auto bandwidth
+                        else
+                            f = ksdensity(y, yi, 'Bandwidth', kdeBandwidth);
+                        end
+            
+                        dens = interp1(yi, f, y, 'linear', 'extrap'); % ? ?? local density
+                        dens = dens / max(dens + eps);                % 0~1 normalize
+                    end
+            
+                    % ? ??: log ?? power? ??? ????? ?? ??
+                    if jitterLog
+                        dens = log1p(9*dens)/log(10);      % 0~1 (??? ??)
+                    else
+                        dens = dens.^jitterGamma;
+                    end
+            
+                    w = scatterWidth .* dens;
+                    xData = ii + (rand(size(y))-0.5) .* w;
             end
-            for jj=1:numel(N)
-                
-                % Get the subpopulation
-                curIdx = cellArrayData{ii,1}>=edges(jj) & cellArrayData{ii,1}<edges(jj+1);
-                % Calculate the width according to N(jj)
-                xData(curIdx) = ii - N(jj)/Nmax*scatterWidth/2 + N(jj)/Nmax*scatterWidth*(rand(size(xData(curIdx),1),1));
-            end
+            
+            % ---- scatter plot ----
             if singleColor==0
                 curColor = color(ii,:);
             else
                 curColor = singleColor;
             end
+            
             if horizontalPlot
-                scatter(ax, cellArrayData{ii,1}, xData,'filled','MarkerFaceColor',curColor*0.5,'MarkerEdgeColor','none','SizeData',markerSize)
+                scatter(ax, y, xData,'filled','MarkerFaceColor',curColor*0.5,...
+                    'MarkerEdgeColor','none','SizeData',markerSize)
             else
-                scatter(ax, xData,matrixData(:,ii),'filled','MarkerFaceColor',curColor*0.5,'MarkerEdgeColor','none','SizeData',markerSize)
+                scatter(ax, xData, y,'filled','MarkerFaceColor',curColor*0.5,...
+                    'MarkerEdgeColor','none','SizeData',markerSize)
             end
         end
         hold on
