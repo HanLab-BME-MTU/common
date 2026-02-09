@@ -175,6 +175,46 @@ for p = 1:np
             end
             
             [prm, prmStd, ~, res, ~] = fitGaussian2D(window, [x(p)-xi(p) y(p)-yi(p) A_init sigma(p) c_init], mode);
+            % ---- Begin fallback for A-std if covariance is singular ----
+            % Only attempt if A is estimated by 'mode'
+            if any(mode == 'A')
+                if numel(prmStd) >= 3 && (isnan(prmStd(3)) || ~isfinite(prmStd(3)) || prmStd(3) <= 0)
+                    % Build the Gaussian shape on the same window the fit used
+                    [H, W] = size(window);
+                    cx = (W+1)/2; cy = (H+1)/2;                 % window center (origin used by the wrapper)
+                    [Xg, Yg] = meshgrid((1:W)-cx, (1:H)-cy);
+                    x0 = prm(1); y0 = prm(2); s = prm(4);
+            
+                    % Valid pixels (same criterion as fit used)
+                    mask = isfinite(window);
+                    if ~any(mask(:))
+                        % nothing we can do; leave NaN
+                    else
+                        phi = exp(-((Xg - x0).^2 + (Yg - y0).^2) / (2*s^2));
+                        phi = phi(mask);
+            
+                        % m = number of residuals actually used; p_est = #parameters estimated
+                        m = sum(mask(:));
+                        p_est = numel(intersect(lower(mode), 'xyasc')); % estimated params count
+                        dof = max(m - p_est, 1);                         % protect against 0/neg
+            
+                        % sigma_r^2 from residuals already returned by the MEX
+                        % res.RSS should also be available; prefer it if present
+                        if isfield(res, 'RSS') && isfinite(res.RSS)
+                            sigma2 = res.RSS / dof;
+                        else
+                            sigma2 = res.std.^2; % close enough if RSS not exposed
+                        end
+            
+                        denom = sum(phi.^2);
+                        if denom > eps
+                            stdA = sqrt(sigma2 / denom);
+                            prmStd(3) = stdA;  % overwrite NaN with fallback
+                        end
+                    end
+                end
+            end
+            % ---- End fallback for A-std ----
             
             dx = prm(1);
             dy = prm(2);
@@ -188,9 +228,9 @@ for p = 1:np
                 try
                     warning('off','stats:adtest:OutOfRangePLow');
                     warning('off','stats:adtest:OutOfRangePHigh');
-                    
+
                     [hAD, pAD] = adtest(r);
-                    
+
                     warning('on','stats:adtest:OutOfRangePLow');
                     warning('on','stats:adtest:OutOfRangePHigh');
                 catch
@@ -242,6 +282,70 @@ for p = 1:np
                 pStruct.sigma_r(p) = res.std;
                 pStruct.RSS(p) = res.RSS;
                 
+                % --- BEGIN robust T/df2 computation ---
+                
+                % Guard residual std (recompute from residuals if NaN or empty)
+                if ~isfinite(pStruct.sigma_r(p))
+                    rtmp = res.data(:);
+                    rtmp = rtmp(isfinite(rtmp));
+                    if ~isempty(rtmp)
+                        pStruct.sigma_r(p) = std(rtmp, 0); % unbiased by default (n-1)
+                    else
+                        pStruct.sigma_r(p) = NaN;
+                    end
+                end
+                
+                % Standard error of sigma_r (guard npx and finiteness)
+                if isfinite(pStruct.sigma_r(p)) && npx > 1
+                    pStruct.SE_sigma_r(p) = pStruct.sigma_r(p) / sqrt(max(2*(npx-1),1));
+                else
+                    pStruct.SE_sigma_r(p) = NaN;
+                end
+                
+                SE_sigma_r = pStruct.SE_sigma_r(p) * kLevel;
+                
+                % Pull sigma_A (std of amplitude estimate) from stdVect; if A not estimated, it is 0
+                sigma_A = stdVect(3);
+                
+                % If A was fixed or prmStd missing, avoid exact zero to keep formulas defined
+                if ~isfinite(sigma_A) || sigma_A < eps
+                    % If A is fixed, the only uncertainty is from background; treat sigma_A ~ 0
+                    % but keep it tiny to avoid 0/0 in Welch df:
+                    sigma_A = eps;
+                end
+                
+                A_est = prm(3);
+                
+                % Welch–Satterthwaite df for sum of two variances:
+                num = (sigma_A.^2 + SE_sigma_r.^2).^2;
+                den = (sigma_A.^4 + SE_sigma_r.^4);
+                
+                if isfinite(num) && isfinite(den) && den > 0 && npx > 1
+                    df2(p) = (npx - 1) * num / den;
+                else
+                    df2(p) = NaN;
+                end
+                
+                % Combined standard error for 1-sample t on (A_est vs k*sigma_r)
+                scomb = sqrt((sigma_A.^2 + SE_sigma_r.^2) / max(npx,1));
+                
+                if isfinite(scomb) && scomb > 0 && isfinite(pStruct.sigma_r(p))
+                    T(p) = (A_est - pStruct.sigma_r(p)*kLevel) / scomb;
+                else
+                    T(p) = NaN;
+                end
+                
+                % Mask count used upstream (keep your original logic; guard res.std)
+                if isfinite(pStruct.sigma_r(p))
+                    pStruct.mask_Ar(p) = sum(A_est * g > pStruct.sigma_r(p) * kLevel);
+                else
+                    pStruct.mask_Ar(p) = 0;
+                end
+                
+                % Keep the AD flag you already stored
+                pStruct.hval_AD(p) = res.hAD;
+                
+                % --- END robust T/df2 computation ---                
                 pStruct.SE_sigma_r(p) = res.std/sqrt(2*(npx-1));
                 SE_sigma_r = pStruct.SE_sigma_r(p) * kLevel;
                 

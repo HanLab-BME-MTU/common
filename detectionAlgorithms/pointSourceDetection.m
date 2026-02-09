@@ -166,8 +166,9 @@ if sum(imgLM(:))~=0 % no local maxima found, likely a background image
             if ip.Results.RemoveRedundant
                 pM = [pstruct.x' pstruct.y'];
                 idxKD = KDTreeBallQuery(pM, pM, ip.Results.RedundancyRadius*ones(numel(pstruct.x),1));
+                kdtree_ball_query()
                 idxKD = idxKD(cellfun(@numel, idxKD)>1);
-                for k = 1:length(idxKD);
+                for k = 1:length(idxKD)
                     RSS = pstruct.RSS(idxKD{k});
                     idx(idxKD{k}(RSS ~= min(RSS))) = 0;
                 end

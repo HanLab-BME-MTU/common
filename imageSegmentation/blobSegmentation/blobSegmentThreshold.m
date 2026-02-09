@@ -92,7 +92,8 @@ imageDilatedNorm(nzInd) = (imageDilated(nzInd) - minSignal) / (maxSignal - minSi
 %estimate the intensity level to use for thresholding the image
 level1 = graythresh(imageDilatedNorm(nzInd)); %Otsu
 [~, level2] = cutFirstHistMode(imageDilatedNorm(nzInd),0); %Rosin
-level = 0.33333*level1 + 0.66667*level2;
+% level = 0.33333*level1 + 0.66667*level2;
+level = 0.2*level2 + 0.8*level1;
 
 %threshold the image
 imageThresholded = imbinarize(imageDilatedNorm,level);

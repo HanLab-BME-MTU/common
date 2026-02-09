@@ -103,8 +103,117 @@ static int gaussian_f(const gsl_vector *x, void *params, gsl_vector *fvec)
     return GSL_SUCCESS;
 }
 
-/* J: Jacobian of residuals wrt fitted params (m×np) */
+/* Model: f(x,y) = c + A * exp( - ((X-x0)^2 + (Y-y0)^2) / (2*s^2) )
+   Params (full order): [x0, y0, A, s, c]
+   Jacobian columns (full):
+     ∂f/∂x0 =  A * E * ( (X-x0) / s^2 )
+     ∂f/∂y0 =  A * E * ( (Y-y0) / s^2 )
+     ∂f/∂A  =  E
+     ∂f/∂s  =  A * E * ( r2 / s^3 )
+     ∂f/∂c  =  1
+*/
+/* FULL param order we target everywhere: [x0, y0, A, s, c]
+   Model: f(x,y) = c + A * exp(-((X-x0)^2 + (Y-y0)^2) / (2*s^2))
+   Residual convention used elsewhere: r = yobs - f(x,y)  (so J = ∂r/∂θ = -∂f/∂θ)
+*/
 static int gaussian_df(const gsl_vector *x, void *params, gsl_matrix *J)
+{
+    FitData *D = (FitData*)params;
+
+    /* --- 1) Rebuild full parameter vector from reduced x + fixed values --- */
+    double pfull[5]; /* [x0, y0, A, s, c] */
+    /* start from current full vector (contains fixed values) */
+    pfull[0] = D->prmVect[0];
+    pfull[1] = D->prmVect[1];
+    pfull[2] = D->prmVect[2];
+    pfull[3] = D->prmVect[3];
+    pfull[4] = D->prmVect[4];
+
+    /* overwrite estimated ones from reduced vector */
+    for (size_t j = 0; j < D->np; ++j) {
+        int full = D->estIdx[j]; /* 0..4 */
+        pfull[full] = gsl_vector_get(x, j);
+    }
+
+    double x0 = pfull[0];
+    double y0 = pfull[1];
+    double A  = pfull[2];
+    double s  = pfull[3];
+    /* c = pfull[4];  // not needed for derivatives below */
+
+    /* guard s */
+    const double s_eps = 1e-9;
+    if (!(s > s_eps)) s = s_eps;
+    const double s2 = s*s;
+    const double inv_s2 = 1.0 / s2;
+    const double inv_s3 = 1.0 / (s2*s);
+
+    /* --- 2) Geometry: compute (X,Y) coordinates from linear index k --- */
+    const size_t W = D->w;  /* number of columns */
+    const size_t H = D->h;  /* number of rows    */
+    const double cx = 0.5 * (double)(W - 1); /* center column index */
+    const double cy = 0.5 * (double)(H - 1); /* center row index    */
+
+    /* J must be (m x np), where m = number of residuals (usually W*H or #valid) */
+    /* If you pack only valid pixels elsewhere, loop over those indices here.
+       Otherwise, fill all pixels. This version fills ALL W*H pixels. */
+
+    size_t row = 0;
+    for (size_t r = 0; r < H; ++r) {
+        const double Y = (double)r - cy;
+        for (size_t c = 0; c < W; ++c, ++row) {
+            const double X = (double)c - cx;
+
+            /* exp term */
+            const double dx = X - x0;
+            const double dy = Y - y0;
+            const double r2 = dx*dx + dy*dy;
+            const double E  = exp(-0.5 * r2 * inv_s2);
+
+            /* fill each estimated column */
+            for (size_t j = 0; j < D->np; ++j) {
+                double dfdtheta = 0.0;
+                switch (D->estIdx[j]) {
+                    case 0: /* ∂f/∂x0 */ dfdtheta =  A * E * ( dx * inv_s2 );        break;
+                    case 1: /* ∂f/∂y0 */ dfdtheta =  A * E * ( dy * inv_s2 );        break;
+                    case 2: /* ∂f/∂A  */ dfdtheta =  E;                               break;
+                    case 3: /* ∂f/∂s  */ dfdtheta =  A * E * ( r2 * inv_s3 );         break;
+                    case 4: /* ∂f/∂c  */ dfdtheta =  1.0;                             break;
+                    default: dfdtheta = 0.0;                                          break;
+                }
+                /* residual r = yobs - f  ->  J = ∂r/∂θ = -∂f/∂θ */
+                gsl_matrix_set(J, row, j, -dfdtheta);
+            }
+        }
+    }
+
+    /* Optional sanity check: warn if any Jacobian column is exactly zero */
+    /*
+    for (size_t j = 0; j < D->np; ++j) {
+        double norm2 = 0.0;
+        for (size_t i = 0; i < row; ++i) {
+            double v = gsl_matrix_get(J,i,j);
+            norm2 += v*v;
+        }
+        if (norm2 == 0.0) {
+            mexWarnMsgIdAndTxt("fitGaussian2D:ZeroJacCol",
+                "Jacobian column %zu (full param %d) is zero.", j, (int)D->estIdx[j]);
+        }
+    }
+    */
+    return GSL_SUCCESS;
+}
+/* Model: f(x,y) = c + A * exp( - ((X-x0)^2 + (Y-y0)^2) / (2*s^2) )
+   Params (full order): [x0, y0, A, s, c]
+   Jacobian columns (full):
+     ∂f/∂x0 =  A * E * ( (X-x0) / s^2 )
+     ∂f/∂y0 =  A * E * ( (Y-y0) / s^2 )
+     ∂f/∂A  =  E
+     ∂f/∂s  =  A * E * ( r2 / s^3 )
+     ∂f/∂c  =  1
+*/
+/* J: Jacobian of residuals wrt fitted params (m×np) */
+/*static int gaussian_df(const gsl_vector *x, void *params, gsl_matrix *J)
 {
     FitData *D = (FitData*)params;
 
@@ -116,7 +225,7 @@ static int gaussian_df(const gsl_vector *x, void *params, gsl_matrix *J)
     const double xp = pv[0], yp = pv[1], A = pv[2], s = pv[3], c = pv[4];
     (void)c; /* c used in eval, but derivs below don't need it */
 
-    const size_t m = D->m;
+/*    const size_t m = D->m;
     const double s2 = s*s;
     const double s3 = s2*s;
 
@@ -128,23 +237,23 @@ static int gaussian_df(const gsl_vector *x, void *params, gsl_matrix *J)
         const double e   = exp(-(dx*dx + dy*dy) / (2.0 * s2));
 
         /* residual r = y - g; J = dr/dtheta = -dg/dtheta */
-        for (size_t j = 0; j < D->np; ++j) {
+        /*for (size_t j = 0; j < D->np; ++j) {
             double d = 0.0;
             switch (D->estIdx[j]) {
                 case 0: /* xp */
-                    d = - (A * e) * (dx / s2);
+          /*          d = - (A * e) * (dx / s2);
                     break;
                 case 1: /* yp */
-                    d = - (A * e) * (dy / s2);
+            /*        d = - (A * e) * (dy / s2);
                     break;
                 case 2: /* A  */
-                    d = - e;
+            /*        d = - e;
                     break;
                 case 3: /* s  */
-                    d = - (A * e) * ( (dx*dx + dy*dy) / s3 );
+            /*        d = - (A * e) * ( (dx*dx + dy*dy) / s3 );
                     break;
                 case 4: /* c  */
-                    d = - 1.0;
+           /*         d = - 1.0;
                     break;
                 default:
                     d = 0.0;
@@ -155,6 +264,7 @@ static int gaussian_df(const gsl_vector *x, void *params, gsl_matrix *J)
     }
     return GSL_SUCCESS;
 }
+*/
 
 static int gaussian_fdf(const gsl_vector *x, void *params, gsl_vector *fvec, gsl_matrix *J)
 {
@@ -353,12 +463,12 @@ static void copy_outputs_and_cleanup(
     }
     gsl_matrix_free(Jcur);
 
-    /* warn if convergence not reached (but return best-so-far) */
+    /* warn if convergence not reached (but return best-so-far) 
     if (status != GSL_SUCCESS) {
         mexWarnMsgIdAndTxt("fitGaussian2D:NoConvergence",
                            "GSL did not reach requested tolerance: %s. Returning best-so-far.",
                            gsl_strerror(status));
-    }
+    }*/
 
     /* free covariance copy */
     gsl_matrix_free(cov_np);
