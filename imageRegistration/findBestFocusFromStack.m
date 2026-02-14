@@ -1,4 +1,4 @@
-function [averagingRange] = findBestFocusFromStack(curRefBeadStack,thresVariance,applySobel,method)
+function [averagingRange, imageFocused] = findBestFocusFromStack(curRefBeadStack,thresVariance,applySobel,method)
 % function [averagingRange] =
 % findBestFocusFromStack(curRefBeadStack,thresVariance,applySobel)
 % identifies the best focus by top most variance among the stack images.
@@ -10,6 +10,16 @@ function [averagingRange] = findBestFocusFromStack(curRefBeadStack,thresVariance
 
 numZ = size(curRefBeadStack,3);
 curVar = zeros(numZ,1);
+if nargin<2
+    thresVariance = 0.9;
+    applySobel = 0;
+    method = 'var';
+end
+if nargin<3
+    applySobel = 0;
+    method = 'var';
+end
+
 if nargin<4
     method = 'var';
 end
@@ -53,6 +63,8 @@ elseif strcmp(method,'amp')
     % minFocusedFrame=max(1,maxIntenFrame-2);
     % maxFocusedFrame=max(refMD.zSize_,maxIntenFrame+2);    
 end
+
+imageFocused = mean(curRefBeadStack(:,:,averagingRange),3);
 
 % This is now obsolete
 

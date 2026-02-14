@@ -56,12 +56,13 @@ addOptional(ip,'convertFactor',1);
 addOptional(ip,'notchOn',true);
 addOptional(ip,'plotIndivPoint',true);
 addParameter(ip,'forceShowP',false);
-addParameter(ip,'markerSize',2);
+addParameter(ip,'markerSize',1.5);
 addParameter(ip,'ax',gca);
 addParameter(ip,'horizontalPlot',false);
 addParameter(ip,'forceTtest',false);
 addParameter(ip,'singleColor',0);
 addParameter(ip,'outlierMethod','iqr');
+addParameter(ip,'iqrK', 3)
 addParameter(ip,'jitterMode','kde');      % 'hist' (original) or 'kde'
 addParameter(ip,'jitterLog',true);        % if true, it will use log to condense the width
 addParameter(ip,'jitterGamma',0.7);       % 0.5~1.0 recommended
@@ -83,6 +84,7 @@ jitterLog    = ip.Results.jitterLog;
 jitterGamma  = ip.Results.jitterGamma;
 kdePoints    = ip.Results.kdePoints;
 kdeBandwidth = ip.Results.kdeBandwidth;
+iqrK = ip.Results.iqrK;
 
 nameList(idEmptyData)=[];
 
@@ -142,7 +144,7 @@ hold off
 % outlierMethod = '';
 hardMax = inf;
 hardMin = -inf;
-iqrK = 3;      % Tukey rule (3 is conservative)
+% iqrK = 3;      % Tukey rule (3 is conservative)
 madK = 5;      % median +/- madK*MAD (robust)
 
 % apply filtering per group
@@ -212,7 +214,7 @@ if plotIndivPoint
             plot(ii,cellArrayData{ii,1},'k.')
             onlyOneDataPerEachGroup(ii)=true;
         else
-            xData = ii+0.1*boxWidth*(randn(max(cellfun(@length,cellArrayData)),1));
+            % xData = ii+0.1*boxWidth*(randn(max(cellfun(@length,cellArrayData)),1));
             % % Need to take care of xData more wisely
             % % Going with matrixData(:,ii)
             % uCurArray = unique(cellArrayData{ii,1}(~isnan(cellArrayData{ii,1}),:));
@@ -302,13 +304,21 @@ if plotIndivPoint
             else
                 curColor = singleColor;
             end
+
+            lighten = 0.75; % 0~1, The higher, the lighter (0.7~0.9 recommended)
+            ptColor = curColor + (1-curColor)*lighten;   % mix with white color
             
             if horizontalPlot
-                scatter(ax, y, xData,'filled','MarkerFaceColor',curColor*0.5,...
-                    'MarkerEdgeColor','none','SizeData',markerSize)
+                h=scatter(ax, y, xData,'filled','MarkerFaceColor',ptColor,...
+                    'MarkerEdgeColor','none','SizeData',markerSize);
             else
-                scatter(ax, xData, y,'filled','MarkerFaceColor',curColor*0.5,...
-                    'MarkerEdgeColor','none','SizeData',markerSize)
+                h=scatter(ax, xData, y,'filled','MarkerFaceColor',ptColor,...
+                    'MarkerEdgeColor','none','SizeData',markerSize);
+            end
+            try
+                h.MarkerFaceAlpha = 0.15;
+                h.MarkerEdgeAlpha = 0.0;
+            catch
             end
         end
         hold on
