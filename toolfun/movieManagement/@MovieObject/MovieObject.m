@@ -162,25 +162,93 @@ classdef  MovieObject < hgsetget
             end
         end
         function success = moveToBackup(obj,varargin)
-            % Move old file to getBackupPath
+            % Move old file to getBackupPath (robust for NAS/NFS timing)
             [backupPath, backupDir, fullPath] = obj.getBackupPath(varargin{:});
             success = false;
+        
             if ~isempty(fullPath) && ~isempty(backupPath)
                 try
                     % Make directory if it does not exist
                     if(~exist(backupDir,'dir'))
                         mkdir(backupDir);
                     end
-                    movefile(fullPath,backupPath,'f');
+        
+                    src = fullPath;
+                    dst = backupPath;
+        
+                    % ---- Guard 0: nothing to back up (first save, or file not visible yet) ----
+                    if exist(src,'file') ~= 2
+                        success = true;
+                        return;
+                    end
+        
+                    maxTry = 5;
+                    ok = false; msg = ''; msgid = '';
+        
+                    % ---- Try movefile with retries ----
+                    for r = 1:maxTry
+                        % If dst already exists and src is gone, backup likely succeeded
+                        if exist(dst,'file')==2 && exist(src,'file')~=2
+                            ok = true; break;
+                        end
+        
+                        % If src vanished, nothing left to move; treat as non-fatal
+                        if exist(src,'file') ~= 2
+                            ok = true; break;
+                        end
+        
+                        [ok,msg,msgid] = movefile(src, dst, 'f');
+        
+                        % Some network FS: movefile may return false but actually moved it
+                        if ~ok && exist(dst,'file')==2 && exist(src,'file')~=2
+                            ok = true; break;
+                        end
+        
+                        if ok, break; end
+                        pause(0.2 * r);  % increasing backoff
+                    end
+        
+                    % ---- Fallback: copy then delete ----
+                    if ~ok
+                        % Only attempt copy if src still exists
+                        if exist(src,'file') == 2
+                            for r = 1:maxTry
+                                [ok,msg,msgid] = copyfile(src, dst, 'f');
+                                if ok
+                                    try
+                                        delete(src);
+                                    catch
+                                        % ignore
+                                    end
+                                    break
+                                end
+        
+                                % If dst exists and src disappeared, assume succeeded
+                                if exist(dst,'file')==2 && exist(src,'file')~=2
+                                    ok = true; break;
+                                end
+        
+                                pause(0.2 * r);
+                            end
+                        else
+                            % src disappeared => nothing to back up
+                            ok = true;
+                        end
+                    end
+        
+                    % ---- Warn only if it genuinely failed ----
+                    if ~ok
+                        warning('TFM:MovieObject:BackupFailed', ...
+                            'Failed to save backup after retries:\n%s\nto\n%s\n(%s | %s)', ...
+                            src, dst, msg, msgid);
+                    end
+        
                     success = true;
+        
                 catch err
-                    % Do not warn if fullPath does not exist
-                    % It usually does, so we catch it rather than pretest
-                    if(strcmp(err.identifier,'MATLAB:MOVEFILE:OSError') && ...
-                       exist(fullPath,'file') ~= 2)
-                    % MATLAB:MOVIEFILE:OSError is an undocumented error if
-                    % the file does not exist
-                    % do nothing
+                    % Keep original behavior: do not warn if source doesn't exist
+                    if(strcmp(err.identifier,'MATLAB:MOVEFILE:OSError') && exist(fullPath,'file') ~= 2)
+                        % do nothing
                     elseif(~strcmp(err.identifier,'MATLAB:MOVEFILE:FileDoesNotExist'))
                         warning('MovieObject:saveBackup:Failure', ...
                             'Failed to save backup\n%s to\n%s', ...

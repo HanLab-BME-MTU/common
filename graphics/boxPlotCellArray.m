@@ -191,6 +191,8 @@ if all(isnan(matrixData(:)))
     disp('All data are NaNs. Returning...')
     return
 end
+% --- Force every group data to be a column vector (FIX for row vectors) ---
+cellArrayData = cellfun(@(x) x(:), cellArrayData, 'UniformOutput', false);
 
 onlyOneDataPerEachGroup=false(1,numCategories);
 if plotIndivPoint
@@ -200,8 +202,13 @@ if plotIndivPoint
     uArrayAll = cell(size(cellArrayData));
     Nall = cell(size(cellArrayData));
     for ii=1:numCategories
-        Nall{ii} = histcounts(cellArrayData{ii,1});
-        uArrayAll{ii} = unique(cellArrayData{ii,1}(~isnan(cellArrayData{ii,1}),:));
+        % Nall{ii} = histcounts(cellArrayData{ii,1});
+
+        xi = cellArrayData{ii,1};
+        xi = xi(:); % for safety
+        uArrayAll{ii} = unique(xi(~isnan(xi)));
+        Nall{ii} = histcounts(xi(~isnan(xi)));
+        % uArrayAll{ii} = unique(cellArrayData{ii,1}(~isnan(cellArrayData{ii,1}),:));
     end
 %     if mean(cellfun(@(x,y) length(y)/length(x),uArrayAll,cellArrayData))>3
 %         Nmax = max(cellfun(@max,cellfun(@(x,y) arrayfun(@(z) sum(y==z),x) ,uArrayAll,cellArrayData,'unif',false)));
