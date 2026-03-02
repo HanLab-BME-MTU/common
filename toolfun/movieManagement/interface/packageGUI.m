@@ -41,6 +41,7 @@ if nargout
 else
     gui_mainfcn(gui_State, varargin{:});
 end
+end
 % End initialization code - DO NOT EDIT
 
 % --- Outputs from this function are returned to the command line.
@@ -60,6 +61,7 @@ if (isfield(userData,'startMovieSelectorGUI') && userData.startMovieSelectorGUI)
         'ML', userData.ML , 'cluster', uTrackParCluster);
     delete(handles.figure1)
 end
+end
 
 % --- Executes on button press in pushbutton_status.
 function pushbutton_status_Callback(~, ~, handles)
@@ -72,6 +74,7 @@ end
 
 userData.overviewFig = movieDataGUI(userData.MD(userData.id));
 set(handles.figure1, 'UserData', userData);
+end
 
 % --- Executes on Save button press or File>Save
 function save_Callback(~, ~, handles)
@@ -80,7 +83,7 @@ set(handles.text_saveStatus, 'Visible', 'on')
 arrayfun(@save,userData.MD);
 pause(.3)
 set(handles.text_saveStatus, 'Visible', 'off')
-
+end
 
 function switchMovie_Callback(hObject, ~, handles)
 
@@ -114,7 +117,7 @@ if userData.statusM(userData.id).Visited
 else
    packageGUI_RefreshFcn(handles, 'initialize') 
 end
-
+end
 
 % --- Executes when user attempts to close figure1.
 function figure1_CloseRequestFcn(hObject, eventdata, handles)
@@ -132,6 +135,7 @@ saveRes = questdlg('Do you want to save the current progress?', ...
 if strcmpi(saveRes,'yes'), arrayfun(@save,userData.MD); end
 if strcmpi(saveRes,'cancel'), return; end
 delete(handles.figure1);
+end
 
 % --- Executes during object deletion, before destroying properties.
 function figure1_DeleteFcn(hObject, eventdata, handles)
@@ -161,6 +165,7 @@ end
 if isfield(userData, 'msgboxGUI') && ishandle(userData.msgboxGUI)
    delete(userData.msgboxGUI) 
 end
+end
 
 % --- Executes on key press with focus on figure1 and none of its controls.
 function figure1_KeyPressFcn(hObject, eventdata, handles)
@@ -173,6 +178,7 @@ if strcmp(eventdata.Key, 'leftarrow')
 end
 if strcmp(eventdata.Key, 'rightarrow')
     switchMovie_Callback(handles.pushbutton_right, [], handles);
+end
 end
 
 % --------------------------------------------------------------------
@@ -190,6 +196,7 @@ if status
     end
     warndlg(msg,'Fail to open browser','modal');
 end
+end
 
 % --------------------------------------------------------------------
 function menu_file_open_Callback(~, ~, handles)
@@ -200,12 +207,12 @@ userData = get(handles.figure1,'Userdata');
 movieSelectorGUI('packageName',userData.packageName,...
     'MD', userData.MD, 'ML', userData.ML);
 delete(handles.figure1)
-
+end
 % --------------------------------------------------------------------
 function exit_Callback(~, ~, handles)
 
 delete(handles.figure1);
-
+end
 
 % --- Executes on button press in pushbutton_show.
 function pushbutton_show_Callback(hObject, ~, handles)
@@ -221,6 +228,7 @@ end
 userData.resultFig = userData.crtPackage.processes_{procID}.resultDisplay();
     
 set(handles.figure1, 'UserData', userData);
+end
 
 % --- Executes on button press in pushbutton_set.
 function pushbutton_set_Callback(hObject, ~, handles)
@@ -236,6 +244,7 @@ crtProcGUI =eval([crtProc '.GUI']);
 userData.setFig(procID) = crtProcGUI('mainFig',handles.figure1,procID);
 set(handles.figure1, 'UserData', userData);
 guidata(hObject,handles);
+end
 
 % --- Executes on button press in checkbox.
 function checkbox_Callback(hObject, eventdata, handles)
@@ -251,7 +260,7 @@ set(handles.figure1, 'UserData', userData)
 
 userfcn_checkAllMovies(procID, procStatus, handles);
 userfcn_lampSwitch(procID, procStatus, handles);
-
+end
 % --------------------------------------------------------------------
 function menu_debug_enter_Callback(hObject, eventdata, handles)
 
@@ -263,7 +272,7 @@ else
     newstatus='on'; 
 end
 set(hObject,'Checked',newstatus);
-
+end
 
 % --------------------------------------------------------------------
 function menu_debug_batchMode_Callback(hObject, eventdata, handles)
@@ -275,7 +284,7 @@ else
     newstatus='on'; 
 end
 set(hObject,'Checked',newstatus);
-
+end
 
 % --- Executes on button press in pushbutton_open.
 function pushbutton_open_Callback(hObject, eventdata, handles)
@@ -301,7 +310,7 @@ else
     % & nautilus)
     % system(sprintf('xdg-open %s',regexptranslate('escape',outputDir)));
 end
-
+end
 
 % --------------------------------------------------------------------
 function menu_parallel_Callback(hObject, eventdata, handles)
@@ -353,7 +362,7 @@ else
     batchMenu.Enable = 'on';
 end
 
-
+end
 
 
 % --------------------------------------------------------------------
@@ -361,7 +370,7 @@ function menu_parallel_cluster_Callback(hObject, eventdata, handles)
 % hObject    handle to menu_parallel_cluster (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-
+end
 
 
 % --------------------------------------------------------------------
@@ -415,7 +424,7 @@ end
 uTrackParCluster(cluster);
 batchMenuItem = findobj(handles.menu_parallel_batch,'Checked','on');
 batchMenuItem.Callback(batchMenuItem, eventdata);
-
+end
 
 
 
@@ -424,7 +433,7 @@ function menu_parallel_pool_Callback(hObject, eventdata, handles)
 % hObject    handle to menu_parallel_pool (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-
+end
 % --------------------------------------------------------------------
 function menu_parallel_pool_size_Callback(hObject, eventdata, handles)
 % hObject    handle to menu_parallel_pool_size (see GCBO)
@@ -446,14 +455,14 @@ hObject.Checked = 'on';
 %     end
 % else
 % end
-
+end
 % --------------------------------------------------------------------
 function menu_parallel_batch_Callback(hObject, eventdata, handles)
 % hObject    handle to menu_parallel_batch (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-
+end
 % --------------------------------------------------------------------
 function menu_parallel_batch_single_Callback(hObject, eventdata, handles)
 % hObject    handle to menu_parallel_batch_single (see GCBO)
@@ -464,7 +473,7 @@ handles.menu_parallel_batch_client.Checked = 'off';
 handles.menu_parallel_batch_one_per_movie.Checked = 'off';
 noPool = findobj(handles.menu_parallel_pool,'Label','No Pool');
 noPool.Enable = 'on';
-
+end
 % --------------------------------------------------------------------
 function menu_parallel_batch_one_per_movie_Callback(hObject, eventdata, handles)
 % hObject    handle to menu_parallel_batch_one_per_movie (see GCBO)
@@ -475,7 +484,7 @@ handles.menu_parallel_batch_client.Checked = 'off';
 handles.menu_parallel_batch_single.Checked = 'off';
 noPool = findobj(handles.menu_parallel_pool,'Label','No Pool');
 noPool.Enable = 'on';
-
+end
 
 % --------------------------------------------------------------------
 function menu_parallel_batch_client_Callback(hObject, eventdata, handles)
@@ -493,7 +502,7 @@ if(strcmp(poolSize.Label,'No Pool'))
     clusterProfileMenuItem = findobj(handles.menu_parallel_cluster,'Checked','on');
     menu_parallel_cluster_profile_Callback(clusterProfileMenuItem,eventdata,handles);
 end
-
+end
 
 % --------------------------------------------------------------------
 function menu_parallel_help_Callback(hObject, eventdata, handles)
@@ -527,6 +536,7 @@ h = msgbox( {...
     }, ...
     'uTrack Parallel Help','help');
 
+end
 
 % --- Executes on button press in checkbox_tagName.
 function checkbox_tagName_Callback(hObject, eventdata, handles)
@@ -541,4 +551,5 @@ if handles.checkbox_tagName.Value == 0;
     set(handles.processTagLabels, 'Visible', 'off')
 else
     set(handles.processTagLabels, 'Visible', 'on')
+end
 end

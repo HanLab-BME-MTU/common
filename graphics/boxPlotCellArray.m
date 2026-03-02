@@ -400,7 +400,7 @@ xGap = 0.05;
 % q=-2*lineGap;
 method='';
 qUsed=[];
-if numel(cellArrayData)>2
+if numel(cellArrayData)>2 && min(cellfun(@numel,cellArrayData))>2
     method = 'ANOVA with Tukey’s honestly significant difference procedure';
     [pAnova,~,stat] = anova1(matrixData,nameList,"off");
     if pAnova<0.05
