@@ -186,6 +186,13 @@ parfor p = 1:np
                 % H0: A <= k*sigma_r
                 % H1: A > k*sigma_r
                 sigma_A = stdVect(3);
+                % Guard: sigma_A=0 when A is fixed (not in mode), or when
+                % prmStd is degenerate. A zero sigma_A produces 0/0 in df2
+                % when SE_sigma_r_kLevel is also near zero -> NaN df2 ->
+                % hval_Ar=false -> spot silently dropped.
+                if ~isfinite(sigma_A) || sigma_A < eps
+                    sigma_A = eps;
+                end
                 A_est   = prm(3);
                 df2(p)  = (npx-1) * (sigma_A.^2 + SE_sigma_r_kLevel.^2).^2 ./ (sigma_A.^4 + SE_sigma_r_kLevel.^4);
                 scomb   = sqrt((sigma_A.^2 + SE_sigma_r_kLevel.^2)/npx);

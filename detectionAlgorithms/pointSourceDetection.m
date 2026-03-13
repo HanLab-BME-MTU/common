@@ -142,9 +142,16 @@ if sum(imgLM(:))~=0 % no local maxima found, likely a background image
     
     if ~isempty(lmIdx)
         % run localization on local maxima
-        if ~ip.Results.FitMixtures            
+        if ~ip.Results.FitMixtures
+            % NOTE: do NOT pass 'mask' into fitGaussians2D.
+            % The significance mask is used above to select local maxima candidates,
+            % but passing it into fitGaussians2D causes bwlabel to merge nearby/dense
+            % spots into one large connected component. The fit then NaNs out the
+            % entire fitting window (window(maskWindow~=0)=NaN), leaving npx<10
+            % and silently dropping real beads. Each spot is fit independently
+            % on its own local window without cross-contamination masking.
             pstruct = fitGaussians2D(img, lmx, lmy, A_est(lmIdx), sigma*ones(1,length(lmIdx)),...
-                c_est(lmIdx), mode, 'mask', mask, 'alpha', alpha,...
+                c_est(lmIdx), mode, 'alpha', alpha,...
                 'ConfRadius', ip.Results.ConfRadius, 'WindowSize', ip.Results.WindowSize);
         else
             pstruct = fitGaussianMixtures2D(img, lmx, lmy, A_est(lmIdx), sigma*ones(1,length(lmIdx)),...
