@@ -90,6 +90,18 @@ classdef TrackingProcess < DataProcessingProcess & NonSingularProcess
         
         function output = getDrawableOutput(obj)
             colors = hsv(numel(obj.owner_.channels_));
+            % If a channel has an explicit display color assigned
+            % (Channel.displayColor_, e.g. set from the movieViewer color
+            % swatch), use that for its track overlay too, so tracks
+            % match the raw-image channel color instead of an arbitrary
+            % hsv-wheel color. Channels without an assigned color keep
+            % the previous hsv-based default.
+            for iChan = 1:numel(obj.owner_.channels_)
+                chanColor = obj.owner_.channels_(iChan).displayColor_;
+                if ~isempty(chanColor)
+                    colors(iChan,:) = chanColor;
+                end
+            end
             output(1).name='Tracks';
             output(1).var='tracksFinal';
             output(1).type='overlay';

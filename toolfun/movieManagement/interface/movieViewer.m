@@ -158,7 +158,7 @@ if isa(userData.MO,'MovieData')
         'HorizontalAlignment','left','FontWeight','bold');
     arrayfun(@(i) uicontrol(imagePanel,'Style','checkbox',...
         'Position',[200+30*i hPosition 20 20],...
-        'Tag',['checkbox_channel' num2str(i)],'Value',i<4,...
+        'Tag',['checkbox_channel' num2str(i)],'Value',1,...
         'Callback',@(h,event) redrawChannel(h,guidata(h))),...
         1:numel(userData.MO.channels_));
     
@@ -168,7 +168,28 @@ if isa(userData.MO,'MovieData')
     arrayfun(@(i) uicontrol(imagePanel,'Style','text',...
         'Position',[200+30*i hPosition 20 20],...
         'Tag',['text_channel' num2str(i)],'String',i),...
-        1:numel(userData.MO.channels_));    
+        1:numel(userData.MO.channels_));
+    
+    % Create per-channel color-picker swatches. Click a swatch to assign
+    % that channel an arbitrary display color (uisetcolor); any number of
+    % checked channels are composited together additively in redrawImage,
+    % so there is no fixed "channel order = R/G/B" restriction anymore.
+    hPosition=hPosition+20;
+    defaultColors = [1 0 0; 0 1 0; 0 0 1; 1 1 1; 0 1 1; 1 0 1; 1 1 0];
+    uicontrol(imagePanel,'Style','text','Position',[120 hPosition 100 20],...
+        'Tag','text_colors','String','Color');
+    for i=1:numel(userData.MO.channels_)
+        if isempty(userData.MO.channels_(i).displayColor_)
+            userData.MO.channels_(i).displayColor_ = ...
+                defaultColors(mod(i-1,size(defaultColors,1))+1,:);
+        end
+        uicontrol(imagePanel,'Style','pushbutton',...
+            'Position',[200+30*i hPosition 20 20],...
+            'Tag',['colorbutton_channel' num2str(i)],...
+            'BackgroundColor',userData.MO.channels_(i).displayColor_,...
+            'TooltipString',sprintf('Click to set the display color for channel %d',i),...
+            'Callback',@(h,event) pickChannelColor(h,guidata(h),i));
+    end
 else
     imagePanel=-1;
 end
@@ -848,12 +869,30 @@ end
 
 function redrawChannel(hObject,handles)
 
-% Callback for channels checkboxes to avoid 0 or more than 4 channels
+% Callback for channel checkboxes. Ensures at least one channel stays
+% selected. Any number of checked channels can now be composited
+% together (see Channel.draw), each using its own displayColor_, so
+% there is no artificial cap at 3 channels anymore.
 channelBoxes = findobj(handles.figure1,'-regexp','Tag','checkbox_channel*');
 nChan=numel(find(arrayfun(@(x)get(x,'Value'),channelBoxes)));
-if nChan==0, set(hObject,'Value',1); elseif nChan>3, set(hObject,'Value',0); end
+if nChan==0, set(hObject,'Value',1); end
 
 redrawImage(handles)
+
+function pickChannelColor(hObject,handles,iChan)
+
+% Callback for a channel's color swatch button. Opens the standard
+% MATLAB color picker, stores the chosen color on the Channel object
+% (Channel.displayColor_), updates the swatch, and redraws the image.
+userData = get(handles.figure1,'UserData');
+initColor = userData.MO.channels_(iChan).displayColor_;
+if isempty(initColor), initColor = [1 1 1]; end
+newColor = uisetcolor(initColor, sprintf('Color for channel %d', iChan));
+if isequal(size(newColor),[1 3]) % isequal(newColor,0) if the user cancelled
+    userData.MO.channels_(iChan).displayColor_ = newColor;
+    set(hObject,'BackgroundColor',newColor);
+    redrawImage(handles)
+end
 
 function redrawImage(handles,varargin)
 

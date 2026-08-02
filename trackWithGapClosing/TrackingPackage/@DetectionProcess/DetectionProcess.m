@@ -69,6 +69,16 @@ classdef DetectionProcess < ImageAnalysisProcess
         end
         function output = getDrawableOutput(obj)
             colors = hsv(numel(obj.owner_.channels_));
+            % Use each channel's explicit display color (Channel.displayColor_,
+            % e.g. set from the movieViewer color swatch) when available, so
+            % detection markers match the raw-image channel color instead
+            % of an arbitrary hsv-wheel color.
+            for iChan = 1:numel(obj.owner_.channels_)
+                chanColor = obj.owner_.channels_(iChan).displayColor_;
+                if ~isempty(chanColor)
+                    colors(iChan,:) = chanColor;
+                end
+            end
             output(1).name='Objects';
             output(1).var='movieInfo';
             output(1).formatData=@DetectionProcess.formatOutput;
