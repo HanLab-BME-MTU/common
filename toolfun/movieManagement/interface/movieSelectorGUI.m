@@ -176,6 +176,7 @@ packageList = {
     'BiosensorsPackage';...
     'FocalAdhesionPackage'
     'FocalAdhesionSegmentationPackage'
+    'FilopodiaForcePackage'
     'IntegratorPackage'
     'QFSMPackage'
     'SegmentationPackage'

@@ -470,45 +470,59 @@ classdef  MovieData < MovieObject & matlab.mixin.Heterogeneous
             end
         end
         
-        function relocate(obj,oldRootDir,newRootDir,full)
+        function relocate(obj, oldRootDir, newRootDir, full)
             % Relocate the full object including ROIs and channels
+            %
+            % FIX: handle relative paths by resolving via pwd before passing
+            % to relocatePath/getFilesep (which require absolute paths).
+            % FIX: nargin<3 -> nargin<4 (obj counts as argument 1).
+        
+            % Resolve relative paths to absolute
+            if ~isempty(oldRootDir) && ~isAbsPath_(oldRootDir)
+                oldRootDir = fullfile(pwd, oldRootDir);
+            end
+            if ~isempty(newRootDir) && ~isAbsPath_(newRootDir)
+                newRootDir = fullfile(pwd, newRootDir);
+            end
+        
             for movie = [obj.getAncestor() obj.getAncestor().getDescendants()]
+                % Resolve relative movie paths before relocating
+                if isprop(movie,'outputDirectory_') && ~isAbsPath_(movie.outputDirectory_)
+                    movie.outputDirectory_ = fullfile(pwd, movie.outputDirectory_);
+                end
+                if isprop(movie,'movieDataPath_') && ~isAbsPath_(movie.movieDataPath_)
+                    movie.movieDataPath_ = fullfile(pwd, movie.movieDataPath_);
+                end
                 relocate@MovieObject(movie, oldRootDir, newRootDir);
                 if ~isempty(movie.roiMaskPath_)
-                    movie.roiMaskPath_ = relocatePath(movie.roiMaskPath_,...
-                        oldRootDir,newRootDir);
+                    movie.roiMaskPath_ = relocatePath(movie.roiMaskPath_, ...
+                        oldRootDir, newRootDir);
                 end
             end
-            
-            if nargin<3 || ~full || obj.isOmero(),
+        
+            if nargin < 4 || ~full || obj.isOmero()   % FIX: was nargin<3
                 return
             end
-            
-            % Check that channels paths start with oldRootDir
-            channelPaths = arrayfun(@(x) x.channelPath_, obj.channels_,...
-                'Unif', false);
-%             status = cellfun(@(x) ~isempty(regexp(x,['^' regexptranslate('escape',oldRootDir) '*'],...
-%                 'once')),channelPaths);
-            % Comparing using regexp with '*' doesn't match too generously.
-            % I'll take it out
-            status = cellfun(@(x) ~isempty(regexp(x,['^' regexptranslate('escape',oldRootDir)],'once')),channelPaths);
-            if ~all(status)
-                relocateMsg=sprintf(['The movie channels can not be automatically relocated.\n'...
-                    'Do you want to manually relocate channel %g:\n %s?'],1,channelPaths{1});
-                confirmRelocate = questdlg(relocateMsg,'Relocation - channels','Yes','No','Yes');
-                if ~strcmp(confirmRelocate,'Yes'), return; end
-                newChannelPath = uigetdir(newRootDir);
-                if isequal(newChannelPath,0), return; end
-                [oldRootDir, newRootDir]=getRelocationDirs(channelPaths{1},newChannelPath);
-            end
-            
-            % Relocate the movie channels
-            fprintf(1,'Relocating channels from %s to %s\n',oldRootDir,newRootDir);
-            for i=1:numel(obj.channels_),
-                obj.channels_(i).relocate(oldRootDir,newRootDir);
-            end
-        end
         
+            channelPaths = arrayfun(@(x) x.channelPath_, obj.channels_, 'Unif', false);
+            status = cellfun(@(x) ~isempty(regexp(x, ...
+                ['^' regexptranslate('escape',oldRootDir)], 'once')), channelPaths);
+            if ~all(status)
+                relocateMsg = sprintf(['The movie channels can not be automatically relocated.\n' ...
+                    'Do you want to manually relocate channel %g:\n %s?'], 1, channelPaths{1});
+                confirmRelocate = questdlg(relocateMsg, 'Relocation - channels', 'Yes', 'No', 'Yes');
+                if ~strcmp(confirmRelocate, 'Yes'), return; end
+                newChannelPath = uigetdir(newRootDir);
+                if isequal(newChannelPath, 0), return; end
+                [oldRootDir, newRootDir] = getRelocationDirs(channelPaths{1}, newChannelPath);
+            end
+        
+            fprintf(1, 'Relocating channels from %s to %s\n', oldRootDir, newRootDir);
+            for i = 1:numel(obj.channels_)
+                obj.channels_(i).relocate(oldRootDir, newRootDir);
+            end
+        end        
+
         function setFig = edit(obj)
             setFig = movieDataGUI(obj);
         end
@@ -837,4 +851,10 @@ classdef  MovieData < MovieObject & matlab.mixin.Heterogeneous
             propName = 'movieDataFileName_';
         end
     end
+end
+
+% ---- package-private helper ----
+function tf = isAbsPath_(p)
+    % True if p is an absolute filesystem path (Unix or Windows)
+    tf = ~isempty(p) && (p(1)=='/' || (numel(p)>1 && p(2)==':'));
 end

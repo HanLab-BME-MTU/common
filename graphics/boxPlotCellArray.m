@@ -7,7 +7,7 @@ function [sucess]=boxPlotCellArray(cellArrayData,nameList,convertFactor,notchOn,
 %           convertFactor       conversion factor for physical unit (ex.
 %                               pixelSize, timeInterval etc...)
 %           forceShowP          0 if you want to show only significant p
-%                               1 if you want to show all p 
+%                               1 if you want to show all p
 %                               2 if you do not want to show any p
 %           outlierMethod       'hard', iqr (default) or mad
 % Example:
@@ -22,11 +22,36 @@ function [sucess]=boxPlotCellArray(cellArrayData,nameList,convertFactor,notchOn,
 % boxPlotCellArray(..., 'outlierMethod','iqr', 'iqrK',3)
 % boxPlotCellArray(..., 'outlierMethod','mad', 'madK',5)
 % Sangyoon Han, March 2016
+%
+% Cleaned up August 2026: the calling scripts in this project build the
+% "one cell per condition" group array in inconsistent orientations
+% (1 x numConditions in some places, numConditions x 1 in others,
+% depending on whether an extra transpose was applied before cellfun).
+% Rather than chase every call site, this function now normalizes its
+% own inputs on entry, so it behaves the same no matter which
+% orientation the caller passes in. See the "Orientation normalization"
+% block right below.
+sucess=false;
+
+% --- Orientation normalization (fixes recurring 1xN vs Nx1 shape bugs) ---
+% This project calls boxPlotCellArray with the "list of groups" cell
+% array built in both row (1xN) and column (Nx1) orientations, depending
+% on which line built it (e.g. cellfun(...,FAstructGroup,...) vs
+% cellfun(...,FAstructGroup',...)). Instead of relying on every caller to
+% pass the "right" shape (and to also flip nameList to match, which is
+% itself an easy thing to get wrong or forget), normalize once here:
+% always work with a column cell of groups, and make sure each group's
+% data is itself a column vector before anything downstream touches it.
+cellArrayData = cellArrayData(:);
+cellArrayData = cellfun(@(x) x(:), cellArrayData, 'UniformOutput', false);
+if nargin>=2 && ~isempty(nameList)
+    nameList = nameList(:);
+end
+
 [lengthLongest]=max(cellfun(@(x) length(x),cellArrayData));
 %If there is no data, exclude them in the plot
 idEmptyData = cellfun(@isempty,cellArrayData);
 cellArrayData(idEmptyData)=[];
-sucess=false;
 % Return when one of columns are all NaNs
 isAnyGroupAllNaNs = cellfun(@(x) all(isnan(x)), cellArrayData);
 if any(isAnyGroupAllNaNs)
@@ -37,7 +62,6 @@ if any(isAnyGroupAllNaNs)
     disp([num2str(find(isAnyGroupAllNaNs)) 'th group contains all NaNs. Returning...'])
     return
 end
-
 numConditions = numel(cellArrayData);
 matrixData = NaN(lengthLongest,numConditions);
 for k=1:numConditions
@@ -47,7 +71,6 @@ if all(isnan(matrixData(:)))
     disp('All data are NaNs. Returning...')
     return
 end
-
 ip = inputParser;
 ip.CaseSensitive = false;
 addRequired(ip,'cellArrayData');
@@ -85,9 +108,7 @@ jitterGamma  = ip.Results.jitterGamma;
 kdePoints    = ip.Results.kdePoints;
 kdeBandwidth = ip.Results.kdeBandwidth;
 iqrK = ip.Results.iqrK;
-
 nameList(idEmptyData)=[];
-
 boxWidth=0.5;
 scatterWidth=boxWidth*2;
 whiskerRatio=0.5;
@@ -99,63 +120,55 @@ matrixData=matrixData*convertFactor;
 %     nameListNew = cellfun(@(x,y) [x '(N=' num2str(sum(~isnan(y))) ')'],nameList,cellArrayData,'UniformOutput', false);
 % end
 nameListNew = nameList;
-
 % Generating color group
-%      r  red       1               
+%      r  red       1
 %      g  green     2
 %      b  blue      3
-%      y  yellow    4            
-%      m  magenta   5           
-%      c  cyan      6        
-%      a  apple green 7  
-%      d  dark gray 8   
-%      e  evergreen 9    
-%      f  fuchsia   10                  
-%      h  honey     11     
-%      i  indigo    12                  
-%      j  jade      13               
-%      l  lilac     14            
-%      n  nutbrown  15         
-%      p  pink      16                  
-%      q  kumquat   17             
-%      s  sky blue  18                    
-%      t  tan       19                          
-%      u  umber     20                            
-%      v  violet    21                           
+%      y  yellow    4
+%      m  magenta   5
+%      c  cyan      6
+%      a  apple green 7
+%      d  dark gray 8
+%      e  evergreen 9
+%      f  fuchsia   10
+%      h  honey     11
+%      i  indigo    12
+%      j  jade      13
+%      l  lilac     14
+%      n  nutbrown  15
+%      p  pink      16
+%      q  kumquat   17
+%      s  sky blue  18
+%      t  tan       19
+%      u  umber     20
+%      v  violet    21
 %      z  zinc      22
 %      k  black     23
 colorSwitch = 'qkjlrabnfilkpuvdt';
 color = extendedColors(colorSwitch);
-
 onlyOneDataAllGroups=false;
 numCategories = numel(cellArrayData);
 while size(color,1)<numCategories
     color = [color; color];
 end
-
 hold off
-
 % --- OPTIONAL OUTLIER FILTERING (added) ---
 % usage:
 % boxPlotCellArray(dataCell, labels, ..., 'outlierMethod','hard', 'hardMax',500)
 % boxPlotCellArray(..., 'outlierMethod','iqr', 'iqrK',3)
 % boxPlotCellArray(..., 'outlierMethod','mad', 'madK',5)
-
 % outlierMethod = '';
 hardMax = inf;
 hardMin = -inf;
 % iqrK = 3;      % Tukey rule (3 is conservative)
 madK = 5;      % median +/- madK*MAD (robust)
-
 % apply filtering per group
 for gi = 1:numel(cellArrayData)
     x = cellArrayData{gi};
     x = x(isfinite(x)); % always remove NaN/Inf
-
     switch outlierMethod
         case "hard"
             x = x(x >= hardMin & x <= hardMax);
-
         case "iqr"
             if ~isempty(x)
                 q1 = prctile(x,25);
@@ -165,7 +178,6 @@ for gi = 1:numel(cellArrayData)
                 hi = q3 + iqrK*I;
                 x = x(x >= lo & x <= hi);
             end
-
         case "mad"
             if ~isempty(x)
                 med = median(x);
@@ -175,11 +187,9 @@ for gi = 1:numel(cellArrayData)
                 x = x(x >= lo & x <= hi);
             end
     end
-
     cellArrayData{gi} = x;
 end
 % --- END OPTIONAL OUTLIER FILTERING ---
-
 % Remaking matrixData
 [lengthLongest]=max(cellfun(@(x) length(x),cellArrayData));
 numConditions = numel(cellArrayData);
@@ -193,7 +203,6 @@ if all(isnan(matrixData(:)))
 end
 % --- Force every group data to be a column vector (FIX for row vectors) ---
 cellArrayData = cellfun(@(x) x(:), cellArrayData, 'UniformOutput', false);
-
 onlyOneDataPerEachGroup=false(1,numCategories);
 if plotIndivPoint
     % individual data jitter plot
@@ -203,7 +212,6 @@ if plotIndivPoint
     Nall = cell(size(cellArrayData));
     for ii=1:numCategories
         % Nall{ii} = histcounts(cellArrayData{ii,1});
-
         xi = cellArrayData{ii,1};
         xi = xi(:); % for safety
         uArrayAll{ii} = unique(xi(~isnan(xi)));
@@ -234,7 +242,7 @@ if plotIndivPoint
             %     [N,edges] = histcounts(cellArrayData{ii,1});
             % end
             % for jj=1:numel(N)
-            % 
+            %
             %     % Get the subpopulation
             %     curIdx = cellArrayData{ii,1}>=edges(jj) & cellArrayData{ii,1}<edges(jj+1);
             %     % Calculate the width according to N(jj)
@@ -252,10 +260,10 @@ if plotIndivPoint
             % end
             y = matrixData(:,ii);
             y = y(~isnan(y));
-            
+
             % base random jitter (centered at group index)
             xData = ii + (rand(size(y)) - 0.5) * 1e-6; % tiny init
-            
+
             switch jitterMode
                 case "hist"
                     % ===== ?? ?? ?? =====
@@ -264,18 +272,18 @@ if plotIndivPoint
                     for jj=1:numel(N)
                         curIdx = (y>=edges(jj) & y<edges(jj+1));
                         frac = N(jj)/max(NmaxBin,1);
-            
+
                         % log/sqrt ?? ?? (???)
                         if jitterLog
                             frac = log1p(9*frac)/log(10);   % 0~1? ??
                         else
                             frac = frac.^jitterGamma;
                         end
-            
+
                         w = scatterWidth * frac;
                         xData(curIdx) = ii + (rand(sum(curIdx),1)-0.5).*w;
                     end
-            
+
                 case "kde"
                     % ===== KDE ?? (violin-like) =====
                     yMin = min(y); yMax = max(y);
@@ -283,38 +291,37 @@ if plotIndivPoint
                         dens = ones(size(y));
                     else
                         yi = linspace(yMin, yMax, kdePoints);
-            
+
                         if isempty(kdeBandwidth)
                             f = ksdensity(y, yi);  % auto bandwidth
                         else
                             f = ksdensity(y, yi, 'Bandwidth', kdeBandwidth);
                         end
-            
+
                         dens = interp1(yi, f, y, 'linear', 'extrap'); % ? ?? local density
                         dens = dens / max(dens + eps);                % 0~1 normalize
                     end
-            
+
                     % ? ??: log ?? power? ??? ????? ?? ??
                     if jitterLog
                         dens = log1p(9*dens)/log(10);      % 0~1 (??? ??)
                     else
                         dens = dens.^jitterGamma;
                     end
-            
+
                     w = scatterWidth .* dens;
                     xData = ii + (rand(size(y))-0.5) .* w;
             end
-            
+
             % ---- scatter plot ----
             if singleColor==0
                 curColor = color(ii,:);
             else
                 curColor = singleColor;
             end
-
             lighten = 0.75; % 0~1, The higher, the lighter (0.7~0.9 recommended)
             ptColor = curColor + (1-curColor)*lighten;   % mix with white color
-            
+
             if horizontalPlot
                 h=scatter(ax, y, xData,'filled','MarkerFaceColor',ptColor,...
                     'MarkerEdgeColor','none','SizeData',markerSize);
@@ -335,16 +342,14 @@ end
 if all(onlyOneDataPerEachGroup)
     onlyOneDataAllGroups=true;
 end
-
 % color setting for box plots
 if singleColor==0
     colors = color; %(ii,:);
 else
     colors = color(2,:); %singleColor;
 end
-
 if ~onlyOneDataAllGroups %Here I need to change color option for single color.
-    if notchOn %min(sum(~isnan(matrixData),1))>20 || 
+    if notchOn %min(sum(~isnan(matrixData),1))>20 ||
         if horizontalPlot
             boxplot(ax,matrixData,'whisker',whiskerRatio,'notch','on',...
                 'labels',nameListNew,'symbol','','widths',boxWidth,'jitter',0,'colors',colors,'Orientation','horizontal');%, 'labelorientation','inline');
@@ -367,7 +372,7 @@ else
     xlim([0 numCategories+1])
     set(ax,'XTick',1:numCategories)
     set(ax,'XTicklabel',nameListNew)
-end    
+end
 set(findobj(ax,'LineStyle','--'),'LineStyle','-')
 set(findobj(ax,'tag','Median'),'LineWidth',2)
 % set(gca,'XTick',1:numel(nameList))
@@ -401,7 +406,7 @@ xGap = 0.05;
 method='';
 qUsed=[];
 if numel(cellArrayData)>2 && min(cellfun(@numel,cellArrayData))>2
-    method = 'ANOVA with Tukey’s honestly significant difference procedure';
+    method = 'ANOVA with Tukey?s honestly significant difference procedure';
     [pAnova,~,stat] = anova1(matrixData,nameList,"off");
     if pAnova<0.05
         c = multcompare(stat,"Display","off");
@@ -411,7 +416,6 @@ if numel(cellArrayData)>2 && min(cellfun(@numel,cellArrayData))>2
 else
     c=[];
 end
-
 for k=1:(numConditions-1)
 %     q=-2*lineGap + 0.5*lineGap*(k-1); %0.5*lineGap*mod(k-1,2);
     for ii=k+1:numConditions
@@ -428,22 +432,21 @@ for k=1:(numConditions-1)
                 % find the correnponding condition
                 p = c(c(:,1)==k & c(:,2)==ii,6);
             end
-            if (p<0.05 && forceShowP~=2) || forceShowP==1 
+            if (p<0.05 && forceShowP~=2) || forceShowP==1
 %                 q = quantile(cell2mat(cellArrayData(k:ii)),0.92);
                 q = max(cellfun(@(x) quantile(x,0.95),cellArrayData(k:ii)));
                 tol=0.95*lineGap;
-
                 a=find(abs(qUsed-q(1))<tol,1);
-                while ~isempty(a) %ismember(q,qUsed) 
+                while ~isempty(a) %ismember(q,qUsed)
                     q=qUsed(a)+lineGap;
                     a=find(abs(qUsed-q)<tol,1);
                 end
                 qUsed = [qUsed q];
                 q=q+lineGap;
                 if horizontalPlot
-                    line(ax,ones(1,2)*(maxPoint2+q),[k ii], 'Color','k')    
+                    line(ax,ones(1,2)*(maxPoint2+q),[k ii], 'Color','k')
                 else
-                    line(ax,[k+xGap ii-xGap], ones(1,2)*(q),'Color','k')    
+                    line(ax,[k+xGap ii-xGap], ones(1,2)*(q),'Color','k')
                 end
                 q=q+lineGap*0.5;
                 if horizontalPlot
@@ -487,23 +490,17 @@ end
 %         ylim auto
 %     end
 % end
-
 xlim auto
 ylim auto
-
 % Sample number writing on the base
 for k=1:numConditions
     text(ax,k,ax.YLim(1)+lineGap,...
         ['N=' num2str(sum(~isnan(cellArrayData{k})))],...
         'HorizontalAlignment','center');
 end
-
 % text(ax,ii-1.5,ax.YLim(1)+lineGap,method)
 title(method)
-
 set(ax,'FontSize',7)
 set(findobj(ax,'Type','Text'),'FontSize',6)
 sucess=true;
-
 hold off
-

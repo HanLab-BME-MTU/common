@@ -602,24 +602,33 @@ classdef  MovieObject < hgsetget
             end
         end
         
-        function relocate(obj,oldRootDir,newRootDir)
-            % Relocate the paths of all components of the movie object
-            %
-            % The relocate method automatically relocates the output directory,
-            % as well as the paths in each process and package of the movie
-            % assuming the internal architecture of the  project is conserved.
-            
-            % Relocate output directory and set the ne movie path
-            obj.outputDirectory_=relocatePath(obj.outputDirectory_,oldRootDir,newRootDir);
-            obj.setPath(relocatePath(obj.getPath,oldRootDir,newRootDir));
-            
-            % Relocate the processes
-            for i=1:numel(obj.processes_), obj.processes_{i}.relocate(oldRootDir,newRootDir); end
-            
-            % Relocate the packages
-            for i=1:numel(obj.packages_), obj.packages_{i}.relocate(oldRootDir,newRootDir); end
-        end
+        function relocate(obj, oldRootDir, newRootDir)
+            % FIX: resolve relative paths before passing to relocatePath
+            if ~isempty(oldRootDir) && ~isAbsPath_(oldRootDir)
+                oldRootDir = fullfile(pwd, oldRootDir);
+            end
+            if ~isempty(newRootDir) && ~isAbsPath_(newRootDir)
+                newRootDir = fullfile(pwd, newRootDir);
+            end
+            % FIX: if outputDirectory_ is relative, make it absolute first
+            if ~isAbsPath_(obj.outputDirectory_)
+                obj.outputDirectory_ = fullfile(pwd, obj.outputDirectory_);
+            end
+            if ~isAbsPath_(obj.getPath())
+                obj.setPath(fullfile(pwd, obj.getPath()));
+            end
         
+            obj.outputDirectory_ = relocatePath(obj.outputDirectory_, oldRootDir, newRootDir);
+            obj.setPath(relocatePath(obj.getPath, oldRootDir, newRootDir));
+        
+            for i = 1:numel(obj.processes_)
+                obj.processes_{i}.relocate(oldRootDir, newRootDir);
+            end
+            for i = 1:numel(obj.packages_)
+                obj.packages_{i}.relocate(oldRootDir, newRootDir);
+            end
+        end        
+
         function reset(obj)
             % Reset the analysis of the movie object
             obj.processes_={};
@@ -778,4 +787,9 @@ else
     iProc = iProc(end:-1:(end-nDesired+1));
 end
 end
+
+function tf = isAbsPath_(p)
+tf = ~isempty(p) && (p(1)=='/' || (numel(p)>1 && p(2)==':'));
+end
+
 
