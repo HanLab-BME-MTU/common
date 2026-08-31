@@ -8,6 +8,12 @@ classdef Channel < hgsetget & matlab.mixin.Copyable
         imageType_                  % e.g. Widefield, TIRF, Confocal etc.
         fluorophore_=''             % Fluorophore / Dye (e.g. CFP, Alexa, mCherry etc.)
         name_ = ''                  % Name of the channel
+        displayColor_ = []          % RGB triplet (1x3, values in [0,1]) used when
+                                     % compositing this channel in movieViewer.
+                                     % Empty = auto-assign by channel index
+                                     % (R, G, B, White, Cyan, Magenta, Yellow, ...).
+                                     % Freely re-settable (not write-once like the
+                                     % other channel metadata below).
 
         % ---- Un-used params ---- %
         excitationType_             % Excitation type (e.g. Xenon or Mercury Lamp, Laser, etc)
@@ -87,6 +93,21 @@ classdef Channel < hgsetget & matlab.mixin.Copyable
         function set.name_(obj, value)
             obj.checkPropertyValue('name_', value);
             obj.name_=value;
+        end
+
+        function set.displayColor_(obj, value)
+            % Unlike the other channel metadata properties, this is a
+            % display preference, not acquisition provenance, so it does
+            % NOT go through checkPropertyValue's write-once guard: the
+            % user should be able to change a channel's color repeatedly
+            % from the movieViewer GUI within a session.
+            if ~isempty(value)
+                assert(isnumeric(value) && isequal(size(value),[1 3]) && ...
+                    all(value(:)>=0) && all(value(:)<=1), ...
+                    'lccb:set:invalid', ...
+                    'displayColor_ must be a 1x3 numeric RGB triplet with values in [0,1]');
+            end
+            obj.displayColor_ = value;
         end
         
         function setName(obj, value)
@@ -331,13 +352,40 @@ classdef Channel < hgsetget & matlab.mixin.Copyable
             ip.parse(obj, iFrame, varargin{:})
             iZ = ip.Results.iZ;
             
-            % Initialize output
-            if numel(obj) > 1, cdim=3; else cdim=1; end
-            data = zeros([obj(1).owner_.imSize_ cdim]);
+            % Default colors used when a channel's displayColor_ is unset,
+            % cycling by channel index: Red, Green, Blue, White, Cyan,
+            % Magenta, Yellow. This preserves the historical look for the
+            % first 3 channels (R,G,B in order) when colors are not
+            % explicitly assigned.
+            defaultColors = [1 0 0; 0 1 0; 0 0 1; 1 1 1; 0 1 1; 1 0 1; 1 1 0];
             
-            % Fill output
-            for iChan=1:numel(obj)
-                data(:,:,iChan)=mat2gray(obj(iChan).loadImage(iFrame, iZ));
+            nChan = numel(obj);
+            if nChan > 1
+                % Composite every selected channel into a single RGB
+                % image by adding each channel's grayscale image, scaled
+                % by its assigned display color, into the 3 RGB planes.
+                % This supports any number of channels (not just 3) and
+                % lets each channel be assigned an arbitrary color rather
+                % than being tied to its index.
+                data = zeros([obj(1).owner_.imSize_ 3]);
+                for iChan=1:nChan
+                    chanImg = mat2gray(obj(iChan).loadImage(iFrame, iZ));
+                    color = obj(iChan).displayColor_;
+                    if isempty(color)
+                        color = defaultColors(mod(iChan-1,size(defaultColors,1))+1,:);
+                    end
+                    for iPlane=1:3
+                        if color(iPlane)>0
+                            data(:,:,iPlane) = data(:,:,iPlane) + color(iPlane)*chanImg;
+                        end
+                    end
+                end
+                data = min(data,1); % clip in case multiple channels overlap on a plane (e.g. white + blue)
+            else
+                % Single channel: display as grayscale, unchanged from
+                % previous behavior.
+                data = zeros([obj(1).owner_.imSize_ 1]);
+                data(:,:,1)=mat2gray(obj(1).loadImage(iFrame, iZ));
             end
             drawArgs=reshape([fieldnames(ip.Unmatched) struct2cell(ip.Unmatched)]',...
                 2*numel(fieldnames(ip.Unmatched)),1);

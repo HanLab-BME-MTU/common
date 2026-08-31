@@ -119,6 +119,17 @@ classdef MaskProcess < Process
             if isempty(obj.maxIndex_)            
                 output(1).formatData=@MaskProcess.getMaskBoundaries;
                 colors = hsv(numel(obj.owner_.channels_));
+                % Use each channel's explicit display color
+                % (Channel.displayColor_, e.g. set from the movieViewer
+                % color swatch) when available, so mask boundaries match
+                % the raw-image channel color instead of an arbitrary
+                % hsv-wheel color.
+                for iChan = 1:numel(obj.owner_.channels_)
+                    chanColor = obj.owner_.channels_(iChan).displayColor_;
+                    if ~isempty(chanColor)
+                        colors(iChan,:) = chanColor;
+                    end
+                end
                 output(1).defaultDisplayMethod=@(x) LineDisplay('Color',colors(x,:));                                
             else
                 cMap = randomColormap(obj.maxIndex_,42);%random colors since index is arbitrary, but constant seed so we are consistent across frames.
